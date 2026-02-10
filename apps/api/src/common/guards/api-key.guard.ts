@@ -3,13 +3,13 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import * as bcrypt from 'bcryptjs';
 import { Request } from 'express';
 
-import { extractOrgNumericId } from '@fastdex/common';
+import { extractOrgNumericId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
 
 /**
  * Guard that validates X-API-Key header for external API access.
- * Finds the API key by the fdx_ prefix, verifies bcrypt hash,
+ * Finds the API key by the gbd_ prefix, verifies bcrypt hash,
  * and attaches the orgId to the request.
  */
 @Injectable()
@@ -24,7 +24,7 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Missing X-API-Key header');
     }
 
-    if (!apiKey.startsWith('fdx_')) {
+    if (!apiKey.startsWith('gbd_')) {
       throw new UnauthorizedException('Invalid API key format');
     }
 

@@ -1,4 +1,4 @@
-import type { DbId, OrgNumericId } from '@fastdex/common';
+import type { DbId, OrgNumericId } from '@grabdy/common';
 
 import type { JwtPayload } from '../common/guards/auth.guard';
 

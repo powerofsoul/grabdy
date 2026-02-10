@@ -1,5 +1,5 @@
 export const STORAGE_KEYS = {
-  THEME_MODE: 'fastdex-theme-mode',
-  SELECTED_ORG_ID: 'fastdex-selected-org-id',
-  SIDEBAR_COLLAPSED: 'fastdex-sidebar-collapsed',
+  THEME_MODE: 'grabdy-theme-mode',
+  SELECTED_ORG_ID: 'grabdy-selected-org-id',
+  SIDEBAR_COLLAPSED: 'grabdy-sidebar-collapsed',
 } as const;

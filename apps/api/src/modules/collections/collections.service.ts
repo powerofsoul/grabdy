@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { sql } from 'kysely';
 
-import { type DbId, extractOrgNumericId, packId } from '@fastdex/common';
+import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
 

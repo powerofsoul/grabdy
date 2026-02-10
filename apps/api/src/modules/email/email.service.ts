@@ -59,12 +59,12 @@ export class EmailService {
   }
 
   async sendWelcomeEmail(to: string, name: string) {
-    const html = `<p>Hi ${name},</p><p>Welcome to Fastdex! Your account has been created.</p>`;
-    await this.sendEmail(to, 'Welcome to Fastdex!', html);
+    const html = `<p>Hi ${name},</p><p>Welcome to Grabdy! Your account has been created.</p>`;
+    await this.sendEmail(to, 'Welcome to Grabdy!', html);
   }
 
   async sendOrgInviteEmail(to: string, name: string, orgName: string, token: string) {
-    const html = `<p>Hi ${name},</p><p>You've been invited to join <strong>${orgName}</strong> on Fastdex.</p><p>Use token: ${token}</p>`;
+    const html = `<p>Hi ${name},</p><p>You've been invited to join <strong>${orgName}</strong> on Grabdy.</p><p>Use token: ${token}</p>`;
     await this.sendEmail(to, `You've been invited to ${orgName}`, html);
   }
 }

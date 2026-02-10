@@ -1,5 +1,5 @@
 {
-  "name": "fastdex",
+  "name": "grabdy",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -12,8 +12,8 @@
     "lint:fix": "turbo lint:fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:migrate": "yarn workspace @fastdex/api db:migrate",
-    "db:migrate:reset": "yarn workspace @fastdex/api db:reset",
+    "db:migrate": "yarn workspace @grabdy/api db:migrate",
+    "db:migrate:reset": "yarn workspace @grabdy/api db:reset",
     "prepare": "husky"
   },
   "devDependencies": {

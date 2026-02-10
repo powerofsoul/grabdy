@@ -1,6 +1,6 @@
 import { ApiFetcherArgs, initClient } from '@ts-rest/core';
 
-import { contract } from '@fastdex/contracts';
+import { contract } from '@grabdy/contracts';
 
 const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 

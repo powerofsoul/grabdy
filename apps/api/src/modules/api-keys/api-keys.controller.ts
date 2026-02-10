@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 
-import { apiKeysContract } from '@fastdex/contracts';
+import { apiKeysContract } from '@grabdy/contracts';
 
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';

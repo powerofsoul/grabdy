@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 
-import { collectionsContract } from '@fastdex/contracts';
+import { collectionsContract } from '@grabdy/contracts';
 
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 

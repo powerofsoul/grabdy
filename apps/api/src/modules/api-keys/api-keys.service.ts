@@ -3,7 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
-import { type DbId, extractOrgNumericId, packId } from '@fastdex/common';
+import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
 
@@ -12,8 +12,8 @@ export class ApiKeysService {
   constructor(private db: DbService) {}
 
   async create(orgId: DbId<'Org'>, userId: DbId<'User'>, name: string) {
-    // Generate API key with fdx_ prefix
-    const rawKey = `fdx_${crypto.randomBytes(32).toString('hex')}`;
+    // Generate API key with gbd_ prefix
+    const rawKey = `gbd_${crypto.randomBytes(32).toString('hex')}`;
     const keyPrefix = rawKey.slice(0, 12);
     const keyHash = await bcrypt.hash(rawKey, 10);
 

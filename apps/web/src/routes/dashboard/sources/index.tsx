@@ -22,7 +22,7 @@ import { StatusChip } from '@/components/ui/StatusChip';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
-import type { DataSourceStatus } from '@fastdex/contracts';
+import type { DataSourceStatus } from '@grabdy/contracts';
 
 interface DataSource {
   id: string;

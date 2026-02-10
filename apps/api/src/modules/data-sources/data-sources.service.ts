@@ -5,7 +5,7 @@ import { Queue } from 'bullmq';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { type DbId, extractOrgNumericId, packId } from '@fastdex/common';
+import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';

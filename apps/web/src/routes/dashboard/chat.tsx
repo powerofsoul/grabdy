@@ -18,7 +18,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
-import type { DbId } from '@fastdex/common';
+import type { DbId } from '@grabdy/common';
 
 interface Source {
   content: string;

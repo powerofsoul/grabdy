@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
-import { type DbId } from '@fastdex/common';
+import { type DbId } from '@grabdy/common';
 
 import { api } from '../lib/api';
 import { STORAGE_KEYS } from '../lib/storage-keys';

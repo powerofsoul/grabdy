@@ -1,74 +1,144 @@
-import { useState } from 'react';
+import { useEffect, useRef } from 'react';
 
-import { Box, Button, Container, TextField, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Button, Chip, Container, Typography, useTheme } from '@mui/material';
 import { Link } from '@tanstack/react-router';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ArrowRight } from 'lucide-react';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export function CTASection() {
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const [email, setEmail] = useState('');
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion || !sectionRef.current) return;
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 80%',
+        },
+      });
+
+      tl.from('.cta-ring', { scale: 0.8, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'power2.out' });
+      tl.from('.cta-title', { y: 30, opacity: 0, duration: 0.6, ease: 'power2.out' }, '-=0.6');
+      tl.from('.cta-subtitle', { y: 20, opacity: 0, duration: 0.4 }, '-=0.3');
+      tl.from('.cta-button', { y: 20, opacity: 0, duration: 0.4, ease: 'back.out(1.5)' }, '-=0.2');
+      tl.from('.cta-note', { opacity: 0, duration: 0.3 }, '-=0.1');
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
 
   return (
     <Box
+      ref={sectionRef}
       sx={{
-        py: 12,
-        background: isDark
-          ? 'linear-gradient(135deg, #1e3a5f 0%, #1a1a2e 50%, #16213e 100%)'
-          : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
-        color: '#ffffff',
+        py: { xs: 10, md: 14 },
+        position: 'relative',
+        overflow: 'hidden',
+        background: `linear-gradient(180deg, ${theme.palette.kindle.parchment} 0%, ${alpha(theme.palette.primary.main, 0.06)} 50%, ${theme.palette.kindle.parchment} 100%)`,
       }}
     >
-      <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
+      {/* Decorative concentric rings */}
+      {[700, 500, 350].map((size, i) => (
+        <Box
+          key={size}
+          className="cta-ring"
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: size,
+            height: size,
+            borderRadius: '50%',
+            border: '1px solid',
+            borderColor: alpha(theme.palette.primary.main, 0.08 - i * 0.02),
+            pointerEvents: 'none',
+          }}
+        />
+      ))}
+
+      <Container maxWidth="sm" sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <Typography
-          variant="h3"
+          className="cta-title"
+          variant="h2"
           sx={{
             fontWeight: 800,
             mb: 2,
-            fontSize: { xs: '1.75rem', md: '2.25rem' },
+            fontSize: { xs: '2rem', md: '2.75rem' },
+            letterSpacing: '-0.02em',
           }}
         >
-          Ready to make your data work for you?
+          Ready in{' '}
+          <Box component="span" sx={{ color: 'primary.main' }}>minutes</Box>.
         </Typography>
-        <Typography sx={{ mb: 4, opacity: 0.9, fontSize: '1.1rem' }}>
-          Start searching your documents in minutes, not weeks.
+        <Typography
+          className="cta-subtitle"
+          sx={{ mb: 5, color: 'text.secondary', fontSize: '1.1rem', lineHeight: 1.6 }}
+        >
+          Create an account, upload your files, and start asking.
+          <br />
+          That&apos;s it.
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 1, maxWidth: 440, mx: 'auto', mb: 2 }}>
-          <TextField
-            fullWidth
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                bgcolor: 'rgba(255,255,255,0.15)',
-                color: '#fff',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-                '&.Mui-focused fieldset': { borderColor: '#fff' },
-              },
-              '& .MuiOutlinedInput-input::placeholder': { color: 'rgba(255,255,255,0.6)' },
-            }}
-          />
+        <Box className="cta-button" sx={{ mb: 2.5 }}>
           <Link to="/auth/register" style={{ textDecoration: 'none' }}>
             <Button
               variant="contained"
+              size="large"
+              endIcon={<ArrowRight size={18} />}
               sx={{
-                bgcolor: '#fff',
-                color: '#1d4ed8',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
-                px: 3,
-                whiteSpace: 'nowrap',
+                px: 6,
+                py: 1.75,
+                fontSize: '1.05rem',
                 fontWeight: 700,
+                boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.25)}`,
+                '&:hover': {
+                  boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.35)}`,
+                },
               }}
             >
-              Get Started
+              Get Started Free
             </Button>
           </Link>
         </Box>
 
-        <Typography variant="body2" sx={{ opacity: 0.7 }}>
-          No credit card required. Free tier available.
+        <Box className="cta-note" sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+          {['Create account', 'Upload files', 'Start asking'].map((step, i) => (
+            <Box key={step} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip
+                label={i + 1}
+                size="small"
+                variant="outlined"
+                sx={{
+                  width: 22,
+                  height: 22,
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  '& .MuiChip-label': { px: 0 },
+                  borderColor: alpha(theme.palette.primary.main, 0.3),
+                  color: 'primary.main',
+                }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.78rem' }}>
+                {step}
+              </Typography>
+              {i < 2 && (
+                <Typography color="text.secondary" sx={{ opacity: 0.3, fontSize: '0.7rem' }}>
+                  &rarr;
+                </Typography>
+              )}
+            </Box>
+          ))}
+        </Box>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 2.5, display: 'block', fontSize: '0.75rem' }}>
+          No credit card required.
         </Typography>
       </Container>
     </Box>

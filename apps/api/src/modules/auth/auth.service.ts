@@ -6,7 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import type { CookieOptions } from 'express';
 
-import { type DbId, extractOrgNumericId, GLOBAL_ORG, packId } from '@fastdex/common';
+import { type DbId, extractOrgNumericId, GLOBAL_ORG, packId } from '@grabdy/common';
 
 import type { JwtMembership, JwtPayload } from '../../common/guards/auth.guard';
 import { InjectEnv } from '../../config/env.config';

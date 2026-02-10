@@ -1,5 +1,5 @@
 {
-  "name": "@fastdex/contracts",
+  "name": "@grabdy/contracts",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -21,7 +21,7 @@
     "lint:fix": "yarn eslint src --fix"
   },
   "dependencies": {
-    "@fastdex/common": "workspace:^",
+    "@grabdy/common": "workspace:^",
     "@ts-rest/core": "3.53.0-rc.1",
     "zod": "^4.0.0"
   },

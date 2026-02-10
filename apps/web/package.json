@@ -1,5 +1,5 @@
 {
-  "name": "@fastdex/web",
+  "name": "@grabdy/web",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@fastdex/common": "workspace:^",
-    "@fastdex/contracts": "workspace:^",
+    "@grabdy/common": "workspace:^",
+    "@grabdy/contracts": "workspace:^",
     "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",

@@ -5,7 +5,7 @@ import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { type CookieOptions, Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 
-import { authContract } from '@fastdex/contracts';
+import { authContract } from '@grabdy/contracts';
 
 import { Public } from '../../common/decorators/public.decorator';
 import { parseJwtPayload } from '../../common/guards/auth.guard';

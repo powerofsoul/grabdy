@@ -6,8 +6,8 @@ import { embedMany } from 'ai';
 import { Job } from 'bullmq';
 import * as fs from 'fs';
 
-import type { DbId } from '@fastdex/common';
-import { extractOrgNumericId, packId } from '@fastdex/common';
+import type { DbId } from '@grabdy/common';
+import { extractOrgNumericId, packId } from '@grabdy/common';
 
 import { DbService } from '../../../db/db.module';
 import { DATA_SOURCE_QUEUE } from '../queue.constants';

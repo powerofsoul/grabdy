@@ -46,7 +46,7 @@ export const env = {
   smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
   smtpUser: requiredInProd('SMTP_USER', ''),
   smtpPass: requiredInProd('SMTP_PASS', ''),
-  emailFrom: process.env.EMAIL_FROM || 'Fastdex <noreply@fastdex.io>',
+  emailFrom: process.env.EMAIL_FROM || 'Grabdy <noreply@grabdy.com>',
 
   bullBoardUsername: requiredInProd('BULL_BOARD_USERNAME', 'admin'),
   bullBoardPassword: requiredInProd('BULL_BOARD_PASSWORD', 'admin'),

@@ -1,13 +1,13 @@
-# fastdex.io
+# grabdy.com
 
 SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it contextually via REST API and chatbot. Multi-tenant organizations, packed UUID IDs, vector search, and type-safe APIs.
 
 ## Project Structure
 
-- `apps/api` - NestJS backend (@fastdex/api)
-- `apps/web` - React frontend (@fastdex/web)
-- `packages/contracts` - Shared TypeScript contracts (@fastdex/contracts)
-- `packages/common` - Shared utilities and ID system (@fastdex/common)
+- `apps/api` - NestJS backend (@grabdy/api)
+- `apps/web` - React frontend (@grabdy/web)
+- `packages/contracts` - Shared TypeScript contracts (@grabdy/contracts)
+- `packages/common` - Shared utilities and ID system (@grabdy/common)
 
 ## Tech Stack
 
@@ -46,7 +46,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - **All entity IDs are custom packed UUIDs** with org ID and entity type embedded.
 - **Binary layout (16 bytes):** org(4B) + timestamp(6B) + entity_type(1B) + random(5B)
-- **Services generate IDs using `packId('EntityType', orgNumericId)`** from `@fastdex/common`.
+- **Services generate IDs using `packId('EntityType', orgNumericId)`** from `@grabdy/common`.
 - **Every `insertInto(...).values({...})` MUST include an explicit `id: packId(...)` call.**
 - **Global entities** (User, AuthToken) use `packId('User', GLOBAL_ORG)` where `GLOBAL_ORG = 0`.
 - **Org-scoped entities** extract the org from an existing FK: `packId('Collection', extractOrgNumericId(orgId))`.
@@ -119,7 +119,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 ### API Key Auth
 
-- External API access uses `X-API-Key` header with `fdx_` prefixed keys.
+- External API access uses `X-API-Key` header with `gbd_` prefixed keys.
 - Cookie auth for dashboard, API key auth for external REST API.
 
 ### General

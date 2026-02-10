@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 import type { OrgRole } from '@db/enums';
 import { Request } from 'express';
 
-import { extractOrgNumericId, type OrgNumericId, UUID_RE } from '@fastdex/common';
+import { extractOrgNumericId, type OrgNumericId, UUID_RE } from '@grabdy/common';
 
 import { ORG_ACCESS_KEY, OrgAccessMetadata } from '../decorators/org-roles.decorator';
 

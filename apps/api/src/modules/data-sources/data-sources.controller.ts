@@ -3,8 +3,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 
-import { type DbId } from '@fastdex/common';
-import { dataSourcesContract } from '@fastdex/contracts';
+import { type DbId } from '@grabdy/common';
+import { dataSourcesContract } from '@grabdy/contracts';
 
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';

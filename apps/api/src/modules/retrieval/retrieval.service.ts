@@ -4,7 +4,7 @@ import { openai } from '@ai-sdk/openai';
 import { embed, generateText } from 'ai';
 import { sql } from 'kysely';
 
-import { type DbId, extractOrgNumericId, packId } from '@fastdex/common';
+import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
 

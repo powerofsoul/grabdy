@@ -988,16 +988,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fastdex/api@workspace:apps/api":
+"@grabdy/api@workspace:apps/api":
   version: 0.0.0-use.local
-  resolution: "@fastdex/api@workspace:apps/api"
+  resolution: "@grabdy/api@workspace:apps/api"
   dependencies:
     "@ai-sdk/openai": "npm:^3.0.0"
     "@bull-board/api": "npm:^6.16.2"
     "@bull-board/express": "npm:^6.16.2"
     "@bull-board/ui": "npm:^6.16.2"
-    "@fastdex/common": "npm:*"
-    "@fastdex/contracts": "npm:*"
+    "@grabdy/common": "npm:*"
+    "@grabdy/contracts": "npm:*"
     "@nestjs/bullmq": "npm:^11.0.4"
     "@nestjs/cli": "npm:^11.0.14"
     "@nestjs/common": "npm:^11.1.11"
@@ -1042,20 +1042,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@fastdex/common@npm:*, @fastdex/common@workspace:^, @fastdex/common@workspace:packages/common":
+"@grabdy/common@npm:*, @grabdy/common@workspace:^, @grabdy/common@workspace:packages/common":
   version: 0.0.0-use.local
-  resolution: "@fastdex/common@workspace:packages/common"
+  resolution: "@grabdy/common@workspace:packages/common"
   dependencies:
     typescript: "npm:^5.3.3"
     zod: "npm:^4.3.6"
   languageName: unknown
   linkType: soft
 
-"@fastdex/contracts@npm:*, @fastdex/contracts@workspace:^, @fastdex/contracts@workspace:packages/contracts":
+"@grabdy/contracts@npm:*, @grabdy/contracts@workspace:^, @grabdy/contracts@workspace:packages/contracts":
   version: 0.0.0-use.local
-  resolution: "@fastdex/contracts@workspace:packages/contracts"
+  resolution: "@grabdy/contracts@workspace:packages/contracts"
   dependencies:
-    "@fastdex/common": "workspace:^"
+    "@grabdy/common": "workspace:^"
     "@ts-rest/core": "npm:3.53.0-rc.1"
     eslint: "npm:^9.39.2"
     typescript: "npm:^5.3.3"
@@ -1063,14 +1063,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@fastdex/web@workspace:apps/web":
+"@grabdy/web@workspace:apps/web":
   version: 0.0.0-use.local
-  resolution: "@fastdex/web@workspace:apps/web"
+  resolution: "@grabdy/web@workspace:apps/web"
   dependencies:
     "@emotion/react": "npm:^11.14.0"
     "@emotion/styled": "npm:^11.14.1"
-    "@fastdex/common": "workspace:^"
-    "@fastdex/contracts": "workspace:^"
+    "@grabdy/common": "workspace:^"
+    "@grabdy/contracts": "workspace:^"
     "@hookform/resolvers": "npm:^5.2.2"
     "@mui/icons-material": "npm:^7.3.7"
     "@mui/material": "npm:^7.3.7"
@@ -5092,27 +5092,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fastdex@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "fastdex@workspace:."
-  dependencies:
-    "@bull-board/api": "npm:^6.16.2"
-    "@bull-board/express": "npm:^6.16.2"
-    "@eslint/js": "npm:^9.39.2"
-    eslint: "npm:^9.39.2"
-    eslint-config-prettier: "npm:^10.1.8"
-    eslint-plugin-react: "npm:^7.37.5"
-    eslint-plugin-react-hooks: "npm:^7.0.1"
-    eslint-plugin-simple-import-sort: "npm:^12.1.1"
-    husky: "npm:^9.1.7"
-    lint-staged: "npm:^16.2.7"
-    prettier: "npm:^3.8.0"
-    turbo: "npm:^2.3.3"
-    typescript: "npm:^5.3.3"
-    typescript-eslint: "npm:^8.53.0"
-  languageName: unknown
-  linkType: soft
-
 "fdir@npm:^6.5.0":
   version: 6.5.0
   resolution: "fdir@npm:6.5.0"
@@ -5481,6 +5460,27 @@ __metadata:
   checksum: 10c0/50fff1e04ba2b7737c097358534eacadad1e68d24cccee3272e04e007bed008e68d2614f3987788428fd192a5ae3889d08fb2331417e4fc4a9ab366b2043cead
   languageName: node
   linkType: hard
+
+"grabdy@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "grabdy@workspace:."
+  dependencies:
+    "@bull-board/api": "npm:^6.16.2"
+    "@bull-board/express": "npm:^6.16.2"
+    "@eslint/js": "npm:^9.39.2"
+    eslint: "npm:^9.39.2"
+    eslint-config-prettier: "npm:^10.1.8"
+    eslint-plugin-react: "npm:^7.37.5"
+    eslint-plugin-react-hooks: "npm:^7.0.1"
+    eslint-plugin-simple-import-sort: "npm:^12.1.1"
+    husky: "npm:^9.1.7"
+    lint-staged: "npm:^16.2.7"
+    prettier: "npm:^3.8.0"
+    turbo: "npm:^2.3.3"
+    typescript: "npm:^5.3.3"
+    typescript-eslint: "npm:^8.53.0"
+  languageName: unknown
+  linkType: soft
 
 "graceful-fs@npm:^4.1.2, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.11, graceful-fs@npm:^4.2.4, graceful-fs@npm:^4.2.6":
   version: 4.2.11

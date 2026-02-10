@@ -2,8 +2,8 @@ import { Controller } from '@nestjs/common';
 
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 
-import { extractOrgNumericId } from '@fastdex/common';
-import { retrievalContract } from '@fastdex/contracts';
+import { extractOrgNumericId } from '@grabdy/common';
+import { retrievalContract } from '@grabdy/contracts';
 
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';

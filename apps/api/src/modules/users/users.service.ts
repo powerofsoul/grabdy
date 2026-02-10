@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import type { DbId } from '@fastdex/common';
+import type { DbId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
 

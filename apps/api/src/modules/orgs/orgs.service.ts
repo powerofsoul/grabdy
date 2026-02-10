@@ -3,7 +3,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { OrgRole } from '@db/enums';
 import { randomBytes } from 'crypto';
 
-import { type DbId, extractOrgNumericId, packId } from '@fastdex/common';
+import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
 import { EmailService } from '../email/email.service';

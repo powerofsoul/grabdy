@@ -1,6 +1,6 @@
 import type { ColumnType, GeneratedAlways } from 'kysely';
 
-import type { DbId, OrgNumericId } from '@fastdex/common';
+import type { DbId, OrgNumericId } from '@grabdy/common';
 
 import type {
   DataSourceStatus,

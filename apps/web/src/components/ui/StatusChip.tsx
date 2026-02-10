@@ -1,6 +1,6 @@
 import { Chip, type ChipProps } from '@mui/material';
 
-import { type DataSourceStatus } from '@fastdex/contracts';
+import { type DataSourceStatus } from '@grabdy/contracts';
 
 const STATUS_CONFIG: Record<DataSourceStatus, { label: string; color: ChipProps['color'] }> = {
   UPLOADED: { label: 'Uploaded', color: 'info' },

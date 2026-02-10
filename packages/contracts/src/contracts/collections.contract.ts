@@ -1,4 +1,4 @@
-import { dbIdSchema } from '@fastdex/common';
+import { dbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
