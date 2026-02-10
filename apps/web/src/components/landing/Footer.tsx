@@ -8,23 +8,7 @@ interface FooterColumn {
 }
 
 const COLUMNS = [
-  {
-    title: 'Product',
-    links: [
-      { label: 'Features', href: '#features' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'Integrations', href: '#features' },
-    ],
-  },
-  {
-    title: 'Developers',
-    links: [
-      { label: 'Documentation', href: '/developers' },
-      { label: 'API Reference', href: '/developers' },
-      { label: 'SDKs', href: '/developers' },
-    ],
-  },
-  {
+{
     title: 'Company',
     links: [
       { label: 'About', href: '/about' },

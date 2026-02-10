@@ -4,11 +4,7 @@ import { Link } from '@tanstack/react-router';
 import { Logo } from '../ui/Logo';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
-const NAV_LINKS = [
-  { label: 'Product', href: '#features' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'Developers', href: '/developers' },
-] satisfies ReadonlyArray<{ label: string; href: string }>;
+const NAV_LINKS = [] satisfies ReadonlyArray<{ label: string; href: string }>;
 
 export function LandingNav() {
   const theme = useTheme();
@@ -92,7 +88,7 @@ export function LandingNav() {
                   },
                 }}
               >
-                Get Started Free
+                Get Started
               </Button>
             </Link>
           </Box>

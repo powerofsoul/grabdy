@@ -28,10 +28,22 @@ import {
 function SlackIcon({ size = 10 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" fill="#E01E5A" />
-      <path d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" fill="#36C5F0" />
-      <path d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z" fill="#2EB67D" />
-      <path d="M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" fill="#ECB22E" />
+      <path
+        d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z"
+        fill="#E01E5A"
+      />
+      <path
+        d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z"
+        fill="#36C5F0"
+      />
+      <path
+        d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z"
+        fill="#2EB67D"
+      />
+      <path
+        d="M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"
+        fill="#ECB22E"
+      />
     </svg>
   );
 }
@@ -39,9 +51,18 @@ function SlackIcon({ size = 10 }: { size?: number }) {
 function GoogleDriveIcon({ size = 10 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12.01 1.485c-2.082 0-3.754.02-3.743.047.01.02 1.708 3.001 3.774 6.62l3.76 6.574h3.76c2.081 0 3.753-.02 3.742-.047-.005-.02-1.708-3.001-3.775-6.62l-3.76-6.574z" fill="#4688F4" />
-      <path d="M7.25 3.214a789.828 789.861 0 0 0-3.63 6.319L0 15.868l1.89 3.298 1.885 3.297 3.62-6.335 3.618-6.33-1.88-3.287C8.1 4.704 7.255 3.22 7.25 3.214z" fill="#1FA463" />
-      <path d="M9.509 16.468l-.203.348c-.114.198-.96 1.672-1.88 3.287a423.93 423.948 0 0 1-1.698 2.97c-.01.026 3.24.042 7.222.042h7.244l1.796-3.157c.992-1.734 1.85-3.23 1.906-3.323l.104-.167h-7.249z" fill="#FFD04B" />
+      <path
+        d="M12.01 1.485c-2.082 0-3.754.02-3.743.047.01.02 1.708 3.001 3.774 6.62l3.76 6.574h3.76c2.081 0 3.753-.02 3.742-.047-.005-.02-1.708-3.001-3.775-6.62l-3.76-6.574z"
+        fill="#4688F4"
+      />
+      <path
+        d="M7.25 3.214a789.828 789.861 0 0 0-3.63 6.319L0 15.868l1.89 3.298 1.885 3.297 3.62-6.335 3.618-6.33-1.88-3.287C8.1 4.704 7.255 3.22 7.25 3.214z"
+        fill="#1FA463"
+      />
+      <path
+        d="M9.509 16.468l-.203.348c-.114.198-.96 1.672-1.88 3.287a423.93 423.948 0 0 1-1.698 2.97c-.01.026 3.24.042 7.222.042h7.244l1.796-3.157c.992-1.734 1.85-3.23 1.906-3.323l.104-.167h-7.249z"
+        fill="#FFD04B"
+      />
     </svg>
   );
 }
@@ -49,7 +70,10 @@ function GoogleDriveIcon({ size = 10 }: { size?: number }) {
 function LinearIcon({ size = 10 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M2.886 4.18A11.982 11.982 0 0 1 11.99 0C18.624 0 24 5.376 24 12.009c0 3.64-1.62 6.903-4.18 9.105L2.887 4.18ZM1.817 5.626l16.556 16.556c-.524.33-1.075.62-1.65.866L.951 7.277c.247-.575.537-1.126.866-1.65ZM.322 9.163l14.515 14.515c-.71.172-1.443.282-2.195.322L0 11.358a12 12 0 0 1 .322-2.195Zm-.17 4.862 9.823 9.824a12.02 12.02 0 0 1-9.824-9.824Z" fill="#5E6AD2" />
+      <path
+        d="M2.886 4.18A11.982 11.982 0 0 1 11.99 0C18.624 0 24 5.376 24 12.009c0 3.64-1.62 6.903-4.18 9.105L2.887 4.18ZM1.817 5.626l16.556 16.556c-.524.33-1.075.62-1.65.866L.951 7.277c.247-.575.537-1.126.866-1.65ZM.322 9.163l14.515 14.515c-.71.172-1.443.282-2.195.322L0 11.358a12 12 0 0 1 .322-2.195Zm-.17 4.862 9.823 9.824a12.02 12.02 0 0 1-9.824-9.824Z"
+        fill="#5E6AD2"
+      />
     </svg>
   );
 }
@@ -266,7 +290,6 @@ const CARD_SOURCES: Record<string, CardSource[]> = {
 const CX = 630;
 const CY = 520;
 
-
 interface ChatMsg {
   id: number;
   role: 'user' | 'assistant';
@@ -276,22 +299,23 @@ interface ChatMsg {
 }
 
 // ── Smart bezier: picks exit/entry side based on node centers ──
-function edgePath(
-  pos: Record<string, { x: number; y: number }>,
-  from: string,
-  to: string,
-): string {
+function edgePath(pos: Record<string, { x: number; y: number }>, from: string, to: string): string {
   const f = pos[from];
   const t = pos[to];
   if (!f || !t) return '';
 
-  const fw = NODE_W[from], fh = NODE_H[from];
-  const tw = NODE_W[to], th = NODE_H[to];
+  const fw = NODE_W[from],
+    fh = NODE_H[from];
+  const tw = NODE_W[to],
+    th = NODE_H[to];
 
   // Centers
-  const fcx = f.x + fw / 2, fcy = f.y + fh / 2;
-  const tcx = t.x + tw / 2, tcy = t.y + th / 2;
-  const dx = tcx - fcx, dy = tcy - fcy;
+  const fcx = f.x + fw / 2,
+    fcy = f.y + fh / 2;
+  const tcx = t.x + tw / 2,
+    tcy = t.y + th / 2;
+  const dx = tcx - fcx,
+    dy = tcy - fcy;
 
   let x0: number, y0: number, x1: number, y1: number;
   let cx0: number, cy0: number, cx1: number, cy1: number;
@@ -303,18 +327,24 @@ function edgePath(
     x1 = t.x + tw / 2;
     y1 = t.y;
     const offset = Math.abs(y1 - y0) * 0.45;
-    cx0 = x0; cy0 = y0 + offset;
-    cx1 = x1; cy1 = y1 - offset;
+    cx0 = x0;
+    cy0 = y0 + offset;
+    cx1 = x1;
+    cy1 = y1 - offset;
   } else {
     // Mostly horizontal — exit right/left side, enter opposite side
     if (dx > 0) {
       // Target is to the right
-      x0 = f.x + fw; y0 = fcy;
-      x1 = t.x;     y1 = tcy;
+      x0 = f.x + fw;
+      y0 = fcy;
+      x1 = t.x;
+      y1 = tcy;
     } else {
       // Target is to the left
-      x0 = f.x;     y0 = fcy;
-      x1 = t.x + tw; y1 = tcy;
+      x0 = f.x;
+      y0 = fcy;
+      x1 = t.x + tw;
+      y1 = tcy;
     }
     const offset = Math.abs(x1 - x0) * 0.4;
     cx0 = dx > 0 ? x0 + offset : x0 - offset;
@@ -330,17 +360,22 @@ function edgePath(
 function edgeEndpoints(
   pos: Record<string, { x: number; y: number }>,
   from: string,
-  to: string,
+  to: string
 ): { x0: number; y0: number; x1: number; y1: number } | null {
   const f = pos[from];
   const t = pos[to];
   if (!f || !t) return null;
 
-  const fw = NODE_W[from], fh = NODE_H[from];
-  const tw = NODE_W[to], th = NODE_H[to];
-  const fcx = f.x + fw / 2, fcy = f.y + fh / 2;
-  const tcx = t.x + tw / 2, tcy = t.y + th / 2;
-  const dx = tcx - fcx, dy = tcy - fcy;
+  const fw = NODE_W[from],
+    fh = NODE_H[from];
+  const tw = NODE_W[to],
+    th = NODE_H[to];
+  const fcx = f.x + fw / 2,
+    fcy = f.y + fh / 2;
+  const tcx = t.x + tw / 2,
+    tcy = t.y + th / 2;
+  const dx = tcx - fcx,
+    dy = tcy - fcy;
 
   if (Math.abs(dy) > Math.abs(dx) * 0.6) {
     return { x0: f.x + fw / 2, y0: f.y + fh, x1: t.x + tw / 2, y1: t.y };
@@ -358,7 +393,10 @@ export function HeroSection() {
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const animStarted = useRef(false);
-  const cleanupRef = useRef<{ timeouts: ReturnType<typeof setTimeout>[]; intervals: ReturnType<typeof setInterval>[] }>({
+  const cleanupRef = useRef<{
+    timeouts: ReturnType<typeof setTimeout>[];
+    intervals: ReturnType<typeof setInterval>[];
+  }>({
     timeouts: [],
     intervals: [],
   });
@@ -397,14 +435,22 @@ export function HeroSection() {
   const panRef = useRef({ x: 0, y: 0 });
   const panStartRef = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const isPanningRef = useRef(false);
-  const dragRef = useRef<{ id: string; sx: number; sy: number; ox: number; oy: number } | null>(null);
+  const dragRef = useRef<{ id: string; sx: number; sy: number; ox: number; oy: number } | null>(
+    null
+  );
   const zoomRef = useRef(1);
   const posRef = useRef(positions);
   const wheelTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  useEffect(() => { panRef.current = pan; }, [pan]);
-  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
-  useEffect(() => { posRef.current = positions; }, [positions]);
+  useEffect(() => {
+    panRef.current = pan;
+  }, [pan]);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  useEffect(() => {
+    posRef.current = positions;
+  }, [positions]);
 
   const showNode = (id: string) => setVisibleNodes((p) => new Set([...p, id]));
 
@@ -462,7 +508,12 @@ export function HeroSection() {
     isPanningRef.current = true;
     setIsPanning(true);
     setSmoothTx(false);
-    panStartRef.current = { x: e.clientX, y: e.clientY, px: panRef.current.x, py: panRef.current.y };
+    panStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      px: panRef.current.x,
+      py: panRef.current.y,
+    };
     e.currentTarget.setPointerCapture(e.pointerId);
   }, []);
 
@@ -506,7 +557,13 @@ export function HeroSection() {
       let id = 0;
       for (const turn of TURNS) {
         allMsgs.push({ id: id++, role: 'user', text: turn.user });
-        allMsgs.push({ id: id++, role: 'assistant', text: turn.answer, sources: turn.sources, responseMs: turn.responseMs });
+        allMsgs.push({
+          id: id++,
+          role: 'assistant',
+          text: turn.answer,
+          sources: turn.sources,
+          responseMs: turn.responseMs,
+        });
       }
       setMessages(allMsgs);
       setVisibleNodes(new Set(Object.keys(INIT_POS)));
@@ -537,7 +594,7 @@ export function HeroSection() {
               setInputActive(false);
               setMessages((p) => [...p, { id: Date.now(), role: 'user', text }]);
               onSent();
-            }, 250),
+            }, 250)
           );
           return;
         }
@@ -554,7 +611,10 @@ export function HeroSection() {
         idx += 3;
         if (idx >= text.length) {
           clearInterval(iv);
-          setMessages((p) => [...p, { id: Date.now(), role: 'assistant', text, sources, responseMs }]);
+          setMessages((p) => [
+            ...p,
+            { id: Date.now(), role: 'assistant', text, sources, responseMs },
+          ]);
           setIsTyping(false);
           setTypedAnswer('');
           onDone();
@@ -720,7 +780,11 @@ export function HeroSection() {
       tl.from('.hero-headline', { y: 30, opacity: 0, duration: 0.7, ease: 'power3.out' });
       tl.from('.hero-subtitle', { y: 20, opacity: 0, duration: 0.5, ease: 'power2.out' }, '-=0.3');
       tl.from('.hero-ctas', { y: 15, opacity: 0, duration: 0.4 }, '-=0.2');
-      tl.from('.hero-showcase', { y: 50, opacity: 0, scale: 0.97, duration: 0.8, ease: 'power3.out' }, '-=0.2');
+      tl.from(
+        '.hero-showcase',
+        { y: 50, opacity: 0, scale: 0.97, duration: 0.8, ease: 'power3.out' },
+        '-=0.2'
+      );
     }, containerRef);
 
     // Only start the chat + canvas animation when the showcase scrolls into view
@@ -734,7 +798,7 @@ export function HeroSection() {
           observer.disconnect();
         }
       },
-      { threshold: 0.8 },
+      { threshold: 0.8 }
     );
     if (showcaseEl) observer.observe(showcaseEl);
 
@@ -759,12 +823,14 @@ export function HeroSection() {
     borderRadius: nodeId === 'hub' ? '17px' : '10px',
     bgcolor: alpha(color, isDark ? 0.1 : 0.06),
     border: `${flash ? 2 : 1.5}px solid ${alpha(color, flash ? 0.5 : isDark ? 0.25 : 0.18)}`,
-    boxShadow: draggingCard === nodeId
-      ? `0 8px 24px ${alpha(color, 0.25)}, 0 0 0 2px ${alpha(color, 0.3)}`
-      : `3px 3px 0 ${alpha(color, isDark ? 0.1 : 0.07)}`,
+    boxShadow:
+      draggingCard === nodeId
+        ? `0 8px 24px ${alpha(color, 0.25)}, 0 0 0 2px ${alpha(color, 0.3)}`
+        : `3px 3px 0 ${alpha(color, isDark ? 0.1 : 0.07)}`,
     opacity: vis ? 1 : 0,
     transform: vis ? 'scale(1)' : 'scale(0.85)',
-    transition: 'opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1), border-color 0.3s, box-shadow 0.3s',
+    transition:
+      'opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1), border-color 0.3s, box-shadow 0.3s',
     cursor: vis ? (draggingCard === nodeId ? 'grabbing' : 'grab') : 'default',
     userSelect: 'none' as const,
     zIndex: draggingCard === nodeId ? 8 : 1,
@@ -789,7 +855,9 @@ export function HeroSection() {
       >
         <Icon size={12} color={alpha(color, isDark ? 0.85 : 0.75)} />
       </Box>
-      <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: alpha(color, isDark ? 0.85 : 0.7) }}>
+      <Typography
+        sx={{ fontSize: '0.8rem', fontWeight: 700, color: alpha(color, isDark ? 0.85 : 0.7) }}
+      >
         {text}
       </Typography>
     </Box>
@@ -800,10 +868,14 @@ export function HeroSection() {
 
   const sourceIcon = (type: SourceType) => {
     switch (type) {
-      case 'slack': return <SlackIcon size={14} />;
-      case 'gdrive': return <GoogleDriveIcon size={14} />;
-      case 'linear': return <LinearIcon size={14} />;
-      default: return <FileText size={12} color={alpha(ct, 0.3)} />;
+      case 'slack':
+        return <SlackIcon size={14} />;
+      case 'gdrive':
+        return <GoogleDriveIcon size={14} />;
+      case 'linear':
+        return <LinearIcon size={14} />;
+      default:
+        return <FileText size={12} color={alpha(ct, 0.3)} />;
     }
   };
 
@@ -811,11 +883,23 @@ export function HeroSection() {
     const srcs = CARD_SOURCES[nodeId];
     if (!srcs) return null;
     return (
-      <Box sx={{ mt: 1.25, pt: 1, borderTop: '1px solid', borderColor: alpha(ct, 0.06), display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
+      <Box
+        sx={{
+          mt: 1.25,
+          pt: 1,
+          borderTop: '1px solid',
+          borderColor: alpha(ct, 0.06),
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1.25,
+        }}
+      >
         {srcs.map((s) => (
           <Box key={s.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {sourceIcon(s.type)}
-            <Typography sx={{ fontSize: '0.75rem', color: alpha(ct, 0.5), lineHeight: 1 }}>{s.label}</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: alpha(ct, 0.5), lineHeight: 1 }}>
+              {s.label}
+            </Typography>
           </Box>
         ))}
       </Box>
@@ -898,12 +982,19 @@ export function HeroSection() {
               mx: 'auto',
             }}
           >
-            Answers pulled from Slack, Docs, Notion, and every tool your team uses — structured, cited, and ready to act on.
+            Answers pulled from Slack, Docs, Notion, and every tool your team uses. structured,
+            cited, and ready to act on.
           </Typography>
 
           <Box
             className="hero-ctas"
-            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mb: { xs: 5, md: 6 } }}
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 2,
+              mb: { xs: 5, md: 6 },
+            }}
           >
             <Link to="/auth/register" style={{ textDecoration: 'none' }}>
               <Button
@@ -971,17 +1062,44 @@ export function HeroSection() {
           >
             <Box sx={{ display: 'flex', gap: 0.75 }}>
               {['error', 'warning', 'success'].map((c) => (
-                <Box key={c} sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: `${c}.main`, opacity: 0.6 }} />
+                <Box
+                  key={c}
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    bgcolor: `${c}.main`,
+                    opacity: 0.6,
+                  }}
+                />
               ))}
             </Box>
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-              <Typography sx={{ color: alpha(ct, 0.45), fontSize: '0.72rem', fontWeight: 600 }}>Chat</Typography>
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+              }}
+            >
+              <Typography sx={{ color: alpha(ct, 0.45), fontSize: '0.72rem', fontWeight: 600 }}>
+                Chat
+              </Typography>
               <Box sx={{ width: '1px', height: 12, bgcolor: alpha(ct, 0.1) }} />
-              <Typography sx={{ color: alpha(ct, 0.25), fontSize: '0.72rem', fontWeight: 500 }}>Canvas</Typography>
+              <Typography sx={{ color: alpha(ct, 0.25), fontSize: '0.72rem', fontWeight: 500 }}>
+                Canvas
+              </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'stretch' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: 'stretch',
+            }}
+          >
             {/* ── Chat Panel ── */}
             <Box
               ref={chatPanelRef}
@@ -999,7 +1117,13 @@ export function HeroSection() {
               }}
             >
               {messages.map((msg) => (
-                <Box key={msg.id} sx={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                <Box
+                  key={msg.id}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                  }}
+                >
                   <Box sx={{ maxWidth: '85%' }}>
                     <Box
                       sx={{
@@ -1007,7 +1131,11 @@ export function HeroSection() {
                         py: 1.25,
                         borderRadius: 2,
                         ...(msg.role === 'user'
-                          ? { bgcolor: 'primary.main', color: 'primary.contrastText', borderBottomRightRadius: 4 }
+                          ? {
+                              bgcolor: 'primary.main',
+                              color: 'primary.contrastText',
+                              borderBottomRightRadius: 4,
+                            }
                           : {
                               bgcolor: alpha(ct, 0.06),
                               border: '1px solid',
@@ -1028,16 +1156,32 @@ export function HeroSection() {
                       </Typography>
                     </Box>
                     {msg.role === 'assistant' && msg.sources && (
-                      <Box sx={{ mt: 0.75, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, px: 0.5 }}>
+                      <Box
+                        sx={{
+                          mt: 0.75,
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          gap: 1,
+                          px: 0.5,
+                        }}
+                      >
                         {msg.sources.map((s) => {
-                          const icon = s.startsWith('Google Drive') ? <GoogleDriveIcon size={11} />
-                            : s.startsWith('Slack') ? <SlackIcon size={11} />
-                            : s.startsWith('Linear') ? <LinearIcon size={11} />
-                            : <FileText size={10} color={alpha(ct, 0.35)} />;
+                          const icon = s.startsWith('Google Drive') ? (
+                            <GoogleDriveIcon size={11} />
+                          ) : s.startsWith('Slack') ? (
+                            <SlackIcon size={11} />
+                          ) : s.startsWith('Linear') ? (
+                            <LinearIcon size={11} />
+                          ) : (
+                            <FileText size={10} color={alpha(ct, 0.35)} />
+                          );
                           return (
                             <Box key={s} sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
                               {icon}
-                              <Typography sx={{ fontSize: '0.65rem', color: alpha(ct, 0.4) }}>{s}</Typography>
+                              <Typography sx={{ fontSize: '0.65rem', color: alpha(ct, 0.4) }}>
+                                {s}
+                              </Typography>
                             </Box>
                           );
                         })}
@@ -1240,7 +1384,8 @@ export function HeroSection() {
                       position: 'absolute',
                       left: cursorPos.x,
                       top: cursorPos.y,
-                      transition: 'left 0.5s cubic-bezier(0.4,0,0.2,1), top 0.5s cubic-bezier(0.4,0,0.2,1)',
+                      transition:
+                        'left 0.5s cubic-bezier(0.4,0,0.2,1), top 0.5s cubic-bezier(0.4,0,0.2,1)',
                       zIndex: 10,
                       pointerEvents: 'none',
                     }}
@@ -1250,7 +1395,10 @@ export function HeroSection() {
                       width={16}
                       height={20}
                       viewBox="0 0 16 20"
-                      sx={{ display: 'block', filter: `drop-shadow(0 1px 2px ${alpha(p.common.black, 0.3)})` }}
+                      sx={{
+                        display: 'block',
+                        filter: `drop-shadow(0 1px 2px ${alpha(p.common.black, 0.3)})`,
+                      }}
                     >
                       <path
                         d="M1 1 L1 16 L5 12 L8 19 L10 18 L7 11 L13 10.5 Z"
@@ -1271,7 +1419,14 @@ export function HeroSection() {
                         ml: 1.5,
                       }}
                     >
-                      <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: 'primary.contrastText', lineHeight: 1.2 }}>
+                      <Typography
+                        sx={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          color: 'primary.contrastText',
+                          lineHeight: 1.2,
+                        }}
+                      >
                         AI
                       </Typography>
                     </Box>
@@ -1305,7 +1460,12 @@ export function HeroSection() {
                 <Box
                   data-card="market"
                   sx={{
-                    ...cardSx(p.info.main, visibleNodes.has('market'), flashNode === 'market', 'market'),
+                    ...cardSx(
+                      p.info.main,
+                      visibleNodes.has('market'),
+                      flashNode === 'market',
+                      'market'
+                    ),
                     pointerEvents: visibleNodes.has('market') ? 'auto' : 'none',
                   }}
                 >
@@ -1314,12 +1474,23 @@ export function HeroSection() {
                     {MARKET_BARS.map((d) => (
                       <Box key={d.label}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.2 }}>
-                          <Typography sx={{ fontSize: '0.72rem', color: alpha(ct, 0.55) }}>{d.label}</Typography>
-                          <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: alpha(ct, 0.8) }}>
+                          <Typography sx={{ fontSize: '0.72rem', color: alpha(ct, 0.55) }}>
+                            {d.label}
+                          </Typography>
+                          <Typography
+                            sx={{ fontSize: '0.72rem', fontWeight: 600, color: alpha(ct, 0.8) }}
+                          >
                             {d.value}
                           </Typography>
                         </Box>
-                        <Box sx={{ height: 7, bgcolor: alpha(ct, 0.06), borderRadius: 1, overflow: 'hidden' }}>
+                        <Box
+                          sx={{
+                            height: 7,
+                            bgcolor: alpha(ct, 0.06),
+                            borderRadius: 1,
+                            overflow: 'hidden',
+                          }}
+                        >
                           <Box
                             sx={{
                               height: '100%',
@@ -1339,7 +1510,12 @@ export function HeroSection() {
                 <Box
                   data-card="competitors"
                   sx={{
-                    ...cardSx(p.warning.main, visibleNodes.has('competitors'), false, 'competitors'),
+                    ...cardSx(
+                      p.warning.main,
+                      visibleNodes.has('competitors'),
+                      false,
+                      'competitors'
+                    ),
                     pointerEvents: visibleNodes.has('competitors') ? 'auto' : 'none',
                   }}
                 >
@@ -1383,7 +1559,10 @@ export function HeroSection() {
                             px: 0.75,
                             py: 0.15,
                             borderRadius: '3px',
-                            bgcolor: alpha(c.name === 'You' ? p.primary.main : p.warning.main, 0.12),
+                            bgcolor: alpha(
+                              c.name === 'You' ? p.primary.main : p.warning.main,
+                              0.12
+                            ),
                           }}
                         >
                           <Typography
@@ -1430,12 +1609,20 @@ export function HeroSection() {
                         }}
                       >
                         <Typography
-                          sx={{ fontSize: '0.75rem', fontWeight: 700, color: alpha(q.color, 0.75), mb: 0.25 }}
+                          sx={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            color: alpha(q.color, 0.75),
+                            mb: 0.25,
+                          }}
                         >
                           {q.key}
                         </Typography>
                         {q.items.map((item) => (
-                          <Typography key={item} sx={{ fontSize: '0.78rem', color: alpha(ct, 0.6), lineHeight: 1.5 }}>
+                          <Typography
+                            key={item}
+                            sx={{ fontSize: '0.78rem', color: alpha(ct, 0.6), lineHeight: 1.5 }}
+                          >
                             {item}
                           </Typography>
                         ))}
@@ -1457,13 +1644,21 @@ export function HeroSection() {
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
                     {METRICS_DATA.map((m) => (
                       <Box key={m.label} sx={{ textAlign: 'center', flex: 1 }}>
-                        <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: alpha(ct, 0.9) }}>
+                        <Typography
+                          sx={{ fontSize: '1rem', fontWeight: 800, color: alpha(ct, 0.9) }}
+                        >
                           {m.value}
                         </Typography>
                         <Typography sx={{ fontSize: '0.78rem', color: alpha(ct, 0.45), mb: 0.15 }}>
                           {m.label}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: alpha(p.success.main, 0.8) }}>
+                        <Typography
+                          sx={{
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            color: alpha(p.success.main, 0.8),
+                          }}
+                        >
                           {m.delta}
                         </Typography>
                       </Box>
@@ -1493,7 +1688,13 @@ export function HeroSection() {
                             border: `1px solid ${alpha(p.info.main, 0.15 + i * 0.05)}`,
                           }}
                         >
-                          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: alpha(p.info.main, 0.85) }}>
+                          <Typography
+                            sx={{
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              color: alpha(p.info.main, 0.85),
+                            }}
+                          >
                             {step}
                           </Typography>
                         </Box>
@@ -1504,10 +1705,26 @@ export function HeroSection() {
                     ))}
                   </Box>
                   <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Box sx={{ height: 4, flex: 1, borderRadius: 2, bgcolor: alpha(p.info.main, 0.12) }}>
-                      <Box sx={{ height: '100%', width: '45%', borderRadius: 2, bgcolor: alpha(p.info.main, 0.5) }} />
+                    <Box
+                      sx={{
+                        height: 4,
+                        flex: 1,
+                        borderRadius: 2,
+                        bgcolor: alpha(p.info.main, 0.12),
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: '100%',
+                          width: '45%',
+                          borderRadius: 2,
+                          bgcolor: alpha(p.info.main, 0.5),
+                        }}
+                      />
                     </Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: alpha(ct, 0.5), fontWeight: 600 }}>
+                    <Typography
+                      sx={{ fontSize: '0.75rem', color: alpha(ct, 0.5), fontWeight: 600 }}
+                    >
                       45% of ARR
                     </Typography>
                   </Box>
@@ -1525,8 +1742,17 @@ export function HeroSection() {
                   {labelRow(p.error.main, AlertTriangle, 'Risk Assessment')}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
                     {RISKS.map((r) => (
-                      <Box key={r.text} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography sx={{ fontSize: '0.72rem', color: alpha(ct, 0.65) }}>{r.text}</Typography>
+                      <Box
+                        key={r.text}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Typography sx={{ fontSize: '0.72rem', color: alpha(ct, 0.65) }}>
+                          {r.text}
+                        </Typography>
                         <Box
                           sx={{
                             px: 0.6,
@@ -1536,7 +1762,11 @@ export function HeroSection() {
                           }}
                         >
                           <Typography
-                            sx={{ fontSize: '0.75rem', fontWeight: 700, color: alpha(riskColor(r.level), 0.85) }}
+                            sx={{
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              color: alpha(riskColor(r.level), 0.85),
+                            }}
                           >
                             {r.level}
                           </Typography>
@@ -1551,7 +1781,12 @@ export function HeroSection() {
                 <Box
                   data-card="recommendations"
                   sx={{
-                    ...cardSx(p.primary.main, visibleNodes.has('recommendations'), false, 'recommendations'),
+                    ...cardSx(
+                      p.primary.main,
+                      visibleNodes.has('recommendations'),
+                      false,
+                      'recommendations'
+                    ),
                     pointerEvents: visibleNodes.has('recommendations') ? 'auto' : 'none',
                   }}
                 >
@@ -1570,16 +1805,26 @@ export function HeroSection() {
                             justifyContent: 'center',
                           }}
                         >
-                          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: alpha(p.primary.main, 0.8) }}>
+                          <Typography
+                            sx={{
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              color: alpha(p.primary.main, 0.8),
+                            }}
+                          >
                             {i + 1}
                           </Typography>
                         </Box>
                         <Box sx={{ flex: 1 }}>
-                          <Typography sx={{ fontSize: '0.72rem', color: alpha(ct, 0.7), lineHeight: 1.3 }}>
+                          <Typography
+                            sx={{ fontSize: '0.72rem', color: alpha(ct, 0.7), lineHeight: 1.3 }}
+                          >
                             {pr.text}
                           </Typography>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.2 }}>
-                            <Box sx={{ height: 3, flex: 1, bgcolor: alpha(ct, 0.06), borderRadius: 1 }}>
+                            <Box
+                              sx={{ height: 3, flex: 1, bgcolor: alpha(ct, 0.06), borderRadius: 1 }}
+                            >
                               <Box
                                 sx={{
                                   height: '100%',
@@ -1590,7 +1835,11 @@ export function HeroSection() {
                               />
                             </Box>
                             <Typography
-                              sx={{ fontSize: '0.45rem', fontWeight: 600, color: alpha(p.primary.main, 0.6) }}
+                              sx={{
+                                fontSize: '0.45rem',
+                                fontWeight: 600,
+                                color: alpha(p.primary.main, 0.6),
+                              }}
                             >
                               {pr.confidence}%
                             </Typography>
@@ -1611,7 +1860,14 @@ export function HeroSection() {
                   }}
                 >
                   {labelRow(p.success.main, Rocket, '90-Day Roadmap')}
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, position: 'relative' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 0.5,
+                      position: 'relative',
+                    }}
+                  >
                     {/* Timeline line */}
                     <Box
                       sx={{
@@ -1625,7 +1881,10 @@ export function HeroSection() {
                       }}
                     />
                     {ROADMAP_ITEMS.map((item, i) => (
-                      <Box key={item.q} sx={{ flex: 1, textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                      <Box
+                        key={item.q}
+                        sx={{ flex: 1, textAlign: 'center', position: 'relative', zIndex: 1 }}
+                      >
                         <Box
                           sx={{
                             width: 14,
@@ -1638,11 +1897,18 @@ export function HeroSection() {
                           }}
                         />
                         <Typography
-                          sx={{ fontSize: '0.78rem', fontWeight: 700, color: alpha(p.success.main, 0.75), mb: 0.15 }}
+                          sx={{
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            color: alpha(p.success.main, 0.75),
+                            mb: 0.15,
+                          }}
                         >
                           {item.q}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.75rem', color: alpha(ct, 0.55), lineHeight: 1.3 }}>
+                        <Typography
+                          sx={{ fontSize: '0.75rem', color: alpha(ct, 0.55), lineHeight: 1.3 }}
+                        >
                           {item.text}
                         </Typography>
                       </Box>
@@ -1677,13 +1943,29 @@ export function HeroSection() {
                     <Brain size={15} color={alpha(p.primary.main, 0.85)} />
                   </Box>
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: alpha(ct, 0.85), mb: 0.25 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: alpha(ct, 0.85),
+                        mb: 0.25,
+                      }}
+                    >
                       Executive Summary
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1.5 }}>
                       {SUMMARY_STATS.map((s) => (
-                        <Box key={s.label} sx={{ display: 'flex', alignItems: 'baseline', gap: 0.4 }}>
-                          <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: alpha(p.primary.main, 0.85) }}>
+                        <Box
+                          key={s.label}
+                          sx={{ display: 'flex', alignItems: 'baseline', gap: 0.4 }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              color: alpha(p.primary.main, 0.85),
+                            }}
+                          >
                             {s.value}
                           </Typography>
                           <Typography sx={{ fontSize: '0.45rem', color: alpha(ct, 0.45) }}>
@@ -1812,7 +2094,14 @@ export function HeroSection() {
                   transition: 'opacity 0.3s',
                 }}
               >
-                <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: alpha(p.success.main, 0.7) }} />
+                <Box
+                  sx={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    bgcolor: alpha(p.success.main, 0.7),
+                  }}
+                />
                 <Typography sx={{ fontSize: '0.7rem', color: alpha(ct, 0.45), fontWeight: 600 }}>
                   {visibleNodes.size} nodes
                   {showEdges ? ` \u00B7 ${EDGES.length} connections` : ''}
@@ -1822,7 +2111,15 @@ export function HeroSection() {
           </Box>
 
           {/* Input bar */}
-          <Box sx={{ px: { xs: 2, md: 3 }, pb: 2, pt: 1, borderTop: '1px solid', borderColor: alpha(ct, 0.06) }}>
+          <Box
+            sx={{
+              px: { xs: 2, md: 3 },
+              pb: 2,
+              pt: 1,
+              borderTop: '1px solid',
+              borderColor: alpha(ct, 0.06),
+            }}
+          >
             <Box
               sx={{
                 px: 2,
