@@ -1,15 +1,15 @@
 import { Box } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ChatDemoSection } from '@/components/landing/ChatDemoSection';
 import { CTASection } from '@/components/landing/CTASection';
+import { DevTeaserSection } from '@/components/landing/DevTeaserSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { Footer } from '@/components/landing/Footer';
 import { HeroSection } from '@/components/landing/HeroSection';
-import { IntegrationSection } from '@/components/landing/IntegrationSection';
 import { LandingNav } from '@/components/landing/LandingNav';
-import { PipelineSection } from '@/components/landing/PipelineSection';
 import { ProcessingAnimation } from '@/components/landing/ProcessingAnimation';
+import { ProofStripSection } from '@/components/landing/ProofStripSection';
+import { WhatYouCanAskSection } from '@/components/landing/WhatYouCanAskSection';
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -22,10 +22,10 @@ function LandingPage() {
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <LandingNav />
         <HeroSection />
-        <PipelineSection />
+        <ProofStripSection />
+        <WhatYouCanAskSection />
         <FeaturesSection />
-        <ChatDemoSection />
-        <IntegrationSection />
+        <DevTeaserSection />
         <CTASection />
         <Footer />
       </Box>

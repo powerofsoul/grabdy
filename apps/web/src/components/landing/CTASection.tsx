@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { alpha, Box, Button, Chip, Container, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
 import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -75,19 +75,18 @@ export function CTASection() {
             letterSpacing: '-0.02em',
           }}
         >
-          Ready in{' '}
-          <Box component="span" sx={{ color: 'primary.main' }}>minutes</Box>.
+          Ready when you are.
         </Typography>
         <Typography
           className="cta-subtitle"
-          sx={{ mb: 5, color: 'text.secondary', fontSize: '1.1rem', lineHeight: 1.6 }}
+          sx={{ mb: 5, color: 'text.secondary', fontSize: '1.05rem', lineHeight: 1.6 }}
         >
-          Create an account, upload your files, and start asking.
+          Create a free account. Connect your tools. Ask your first question.
           <br />
-          That&apos;s it.
+          That&apos;s the whole process.
         </Typography>
 
-        <Box className="cta-button" sx={{ mb: 2.5 }}>
+        <Box className="cta-button" sx={{ mb: 2 }}>
           <Link to="/auth/register" style={{ textDecoration: 'none' }}>
             <Button
               variant="contained"
@@ -104,42 +103,29 @@ export function CTASection() {
                 },
               }}
             >
-              Get Started Free
+              Try Grabdy Free
             </Button>
           </Link>
         </Box>
 
-        <Box className="cta-note" sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-          {['Create account', 'Upload files', 'Start asking'].map((step, i) => (
-            <Box key={step} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip
-                label={i + 1}
-                size="small"
-                variant="outlined"
-                sx={{
-                  width: 22,
-                  height: 22,
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  '& .MuiChip-label': { px: 0 },
-                  borderColor: alpha(theme.palette.primary.main, 0.3),
-                  color: 'primary.main',
-                }}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.78rem' }}>
-                {step}
-              </Typography>
-              {i < 2 && (
-                <Typography color="text.secondary" sx={{ opacity: 0.3, fontSize: '0.7rem' }}>
-                  &rarr;
-                </Typography>
-              )}
-            </Box>
-          ))}
+        <Box className="cta-note" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+          <Typography sx={{ fontSize: '0.82rem', color: 'text.secondary' }}>
+            No credit card · 2-minute setup · Free for teams under 10
+          </Typography>
+          <Typography
+            component="a"
+            href="mailto:hello@grabdy.com"
+            sx={{
+              fontSize: '0.85rem',
+              color: 'text.secondary',
+              textDecoration: 'none',
+              transition: 'color 0.2s',
+              '&:hover': { color: 'text.primary' },
+            }}
+          >
+            Need a demo for your team? Talk to us &rarr;
+          </Typography>
         </Box>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 2.5, display: 'block', fontSize: '0.75rem' }}>
-          No credit card required.
-        </Typography>
       </Container>
     </Box>
   );

@@ -746,7 +746,7 @@ export function HeroSection() {
     };
   }, []);
 
-  const ct = alpha(theme.palette.kindle.codeBlockText, 1);
+  const ct = theme.palette.text.primary;
   const p = theme.palette;
 
   // ── Card style helper ──
@@ -892,18 +892,18 @@ export function HeroSection() {
               color: 'text.secondary',
               fontWeight: 400,
               mb: 4,
-              fontSize: { xs: '1rem', md: '1.2rem' },
+              fontSize: { xs: '1rem', md: '1.125rem' },
               lineHeight: 1.6,
               maxWidth: 580,
               mx: 'auto',
             }}
           >
-            Not just another chatbot. Ask a question and get a full breakdown — analysis, comparisons, and next steps — laid out on an interactive canvas you can explore.
+            Answers pulled from Slack, Docs, Notion, and every tool your team uses — structured, cited, and ready to act on.
           </Typography>
 
           <Box
             className="hero-ctas"
-            sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap', mb: { xs: 5, md: 6 } }}
+            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mb: { xs: 5, md: 6 } }}
           >
             <Link to="/auth/register" style={{ textDecoration: 'none' }}>
               <Button
@@ -919,24 +919,17 @@ export function HeroSection() {
                   '&:hover': { boxShadow: `0 6px 28px ${alpha(p.primary.main, 0.35)}` },
                 }}
               >
-                Get Started Free
+                Try Grabdy Free
               </Button>
             </Link>
-            <Link to="/auth/login" style={{ textDecoration: 'none' }}>
-              <Button
-                variant="outlined"
-                size="large"
-                sx={{
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1rem',
-                  borderColor: alpha(p.primary.main, 0.3),
-                  '&:hover': { borderColor: 'primary.main', bgcolor: alpha(p.primary.main, 0.04) },
-                }}
-              >
-                Login
-              </Button>
-            </Link>
+            <Typography
+              sx={{
+                fontSize: '0.82rem',
+                color: 'text.secondary',
+              }}
+            >
+              No credit card · 2-minute setup · Free for teams under 10
+            </Typography>
           </Box>
         </Box>
 
@@ -949,17 +942,17 @@ export function HeroSection() {
             mx: 'auto',
             borderRadius: 2.5,
             overflow: 'hidden',
-            bgcolor: 'kindle.codeBlockBg',
+            bgcolor: 'background.paper',
             border: '1px solid',
-            borderColor: alpha(ct, 0.1),
+            borderColor: 'divider',
             transition: 'box-shadow 0.3s, transform 0.3s',
             boxShadow: isDark
-              ? `0 25px 70px ${alpha(p.common.black, 0.55)}, 0 0 60px ${alpha(p.primary.main, 0.08)}`
+              ? `0 25px 70px ${alpha(p.common.black, 0.55)}, 0 0 80px ${alpha(p.primary.main, 0.15)}`
               : `0 25px 70px ${alpha(p.common.black, 0.1)}, 0 0 60px ${alpha(p.primary.main, 0.06)}`,
             '&:hover': {
               transform: 'translateY(-2px)',
               boxShadow: isDark
-                ? `0 30px 80px ${alpha(p.common.black, 0.6)}, 0 0 70px ${alpha(p.primary.main, 0.1)}`
+                ? `0 30px 80px ${alpha(p.common.black, 0.6)}, 0 0 90px ${alpha(p.primary.main, 0.2)}`
                 : `0 30px 80px ${alpha(p.common.black, 0.12)}, 0 0 70px ${alpha(p.primary.main, 0.08)}`,
             },
           }}
@@ -1028,7 +1021,7 @@ export function HeroSection() {
                         sx={{
                           fontSize: '0.82rem',
                           lineHeight: 1.6,
-                          color: msg.role === 'user' ? 'inherit' : 'kindle.codeBlockText',
+                          color: msg.role === 'user' ? 'inherit' : 'text.primary',
                         }}
                       >
                         {msg.text}
@@ -1141,7 +1134,7 @@ export function HeroSection() {
                   >
                     <Typography
                       variant="body2"
-                      sx={{ color: 'kindle.codeBlockText', fontSize: '0.82rem', lineHeight: 1.6 }}
+                      sx={{ color: 'text.primary', fontSize: '0.82rem', lineHeight: 1.6 }}
                     >
                       {typedAnswer}
                       <Box
@@ -1844,7 +1837,7 @@ export function HeroSection() {
               }}
             >
               {inputText ? (
-                <Typography sx={{ color: 'kindle.codeBlockText', fontSize: '0.82rem' }}>
+                <Typography sx={{ color: 'text.primary', fontSize: '0.82rem' }}>
                   {inputText}
                   <Box
                     component="span"
