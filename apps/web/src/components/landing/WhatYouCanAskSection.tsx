@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
+import { Box, Container, Typography } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -51,7 +51,6 @@ const QUERY_CARDS = [
 ] satisfies ReadonlyArray<QueryCard>;
 
 export function WhatYouCanAskSection() {
-  const theme = useTheme();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -114,24 +113,20 @@ export function WhatYouCanAskSection() {
               sx={{
                 p: 3,
                 borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
-                transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
-                '&:hover': {
-                  borderColor: alpha(theme.palette.primary.main, 0.25),
-                  boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.08)}`,
-                  transform: 'translateY(-2px)',
-                },
+                borderBottom: '1px solid',
+                borderBottomColor: 'divider',
+                bgcolor: 'transparent',
               }}
             >
               <Typography
                 sx={{
-                  fontWeight: 700,
-                  fontSize: '0.95rem',
+                  fontWeight: 500,
+                  fontSize: '1rem',
                   mb: 1.5,
-                  lineHeight: 1.4,
+                  lineHeight: 1.5,
                   color: 'text.primary',
+                  fontFamily: '"Newsreader", "Georgia", serif',
+                  fontStyle: 'italic',
                 }}
               >
                 {card.question}

@@ -9,6 +9,7 @@ import { HeroSection } from '@/components/landing/HeroSection';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { ProcessingAnimation } from '@/components/landing/ProcessingAnimation';
 import { ProofStripSection } from '@/components/landing/ProofStripSection';
+import { SectionDivider } from '@/components/landing/SectionDivider';
 import { WhatYouCanAskSection } from '@/components/landing/WhatYouCanAskSection';
 
 export const Route = createFileRoute('/')({
@@ -23,9 +24,13 @@ function LandingPage() {
         <LandingNav />
         <HeroSection />
         <ProofStripSection />
+        <SectionDivider />
         <WhatYouCanAskSection />
+        <SectionDivider glyph="&sect;" />
         <FeaturesSection />
+        <SectionDivider />
         <DevTeaserSection />
+        <SectionDivider glyph="&mdash;" />
         <CTASection />
         <Footer />
       </Box>

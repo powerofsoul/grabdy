@@ -60,15 +60,13 @@ function FeatureCard({ feature, large }: { feature: Feature; large?: boolean }) 
       sx={{
         p: large ? { xs: 3, md: 4 } : 3,
         borderRadius: 2,
-        border: '1px solid',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
-        '&:hover': {
-          borderColor: alpha(paletteColor, 0.3),
-          boxShadow: `0 8px 30px ${alpha(paletteColor, 0.1)}`,
-          transform: 'translateY(-2px)',
-        },
+        borderTop: '2px solid',
+        borderTopColor: alpha(paletteColor, 0.25),
+        borderBottom: '1px solid',
+        borderBottomColor: 'divider',
+        borderLeft: 'none',
+        borderRight: 'none',
+        bgcolor: 'transparent',
       }}
     >
       <Box

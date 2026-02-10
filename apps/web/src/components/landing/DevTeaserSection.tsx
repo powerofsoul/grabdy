@@ -55,7 +55,7 @@ export function DevTeaserSection() {
             gap: { xs: 3, md: 5 },
             alignItems: 'center',
             p: { xs: 3, md: 5 },
-            borderRadius: 2.5,
+            borderRadius: 1,
             border: '1px solid',
             borderColor: 'divider',
             bgcolor: 'background.paper',

@@ -45,6 +45,15 @@ export function ProofStripSection() {
       <Container maxWidth="md">
         <Box
           sx={{
+            width: 40,
+            height: '1px',
+            bgcolor: 'divider',
+            mx: 'auto',
+            mb: { xs: 4, md: 5 },
+          }}
+        />
+        <Box
+          sx={{
             display: 'flex',
             justifyContent: 'center',
             gap: { xs: 4, md: 8 },
@@ -63,7 +72,7 @@ export function ProofStripSection() {
                   fontWeight: 800,
                   lineHeight: 1.2,
                   color: 'text.primary',
-                  fontFamily: '"Literata", "Georgia", serif',
+                  fontFamily: '"Newsreader", "Georgia", serif',
                 }}
               >
                 {stat.number}

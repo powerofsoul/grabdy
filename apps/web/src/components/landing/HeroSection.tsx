@@ -23,6 +23,8 @@ import {
   Zap,
 } from 'lucide-react';
 
+import { FloatingStatues } from './FloatingStatues';
+
 // ── Brand icons (SVG paths from simple-icons) ──
 
 function SlackIcon({ size = 10 }: { size?: number }) {
@@ -947,6 +949,8 @@ export function HeroSection() {
           pointerEvents: 'none',
         }}
       />
+
+      <FloatingStatues />
 
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
         <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto' }}>
