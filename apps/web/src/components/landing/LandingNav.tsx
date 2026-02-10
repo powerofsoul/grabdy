@@ -1,10 +1,8 @@
-import { alpha, AppBar, Box, Button, Container, Toolbar, Typography, useScrollTrigger, useTheme } from '@mui/material';
+import { alpha, AppBar, Box, Button, Container, Toolbar, useScrollTrigger, useTheme } from '@mui/material';
 import { Link } from '@tanstack/react-router';
 
 import { Logo } from '../ui/Logo';
 import { ThemeToggle } from '../ui/ThemeToggle';
-
-const NAV_LINKS = [] satisfies ReadonlyArray<{ label: string; href: string }>;
 
 export function LandingNav() {
   const theme = useTheme();
@@ -34,36 +32,6 @@ export function LandingNav() {
           }}
         >
           <Logo />
-
-          {/* Center nav links */}
-          <Box
-            sx={{
-              display: { xs: 'none', md: 'flex' },
-              alignItems: 'center',
-              gap: 4,
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}
-          >
-            {NAV_LINKS.map((link) => (
-              <Typography
-                key={link.label}
-                component="a"
-                href={link.href}
-                sx={{
-                  fontSize: '0.85rem',
-                  fontWeight: 500,
-                  color: 'text.secondary',
-                  textDecoration: 'none',
-                  transition: 'color 0.2s',
-                  '&:hover': { color: 'text.primary' },
-                }}
-              >
-                {link.label}
-              </Typography>
-            ))}
-          </Box>
 
           {/* Right actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -299,15 +299,15 @@ interface ChatMsg {
 }
 
 // ── Smart bezier: picks exit/entry side based on node centers ──
-function edgePath(pos: Record<string, { x: number; y: number }>, from: string, to: string): string {
+function edgePath(pos: Record<string, { x: number; y: number }>, from: string, to: string, heights?: Record<string, number>): string {
   const f = pos[from];
   const t = pos[to];
   if (!f || !t) return '';
 
   const fw = NODE_W[from],
-    fh = NODE_H[from];
+    fh = heights?.[from] ?? NODE_H[from];
   const tw = NODE_W[to],
-    th = NODE_H[to];
+    th = heights?.[to] ?? NODE_H[to];
 
   // Centers
   const fcx = f.x + fw / 2,
@@ -360,16 +360,17 @@ function edgePath(pos: Record<string, { x: number; y: number }>, from: string, t
 function edgeEndpoints(
   pos: Record<string, { x: number; y: number }>,
   from: string,
-  to: string
+  to: string,
+  heights?: Record<string, number>
 ): { x0: number; y0: number; x1: number; y1: number } | null {
   const f = pos[from];
   const t = pos[to];
   if (!f || !t) return null;
 
   const fw = NODE_W[from],
-    fh = NODE_H[from];
+    fh = heights?.[from] ?? NODE_H[from];
   const tw = NODE_W[to],
-    th = NODE_H[to];
+    th = heights?.[to] ?? NODE_H[to];
   const fcx = f.x + fw / 2,
     fcy = f.y + fh / 2;
   const tcx = t.x + tw / 2,
@@ -428,6 +429,7 @@ export function HeroSection() {
   const [flashNode, setFlashNode] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState(false);
   const [smoothTx, setSmoothTx] = useState(true);
+  const [measuredH, setMeasuredH] = useState<Record<string, number>>({});
   const [isPanning, setIsPanning] = useState(false);
   const [draggingCard, setDraggingCard] = useState<string | null>(null);
 
@@ -453,6 +455,22 @@ export function HeroSection() {
   }, [positions]);
 
   const showNode = (id: string) => setVisibleNodes((p) => new Set([...p, id]));
+
+  // Measure real card heights from DOM
+  useEffect(() => {
+    const container = canvasRef.current;
+    if (!container) return;
+    const cards = container.querySelectorAll<HTMLElement>('[data-card]');
+    const next: Record<string, number> = {};
+    cards.forEach((el) => {
+      const id = el.dataset.card;
+      if (id) next[id] = el.offsetHeight;
+    });
+    setMeasuredH((prev) => {
+      const changed = Object.keys(next).some((k) => prev[k] !== next[k]);
+      return changed ? { ...prev, ...next } : prev;
+    });
+  }, [visibleNodes]);
 
   // Scroll chat panel only
   useEffect(() => {
@@ -1352,7 +1370,7 @@ export function HeroSection() {
                     return (
                       <path
                         key={`${from}-${to}`}
-                        d={edgePath(positions, from, to)}
+                        d={edgePath(positions, from, to, measuredH)}
                         fill="none"
                         stroke={alpha(ct, 0.18)}
                         strokeWidth={2}
@@ -1366,7 +1384,7 @@ export function HeroSection() {
                   {showEdges &&
                     EDGES.map(([from, to]) => {
                       if (!visibleNodes.has(from) || !visibleNodes.has(to)) return null;
-                      const ep = edgeEndpoints(positions, from, to);
+                      const ep = edgeEndpoints(positions, from, to, measuredH);
                       if (!ep) return null;
                       return (
                         <g key={`dots-${from}-${to}`}>
