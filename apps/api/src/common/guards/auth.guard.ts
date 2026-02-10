@@ -77,16 +77,20 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Not authenticated');
     }
 
+    let decoded: unknown;
     try {
-      const decoded = jwt.verify(token, this.jwtSecret);
-      const payload = parseJwtPayload(decoded);
-      if (!payload) {
-        throw new UnauthorizedException('Invalid token payload');
-      }
-      request.user = payload;
-      return true;
+      decoded = jwt.verify(token, this.jwtSecret);
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
+
+    const payload = parseJwtPayload(decoded);
+    if (!payload) {
+      console.error('JWT payload validation failed:', JSON.stringify(decoded));
+      throw new UnauthorizedException('Invalid token payload');
+    }
+
+    request.user = payload;
+    return true;
   }
 }
