@@ -125,7 +125,6 @@ export function WhatYouCanAskSection() {
                   mb: 1.5,
                   lineHeight: 1.5,
                   color: 'text.primary',
-                  fontFamily: '"Newsreader", "Georgia", serif',
                   fontStyle: 'italic',
                 }}
               >

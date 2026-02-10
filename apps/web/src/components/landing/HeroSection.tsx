@@ -23,7 +23,8 @@ import {
   Zap,
 } from 'lucide-react';
 
-import { FloatingStatues } from './FloatingStatues';
+import heroCloudsLight from '@/assets/hero-clouds-light.png';
+import heroCloudsDark from '@/assets/hero-clouds-dark.png';
 
 // ── Brand icons (SVG paths from simple-icons) ──
 
@@ -937,20 +938,21 @@ export function HeroSection() {
         overflow: 'hidden',
       }}
     >
+      {/* Hero cloud banner */}
       <Box
+        component="img"
+        src={isDark ? heroCloudsDark : heroCloudsLight}
+        alt=""
         sx={{
           position: 'absolute',
-          top: '35%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '140%',
-          height: '80%',
-          background: `radial-gradient(ellipse at center, ${alpha(p.primary.main, 0.03)} 0%, transparent 65%)`,
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
           pointerEvents: 'none',
+          objectFit: 'cover',
         }}
       />
-
-      <FloatingStatues />
 
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
         <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto' }}>

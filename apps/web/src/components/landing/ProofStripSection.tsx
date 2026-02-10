@@ -72,7 +72,6 @@ export function ProofStripSection() {
                   fontWeight: 800,
                   lineHeight: 1.2,
                   color: 'text.primary',
-                  fontFamily: '"Newsreader", "Georgia", serif',
                 }}
               >
                 {stat.number}

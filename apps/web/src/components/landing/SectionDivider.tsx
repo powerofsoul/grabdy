@@ -9,7 +9,6 @@ export function SectionDivider({ glyph = '***' }: { glyph?: string }) {
           color: 'text.secondary',
           letterSpacing: '0.4em',
           opacity: 0.4,
-          fontFamily: '"Newsreader", "Georgia", serif',
           fontStyle: 'italic',
           userSelect: 'none',
         }}
