@@ -1,0 +1,72 @@
+import 'dotenv/config';
+
+import { promises as fs } from 'fs';
+import { FileMigrationProvider, Kysely, Migrator, PostgresDialect, sql } from 'kysely';
+import * as path from 'path';
+import { Pool } from 'pg';
+
+async function createDb() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+
+  const pool = new Pool({ connectionString: databaseUrl });
+  return { pool, db: new Kysely<unknown>({ dialect: new PostgresDialect({ pool }) }) };
+}
+
+async function migrate() {
+  const { db } = await createDb();
+
+  const migrator = new Migrator({
+    db,
+    provider: new FileMigrationProvider({
+      fs,
+      path,
+      migrationFolder: path.join(__dirname, 'migrations'),
+    }),
+  });
+
+  const { error, results } = await migrator.migrateToLatest();
+
+  for (const result of results ?? []) {
+    if (result.status === 'Success') {
+      console.log(`✓ ${result.migrationName}`);
+    } else if (result.status === 'Error') {
+      console.error(`✗ ${result.migrationName}`);
+    }
+  }
+
+  if (error) {
+    await db.destroy();
+    throw new Error(`Migration failed: ${error}`);
+  }
+
+  console.log('Migrations complete.');
+  await db.destroy();
+}
+
+async function fresh() {
+  const { db } = await createDb();
+
+  console.log('Dropping all objects...');
+  await sql`
+    DROP SCHEMA IF EXISTS auth CASCADE;
+    DROP SCHEMA IF EXISTS org CASCADE;
+    DROP SCHEMA IF EXISTS data CASCADE;
+    DROP SCHEMA IF EXISTS api CASCADE;
+    DROP SCHEMA public CASCADE;
+    CREATE SCHEMA public
+  `.execute(db);
+  await db.destroy();
+
+  console.log('Running migrations from scratch...');
+  await migrate();
+}
+
+const command = process.argv[2];
+if (command === 'fresh') {
+  fresh();
+} else {
+  migrate();
+}

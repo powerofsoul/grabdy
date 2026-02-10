@@ -1,0 +1,32 @@
+{
+  "name": "@fastdex/contracts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "yarn eslint src",
+    "lint:fix": "yarn eslint src --fix"
+  },
+  "dependencies": {
+    "@fastdex/common": "workspace:^",
+    "@ts-rest/core": "3.53.0-rc.1",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "typescript": "^5.3.3"
+  }
+}

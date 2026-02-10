@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+.yarn
+.pnp.*
+*.lock
+coverage
+.next
+.turbo
+routeTree.gen.ts

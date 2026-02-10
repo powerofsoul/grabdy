@@ -1,0 +1,58 @@
+{
+  "name": "fastdex",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev --ui tui",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "yarn workspace @fastdex/api db:migrate",
+    "db:migrate:reset": "yarn workspace @fastdex/api db:reset",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.0",
+    "turbo": "^2.3.3",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.53.0"
+  },
+  "dependencies": {
+    "@bull-board/api": "^6.16.2",
+    "@bull-board/express": "^6.16.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "yarn@4.6.0",
+  "lint-staged": {
+    "apps/api/src/**/*.ts": [
+      "npx eslint --fix --config apps/api/eslint.config.mjs",
+      "npx prettier --write"
+    ],
+    "apps/web/src/**/!(routeTree.gen).{ts,tsx}": [
+      "npx eslint --fix --config apps/web/eslint.config.mjs",
+      "npx prettier --write"
+    ],
+    "packages/contracts/src/**/*.ts": [
+      "npx eslint --fix --config packages/contracts/eslint.config.mjs",
+      "npx prettier --write"
+    ],
+    "*.{js,mjs,cjs,json,md,yml,yaml,css}": [
+      "npx prettier --write"
+    ]
+  }
+}

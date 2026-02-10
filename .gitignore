@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Uploads (file storage directories, not source code)
+uploads/
+/storage/
+apps/api/storage/
+
+# Cache
+.cache/
+.turbo/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Vite temp files
+vite.config.js.timestamp-*
+vite.config.js
+
+# Generated
+**/generated/
+**/@generated/
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

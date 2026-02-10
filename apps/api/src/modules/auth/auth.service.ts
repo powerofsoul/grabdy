@@ -1,0 +1,352 @@
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+
+import type { OrgRole, UserStatus } from '@db/enums';
+import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
+import type { CookieOptions } from 'express';
+
+import { type DbId, extractOrgNumericId, GLOBAL_ORG, packId } from '@fastdex/common';
+
+import type { JwtMembership, JwtPayload } from '../../common/guards/auth.guard';
+import { InjectEnv } from '../../config/env.config';
+import { DbService } from '../../db/db.module';
+import { EmailService } from '../email/email.service';
+
+export const AUTH_TOKEN_EXPIRY = '7d';
+export const AUTH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function authCookieOptions(nodeEnv: string): CookieOptions {
+  return {
+    httpOnly: true,
+    secure: nodeEnv === 'production',
+    sameSite: 'lax',
+    maxAge: AUTH_TOKEN_MAX_AGE_MS,
+    path: '/',
+  };
+}
+
+export interface OrgMembershipData {
+  id: DbId<'OrgMembership'>;
+  orgId: DbId<'Org'>;
+  orgName: string;
+  roles: OrgRole[];
+}
+
+export interface UserData {
+  id: string;
+  email: string;
+  name: string;
+  status: UserStatus;
+  memberships: OrgMembershipData[];
+}
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private db: DbService,
+    private jwtService: JwtService,
+    private emailService: EmailService,
+    @InjectEnv('jwtSecret') private readonly jwtSecret: string
+  ) {}
+
+  private async getUserMemberships(userId: DbId<'User'>): Promise<OrgMembershipData[]> {
+    const memberships = await this.db.kysely
+      .selectFrom('org.org_memberships')
+      .innerJoin('org.orgs', 'org.orgs.id', 'org.org_memberships.org_id')
+      .select([
+        'org.org_memberships.id',
+        'org.org_memberships.org_id',
+        'org.org_memberships.roles',
+        'org.orgs.name as org_name',
+      ])
+      .where('org.org_memberships.user_id', '=', userId)
+      .execute();
+
+    return memberships.map((m) => ({
+      id: m.id,
+      orgId: m.org_id,
+      orgName: m.org_name,
+      roles: m.roles,
+    }));
+  }
+
+  private generateToken(user: {
+    id: DbId<'User'>;
+    email: string;
+    name: string;
+    memberships: JwtMembership[];
+  }): string {
+    const payload: Omit<JwtPayload, 'iat'> = {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      memberships: user.memberships,
+    };
+
+    // jwt.sign() adds `iat` automatically
+    return this.jwtService.sign(payload, {
+      secret: this.jwtSecret,
+      expiresIn: AUTH_TOKEN_EXPIRY,
+    });
+  }
+
+  private generateOTP(): string {
+    return crypto.randomInt(100000, 999999).toString();
+  }
+
+  async getCurrentUser(userId: DbId<'User'>): Promise<UserData | null> {
+    const user = await this.db.kysely
+      .selectFrom('auth.users')
+      .select(['id', 'email', 'name', 'status'])
+      .where('id', '=', userId)
+      .executeTakeFirst();
+
+    if (!user) return null;
+
+    const memberships = await this.getUserMemberships(userId);
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      status: user.status,
+      memberships,
+    };
+  }
+
+  async register(
+    email: string,
+    password: string,
+    name: string
+  ): Promise<{ user: UserData; token: string }> {
+    const normalizedEmail = email.toLowerCase();
+
+    // Check if user already exists
+    const existing = await this.db.kysely
+      .selectFrom('auth.users')
+      .select(['id'])
+      .where('email', '=', normalizedEmail)
+      .executeTakeFirst();
+
+    if (existing) {
+      throw new ConflictException('An account with this email already exists');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Transaction: create user -> create org -> create membership with OWNER role
+    const result = await this.db.kysely.transaction().execute(async (trx) => {
+      const newUser = await trx
+        .insertInto('auth.users')
+        .values({
+          id: packId('User', GLOBAL_ORG),
+          email: normalizedEmail,
+          name,
+          password_hash: passwordHash,
+          email_verified: false,
+          updated_at: new Date(),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      // Auto-create an org named after the user
+      const newOrg = await trx
+        .insertInto('org.orgs')
+        .values({
+          name: `${name}'s Organization`,
+          updated_at: new Date(),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      // Create membership with OWNER role
+      await trx
+        .insertInto('org.org_memberships')
+        .values({
+          id: packId('OrgMembership', extractOrgNumericId(newOrg.id)),
+          user_id: newUser.id,
+          org_id: newOrg.id,
+          roles: ['OWNER'],
+        })
+        .execute();
+
+      return { user: newUser, org: newOrg };
+    });
+
+    const memberships = await this.getUserMemberships(result.user.id);
+    const jwtToken = this.generateToken({
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.name,
+      memberships: toJwtMemberships(memberships),
+    });
+
+    await this.emailService.sendWelcomeEmail(result.user.email, result.user.name);
+
+    return {
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        status: result.user.status,
+        memberships,
+      },
+      token: jwtToken,
+    };
+  }
+
+  async login(email: string, password: string): Promise<{ user: UserData; token: string }> {
+    const user = await this.db.kysely
+      .selectFrom('auth.users')
+      .select(['id', 'email', 'name', 'status', 'password_hash'])
+      .where('email', '=', email.toLowerCase())
+      .executeTakeFirst();
+
+    if (!user || !user.password_hash) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const memberships = await this.getUserMemberships(user.id);
+    const token = this.generateToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      memberships: toJwtMemberships(memberships),
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        status: user.status,
+        memberships,
+      },
+      token,
+    };
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.db.kysely
+      .selectFrom('auth.users')
+      .select(['id', 'name'])
+      .where('email', '=', email.toLowerCase())
+      .executeTakeFirst();
+
+    // Always return success to prevent email enumeration
+    if (!user) return;
+
+    // Invalidate any existing password reset tokens
+    await this.db.kysely
+      .updateTable('auth.auth_tokens')
+      .set({ used_at: new Date() })
+      .where('user_id', '=', user.id)
+      .where('type', '=', 'PASSWORD_RESET')
+      .where('used_at', 'is', null)
+      .execute();
+
+    const otp = this.generateOTP();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await this.db.kysely
+      .insertInto('auth.auth_tokens')
+      .values({
+        id: packId('AuthToken', GLOBAL_ORG),
+        token: otp,
+        type: 'PASSWORD_RESET',
+        user_id: user.id,
+        expires_at: expiresAt,
+      })
+      .execute();
+
+    await this.emailService.sendPasswordResetOTP(email, user.name, otp);
+  }
+
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
+    const user = await this.db.kysely
+      .selectFrom('auth.users')
+      .select(['id'])
+      .where('email', '=', email.toLowerCase())
+      .executeTakeFirst();
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired code');
+    }
+
+    const token = await this.db.kysely
+      .selectFrom('auth.auth_tokens')
+      .selectAll()
+      .where('user_id', '=', user.id)
+      .where('type', '=', 'PASSWORD_RESET')
+      .where('token', '=', otp)
+      .where('used_at', 'is', null)
+      .where('expires_at', '>', new Date())
+      .executeTakeFirst();
+
+    if (!token) {
+      throw new BadRequestException('Invalid or expired code');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await this.db.kysely.transaction().execute(async (trx) => {
+      await trx
+        .updateTable('auth.users')
+        .set({ password_hash: passwordHash, updated_at: new Date() })
+        .where('id', '=', user.id)
+        .execute();
+
+      await trx
+        .updateTable('auth.auth_tokens')
+        .set({ used_at: new Date() })
+        .where('id', '=', token.id)
+        .execute();
+    });
+  }
+
+  async refreshToken(
+    currentPayload: JwtPayload
+  ): Promise<{ user: UserData; token: string } | null> {
+    const user = await this.db.kysely
+      .selectFrom('auth.users')
+      .select(['id', 'email', 'name', 'status'])
+      .where('id', '=', currentPayload.sub)
+      .executeTakeFirst();
+
+    if (!user) return null;
+
+    const memberships = await this.getUserMemberships(user.id);
+    const jwtMemberships = toJwtMemberships(memberships);
+
+    const token = this.generateToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      memberships: jwtMemberships,
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        status: user.status,
+        memberships,
+      },
+      token,
+    };
+  }
+}
+
+function toJwtMemberships(memberships: OrgMembershipData[]): JwtMembership[] {
+  return memberships.map((m) => ({
+    id: m.id,
+    roles: m.roles,
+  }));
+}
