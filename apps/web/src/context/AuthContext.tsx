@@ -27,7 +27,6 @@ interface AuthContextType {
   selectedOrgId: DbId<'Org'> | undefined;
   selectOrg: (orgId: DbId<'Org'>) => void;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
@@ -96,21 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw new Error('Login failed');
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    const res = await api.auth.register({ body: { name, email, password } });
-
-    if (res.status === 200 && res.body.success) {
-      setUser(res.body.data);
-      return;
-    }
-
-    if (res.status === 400) {
-      throw new Error(res.body.error || 'Registration failed');
-    }
-
-    throw new Error('Registration failed');
-  };
-
   const logout = async () => {
     await api.auth.logout({ body: {} });
     localStorage.removeItem(STORAGE_KEYS.SELECTED_ORG_ID);
@@ -153,7 +137,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         selectedOrgId,
         selectOrg,
         login,
-        register,
         logout,
         forgotPassword,
         resetPassword,

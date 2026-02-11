@@ -124,7 +124,7 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
               zIndex: 1,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+            <Typography variant="h6" className="font-serif" sx={{ fontWeight: 700, color: 'text.primary' }}>
               {item.title || 'Details'}
             </Typography>
             <Tooltip title="Close">

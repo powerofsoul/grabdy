@@ -10,6 +10,7 @@ import { LandingNav } from '@/components/landing/LandingNav';
 import { ProcessingAnimation } from '@/components/landing/ProcessingAnimation';
 import { ProofStripSection } from '@/components/landing/ProofStripSection';
 import { SectionDivider } from '@/components/landing/SectionDivider';
+import { WaitlistProvider } from '@/components/landing/WaitlistModal';
 import { WhatYouCanAskSection } from '@/components/landing/WhatYouCanAskSection';
 
 export const Route = createFileRoute('/')({
@@ -18,7 +19,7 @@ export const Route = createFileRoute('/')({
 
 function LandingPage() {
   return (
-    <>
+    <WaitlistProvider>
       <ProcessingAnimation />
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <LandingNav />
@@ -34,6 +35,6 @@ function LandingPage() {
         <CTASection />
         <Footer />
       </Box>
-    </>
+    </WaitlistProvider>
   );
 }

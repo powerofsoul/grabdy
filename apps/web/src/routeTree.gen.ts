@@ -15,13 +15,14 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardUsageRouteImport } from './routes/dashboard/usage'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
 import { Route as DashboardChatRouteImport } from './routes/dashboard/chat'
 import { Route as DashboardApiKeysRouteImport } from './routes/dashboard/api-keys'
-import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
-import { Route as DashboardSourcesIndexRouteImport } from './routes/dashboard/sources/index'
+import { Route as AuthCompleteAccountRouteImport } from './routes/auth/complete-account'
 import { Route as DashboardCollectionsIndexRouteImport } from './routes/dashboard/collections/index'
 import { Route as DashboardCollectionsCollectionIdRouteImport } from './routes/dashboard/collections/$collectionId'
 
@@ -55,9 +56,19 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardUsageRoute = DashboardUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMembersRoute = DashboardMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardChatRoute = DashboardChatRouteImport.update({
@@ -70,11 +81,6 @@ const DashboardApiKeysRoute = DashboardApiKeysRouteImport.update({
   path: '/api-keys',
   getParentRoute: () => DashboardRoute,
 } as any)
-const AuthRegisterRoute = AuthRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => AuthRoute,
-} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -85,10 +91,10 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => AuthRoute,
 } as any)
-const DashboardSourcesIndexRoute = DashboardSourcesIndexRouteImport.update({
-  id: '/sources/',
-  path: '/sources/',
-  getParentRoute: () => DashboardRoute,
+const AuthCompleteAccountRoute = AuthCompleteAccountRouteImport.update({
+  id: '/complete-account',
+  path: '/complete-account',
+  getParentRoute: () => AuthRoute,
 } as any)
 const DashboardCollectionsIndexRoute =
   DashboardCollectionsIndexRouteImport.update({
@@ -109,32 +115,34 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/auth/complete-account': typeof AuthCompleteAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/auth/register': typeof AuthRegisterRoute
   '/dashboard/api-keys': typeof DashboardApiKeysRoute
   '/dashboard/chat': typeof DashboardChatRoute
+  '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/collections/$collectionId': typeof DashboardCollectionsCollectionIdRoute
   '/dashboard/collections/': typeof DashboardCollectionsIndexRoute
-  '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/auth/complete-account': typeof AuthCompleteAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/auth/register': typeof AuthRegisterRoute
   '/dashboard/api-keys': typeof DashboardApiKeysRoute
   '/dashboard/chat': typeof DashboardChatRoute
+  '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/collections/$collectionId': typeof DashboardCollectionsCollectionIdRoute
   '/dashboard/collections': typeof DashboardCollectionsIndexRoute
-  '/dashboard/sources': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,16 +151,17 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/auth/complete-account': typeof AuthCompleteAccountRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/auth/register': typeof AuthRegisterRoute
   '/dashboard/api-keys': typeof DashboardApiKeysRoute
   '/dashboard/chat': typeof DashboardChatRoute
+  '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/collections/$collectionId': typeof DashboardCollectionsCollectionIdRoute
   '/dashboard/collections/': typeof DashboardCollectionsIndexRoute
-  '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -162,32 +171,34 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/privacy'
     | '/terms'
+    | '/auth/complete-account'
     | '/auth/forgot-password'
     | '/auth/login'
-    | '/auth/register'
     | '/dashboard/api-keys'
     | '/dashboard/chat'
+    | '/dashboard/members'
     | '/dashboard/settings'
+    | '/dashboard/usage'
     | '/dashboard/'
     | '/dashboard/collections/$collectionId'
     | '/dashboard/collections/'
-    | '/dashboard/sources/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/privacy'
     | '/terms'
+    | '/auth/complete-account'
     | '/auth/forgot-password'
     | '/auth/login'
-    | '/auth/register'
     | '/dashboard/api-keys'
     | '/dashboard/chat'
+    | '/dashboard/members'
     | '/dashboard/settings'
+    | '/dashboard/usage'
     | '/dashboard'
     | '/dashboard/collections/$collectionId'
     | '/dashboard/collections'
-    | '/dashboard/sources'
   id:
     | '__root__'
     | '/'
@@ -195,16 +206,17 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/privacy'
     | '/terms'
+    | '/auth/complete-account'
     | '/auth/forgot-password'
     | '/auth/login'
-    | '/auth/register'
     | '/dashboard/api-keys'
     | '/dashboard/chat'
+    | '/dashboard/members'
     | '/dashboard/settings'
+    | '/dashboard/usage'
     | '/dashboard/'
     | '/dashboard/collections/$collectionId'
     | '/dashboard/collections/'
-    | '/dashboard/sources/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -259,11 +271,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/usage': {
+      id: '/dashboard/usage'
+      path: '/usage'
+      fullPath: '/dashboard/usage'
+      preLoaderRoute: typeof DashboardUsageRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/settings': {
       id: '/dashboard/settings'
       path: '/settings'
       fullPath: '/dashboard/settings'
       preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/members': {
+      id: '/dashboard/members'
+      path: '/members'
+      fullPath: '/dashboard/members'
+      preLoaderRoute: typeof DashboardMembersRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/chat': {
@@ -280,13 +306,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardApiKeysRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/auth/register': {
-      id: '/auth/register'
-      path: '/register'
-      fullPath: '/auth/register'
-      preLoaderRoute: typeof AuthRegisterRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/auth/login': {
       id: '/auth/login'
       path: '/login'
@@ -301,12 +320,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/dashboard/sources/': {
-      id: '/dashboard/sources/'
-      path: '/sources'
-      fullPath: '/dashboard/sources/'
-      preLoaderRoute: typeof DashboardSourcesIndexRouteImport
-      parentRoute: typeof DashboardRoute
+    '/auth/complete-account': {
+      id: '/auth/complete-account'
+      path: '/complete-account'
+      fullPath: '/auth/complete-account'
+      preLoaderRoute: typeof AuthCompleteAccountRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/dashboard/collections/': {
       id: '/dashboard/collections/'
@@ -326,15 +345,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthRouteChildren {
+  AuthCompleteAccountRoute: typeof AuthCompleteAccountRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
-  AuthRegisterRoute: typeof AuthRegisterRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthCompleteAccountRoute: AuthCompleteAccountRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
-  AuthRegisterRoute: AuthRegisterRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -342,21 +361,23 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface DashboardRouteChildren {
   DashboardApiKeysRoute: typeof DashboardApiKeysRoute
   DashboardChatRoute: typeof DashboardChatRoute
+  DashboardMembersRoute: typeof DashboardMembersRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardUsageRoute: typeof DashboardUsageRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardCollectionsCollectionIdRoute: typeof DashboardCollectionsCollectionIdRoute
   DashboardCollectionsIndexRoute: typeof DashboardCollectionsIndexRoute
-  DashboardSourcesIndexRoute: typeof DashboardSourcesIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardApiKeysRoute: DashboardApiKeysRoute,
   DashboardChatRoute: DashboardChatRoute,
+  DashboardMembersRoute: DashboardMembersRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardUsageRoute: DashboardUsageRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardCollectionsCollectionIdRoute: DashboardCollectionsCollectionIdRoute,
   DashboardCollectionsIndexRoute: DashboardCollectionsIndexRoute,
-  DashboardSourcesIndexRoute: DashboardSourcesIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

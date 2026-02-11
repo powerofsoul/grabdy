@@ -55,3 +55,94 @@ export const api = initClient(contract, {
 });
 
 export { baseUrl };
+
+export interface StreamCallbacks {
+  onText: (text: string) => void;
+  onDone: (metadata: { threadId?: string; sources?: StreamSource[] }) => void;
+  onError?: (error: Error) => void;
+}
+
+export interface StreamSource {
+  chunkId: string;
+  content: string;
+  score: number;
+  metadata: Record<string, unknown>;
+  dataSourceName: string;
+  dataSourceId: string;
+}
+
+export async function streamChat(
+  orgId: string,
+  body: { message: string; threadId?: string; collectionId?: string },
+  callbacks: StreamCallbacks,
+): Promise<void> {
+  const response = await fetch(`${baseUrl}/api/orgs/${orgId}/chat/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const msg = data?.error ?? `Stream failed with status ${response.status}`;
+    callbacks.onError?.(new Error(msg));
+    return;
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    callbacks.onError?.(new Error('No response body'));
+    return;
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        // AI SDK v5 data stream protocol: TYPE:JSON_VALUE
+        const colonIndex = line.indexOf(':');
+        if (colonIndex === -1) continue;
+
+        const typeCode = line.slice(0, colonIndex);
+        const jsonStr = line.slice(colonIndex + 1);
+
+        try {
+          if (typeCode === '0') {
+            // Text delta
+            const text = JSON.parse(jsonStr) as string;
+            callbacks.onText(text);
+          } else if (typeCode === '8') {
+            // Metadata event
+            const metadata = JSON.parse(jsonStr) as {
+              type: string;
+              threadId?: string;
+              sources?: StreamSource[];
+            };
+            if (metadata.type === 'done') {
+              callbacks.onDone({
+                threadId: metadata.threadId,
+                sources: metadata.sources,
+              });
+            }
+          }
+        } catch {
+          // skip malformed lines
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}

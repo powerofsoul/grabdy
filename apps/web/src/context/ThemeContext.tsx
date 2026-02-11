@@ -35,7 +35,7 @@ function getInitialPreference(): ThemePreference {
   if (stored === 'dark' || stored === 'light' || stored === 'system') {
     return stored;
   }
-  return 'system';
+  return 'light';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

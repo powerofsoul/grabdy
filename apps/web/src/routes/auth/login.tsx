@@ -143,14 +143,6 @@ function LoginPage() {
           Sign in
         </Button>
 
-        <Link to="/auth/register" style={{ textDecoration: 'none' }}>
-          <Typography
-            variant="body2"
-            sx={{ textAlign: 'center', color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
-          >
-            Don&apos;t have an account? Create one
-          </Typography>
-        </Link>
       </form>
     </AuthLayout>
   );
