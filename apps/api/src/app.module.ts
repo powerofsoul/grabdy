@@ -7,7 +7,11 @@ import { OrgAccessGuard } from './common/guards/org-access.guard';
 import { TokenRefreshInterceptor } from './common/interceptors/token-refresh.interceptor';
 import { EnvModule } from './config/env.config';
 import { DbModule } from './db/db.module';
+import { AgentModule } from './modules/agent/agent.module';
+import { AiModule } from './modules/ai/ai.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
@@ -39,6 +43,10 @@ import { UsersModule } from './modules/users/users.module';
         limit: 1000,
       },
     ]),
+    AdminModule,
+    AgentModule,
+    AiModule,
+    AnalyticsModule,
     EmailModule,
     QueueModule,
     HealthModule,

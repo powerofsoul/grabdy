@@ -23,19 +23,6 @@ const user = z.object({
 
 export const authContract = c.router(
   {
-    register: {
-      method: 'POST',
-      path: '/register',
-      body: z.object({
-        email: z.string().email(),
-        password: z.string().min(8),
-        name: z.string().min(1),
-      }),
-      responses: {
-        200: z.object({ success: z.literal(true), data: user }),
-        400: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
     login: {
       method: 'POST',
       path: '/login',
@@ -84,6 +71,34 @@ export const authContract = c.router(
       responses: {
         200: z.object({ success: z.literal(true), data: user }),
         401: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    verifySetupToken: {
+      method: 'POST',
+      path: '/verify-setup-token',
+      body: z.object({ token: z.string() }),
+      responses: {
+        200: z.object({
+          success: z.literal(true),
+          data: z.object({
+            email: z.string(),
+            name: z.string(),
+            orgName: z.string(),
+          }),
+        }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    completeAccount: {
+      method: 'POST',
+      path: '/complete-account',
+      body: z.object({
+        token: z.string(),
+        password: z.string().min(8),
+      }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: user }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
   },

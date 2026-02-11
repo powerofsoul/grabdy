@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
-import { embed, generateText } from 'ai';
+import { embed } from 'ai';
 import { sql } from 'kysely';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
+import { AgentFactory } from '../agent/services/agent.factory';
+import { AgentMemoryService } from '../agent/services/memory.service';
 
 interface SearchResult {
   chunkId: DbId<'Chunk'>;
@@ -21,16 +23,19 @@ interface SearchResult {
 export class RetrievalService {
   private readonly logger = new Logger(RetrievalService.name);
 
-  constructor(private db: DbService) {}
+  constructor(
+    private db: DbService,
+    private agentFactory: AgentFactory,
+    private agentMemory: AgentMemoryService,
+  ) {}
 
   async query(
     orgId: DbId<'Org'>,
     queryText: string,
-    options: { collectionId?: DbId<'Collection'>; limit?: number }
+    options: { collectionId?: DbId<'Collection'>; limit?: number },
   ): Promise<{ results: SearchResult[]; queryTimeMs: number }> {
     const start = Date.now();
 
-    // Generate embedding for the query
     const { embedding } = await embed({
       model: openai.embedding('text-embedding-3-small'),
       value: queryText,
@@ -82,28 +87,12 @@ export class RetrievalService {
     options: {
       threadId?: DbId<'ChatThread'>;
       collectionId?: DbId<'Collection'>;
-    }
+    },
   ): Promise<{
     answer: string;
     threadId: DbId<'ChatThread'>;
     sources: SearchResult[];
   }> {
-    // Search for relevant context
-    const { results } = await this.query(orgId, message, {
-      collectionId: options.collectionId,
-      limit: 5,
-    });
-
-    const context = results.map((r) => r.content).join('\n\n---\n\n');
-
-    // Generate answer
-    const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
-      system: `You are a helpful assistant that answers questions based on the provided context. If the context doesn't contain relevant information, say so. Always cite the source when possible.`,
-      prompt: `Context:\n${context}\n\nQuestion: ${message}`,
-    });
-
-    // Create or update chat thread
     const orgNum = extractOrgNumericId(orgId);
     let threadId = options.threadId;
 
@@ -130,10 +119,176 @@ export class RetrievalService {
         .execute();
     }
 
+    const agent = this.agentFactory.createDataAgent(orgId, options.collectionId);
+    const result = await agent.generate(message, threadId, membershipId);
+
     return {
-      answer: text,
+      answer: result.text,
       threadId,
-      sources: results,
+      sources: [],
+    };
+  }
+
+  async streamChat(
+    orgId: DbId<'Org'>,
+    membershipId: DbId<'OrgMembership'>,
+    message: string,
+    options: {
+      threadId?: DbId<'ChatThread'>;
+      collectionId?: DbId<'Collection'>;
+    },
+  ) {
+    const orgNum = extractOrgNumericId(orgId);
+    let threadId = options.threadId;
+
+    if (!threadId) {
+      const thread = await this.db.kysely
+        .insertInto('data.chat_threads')
+        .values({
+          id: packId('ChatThread', orgNum),
+          title: message.slice(0, 100),
+          collection_id: options.collectionId ?? null,
+          org_id: orgId,
+          membership_id: membershipId,
+          updated_at: new Date(),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      threadId = thread.id;
+    } else {
+      await this.db.kysely
+        .updateTable('data.chat_threads')
+        .set({ updated_at: new Date() })
+        .where('id', '=', threadId)
+        .execute();
+    }
+
+    const agent = this.agentFactory.createDataAgent(orgId, options.collectionId);
+    const streamResult = await agent.stream(message, threadId, membershipId);
+
+    return {
+      threadId,
+      streamResult,
+    };
+  }
+
+  async listThreads(
+    orgId: DbId<'Org'>,
+    membershipId: DbId<'OrgMembership'>,
+  ): Promise<
+    Array<{
+      id: DbId<'ChatThread'>;
+      title: string | null;
+      collectionId: DbId<'Collection'> | null;
+      createdAt: string;
+      updatedAt: string;
+    }>
+  > {
+    const threads = await this.db.kysely
+      .selectFrom('data.chat_threads')
+      .select(['id', 'title', 'collection_id', 'created_at', 'updated_at'])
+      .where('org_id', '=', orgId)
+      .where('membership_id', '=', membershipId)
+      .orderBy('updated_at', 'desc')
+      .execute();
+
+    return threads.map((t) => ({
+      id: t.id,
+      title: t.title,
+      collectionId: t.collection_id,
+      createdAt: new Date(t.created_at).toISOString(),
+      updatedAt: new Date(t.updated_at).toISOString(),
+    }));
+  }
+
+  async getThread(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+  ): Promise<{
+    id: DbId<'ChatThread'>;
+    title: string | null;
+    collectionId: DbId<'Collection'> | null;
+    createdAt: string;
+    updatedAt: string;
+    messages: Array<{
+      id: string;
+      role: 'user' | 'assistant';
+      content: string;
+      sources: null;
+      createdAt: string;
+    }>;
+  }> {
+    const thread = await this.db.kysely
+      .selectFrom('data.chat_threads')
+      .selectAll()
+      .where('id', '=', threadId)
+      .where('org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (!thread) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    const messages = await this.agentMemory.getHistory(threadId);
+
+    return {
+      id: thread.id,
+      title: thread.title,
+      collectionId: thread.collection_id,
+      createdAt: new Date(thread.created_at).toISOString(),
+      updatedAt: new Date(thread.updated_at).toISOString(),
+      messages: messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        sources: null,
+        createdAt: m.createdAt ? m.createdAt.toISOString() : new Date().toISOString(),
+      })),
+    };
+  }
+
+  async deleteThread(orgId: DbId<'Org'>, threadId: DbId<'ChatThread'>): Promise<void> {
+    const result = await this.db.kysely
+      .deleteFrom('data.chat_threads')
+      .where('id', '=', threadId)
+      .where('org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (result.numDeletedRows === 0n) {
+      throw new NotFoundException('Thread not found');
+    }
+  }
+
+  async renameThread(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+    title: string,
+  ): Promise<{
+    id: DbId<'ChatThread'>;
+    title: string | null;
+    collectionId: DbId<'Collection'> | null;
+    createdAt: string;
+    updatedAt: string;
+  }> {
+    const thread = await this.db.kysely
+      .updateTable('data.chat_threads')
+      .set({ title, updated_at: new Date() })
+      .where('id', '=', threadId)
+      .where('org_id', '=', orgId)
+      .returningAll()
+      .executeTakeFirst();
+
+    if (!thread) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    return {
+      id: thread.id,
+      title: thread.title,
+      collectionId: thread.collection_id,
+      createdAt: new Date(thread.created_at).toISOString(),
+      updatedAt: new Date(thread.updated_at).toISOString(),
     };
   }
 }

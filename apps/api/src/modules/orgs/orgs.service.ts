@@ -1,9 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { OrgRole } from '@db/enums';
 import { randomBytes } from 'crypto';
 
-import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import { type DbId, dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
 import { EmailService } from '../email/email.service';
@@ -193,7 +193,38 @@ export class OrgsService {
     }));
   }
 
-  async removeMember(orgId: DbId<'Org'>, memberId: DbId<'OrgMembership'>) {
+  async getPendingInvitations(orgId: DbId<'Org'>) {
+    const invitations = await this.db.kysely
+      .selectFrom('org.org_invitations')
+      .select(['id', 'email', 'name', 'roles', 'expires_at', 'created_at'])
+      .where('org_id', '=', orgId)
+      .execute();
+
+    return invitations.map((inv) => ({
+      id: inv.id,
+      email: inv.email,
+      name: inv.name,
+      roles: inv.roles,
+      expiresAt: inv.expires_at,
+      createdAt: inv.created_at,
+    }));
+  }
+
+  async revokeInvitation(orgId: DbId<'Org'>, invitationId: string) {
+    const parsedId = dbIdSchema('OrgInvitation').parse(invitationId);
+
+    const result = await this.db.kysely
+      .deleteFrom('org.org_invitations')
+      .where('id', '=', parsedId)
+      .where('org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (result.numDeletedRows === 0n) {
+      throw new NotFoundException('Invitation not found');
+    }
+  }
+
+  async removeMember(orgId: DbId<'Org'>, memberId: DbId<'OrgMembership'>, requestingUserId: DbId<'User'>) {
     const membership = await this.db.kysely
       .selectFrom('org.org_memberships')
       .selectAll()
@@ -203,6 +234,23 @@ export class OrgsService {
 
     if (!membership) {
       throw new NotFoundException('Membership not found');
+    }
+
+    if (membership.user_id === requestingUserId) {
+      throw new BadRequestException('Cannot remove yourself from the organization');
+    }
+
+    if (membership.roles.includes('OWNER')) {
+      const ownerCount = await this.db.kysely
+        .selectFrom('org.org_memberships')
+        .select(this.db.kysely.fn.countAll().as('count'))
+        .where('org_id', '=', orgId)
+        .where('roles', '@>', ['OWNER'])
+        .executeTakeFirstOrThrow();
+
+      if (Number(ownerCount.count) <= 1) {
+        throw new BadRequestException('Cannot remove the last owner of the organization');
+      }
     }
 
     await this.db.kysely

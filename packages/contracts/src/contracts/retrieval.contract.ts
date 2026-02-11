@@ -13,6 +13,26 @@ const searchResultSchema = z.object({
   dataSourceId: dbIdSchema('DataSource'),
 });
 
+const chatMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+  sources: z.array(searchResultSchema).nullable(),
+  createdAt: z.string(),
+});
+
+const threadSchema = z.object({
+  id: dbIdSchema('ChatThread'),
+  title: z.string().nullable(),
+  collectionId: dbIdSchema('Collection').nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const threadWithMessagesSchema = threadSchema.extend({
+  messages: z.array(chatMessageSchema),
+});
+
 export const retrievalContract = c.router(
   {
     query: {
@@ -53,6 +73,52 @@ export const retrievalContract = c.router(
             sources: z.array(searchResultSchema),
           }),
         }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    listThreads: {
+      method: 'GET',
+      path: '/orgs/:orgId/chat/threads',
+      pathParams: z.object({ orgId: dbIdSchema('Org') }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: z.array(threadSchema) }),
+      },
+    },
+    getThread: {
+      method: 'GET',
+      path: '/orgs/:orgId/chat/threads/:threadId',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        threadId: dbIdSchema('ChatThread'),
+      }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: threadWithMessagesSchema }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    deleteThread: {
+      method: 'DELETE',
+      path: '/orgs/:orgId/chat/threads/:threadId',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        threadId: dbIdSchema('ChatThread'),
+      }),
+      body: z.object({}),
+      responses: {
+        200: z.object({ success: z.literal(true) }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    renameThread: {
+      method: 'PATCH',
+      path: '/orgs/:orgId/chat/threads/:threadId',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        threadId: dbIdSchema('ChatThread'),
+      }),
+      body: z.object({ title: z.string().min(1) }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: threadSchema }),
         400: z.object({ success: z.literal(false), error: z.string() }),
       },
     },

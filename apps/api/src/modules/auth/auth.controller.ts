@@ -35,28 +35,6 @@ export class AuthController {
     }
 
     return tsRestHandler(authContract, {
-      register: async ({ body }) => {
-        try {
-          const { user, token } = await this.authService.register(
-            body.email,
-            body.password,
-            body.name
-          );
-          res.cookie('auth_token', token, this.cookieOptions);
-          return {
-            status: 200 as const,
-            body: { success: true as const, data: user },
-          };
-        } catch (error) {
-          return {
-            status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Registration failed',
-            },
-          };
-        }
-      },
       login: async ({ body }) => {
         try {
           const { user, token } = await this.authService.login(body.email, body.password);
@@ -103,6 +81,41 @@ export class AuthController {
             body: {
               success: false as const,
               error: error instanceof Error ? error.message : 'Failed to reset password',
+            },
+          };
+        }
+      },
+      verifySetupToken: async ({ body }) => {
+        try {
+          const data = await this.authService.verifySetupToken(body.token);
+          return {
+            status: 200 as const,
+            body: { success: true as const, data },
+          };
+        } catch (error) {
+          return {
+            status: 400 as const,
+            body: {
+              success: false as const,
+              error: error instanceof Error ? error.message : 'Invalid token',
+            },
+          };
+        }
+      },
+      completeAccount: async ({ body }) => {
+        try {
+          const { user, token } = await this.authService.completeAccount(body.token, body.password);
+          res.cookie('auth_token', token, this.cookieOptions);
+          return {
+            status: 200 as const,
+            body: { success: true as const, data: user },
+          };
+        } catch (error) {
+          return {
+            status: 400 as const,
+            body: {
+              success: false as const,
+              error: error instanceof Error ? error.message : 'Failed to complete account setup',
             },
           };
         }

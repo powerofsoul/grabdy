@@ -160,10 +160,10 @@ export class OrgsController {
 
   @OrgAccess(orgsContract.removeMember, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'memberId'] })
   @TsRestHandler(orgsContract.removeMember)
-  async removeMember() {
+  async removeMember(@CurrentUser() user: JwtPayload) {
     return tsRestHandler(orgsContract.removeMember, async ({ params }) => {
       try {
-        await this.orgsService.removeMember(params.orgId, params.memberId);
+        await this.orgsService.removeMember(params.orgId, params.memberId, user.sub);
         return {
           status: 200 as const,
           body: { success: true as const },
@@ -174,6 +174,50 @@ export class OrgsController {
           body: {
             success: false as const,
             error: error instanceof Error ? error.message : 'Failed to remove member',
+          },
+        };
+      }
+    });
+  }
+
+  @OrgAccess(orgsContract.listPendingInvitations, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
+  @TsRestHandler(orgsContract.listPendingInvitations)
+  async listPendingInvitations() {
+    return tsRestHandler(orgsContract.listPendingInvitations, async ({ params }) => {
+      const invitations = await this.orgsService.getPendingInvitations(params.orgId);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: invitations.map((inv) => ({
+            id: inv.id,
+            email: inv.email,
+            name: inv.name,
+            roles: inv.roles,
+            expiresAt: inv.expiresAt ? toISOString(inv.expiresAt) : null,
+            createdAt: toISOString(inv.createdAt),
+          })),
+        },
+      };
+    });
+  }
+
+  @OrgAccess(orgsContract.revokeInvitation, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
+  @TsRestHandler(orgsContract.revokeInvitation)
+  async revokeInvitation() {
+    return tsRestHandler(orgsContract.revokeInvitation, async ({ params }) => {
+      try {
+        await this.orgsService.revokeInvitation(params.orgId, params.invitationId);
+        return {
+          status: 200 as const,
+          body: { success: true as const },
+        };
+      } catch (error) {
+        return {
+          status: 400 as const,
+          body: {
+            success: false as const,
+            error: error instanceof Error ? error.message : 'Failed to revoke invitation',
           },
         };
       }

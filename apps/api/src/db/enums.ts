@@ -34,3 +34,15 @@ export const DataSourceType = {
   JSON: 'JSON',
 } as const;
 export type DataSourceType = (typeof DataSourceType)[keyof typeof DataSourceType];
+
+export const AiCallerType = {
+  MEMBER: 'MEMBER',
+  SYSTEM: 'SYSTEM',
+} as const;
+export type AiCallerType = (typeof AiCallerType)[keyof typeof AiCallerType];
+
+export const AiRequestType = {
+  CHAT: 'CHAT',
+  EMBEDDING: 'EMBEDDING',
+} as const;
+export type AiRequestType = (typeof AiRequestType)[keyof typeof AiRequestType];

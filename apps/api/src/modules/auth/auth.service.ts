@@ -13,6 +13,21 @@ import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { EmailService } from '../email/email.service';
 
+/**
+ * PostgreSQL returns array columns as strings like "{OWNER,ADMIN}".
+ * Parse them into proper JS arrays.
+ */
+function parseRoles(roles: OrgRole[] | string): OrgRole[] {
+  if (Array.isArray(roles)) return roles;
+  if (typeof roles === 'string') {
+    return roles
+      .replace(/^\{|\}$/g, '')
+      .split(',')
+      .filter(Boolean) as OrgRole[];
+  }
+  return [];
+}
+
 export const AUTH_TOKEN_EXPIRY = '7d';
 export const AUTH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -67,7 +82,7 @@ export class AuthService {
       id: m.id,
       orgId: m.org_id,
       orgName: m.org_name,
-      roles: m.roles,
+      roles: parseRoles(m.roles),
     }));
   }
 
@@ -308,6 +323,106 @@ export class AuthService {
         .where('id', '=', token.id)
         .execute();
     });
+  }
+
+  async verifySetupToken(token: string): Promise<{ email: string; name: string; orgName: string }> {
+    const invitation = await this.db.kysely
+      .selectFrom('org.org_invitations')
+      .innerJoin('org.orgs', 'org.orgs.id', 'org.org_invitations.org_id')
+      .select([
+        'org.org_invitations.email',
+        'org.org_invitations.name',
+        'org.org_invitations.expires_at',
+        'org.orgs.name as org_name',
+      ])
+      .where('org.org_invitations.token', '=', token)
+      .executeTakeFirst();
+
+    if (!invitation) {
+      throw new BadRequestException('Invalid or expired invitation token');
+    }
+
+    if (invitation.expires_at && invitation.expires_at < new Date()) {
+      throw new BadRequestException('Invalid or expired invitation token');
+    }
+
+    return {
+      email: invitation.email,
+      name: invitation.name,
+      orgName: invitation.org_name,
+    };
+  }
+
+  async completeAccount(
+    token: string,
+    password: string
+  ): Promise<{ user: UserData; token: string }> {
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const result = await this.db.kysely.transaction().execute(async (trx) => {
+      const invitation = await trx
+        .selectFrom('org.org_invitations')
+        .selectAll()
+        .where('token', '=', token)
+        .executeTakeFirst();
+
+      if (!invitation) {
+        throw new BadRequestException('Invalid or expired invitation token');
+      }
+
+      if (invitation.expires_at && invitation.expires_at < new Date()) {
+        throw new BadRequestException('Invalid or expired invitation token');
+      }
+
+      const newUser = await trx
+        .insertInto('auth.users')
+        .values({
+          id: packId('User', GLOBAL_ORG),
+          email: invitation.email,
+          name: invitation.name,
+          password_hash: passwordHash,
+          email_verified: true,
+          updated_at: new Date(),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      await trx
+        .insertInto('org.org_memberships')
+        .values({
+          id: packId('OrgMembership', extractOrgNumericId(invitation.org_id)),
+          user_id: newUser.id,
+          org_id: invitation.org_id,
+          roles: invitation.roles,
+        })
+        .execute();
+
+      await trx
+        .deleteFrom('org.org_invitations')
+        .where('id', '=', invitation.id)
+        .execute();
+
+      return newUser;
+    });
+
+    const memberships = await this.getUserMemberships(result.id);
+    const jwtToken = this.generateToken({
+      id: result.id,
+      email: result.email,
+      name: result.name,
+      memberships: toJwtMemberships(memberships),
+    });
+
+    return {
+      user: {
+        id: result.id,
+        email: result.email,
+        name: result.name,
+        status: result.status,
+        memberships,
+      },
+      token: jwtToken,
+    };
   }
 
   async refreshToken(

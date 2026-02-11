@@ -3,6 +3,8 @@ import type { ColumnType, GeneratedAlways } from 'kysely';
 import type { DbId, OrgNumericId } from '@grabdy/common';
 
 import type {
+  AiCallerType,
+  AiRequestType,
   DataSourceStatus,
   DataSourceType,
   OrgRole,
@@ -136,6 +138,24 @@ export interface ChatThread {
   updated_at: Timestamp;
 }
 
+export interface AiUsageLog {
+  id: Generated<DbId<'AiUsageLog'>>;
+  model: string;
+  provider: string;
+  caller_type: AiCallerType;
+  request_type: AiRequestType;
+  input_tokens: Generated<number>;
+  output_tokens: Generated<number>;
+  total_tokens: Generated<number>;
+  cost: Generated<number>;
+  duration_ms: number | null;
+  finish_reason: string | null;
+  streaming: Generated<boolean>;
+  org_id: DbId<'Org'>;
+  user_id: DbId<'User'> | null;
+  created_at: Generated<Timestamp>;
+}
+
 export interface UsageLog {
   id: GeneratedAlways<string>;
   api_key_id: DbId<'ApiKey'>;
@@ -163,6 +183,8 @@ export interface DB {
   'data.data_sources': DataSource;
   'data.chunks': Chunk;
   'data.chat_threads': ChatThread;
+  // analytics
+  'analytics.ai_usage_logs': AiUsageLog;
   // api
   'api.api_keys': ApiKey;
   'api.usage_logs': UsageLog;

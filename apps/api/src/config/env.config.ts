@@ -48,6 +48,8 @@ export const env = {
   smtpPass: requiredInProd('SMTP_PASS', ''),
   emailFrom: process.env.EMAIL_FROM || 'Grabdy <noreply@grabdy.com>',
 
+  adminApiKey: required('ADMIN_API_KEY'),
+
   bullBoardUsername: requiredInProd('BULL_BOARD_USERNAME', 'admin'),
   bullBoardPassword: requiredInProd('BULL_BOARD_PASSWORD', 'admin'),
 } as const;

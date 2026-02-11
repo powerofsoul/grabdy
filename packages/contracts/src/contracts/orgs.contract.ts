@@ -96,6 +96,27 @@ export const orgsContract = c.router(
         400: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
+    listPendingInvitations: {
+      method: 'GET',
+      path: '/orgs/:orgId/invitations',
+      pathParams: z.object({ orgId: dbIdSchema('Org') }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: z.array(pendingInvitationSchema) }),
+      },
+    },
+    revokeInvitation: {
+      method: 'DELETE',
+      path: '/orgs/:orgId/invitations/:invitationId',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        invitationId: z.string().uuid(),
+      }),
+      body: z.object({}),
+      responses: {
+        200: z.object({ success: z.literal(true) }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
   },
   { pathPrefix: '/api' }
 );

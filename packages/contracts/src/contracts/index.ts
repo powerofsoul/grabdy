@@ -1,5 +1,6 @@
 import { initContract } from '@ts-rest/core';
 
+import { analyticsContract } from './analytics.contract.js';
 import { apiKeysContract } from './api-keys.contract.js';
 import { authContract } from './auth.contract.js';
 import { collectionsContract } from './collections.contract.js';
@@ -11,6 +12,7 @@ import { usersContract } from './users.contract.js';
 const c = initContract();
 
 export const contract = c.router({
+  analytics: analyticsContract,
   auth: authContract,
   orgs: orgsContract,
   collections: collectionsContract,
@@ -21,6 +23,7 @@ export const contract = c.router({
 });
 
 export {
+  analyticsContract,
   apiKeysContract,
   authContract,
   collectionsContract,

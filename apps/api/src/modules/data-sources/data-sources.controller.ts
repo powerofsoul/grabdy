@@ -35,11 +35,20 @@ export class DataSourcesController {
           };
         }
 
+        // Multipart form fields may arrive JSON-encoded (double-quoted strings).
+        // Strip surrounding quotes if present.
+        const rawCollectionId = body.collectionId
+          ? body.collectionId.replace(/^"|"$/g, '')
+          : undefined;
+
         const dataSource = await this.dataSourcesService.upload(
           params.orgId,
           user.sub,
           file,
-          { name: body.name, collectionId: body.collectionId as DbId<'Collection'> | undefined }
+          {
+            name: body.name ? body.name.replace(/^"|"$/g, '') : undefined,
+            collectionId: (rawCollectionId || undefined) as DbId<'Collection'> | undefined,
+          }
         );
 
         return {

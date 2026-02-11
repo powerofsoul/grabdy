@@ -17,7 +17,8 @@ export type TableIdName =
   | 'DataSource'
   | 'Chunk'
   | 'ApiKey'
-  | 'ChatThread';
+  | 'ChatThread'
+  | 'AiUsageLog';
 
 // ── Entity Type Maps ─────────────────────────────────────────────────────
 
@@ -41,6 +42,8 @@ export const ENTITY_TYPE_MAP = {
   ApiKey: 0x20,
   // Chat
   ChatThread: 0x30,
+  // Analytics
+  AiUsageLog: 0x40,
 } as const satisfies Record<TableIdName, number>;
 
 const ENTITY_TYPE_REVERSE: Record<number, TableIdName> = Object.fromEntries(
