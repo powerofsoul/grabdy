@@ -1,14 +1,16 @@
 import { useEffect, useRef } from 'react';
 
 import { Box, Button, Container, Typography } from '@mui/material';
-import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowRight } from 'lucide-react';
 
+import { useWaitlist } from './WaitlistModal';
+
 gsap.registerPlugin(ScrollTrigger);
 
 export function CTASection() {
+  const { open: openWaitlist } = useWaitlist();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,34 +61,31 @@ export function CTASection() {
           className="cta-subtitle"
           sx={{ mb: 5, color: 'text.secondary', fontSize: '1.05rem', lineHeight: 1.6 }}
         >
-          Create a free account. Connect your tools. Ask your first question.
-          <br />
-          That&apos;s the whole process.
+          Join the waitlist today. We&apos;re onboarding teams in batches.
         </Typography>
 
         <Box className="cta-button" sx={{ mb: 2 }}>
-          <Link to="/auth/register" style={{ textDecoration: 'none' }}>
-            <Button
-              variant="contained"
-              size="large"
-              endIcon={<ArrowRight size={18} />}
-              sx={{
-                px: 6,
-                py: 1.75,
-                fontSize: '1.05rem',
-                fontWeight: 700,
-                boxShadow: 'none',
-                '&:hover': { boxShadow: 'none' },
-              }}
-            >
-              Try Grabdy Free
-            </Button>
-          </Link>
+          <Button
+            variant="contained"
+            size="large"
+            endIcon={<ArrowRight size={18} />}
+            onClick={openWaitlist}
+            sx={{
+              px: 6,
+              py: 1.75,
+              fontSize: '1.05rem',
+              fontWeight: 700,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' },
+            }}
+          >
+            Join Waitlist
+          </Button>
         </Box>
 
         <Box className="cta-note" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
           <Typography sx={{ fontSize: '0.82rem', color: 'text.secondary' }}>
-            No credit card · 2-minute setup · Free for teams under 10
+            Be first in line for early access
           </Typography>
           <Typography
             component="a"

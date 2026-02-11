@@ -112,7 +112,7 @@ export function DevTeaserSection() {
               style={{
                 margin: 0,
                 padding: '20px',
-                fontFamily: '"SF Mono", "Fira Code", monospace',
+                fontFamily: 'var(--font-mono)',
                 fontSize: '0.78rem',
                 lineHeight: 1.8,
                 whiteSpace: 'pre-wrap',

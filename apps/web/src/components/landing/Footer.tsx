@@ -2,121 +2,88 @@ import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
 
 import { Logo } from '../ui/Logo';
 
-interface FooterColumn {
-  title: string;
-  links: ReadonlyArray<{ label: string; href: string }>;
-}
-
-const COLUMNS = [
-{
-    title: 'Company',
-    links: [
-      { label: 'About', href: '/about' },
-      { label: 'Blog', href: '/blog' },
-      { label: 'Contact', href: 'mailto:hello@grabdy.com' },
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { label: 'Privacy', href: '/privacy' },
-      { label: 'Terms', href: '/terms' },
-    ],
-  },
-] satisfies ReadonlyArray<FooterColumn>;
-
 export function Footer() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-
-  const linkSx = {
-    color: isDark ? 'text.secondary' : alpha(theme.palette.common.white, 0.5),
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    transition: 'color 0.2s',
-    textDecoration: 'none',
-    display: 'block',
-    '&:hover': { color: isDark ? 'text.primary' : alpha(theme.palette.common.white, 0.9) },
-  };
-
-  const headingSx = {
-    fontSize: '0.72rem',
-    fontWeight: 700,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.08em',
-    color: isDark ? 'text.primary' : alpha(theme.palette.common.white, 0.7),
-    mb: 1.5,
-  };
+  const muted = isDark ? 'text.secondary' : alpha(theme.palette.common.white, 0.45);
+  const mutedHover = isDark ? 'text.primary' : alpha(theme.palette.common.white, 0.85);
 
   return (
     <Box
       component="footer"
       sx={{
-        py: 5,
+        py: { xs: 4, md: 5 },
         bgcolor: isDark ? 'grey.50' : 'grey.900',
         borderTop: '1px solid',
         borderColor: isDark ? 'divider' : alpha(theme.palette.common.white, 0.05),
       }}
     >
       <Container maxWidth="lg">
-        {/* Logo + tagline */}
-        <Box sx={{ mb: 4, color: isDark ? 'text.primary' : alpha(theme.palette.common.white, 0.9) }}>
-          <Logo size="sm" />
-          <Typography
-            sx={{
-              mt: 1,
-              fontSize: '0.8rem',
-              color: isDark ? 'text.secondary' : alpha(theme.palette.common.white, 0.4),
-              maxWidth: 240,
-            }}
-          >
-            Smart document search for your entire organization.
-          </Typography>
-        </Box>
-
-        {/* 4-column grid */}
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' },
-            gap: { xs: 3, md: 6 },
-            mb: 4,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'flex-start', md: 'center' },
+            justifyContent: 'space-between',
+            gap: 3,
           }}
         >
-          {COLUMNS.map((col) => (
-            <Box key={col.title}>
-              <Typography sx={headingSx}>{col.title}</Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {col.links.map((link) => (
-                  <Typography
-                    key={link.label}
-                    component="a"
-                    href={link.href}
-                    sx={linkSx}
-                  >
-                    {link.label}
-                  </Typography>
-                ))}
-              </Box>
-            </Box>
-          ))}
+          {/* Left: logo + tagline */}
+          <Box sx={{ color: isDark ? 'text.primary' : alpha(theme.palette.common.white, 0.9) }}>
+            <Logo size="sm" />
+            <Typography sx={{ mt: 0.75, fontSize: '0.78rem', color: muted, maxWidth: 280 }}>
+              Smart document retrieval for teams that move fast.
+            </Typography>
+          </Box>
+
+          {/* Right: links row */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2.5, md: 3.5 }, flexWrap: 'wrap' }}>
+            <Typography
+              component="a"
+              href="mailto:hello@grabdy.com"
+              sx={{
+                fontSize: '0.82rem',
+                color: muted,
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+                '&:hover': { color: mutedHover },
+              }}
+            >
+              Contact
+            </Typography>
+            <Typography
+              component="a"
+              href="/privacy"
+              sx={{
+                fontSize: '0.82rem',
+                color: muted,
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+                '&:hover': { color: mutedHover },
+              }}
+            >
+              Privacy
+            </Typography>
+            <Typography
+              component="a"
+              href="/terms"
+              sx={{
+                fontSize: '0.82rem',
+                color: muted,
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+                '&:hover': { color: mutedHover },
+              }}
+            >
+              Terms
+            </Typography>
+          </Box>
         </Box>
 
-        {/* Bottom bar */}
-        <Box
-          sx={{
-            pt: 3,
-            borderTop: '1px solid',
-            borderColor: isDark ? 'divider' : alpha(theme.palette.common.white, 0.08),
-          }}
-        >
-          <Typography
-            sx={{
-              fontSize: '0.78rem',
-              color: isDark ? 'text.secondary' : alpha(theme.palette.common.white, 0.35),
-            }}
-          >
-            &copy; {new Date().getFullYear()} grabdy. All rights reserved.
+        {/* Bottom copyright */}
+        <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid', borderColor: isDark ? 'divider' : alpha(theme.palette.common.white, 0.06) }}>
+          <Typography sx={{ fontSize: '0.72rem', color: isDark ? alpha(theme.palette.text.secondary, 0.6) : alpha(theme.palette.common.white, 0.25) }}>
+            &copy; {new Date().getFullYear()} Grabdy. All rights reserved.
           </Typography>
         </Box>
       </Container>

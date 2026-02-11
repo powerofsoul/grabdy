@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { alpha, Box, Button, Container, IconButton, Typography, useTheme } from '@mui/material';
-import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import {
   AlertTriangle,
@@ -25,6 +24,8 @@ import {
 
 import heroCloudsLight from '@/assets/hero-clouds-light.png';
 import heroCloudsDark from '@/assets/hero-clouds-dark.png';
+
+import { useWaitlist } from './WaitlistModal';
 
 // ── Brand icons (SVG paths from simple-icons) ──
 
@@ -392,6 +393,7 @@ function edgeEndpoints(
 
 export function HeroSection() {
   const theme = useTheme();
+  const { open: openWaitlist } = useWaitlist();
   const containerRef = useRef<HTMLDivElement>(null);
   const showcaseRef = useRef<HTMLDivElement>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null);
@@ -1020,30 +1022,29 @@ export function HeroSection() {
               mb: { xs: 5, md: 6 },
             }}
           >
-            <Link to="/auth/register" style={{ textDecoration: 'none' }}>
-              <Button
-                variant="contained"
-                size="large"
-                endIcon={<ArrowRight size={18} />}
-                sx={{
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                  boxShadow: `0 4px 20px ${alpha(p.primary.main, 0.25)}`,
-                  '&:hover': { boxShadow: `0 6px 28px ${alpha(p.primary.main, 0.35)}` },
-                }}
-              >
-                Try Grabdy Free
-              </Button>
-            </Link>
+            <Button
+              variant="contained"
+              size="large"
+              endIcon={<ArrowRight size={18} />}
+              onClick={openWaitlist}
+              sx={{
+                px: 4,
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 700,
+                boxShadow: `0 4px 20px ${alpha(p.primary.main, 0.25)}`,
+                '&:hover': { boxShadow: `0 6px 28px ${alpha(p.primary.main, 0.35)}` },
+              }}
+            >
+              Join Waitlist
+            </Button>
             <Typography
               sx={{
                 fontSize: '0.82rem',
                 color: 'text.secondary',
               }}
             >
-              No credit card · 2-minute setup · Free for teams under 10
+              Be first in line for early access
             </Typography>
           </Box>
         </Box>

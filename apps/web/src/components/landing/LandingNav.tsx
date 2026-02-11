@@ -4,9 +4,12 @@ import { Link } from '@tanstack/react-router';
 import { Logo } from '../ui/Logo';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
+import { useWaitlist } from './WaitlistModal';
+
 export function LandingNav() {
   const theme = useTheme();
   const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 50 });
+  const { open } = useWaitlist();
 
   return (
     <AppBar
@@ -34,7 +37,7 @@ export function LandingNav() {
           <Logo />
 
           {/* Right actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <ThemeToggle />
             <Link to="/auth/login" style={{ textDecoration: 'none' }}>
               <Button
@@ -45,20 +48,19 @@ export function LandingNav() {
                 Login
               </Button>
             </Link>
-            <Link to="/auth/register" style={{ textDecoration: 'none' }}>
-              <Button
-                variant="contained"
-                size="small"
-                sx={{
-                  boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
-                  '&:hover': {
-                    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
-                  },
-                }}
-              >
-                Get Started
-              </Button>
-            </Link>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={open}
+              sx={{
+                boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
+                '&:hover': {
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+                },
+              }}
+            >
+              Join Waitlist
+            </Button>
           </Box>
         </Toolbar>
       </Container>
