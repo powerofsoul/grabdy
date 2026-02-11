@@ -5,10 +5,12 @@ import {
   Button,
   Chip,
   CircularProgress,
+  IconButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
-import { Plus, Users } from 'lucide-react';
+import { Copy, Plus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -36,6 +38,7 @@ interface PendingInvitation {
   email: string;
   name: string;
   roles: string[];
+  inviteLink: string;
   expiresAt: string | null;
   createdAt: string;
 }
@@ -241,7 +244,7 @@ function MembersPage() {
               expires: 'Expires',
               actions: '',
             }}
-            columnWidths={{ actions: 80 }}
+            columnWidths={{ actions: 120 }}
             rowTitle={(inv) => inv.name}
             keyExtractor={(inv) => inv.id}
             renderItems={{
@@ -269,21 +272,36 @@ function MembersPage() {
                 </Typography>
               ),
               actions: (inv) => (
-                <Typography
-                  component="span"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setRevokeTarget(inv);
-                  }}
-                  sx={{
-                    fontSize: '0.82rem',
-                    color: 'error.main',
-                    cursor: 'pointer',
-                    '&:hover': { textDecoration: 'underline' },
-                  }}
-                >
-                  Revoke
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Tooltip title="Copy invite link">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(inv.inviteLink);
+                        toast.success('Invite link copied to clipboard');
+                      }}
+                      sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                    >
+                      <Copy size={15} />
+                    </IconButton>
+                  </Tooltip>
+                  <Typography
+                    component="span"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRevokeTarget(inv);
+                    }}
+                    sx={{
+                      fontSize: '0.82rem',
+                      color: 'error.main',
+                      cursor: 'pointer',
+                      '&:hover': { textDecoration: 'underline' },
+                    }}
+                  >
+                    Revoke
+                  </Typography>
+                </Box>
               ),
             }}
           />

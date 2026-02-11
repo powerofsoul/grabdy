@@ -5,6 +5,7 @@ import { randomBytes } from 'crypto';
 
 import { type DbId, dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
 
+import { authLinks } from '../../common/auth-links';
 import { DbService } from '../../db/db.module';
 import { EmailService } from '../email/email.service';
 
@@ -131,6 +132,7 @@ export class OrgsService {
         email: normalizedEmail,
         name: data.name,
         roles: data.roles,
+        inviteLink: '',
         expiresAt: null,
         createdAt: membership.created_at,
       };
@@ -161,6 +163,7 @@ export class OrgsService {
       email: invitation.email,
       name: invitation.name,
       roles: invitation.roles,
+      inviteLink: authLinks.completeAccount(token),
       expiresAt: invitation.expires_at,
       createdAt: invitation.created_at,
     };
@@ -196,7 +199,7 @@ export class OrgsService {
   async getPendingInvitations(orgId: DbId<'Org'>) {
     const invitations = await this.db.kysely
       .selectFrom('org.org_invitations')
-      .select(['id', 'email', 'name', 'roles', 'expires_at', 'created_at'])
+      .select(['id', 'email', 'name', 'roles', 'token', 'expires_at', 'created_at'])
       .where('org_id', '=', orgId)
       .execute();
 
@@ -205,6 +208,7 @@ export class OrgsService {
       email: inv.email,
       name: inv.name,
       roles: inv.roles,
+      inviteLink: authLinks.completeAccount(inv.token),
       expiresAt: inv.expires_at,
       createdAt: inv.created_at,
     }));

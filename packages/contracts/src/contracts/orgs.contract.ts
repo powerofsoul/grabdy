@@ -26,6 +26,7 @@ const pendingInvitationSchema = z.object({
   email: z.string(),
   name: z.string(),
   roles: z.array(z.string()),
+  inviteLink: z.string(),
   expiresAt: z.string().nullable(),
   createdAt: z.string(),
 });
