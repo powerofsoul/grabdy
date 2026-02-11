@@ -75,7 +75,7 @@ export function WhatYouCanAskSection() {
       ref={sectionRef}
       sx={{
         py: { xs: 10, md: 14 },
-        bgcolor: 'kindle.parchment',
+        bgcolor: 'background.default',
       }}
     >
       <Container maxWidth="lg">

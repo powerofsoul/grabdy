@@ -22,8 +22,8 @@ import {
   Zap,
 } from 'lucide-react';
 
-import heroCloudsLight from '@/assets/hero-clouds-light.png';
-import heroCloudsDark from '@/assets/hero-clouds-dark.png';
+import heroCloudsLight from '@/assets/hero-clouds-light.svg';
+import heroCloudsDark from '@/assets/hero-clouds-dark.svg';
 
 import { useWaitlist } from './WaitlistModal';
 
@@ -1032,8 +1032,7 @@ export function HeroSection() {
                 py: 1.5,
                 fontSize: '1rem',
                 fontWeight: 700,
-                boxShadow: `0 4px 20px ${alpha(p.primary.main, 0.25)}`,
-                '&:hover': { boxShadow: `0 6px 28px ${alpha(p.primary.main, 0.35)}` },
+                boxShadow: 'none',
               }}
             >
               Join Waitlist
@@ -1061,16 +1060,7 @@ export function HeroSection() {
             bgcolor: 'background.paper',
             border: '1px solid',
             borderColor: 'divider',
-            transition: 'box-shadow 0.3s, transform 0.3s',
-            boxShadow: isDark
-              ? `0 25px 70px ${alpha(p.common.black, 0.55)}, 0 0 80px ${alpha(p.primary.main, 0.15)}`
-              : `0 25px 70px ${alpha(p.common.black, 0.1)}, 0 0 60px ${alpha(p.primary.main, 0.06)}`,
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: isDark
-                ? `0 30px 80px ${alpha(p.common.black, 0.6)}, 0 0 90px ${alpha(p.primary.main, 0.2)}`
-                : `0 30px 80px ${alpha(p.common.black, 0.12)}, 0 0 70px ${alpha(p.primary.main, 0.08)}`,
-            },
+            boxShadow: theme.shadows[4],
           }}
         >
           {/* Title bar */}

@@ -7,9 +7,7 @@ import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { Footer } from '@/components/landing/Footer';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { LandingNav } from '@/components/landing/LandingNav';
-import { ProcessingAnimation } from '@/components/landing/ProcessingAnimation';
 import { ProofStripSection } from '@/components/landing/ProofStripSection';
-import { SectionDivider } from '@/components/landing/SectionDivider';
 import { WaitlistProvider } from '@/components/landing/WaitlistModal';
 import { WhatYouCanAskSection } from '@/components/landing/WhatYouCanAskSection';
 
@@ -20,18 +18,13 @@ export const Route = createFileRoute('/')({
 function LandingPage() {
   return (
     <WaitlistProvider>
-      <ProcessingAnimation />
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <LandingNav />
         <HeroSection />
         <ProofStripSection />
-        <SectionDivider />
         <WhatYouCanAskSection />
-        <SectionDivider glyph="&sect;" />
         <FeaturesSection />
-        <SectionDivider />
         <DevTeaserSection />
-        <SectionDivider glyph="&mdash;" />
         <CTASection />
         <Footer />
       </Box>

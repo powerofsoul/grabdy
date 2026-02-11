@@ -4,18 +4,15 @@ import { Logo } from '../ui/Logo';
 
 export function Footer() {
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const muted = isDark ? 'text.secondary' : alpha(theme.palette.common.white, 0.45);
-  const mutedHover = isDark ? 'text.primary' : alpha(theme.palette.common.white, 0.85);
 
   return (
     <Box
       component="footer"
       sx={{
         py: { xs: 4, md: 5 },
-        bgcolor: isDark ? 'grey.50' : 'grey.900',
+        bgcolor: 'grey.50',
         borderTop: '1px solid',
-        borderColor: isDark ? 'divider' : alpha(theme.palette.common.white, 0.05),
+        borderColor: 'divider',
       }}
     >
       <Container maxWidth="lg">
@@ -29,9 +26,9 @@ export function Footer() {
           }}
         >
           {/* Left: logo + tagline */}
-          <Box sx={{ color: isDark ? 'text.primary' : alpha(theme.palette.common.white, 0.9) }}>
+          <Box>
             <Logo size="sm" />
-            <Typography sx={{ mt: 0.75, fontSize: '0.78rem', color: muted, maxWidth: 280 }}>
+            <Typography sx={{ mt: 0.75, fontSize: '0.78rem', color: 'text.secondary', maxWidth: 280 }}>
               Smart document retrieval for teams that move fast.
             </Typography>
           </Box>
@@ -43,10 +40,10 @@ export function Footer() {
               href="mailto:hello@grabdy.com"
               sx={{
                 fontSize: '0.82rem',
-                color: muted,
+                color: 'text.secondary',
                 textDecoration: 'none',
                 transition: 'color 0.2s',
-                '&:hover': { color: mutedHover },
+                '&:hover': { color: 'text.primary' },
               }}
             >
               Contact
@@ -56,10 +53,10 @@ export function Footer() {
               href="/privacy"
               sx={{
                 fontSize: '0.82rem',
-                color: muted,
+                color: 'text.secondary',
                 textDecoration: 'none',
                 transition: 'color 0.2s',
-                '&:hover': { color: mutedHover },
+                '&:hover': { color: 'text.primary' },
               }}
             >
               Privacy
@@ -69,10 +66,10 @@ export function Footer() {
               href="/terms"
               sx={{
                 fontSize: '0.82rem',
-                color: muted,
+                color: 'text.secondary',
                 textDecoration: 'none',
                 transition: 'color 0.2s',
-                '&:hover': { color: mutedHover },
+                '&:hover': { color: 'text.primary' },
               }}
             >
               Terms
@@ -81,8 +78,8 @@ export function Footer() {
         </Box>
 
         {/* Bottom copyright */}
-        <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid', borderColor: isDark ? 'divider' : alpha(theme.palette.common.white, 0.06) }}>
-          <Typography sx={{ fontSize: '0.72rem', color: isDark ? alpha(theme.palette.text.secondary, 0.6) : alpha(theme.palette.common.white, 0.25) }}>
+        <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Typography sx={{ fontSize: '0.72rem', color: alpha(theme.palette.text.secondary, 0.6) }}>
             &copy; {new Date().getFullYear()} Grabdy. All rights reserved.
           </Typography>
         </Box>

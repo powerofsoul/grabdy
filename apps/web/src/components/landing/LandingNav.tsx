@@ -53,10 +53,7 @@ export function LandingNav() {
               size="small"
               onClick={open}
               sx={{
-                boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
-                '&:hover': {
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
-                },
+                boxShadow: 'none',
               }}
             >
               Join Waitlist

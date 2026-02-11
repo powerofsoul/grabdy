@@ -43,7 +43,7 @@ export function DevTeaserSection() {
       ref={sectionRef}
       sx={{
         py: { xs: 5, md: '60px' },
-        bgcolor: 'kindle.parchment',
+        bgcolor: 'background.default',
       }}
     >
       <Container maxWidth="lg">
