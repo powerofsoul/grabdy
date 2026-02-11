@@ -3,6 +3,14 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AuthGuard } from './common/guards/auth.guard';
+import {
+  THROTTLE_LONG_LIMIT,
+  THROTTLE_LONG_TTL_MS,
+  THROTTLE_MEDIUM_LIMIT,
+  THROTTLE_MEDIUM_TTL_MS,
+  THROTTLE_SHORT_LIMIT,
+  THROTTLE_SHORT_TTL_MS,
+} from './config/constants';
 import { OrgAccessGuard } from './common/guards/org-access.guard';
 import { TokenRefreshInterceptor } from './common/interceptors/token-refresh.interceptor';
 import { EnvModule } from './config/env.config';
@@ -29,18 +37,18 @@ import { UsersModule } from './modules/users/users.module';
     ThrottlerModule.forRoot([
       {
         name: 'short',
-        ttl: 1000,
-        limit: 10,
+        ttl: THROTTLE_SHORT_TTL_MS,
+        limit: THROTTLE_SHORT_LIMIT,
       },
       {
         name: 'medium',
-        ttl: 60000,
-        limit: 100,
+        ttl: THROTTLE_MEDIUM_TTL_MS,
+        limit: THROTTLE_MEDIUM_LIMIT,
       },
       {
         name: 'long',
-        ttl: 3600000,
-        limit: 1000,
+        ttl: THROTTLE_LONG_TTL_MS,
+        limit: THROTTLE_LONG_LIMIT,
       },
     ]),
     AdminModule,

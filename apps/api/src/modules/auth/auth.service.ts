@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import type { OrgRole, UserStatus } from '@db/enums';
@@ -7,6 +12,14 @@ import * as crypto from 'crypto';
 import type { CookieOptions } from 'express';
 
 import { type DbId, extractOrgNumericId, GLOBAL_ORG, packId } from '@grabdy/common';
+import {
+  BCRYPT_SALT_ROUNDS,
+  JWT_EXPIRY,
+  JWT_MAX_AGE_MS,
+  OTP_EXPIRY_MINUTES,
+  OTP_MAX,
+  OTP_MIN,
+} from '../../config/constants';
 
 import type { JwtMembership, JwtPayload } from '../../common/guards/auth.guard';
 import { InjectEnv } from '../../config/env.config';
@@ -28,8 +41,8 @@ function parseRoles(roles: OrgRole[] | string): OrgRole[] {
   return [];
 }
 
-export const AUTH_TOKEN_EXPIRY = '7d';
-export const AUTH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+export const AUTH_TOKEN_EXPIRY = JWT_EXPIRY;
+export const AUTH_TOKEN_MAX_AGE_MS = JWT_MAX_AGE_MS;
 
 export function authCookieOptions(nodeEnv: string): CookieOptions {
   return {
@@ -107,7 +120,7 @@ export class AuthService {
   }
 
   private generateOTP(): string {
-    return crypto.randomInt(100000, 999999).toString();
+    return crypto.randomInt(OTP_MIN, OTP_MAX).toString();
   }
 
   async getCurrentUser(userId: DbId<'User'>): Promise<UserData | null> {
@@ -148,7 +161,7 @@ export class AuthService {
       throw new ConflictException('An account with this email already exists');
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     // Transaction: create user -> create org -> create membership with OWNER role
     const result = await this.db.kysely.transaction().execute(async (trx) => {
@@ -267,7 +280,7 @@ export class AuthService {
       .execute();
 
     const otp = this.generateOTP();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
     await this.db.kysely
       .insertInto('auth.auth_tokens')
@@ -308,7 +321,7 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired code');
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
 
     await this.db.kysely.transaction().execute(async (trx) => {
       await trx
@@ -357,7 +370,7 @@ export class AuthService {
     token: string,
     password: string
   ): Promise<{ user: UserData; token: string }> {
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const result = await this.db.kysely.transaction().execute(async (trx) => {
       const invitation = await trx
@@ -397,10 +410,7 @@ export class AuthService {
         })
         .execute();
 
-      await trx
-        .deleteFrom('org.org_invitations')
-        .where('id', '=', invitation.id)
-        .execute();
+      await trx.deleteFrom('org.org_invitations').where('id', '=', invitation.id).execute();
 
       return newUser;
     });

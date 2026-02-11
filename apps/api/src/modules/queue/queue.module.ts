@@ -1,6 +1,14 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Global, Module } from '@nestjs/common';
 
+import {
+  JOB_BACKOFF_DELAY_MS,
+  JOB_MAX_ATTEMPTS,
+  JOB_REMOVE_ON_COMPLETE_AGE_S,
+  JOB_REMOVE_ON_COMPLETE_COUNT,
+  JOB_REMOVE_ON_FAIL_AGE_S,
+  JOB_REMOVE_ON_FAIL_COUNT,
+} from '../../config/constants';
 import { env } from '../../config/env.config';
 
 import { DataSourceProcessor } from './processors/data-source.processor';
@@ -17,10 +25,10 @@ import { DATA_SOURCE_QUEUE } from './queue.constants';
         maxRetriesPerRequest: null,
       },
       defaultJobOptions: {
-        removeOnComplete: { age: 3600, count: 100 },
-        removeOnFail: { age: 86400, count: 200 },
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: { age: JOB_REMOVE_ON_COMPLETE_AGE_S, count: JOB_REMOVE_ON_COMPLETE_COUNT },
+        removeOnFail: { age: JOB_REMOVE_ON_FAIL_AGE_S, count: JOB_REMOVE_ON_FAIL_COUNT },
+        attempts: JOB_MAX_ATTEMPTS,
+        backoff: { type: 'exponential', delay: JOB_BACKOFF_DELAY_MS },
       },
     }),
     BullModule.registerQueue({ name: DATA_SOURCE_QUEUE }),

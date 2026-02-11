@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
 
+import { CHUNK_OVERLAP, CHUNK_SIZE, EMBEDDING_BATCH_SIZE, SUMMARY_MAX_LENGTH } from '../../../config/constants';
 import { DbService } from '../../../db/db.module';
 import { DATA_SOURCE_QUEUE } from '../queue.constants';
 
@@ -19,9 +20,6 @@ export interface DataSourceJobData {
   mimeType: string;
   collectionId: DbId<'Collection'> | null;
 }
-
-const CHUNK_SIZE = 1000;
-const CHUNK_OVERLAP = 200;
 
 function chunkText(text: string): string[] {
   const chunks: string[] = [];
@@ -66,7 +64,7 @@ export class DataSourceProcessor extends WorkerHost {
 
       // Generate embeddings in batches
       const orgNum = extractOrgNumericId(orgId);
-      const batchSize = 100;
+      const batchSize = EMBEDDING_BATCH_SIZE;
 
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
@@ -102,7 +100,7 @@ export class DataSourceProcessor extends WorkerHost {
         .set({
           status: 'READY',
           page_count: chunks.length,
-          summary: text.slice(0, 500),
+          summary: text.slice(0, SUMMARY_MAX_LENGTH),
           updated_at: new Date(),
         })
         .where('id', '=', dataSourceId)

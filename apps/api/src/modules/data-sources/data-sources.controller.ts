@@ -6,6 +6,8 @@ import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { type DbId } from '@grabdy/common';
 import { dataSourcesContract } from '@grabdy/contracts';
 
+import { MAX_FILE_SIZE_BYTES } from '../../config/constants';
+
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 
@@ -21,7 +23,7 @@ export class DataSourcesController {
 
   @OrgAccess(dataSourcesContract.upload, { params: ['orgId'] })
   @TsRestHandler(dataSourcesContract.upload)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }))
   async upload(
     @CurrentUser() user: JwtPayload,
     @UploadedFile() file: Express.Multer.File

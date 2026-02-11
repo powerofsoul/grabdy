@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
+import { API_KEY_PREFIX_LENGTH, API_KEY_RANDOM_BYTES, BCRYPT_SALT_ROUNDS } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 
 @Injectable()
@@ -13,9 +14,9 @@ export class ApiKeysService {
 
   async create(orgId: DbId<'Org'>, userId: DbId<'User'>, name: string) {
     // Generate API key with gbd_ prefix
-    const rawKey = `gbd_${crypto.randomBytes(32).toString('hex')}`;
-    const keyPrefix = rawKey.slice(0, 12);
-    const keyHash = await bcrypt.hash(rawKey, 10);
+    const rawKey = `gbd_${crypto.randomBytes(API_KEY_RANDOM_BYTES).toString('hex')}`;
+    const keyPrefix = rawKey.slice(0, API_KEY_PREFIX_LENGTH);
+    const keyHash = await bcrypt.hash(rawKey, BCRYPT_SALT_ROUNDS);
 
     const apiKey = await this.db.kysely
       .insertInto('api.api_keys')

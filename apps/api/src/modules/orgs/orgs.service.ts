@@ -6,11 +6,12 @@ import { randomBytes } from 'crypto';
 import { type DbId, dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { authLinks } from '../../common/auth-links';
+import { INVITE_EXPIRY_MS, INVITE_TOKEN_BYTES } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { EmailService } from '../email/email.service';
 
 function generateInviteToken(): string {
-  return randomBytes(32).toString('hex');
+  return randomBytes(INVITE_TOKEN_BYTES).toString('hex');
 }
 
 @Injectable()
@@ -140,7 +141,7 @@ export class OrgsService {
 
     // Create invitation for new user
     const token = generateInviteToken();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + INVITE_EXPIRY_MS);
 
     const invitation = await this.db.kysely
       .insertInto('org.org_invitations')

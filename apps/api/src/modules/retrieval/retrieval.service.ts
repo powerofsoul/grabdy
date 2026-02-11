@@ -6,6 +6,7 @@ import { sql } from 'kysely';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
+import { DEFAULT_SEARCH_LIMIT, THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { AgentFactory } from '../agent/services/agent.factory';
 import { AgentMemoryService } from '../agent/services/memory.service';
@@ -62,7 +63,7 @@ export class RetrievalService {
 
     const results = await query
       .orderBy(sql`data.chunks.embedding <=> ${embeddingStr}::vector`)
-      .limit(options.limit ?? 10)
+      .limit(options.limit ?? DEFAULT_SEARCH_LIMIT)
       .execute();
 
     const queryTimeMs = Date.now() - start;
@@ -101,7 +102,7 @@ export class RetrievalService {
         .insertInto('data.chat_threads')
         .values({
           id: packId('ChatThread', orgNum),
-          title: message.slice(0, 100),
+          title: message.slice(0, THREAD_TITLE_MAX_LENGTH),
           collection_id: options.collectionId ?? null,
           org_id: orgId,
           membership_id: membershipId,
@@ -146,7 +147,7 @@ export class RetrievalService {
         .insertInto('data.chat_threads')
         .values({
           id: packId('ChatThread', orgNum),
-          title: message.slice(0, 100),
+          title: message.slice(0, THREAD_TITLE_MAX_LENGTH),
           collection_id: options.collectionId ?? null,
           org_id: orgId,
           membership_id: membershipId,
