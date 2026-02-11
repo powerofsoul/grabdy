@@ -1,8 +1,14 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 
+import { render } from '@react-email/components';
 import * as nodemailer from 'nodemailer';
 
+import { authLinks } from '../../common/auth-links';
 import { InjectEnv } from '../../config/env.config';
+
+import { AccountSetupEmail } from './templates/account-setup';
+import { PasswordResetEmail } from './templates/password-reset';
+import { WelcomeEmail } from './templates/welcome';
 
 @Injectable()
 export class EmailService {
@@ -31,9 +37,17 @@ export class EmailService {
     });
   }
 
-  private async sendEmail(to: string, subject: string, html: string) {
+  private async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    templateName: string,
+    templateProps: Record<string, unknown>
+  ) {
     if (this.isDev) {
-      this.logger.log(`[DEV] Email skipped — To: ${to}, Subject: ${subject}`);
+      this.logger.log(`[DEV] Email skipped - Template: ${templateName}`);
+      this.logger.log(`[DEV] To: ${to}, Subject: ${subject}`);
+      this.logger.log(`[DEV] Props: ${JSON.stringify(templateProps, null, 2)}`);
       return;
     }
 
@@ -54,17 +68,28 @@ export class EmailService {
   }
 
   async sendPasswordResetOTP(to: string, name: string, otp: string) {
-    const html = `<p>Hi ${name},</p><p>Your password reset code is: <strong>${otp}</strong></p><p>This code expires in 15 minutes.</p>`;
-    await this.sendEmail(to, 'Your password reset code', html);
-  }
-
-  async sendWelcomeEmail(to: string, name: string) {
-    const html = `<p>Hi ${name},</p><p>Welcome to Grabdy! Your account has been created.</p>`;
-    await this.sendEmail(to, 'Welcome to Grabdy!', html);
+    const props = { name, otp };
+    const html = await render(PasswordResetEmail(props));
+    await this.sendEmail(to, 'Your password reset code', html, 'PasswordResetEmail', props);
   }
 
   async sendOrgInviteEmail(to: string, name: string, orgName: string, token: string) {
-    const html = `<p>Hi ${name},</p><p>You've been invited to join <strong>${orgName}</strong> on Grabdy.</p><p>Use token: ${token}</p>`;
-    await this.sendEmail(to, `You've been invited to ${orgName}`, html);
+    const setupUrl = authLinks.completeAccount(token);
+    const props = { name, setupUrl };
+    const html = await render(AccountSetupEmail(props));
+    await this.sendEmail(
+      to,
+      `You've been invited to ${orgName}`,
+      html,
+      'AccountSetupEmail',
+      props
+    );
+  }
+
+  async sendWelcomeEmail(to: string, name: string) {
+    const loginUrl = authLinks.login();
+    const props = { name, loginUrl };
+    const html = await render(WelcomeEmail(props));
+    await this.sendEmail(to, 'Welcome to Grabdy!', html, 'WelcomeEmail', props);
   }
 }

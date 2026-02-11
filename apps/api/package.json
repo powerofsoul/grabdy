@@ -10,7 +10,8 @@
     "lint": "yarn eslint src",
     "lint:fix": "yarn eslint src --fix",
     "db:migrate": "tsx src/db/migrate.ts",
-    "db:reset": "tsx src/db/migrate.ts fresh"
+    "db:reset": "tsx src/db/migrate.ts fresh",
+    "email:dev": "email dev --dir src/modules/email/templates --port 3001"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.0",
@@ -30,6 +31,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.11",
     "@nestjs/throttler": "^6.5.0",
+    "@react-email/components": "^1.0.7",
     "@ts-rest/core": "3.53.0-rc.1",
     "@ts-rest/nest": "3.53.0-rc.1",
     "ai": "^6.0.0",
@@ -55,6 +57,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.14",
+    "@react-email/preview-server": "5.2.8",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
@@ -63,6 +66,7 @@
     "@types/nodemailer": "^7.0.5",
     "@types/passport-jwt": "^4.0.1",
     "@types/pg": "^8.16.0",
+    "react-email": "^5.2.8",
     "tsx": "^4.16.0",
     "typescript": "^5.3.3"
   }
