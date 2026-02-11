@@ -25,6 +25,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   selectedOrgId: DbId<'Org'> | undefined;
+  isAdmin: boolean;
   selectOrg: (orgId: DbId<'Org'>) => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -128,6 +129,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchUserProfile();
   };
 
+  const selectedMembership = user?.memberships.find((m) => m.orgId === selectedOrgId);
+  const isAdmin = selectedMembership
+    ? selectedMembership.roles.includes('OWNER') || selectedMembership.roles.includes('ADMIN')
+    : false;
+
   return (
     <AuthContext.Provider
       value={{
@@ -135,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         selectedOrgId,
+        isAdmin,
         selectOrg,
         login,
         logout,

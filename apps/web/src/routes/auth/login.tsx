@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   Alert,
@@ -30,18 +30,26 @@ function LoginPage() {
   const [loginInProgress, setLoginInProgress] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const getRedirectPath = useCallback(() => {
+    if (!user) return '/dashboard';
+    const membership = user.memberships[0];
+    if (!membership) return '/dashboard';
+    const hasAdmin = membership.roles.includes('OWNER') || membership.roles.includes('ADMIN');
+    return hasAdmin ? '/dashboard' : '/app';
+  }, [user]);
+
   // Redirect when auth state updates (fixes race condition with setUser batching)
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
-      navigate({ to: '/dashboard' });
+      navigate({ to: getRedirectPath() });
     }
-  }, [isLoading, isAuthenticated, user, navigate]);
+  }, [isLoading, isAuthenticated, user, navigate, getRedirectPath]);
 
   useEffect(() => {
     if (loginInProgress && !isLoading && user) {
-      navigate({ to: '/dashboard' });
+      navigate({ to: getRedirectPath() });
     }
-  }, [loginInProgress, isLoading, user, navigate]);
+  }, [loginInProgress, isLoading, user, navigate, getRedirectPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
