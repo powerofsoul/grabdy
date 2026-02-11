@@ -10,13 +10,13 @@ import {
   Typography,
 } from '@mui/material';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Database, Trash2 } from 'lucide-react';
+import { Database, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FileUpload } from '@/components/ui/FileUpload';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -154,29 +154,20 @@ function CollectionDetailPage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Button
-        startIcon={<ArrowLeft size={18} />}
-        onClick={() => navigate({ to: '/dashboard/collections' })}
-        sx={{ mb: 2 }}
-      >
-        Back to Collections
-      </Button>
-
-      <PageHeader
-        title={collection.name}
-        actions={
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<Trash2 size={16} />}
-            onClick={() => setDeleteConfirm(true)}
-          >
-            Delete
-          </Button>
-        }
-      />
-
+    <DashboardPage
+      showBack
+      title={collection.name}
+      actions={
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<Trash2 size={16} />}
+          onClick={() => setDeleteConfirm(true)}
+        >
+          Delete
+        </Button>
+      }
+    >
       {collection.description && (
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           {collection.description}
@@ -231,6 +222,6 @@ function CollectionDetailPage() {
         onCancel={() => setDeleteConfirm(false)}
         isLoading={isDeleting}
       />
-    </Box>
+    </DashboardPage>
   );
 }

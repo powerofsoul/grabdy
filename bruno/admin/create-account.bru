@@ -1,0 +1,25 @@
+meta {
+  name: Create Account
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/admin/create-account
+  body: json
+  auth: none
+}
+
+headers {
+  X-API-Key: {{adminApiKey}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "florin@grabdy.com",
+    "name": "Florin Munteanu",
+    "password": "password123",
+    "orgName": "Grabdy"
+  }
+}

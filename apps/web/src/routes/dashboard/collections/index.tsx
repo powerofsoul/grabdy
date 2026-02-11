@@ -19,8 +19,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { FolderOpen, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
@@ -97,19 +97,18 @@ function CollectionsPage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <PageHeader
-        title="Collections"
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<Plus size={18} />}
-            onClick={() => setDialogOpen(true)}
-          >
-            New Collection
-          </Button>
-        }
-      />
+    <DashboardPage
+      title="Collections"
+      actions={
+        <Button
+          variant="contained"
+          startIcon={<Plus size={18} />}
+          onClick={() => setDialogOpen(true)}
+        >
+          New Collection
+        </Button>
+      }
+    >
 
       {collections.length === 0 ? (
         <EmptyState
@@ -186,6 +185,6 @@ function CollectionsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </DashboardPage>
   );
 }

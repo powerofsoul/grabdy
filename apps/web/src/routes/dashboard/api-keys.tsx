@@ -22,8 +22,8 @@ import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
@@ -121,19 +121,18 @@ function ApiKeysPage() {
   const activeKeys = keys.filter((k) => !k.revokedAt);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <PageHeader
-        title="API Keys"
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<Plus size={18} />}
-            onClick={() => setDialogOpen(true)}
-          >
-            Create Key
-          </Button>
-        }
-      />
+    <DashboardPage
+      title="API Keys"
+      actions={
+        <Button
+          variant="contained"
+          startIcon={<Plus size={18} />}
+          onClick={() => setDialogOpen(true)}
+        >
+          Create Key
+        </Button>
+      }
+    >
 
       {activeKeys.length === 0 ? (
         <EmptyState
@@ -160,7 +159,7 @@ function ApiKeysPage() {
                   <Typography variant="subtitle2" fontWeight={600}>
                     {key.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" fontFamily="monospace">
+                  <Typography variant="body2" color="text.secondary" className="font-mono">
                     {key.keyPrefix}...
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -196,6 +195,7 @@ function ApiKeysPage() {
                 Copy this key now. You will not be able to see it again.
               </Alert>
               <Box
+                className="font-mono"
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -203,12 +203,11 @@ function ApiKeysPage() {
                   bgcolor: 'grey.100',
                   borderRadius: 1,
                   p: 1.5,
-                  fontFamily: 'monospace',
                   fontSize: '0.85rem',
                   wordBreak: 'break-all',
                 }}
               >
-                <Typography sx={{ flex: 1, fontFamily: 'inherit', fontSize: 'inherit' }}>
+                <Typography sx={{ flex: 1, fontSize: 'inherit' }}>
                   {newKeyValue}
                 </Typography>
                 <CopyButton text={newKeyValue} />
@@ -260,6 +259,6 @@ function ApiKeysPage() {
         onCancel={() => setRevokeTarget(null)}
         isLoading={isRevoking}
       />
-    </Box>
+    </DashboardPage>
   );
 }
