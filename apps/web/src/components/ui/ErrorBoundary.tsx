@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               gap: 2,
             }}
           >
-            <AlertCircle size={48} color="#d32f2f" />
+            <AlertCircle size={48} color="#C44A4A" />
             <Typography variant="h6">Something went wrong</Typography>
             <Typography variant="body2" color="text.secondary">
               {this.state.error?.message || 'An unexpected error occurred'}

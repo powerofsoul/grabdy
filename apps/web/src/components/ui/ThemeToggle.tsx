@@ -1,59 +1,41 @@
-import { useState } from 'react';
-import { IconButton, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip } from '@mui/material';
-import { Moon, MoonStar, Sun } from 'lucide-react';
+import { Box, IconButton, Typography } from '@mui/material';
+import { Moon, Sun } from 'lucide-react';
 
-import { type ThemePreference, useThemeMode } from '@/context/ThemeContext';
+import { useThemeMode } from '@/context/ThemeContext';
 
-const OPTIONS: { value: ThemePreference; label: string; icon: React.ReactNode }[] = [
-  { value: 'light', label: 'Light', icon: <Sun size={16} /> },
-  { value: 'dark', label: 'Dark', icon: <Moon size={16} /> },
-  { value: 'system', label: 'System', icon: <MoonStar size={16} /> },
-];
-
-export function ThemeToggle() {
+export function ThemeToggle({ collapsed }: { collapsed?: boolean }) {
   const { preference, setPreference } = useThemeMode();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const currentIcon =
-    preference === 'light' ? (
-      <Sun size={20} />
-    ) : preference === 'dark' ? (
-      <Moon size={20} />
-    ) : (
-      <MoonStar size={20} />
+  const isDark = preference === 'dark';
+
+  const toggle = () => {
+    setPreference(isDark ? 'light' : 'dark');
+  };
+
+  if (collapsed) {
+    return (
+      <IconButton size="small" onClick={toggle} sx={{ color: 'text.secondary' }}>
+        {isDark ? <Moon size={20} /> : <Sun size={20} />}
+      </IconButton>
     );
+  }
 
   return (
-    <>
-      <Tooltip title="Theme">
-        <IconButton
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-          size="small"
-          sx={{ color: 'text.secondary' }}
-        >
-          {currentIcon}
-        </IconButton>
-      </Tooltip>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-        slotProps={{ paper: { sx: { minWidth: 140 } } }}
-      >
-        {OPTIONS.map((opt) => (
-          <MenuItem
-            key={opt.value}
-            selected={preference === opt.value}
-            onClick={() => {
-              setPreference(opt.value);
-              setAnchorEl(null);
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 32 }}>{opt.icon}</ListItemIcon>
-            <ListItemText>{opt.label}</ListItemText>
-          </MenuItem>
-        ))}
-      </Menu>
-    </>
+    <Box
+      onClick={toggle}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        cursor: 'pointer',
+        color: 'text.secondary',
+        '&:hover': { color: 'text.primary' },
+      }}
+    >
+      {isDark ? <Moon size={18} /> : <Sun size={18} />}
+      <Typography sx={{ fontSize: '0.82rem' }}>
+        {isDark ? 'Dark' : 'Light'}
+      </Typography>
+    </Box>
   );
 }

@@ -62,10 +62,13 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
       onDragLeave={handleDragLeave}
       sx={{
         border: '2px dashed',
-        borderColor: isDragOver ? 'primary.main' : 'divider',
-        borderRadius: 2,
+        borderColor: isDragOver ? 'primary.main' : 'grey.300',
+        borderRadius: 3,
         p: 4,
-        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         cursor: disabled ? 'default' : 'pointer',
         transition: 'all 0.2s',
         bgcolor: isDragOver ? 'action.hover' : 'transparent',
@@ -81,7 +84,9 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
         disabled={disabled}
         style={{ display: 'none' }}
       />
-      <Upload size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
+      <Box sx={{ color: 'grey.400', mb: 1 }}>
+        <Upload size={32} />
+      </Box>
       <Typography variant="body1" fontWeight={500}>
         Drop a file here or click to browse
       </Typography>
