@@ -124,18 +124,24 @@ export function DashboardPage({
       )}
 
       {/* Content */}
-      <Box
-        sx={{
-          flex: 1,
-          px: noPadding ? 0 : { xs: 2, md: '32px' },
-          pb: noPadding ? 0 : { xs: 2, md: '32px' },
-          pt: noPadding ? 0 : { xs: 1, md: '12px' },
-        }}
-      >
-        <Box sx={{ maxWidth: contentMaxWidth, mx: 'auto', width: '100%' }}>
+      {noPadding ? (
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {children}
         </Box>
-      </Box>
+      ) : (
+        <Box
+          sx={{
+            flex: 1,
+            px: { xs: 2, md: '32px' },
+            pb: { xs: 2, md: '32px' },
+            pt: { xs: 1, md: '12px' },
+          }}
+        >
+          <Box sx={{ maxWidth: contentMaxWidth, mx: 'auto', width: '100%' }}>
+            {children}
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }

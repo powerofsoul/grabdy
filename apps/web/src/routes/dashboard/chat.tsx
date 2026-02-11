@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
+  alpha,
   Box,
-  Button,
   CircularProgress,
   Drawer,
   IconButton,
-  List,
-  ListItemButton,
-  ListItemText,
   Stack,
   TextField,
+  Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
-import { Edit3, MessageSquare, PanelLeftOpen, Plus, Trash2 } from 'lucide-react';
+import { Edit3, History, MessageSquare, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { ChatEmptyState, ChatInput, ChatMessage, ChatMessages } from '@/components/chat';
@@ -38,6 +37,8 @@ export const Route = createFileRoute('/dashboard/chat')({
 
 function ChatPage() {
   const { selectedOrgId } = useAuth();
+  const theme = useTheme();
+  const ct = theme.palette.text.primary;
   const [threads, setThreads] = useState<Thread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<DbId<'ChatThread'> | undefined>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -221,73 +222,141 @@ function ChatPage() {
 
   const isEmpty = messages.length === 0 && !isThinking;
 
+  const activeThread = threads.find((t) => t.id === activeThreadId);
+
   return (
     <DashboardPage noPadding>
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
-      {/* Thread toggle button */}
-      <IconButton
-        onClick={() => setThreadPanelOpen(true)}
-        size="small"
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Top bar */}
+      <Box
         sx={{
-          position: 'absolute',
-          top: 8,
-          left: 8,
-          zIndex: 1,
-          color: 'text.secondary',
-          '&:hover': { color: 'text.primary' },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          height: 48,
+          flexShrink: 0,
+          borderBottom: '1px solid',
+          borderColor: alpha(ct, 0.06),
         }}
       >
-        <PanelLeftOpen size={20} />
-      </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {activeThread && (
+            <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 500 }} noWrap>
+              {activeThread.title ?? 'Untitled'}
+            </Typography>
+          )}
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Tooltip title="New chat">
+            <IconButton
+              size="small"
+              onClick={handleNewThread}
+              sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
+            >
+              <Plus size={18} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="History">
+            <IconButton
+              size="small"
+              onClick={() => setThreadPanelOpen(true)}
+              sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
+            >
+              <History size={18} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
 
-      {/* Thread Drawer */}
+      {/* Thread Drawer — RIGHT side */}
       <Drawer
-        anchor="left"
+        anchor="right"
         open={threadPanelOpen}
         onClose={() => setThreadPanelOpen(false)}
         variant="temporary"
         sx={{
           '& .MuiDrawer-paper': {
-            width: 300,
+            width: 320,
             boxSizing: 'border-box',
+            bgcolor: 'background.default',
+            borderLeft: '1px solid',
+            borderColor: alpha(ct, 0.08),
+            boxShadow: `0 0 40px ${alpha(ct, 0.08)}`,
           },
         }}
       >
-        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={<Plus size={18} />}
-            onClick={handleNewThread}
-          >
-            New Chat
-          </Button>
+        {/* Drawer header */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            height: 56,
+            borderBottom: '1px solid',
+            borderColor: alpha(ct, 0.08),
+            flexShrink: 0,
+          }}
+        >
+          <Typography sx={{ fontSize: 14, fontWeight: 600 }}>
+            Conversations
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Tooltip title="New chat">
+              <IconButton
+                size="small"
+                onClick={handleNewThread}
+                sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
+              >
+                <Plus size={16} />
+              </IconButton>
+            </Tooltip>
+            <IconButton
+              size="small"
+              onClick={() => setThreadPanelOpen(false)}
+              sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
+            >
+              <X size={16} />
+            </IconButton>
+          </Box>
         </Box>
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
+
+        {/* Thread list */}
+        <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
           {isLoadingThreads ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress size={24} />
+              <CircularProgress size={20} />
             </Box>
           ) : threads.length === 0 ? (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <Typography sx={{ fontSize: 13, color: alpha(ct, 0.4) }}>
                 No conversations yet
               </Typography>
             </Box>
           ) : (
-            <List disablePadding>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, px: 1 }}>
               {threads.map((thread) => (
-                <ListItemButton
+                <Box
                   key={thread.id}
-                  selected={thread.id === activeThreadId}
                   onClick={() => loadThread(thread.id)}
                   sx={{
-                    py: 1.5,
-                    px: 2,
-                    '&.Mui-selected': { bgcolor: 'action.selected' },
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    px: 1.5,
+                    py: 1.25,
+                    borderRadius: 1.5,
+                    cursor: 'pointer',
+                    bgcolor: thread.id === activeThreadId ? alpha(ct, 0.06) : 'transparent',
+                    transition: 'background-color 120ms ease',
+                    '&:hover': {
+                      bgcolor: alpha(ct, thread.id === activeThreadId ? 0.08 : 0.04),
+                      '& .thread-actions': { opacity: 1 },
+                    },
                   }}
                 >
-                  <MessageSquare size={16} style={{ flexShrink: 0, marginRight: 8, opacity: 0.5 }} />
+                  <MessageSquare size={15} style={{ flexShrink: 0, opacity: 0.35 }} />
                   {renamingThreadId === thread.id ? (
                     <TextField
                       size="small"
@@ -303,17 +372,26 @@ function ChatPage() {
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
-                    <ListItemText
-                      primary={thread.title ?? 'Untitled'}
-                      primaryTypographyProps={{
-                        noWrap: true,
-                        fontSize: '0.85rem',
-                      }}
-                      secondary={new Date(thread.updatedAt).toLocaleDateString()}
-                      secondaryTypographyProps={{ fontSize: '0.72rem' }}
-                    />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        noWrap
+                        sx={{
+                          fontSize: 13,
+                          fontWeight: thread.id === activeThreadId ? 600 : 400,
+                          color: thread.id === activeThreadId ? 'text.primary' : 'text.secondary',
+                        }}
+                      >
+                        {thread.title ?? 'Untitled'}
+                      </Typography>
+                      <Typography sx={{ fontSize: 11, color: alpha(ct, 0.3) }}>
+                        {new Date(thread.updatedAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
                   )}
-                  <Box sx={{ display: 'flex', gap: 0.25, ml: 0.5, flexShrink: 0 }}>
+                  <Box
+                    className="thread-actions"
+                    sx={{ display: 'flex', gap: 0, flexShrink: 0, opacity: 0, transition: 'opacity 120ms ease' }}
+                  >
                     <IconButton
                       size="small"
                       onClick={(e) => {
@@ -321,9 +399,9 @@ function ChatPage() {
                         setRenamingThreadId(thread.id);
                         setRenameValue(thread.title ?? '');
                       }}
-                      sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
+                      sx={{ color: alpha(ct, 0.35), p: 0.5, '&:hover': { color: 'text.primary' } }}
                     >
-                      <Edit3 size={14} />
+                      <Edit3 size={13} />
                     </IconButton>
                     <IconButton
                       size="small"
@@ -331,14 +409,14 @@ function ChatPage() {
                         e.stopPropagation();
                         setDeleteTarget(thread);
                       }}
-                      sx={{ opacity: 0.5, '&:hover': { opacity: 1, color: 'error.main' } }}
+                      sx={{ color: alpha(ct, 0.35), p: 0.5, '&:hover': { color: 'error.main' } }}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
                     </IconButton>
                   </Box>
-                </ListItemButton>
+                </Box>
               ))}
-            </List>
+            </Box>
           )}
         </Box>
       </Drawer>
@@ -351,12 +429,13 @@ function ChatPage() {
             alignItems: 'center',
             justifyContent: 'center',
             px: 2,
-            gap: 4,
+            gap: 3,
+            pb: 8,
           }}
         >
           <ChatEmptyState onPromptClick={handleSend} />
-          <Box sx={{ width: '100%', maxWidth: 680, '& > *': { borderTop: 'none' } }}>
-            <ChatInput onSend={handleSend} isStreaming={isStreaming} />
+          <Box sx={{ width: '100%', maxWidth: 680 }}>
+            <ChatInput onSend={handleSend} isStreaming={isStreaming} elevated />
           </Box>
         </Stack>
       ) : (

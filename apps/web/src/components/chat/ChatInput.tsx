@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { alpha, Box, IconButton, useTheme } from '@mui/material';
-import { Send } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 
 interface ChatInputProps {
   onSend: (message: string) => void | Promise<void>;
   isStreaming: boolean;
   disabled?: boolean;
   placeholder?: string;
+  elevated?: boolean;
 }
 
 export function ChatInput({
@@ -15,15 +16,14 @@ export function ChatInput({
   isStreaming,
   disabled = false,
   placeholder = 'Ask anything about your documents...',
+  elevated = false,
 }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const theme = useTheme();
   const ct = theme.palette.text.primary;
-  const primary = theme.palette.primary.main;
 
-  // Focus input after streaming completes
   useEffect(() => {
     if (!isStreaming && !disabled) {
       const timer = setTimeout(() => inputRef.current?.focus(), 100);
@@ -31,12 +31,11 @@ export function ChatInput({
     }
   }, [isStreaming, disabled]);
 
-  // Auto-resize textarea
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
   const handleSend = useCallback(async () => {
@@ -69,75 +68,92 @@ export function ChatInput({
     <Box
       sx={{
         px: { xs: 2, md: 3 },
-        pb: 2,
-        pt: 1,
-        borderTop: '1px solid',
-        borderColor: alpha(ct, 0.06),
+        pb: elevated ? 0 : 2,
+        pt: elevated ? 0 : 1,
+        ...(elevated ? {} : {
+          borderTop: '1px solid',
+          borderColor: alpha(ct, 0.06),
+        }),
         flexShrink: 0,
       }}
     >
       <Box
         sx={{
-          maxWidth: 768,
+          maxWidth: 720,
           mx: 'auto',
           width: '100%',
         }}
       >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: 1,
-          px: 2,
-          py: 1,
-          borderRadius: 1.5,
-          border: '1px solid',
-          borderColor: focused ? alpha(primary, 0.3) : alpha(ct, 0.1),
-          transition: 'border-color 0.15s ease',
-        }}
-      >
         <Box
-          component="textarea"
-          ref={inputRef}
-          value={input}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          disabled={isStreaming || disabled}
-          placeholder={placeholder}
-          rows={1}
           sx={{
-            flex: 1,
-            border: 'none',
-            outline: 'none',
-            resize: 'none',
-            bgcolor: 'transparent',
-            color: 'text.primary',
-            fontSize: '0.82rem',
-            lineHeight: 1.6,
-            p: 0,
-            '&::placeholder': {
-              color: alpha(ct, 0.25),
-            },
-            '&:disabled': {
-              opacity: 0.5,
-            },
-          }}
-        />
-        <IconButton
-          onClick={handleSend}
-          disabled={!hasInput || isStreaming || disabled}
-          size="small"
-          sx={{
-            p: 0.5,
-            color: hasInput ? primary : alpha(ct, 0.15),
-            transition: 'color 0.15s ease',
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 1,
+            px: 2.5,
+            py: 1.5,
+            borderRadius: elevated ? 3 : 2,
+            border: '1px solid',
+            borderColor: focused ? alpha(ct, 0.15) : alpha(ct, 0.08),
+            bgcolor: elevated ? 'background.paper' : 'transparent',
+            boxShadow: elevated
+              ? `0 2px 12px ${alpha(ct, 0.06)}, 0 0 0 1px ${alpha(ct, focused ? 0.12 : 0.04)}`
+              : 'none',
+            transition: 'border-color 150ms ease, box-shadow 150ms ease',
           }}
         >
-          <Send size={14} />
-        </IconButton>
-      </Box>
+          <Box
+            component="textarea"
+            ref={inputRef}
+            value={input}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            disabled={isStreaming || disabled}
+            placeholder={placeholder}
+            rows={1}
+            sx={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              resize: 'none',
+              bgcolor: 'transparent',
+              color: 'text.primary',
+              fontSize: elevated ? '0.9rem' : '0.85rem',
+              lineHeight: 1.6,
+              p: 0,
+              fontFamily: 'inherit',
+              '&::placeholder': {
+                color: alpha(ct, 0.3),
+              },
+              '&:disabled': {
+                opacity: 0.5,
+              },
+            }}
+          />
+          <IconButton
+            onClick={handleSend}
+            disabled={!hasInput || isStreaming || disabled}
+            size="small"
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: '8px',
+              bgcolor: hasInput ? 'text.primary' : alpha(ct, 0.06),
+              color: hasInput ? 'background.default' : alpha(ct, 0.2),
+              transition: 'all 150ms ease',
+              '&:hover': {
+                bgcolor: hasInput ? alpha(ct, 0.85) : alpha(ct, 0.1),
+              },
+              '&.Mui-disabled': {
+                bgcolor: alpha(ct, 0.06),
+                color: alpha(ct, 0.2),
+              },
+            }}
+          >
+            <ArrowUp size={16} strokeWidth={2.5} />
+          </IconButton>
+        </Box>
       </Box>
     </Box>
   );
