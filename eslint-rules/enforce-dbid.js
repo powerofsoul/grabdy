@@ -2,13 +2,13 @@
  * ESLint rule: enforce-dbid
  *
  * Enforces that any identifier ending with "Id" (camelCase) is typed as
- * DbId<'...'> rather than plain string — everywhere in the codebase.
+ * DbId<'...'> or NonDbId<'...'> rather than plain string.
  *
  * Checks: function parameters, variable declarations, class properties,
  * interface/type properties, object destructuring.
  *
  * Catches: `userId: string`, `collectionId: string`, `orgId: string`, etc.
- * Allows: `DbId<'User'>`, `DbId<'Collection'> | null`, `Generated<DbId<'User'>>`, etc.
+ * Allows: `DbId<'User'>`, `NonDbId<'CanvasCard'>`, `DbId<'Collection'> | null`, etc.
  *
  * Exceptions:
  * - The bare name `id` (primary keys are Generated<DbId<...>>)
@@ -17,18 +17,19 @@
 /** @type {Set<string>} Names that are NOT branded IDs */
 const EXCEPTIONS = new Set([]);
 
+
 /**
- * Check if a type annotation node contains "DbId" somewhere.
- * Works for: DbId<'User'>, DbId<'Collection'> | null, Generated<DbId<'User'>>, etc.
+ * Check if a type annotation node contains "DbId" or "NonDbId" somewhere.
+ * Works for: DbId<'User'>, NonDbId<'CanvasCard'>, DbId<'Collection'> | null, Generated<DbId<'User'>>, etc.
  */
 function containsBrandedId(node) {
   if (!node) return false;
 
-  // TSTypeReference: check if it's DbId<...>, or Generated<DbId<...>>
+  // TSTypeReference: check if it's DbId<...>, NonDbId<...>, or Generated<DbId<...>>
   if (node.type === 'TSTypeReference') {
     const typeName = node.typeName;
     if (typeName?.type === 'Identifier') {
-      if (typeName.name === 'DbId' || typeName.name === 'OrgNumericId') return true;
+      if (typeName.name === 'DbId' || typeName.name === 'NonDbId' || typeName.name === 'OrgNumericId') return true;
     }
     // Check type parameters (e.g. Generated<DbId<'User'>>)
     if (node.typeArguments?.params) {
@@ -79,7 +80,7 @@ const rule = {
     },
     messages: {
       requireDbId:
-        '"{{name}}" ends with "Id" but is typed as plain string. Use DbId<\'Table\'> instead.',
+        '"{{name}}" ends with "Id" but is typed as plain string. Use DbId<\'Table\'> or NonDbId<\'Entity\'> instead.',
     },
     schema: [],
   },
