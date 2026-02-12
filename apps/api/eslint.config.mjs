@@ -3,6 +3,7 @@ import tseslint from 'typescript-eslint';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import prettier from 'eslint-config-prettier';
 import enforceDbId from '../../eslint-rules/enforce-dbid.js';
+import enforceEntityTypeMap from '../../eslint-rules/enforce-entity-type-map.js';
 
 export default tseslint.config(
   {
@@ -21,7 +22,12 @@ export default tseslint.config(
     },
     plugins: {
       'simple-import-sort': simpleImportSort,
-      local: { rules: { 'enforce-dbid': enforceDbId } },
+      local: {
+        rules: {
+          'enforce-dbid': enforceDbId,
+          'enforce-entity-type-map': enforceEntityTypeMap,
+        },
+      },
     },
     rules: {
       // Branded ID enforcement
@@ -53,6 +59,15 @@ export default tseslint.config(
         },
       ],
       'simple-import-sort/exports': 'error',
+    },
+  },
+
+  // Migration files: enforce ENTITY_TYPE_MAP, disable branded ID checks
+  {
+    files: ['src/db/migrations/**/*.ts'],
+    rules: {
+      'local/enforce-entity-type-map': 'error',
+      'local/enforce-dbid': 'off',
     },
   },
 

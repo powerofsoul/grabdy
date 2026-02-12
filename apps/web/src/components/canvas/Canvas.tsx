@@ -22,14 +22,19 @@ import {
 
 import '@xyflow/react/dist/style.css';
 
+import { type NonDbId, nonDbIdSchema, packNonDbId } from '@grabdy/common';
 import type { CanvasEdge, Card } from '@grabdy/contracts';
+
+import { useAuth } from '../../context/AuthContext';
+
+const parseCardId = nonDbIdSchema('CanvasCard').parse;
+const parseEdgeId = nonDbIdSchema('CanvasEdge').parse;
 
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CardNode } from './CardNode';
 import { CustomEdge } from './CustomEdge';
-
-const COLLISION_PADDING = 12;
+import { renderComponent } from './componentRegistry';
 
 /**
  * Given two nodes, compute the best side (handle) for source and target
@@ -74,12 +79,15 @@ interface ContextMenuState {
 interface CanvasProps {
   nodes: Node[];
   edges: Edge[];
-  onDeleteCard: (cardId: string) => void;
-  onMoveCard: (cardId: string, position: { x: number; y: number }) => void;
+  onDeleteCard: (cardId: NonDbId<'CanvasCard'>) => void;
+  onMoveCard: (cardId: NonDbId<'CanvasCard'>, position: { x: number; y: number }) => void;
   onEdgesChange: (edges: CanvasEdge[]) => void;
-  onComponentEdit?: (cardId: string, componentId: string, data: Record<string, unknown>) => void;
-  onLockToggle?: (cardId: string) => void;
-  onTitleEdit?: (cardId: string, title: string) => void;
+  onAddEdge?: (edge: CanvasEdge) => void;
+  onDeleteEdge?: (edgeId: NonDbId<'CanvasEdge'>) => void;
+  onComponentEdit?: (cardId: NonDbId<'CanvasCard'>, componentId: NonDbId<'CanvasComponent'>, data: Record<string, unknown>) => void;
+  onTitleEdit?: (cardId: NonDbId<'CanvasCard'>, title: string) => void;
+  onResizeCard?: (cardId: NonDbId<'CanvasCard'>, width: number) => void;
+  onReorderCard?: (cardId: NonDbId<'CanvasCard'>, direction: 'front' | 'back') => void;
   onAddCard?: (card: Card) => void;
   isMaximized?: boolean;
   onToggleMaximize?: () => void;
@@ -89,7 +97,6 @@ const NODE_TYPES = { card: CardNode };
 const EDGE_TYPES = { custom: CustomEdge };
 const DEFAULT_EDGE_OPTIONS = { type: 'custom' };
 const FIT_VIEW_OPTIONS = { padding: 0.3, duration: 500 };
-const DUPLICATE_OFFSET = 30;
 
 export function Canvas({
   nodes: externalNodes,
@@ -97,18 +104,26 @@ export function Canvas({
   onDeleteCard,
   onMoveCard,
   onEdgesChange: onEdgesChangeProp,
+  onAddEdge,
+  onDeleteEdge,
   onComponentEdit,
-  onLockToggle,
   onTitleEdit,
+  onResizeCard,
+  onReorderCard,
   onAddCard,
   isMaximized,
   onToggleMaximize,
 }: CanvasProps) {
   const theme = useTheme();
+  const { selectedOrgId } = useAuth();
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const prevNodeCount = useRef(0);
 
   const isEmpty = externalNodes.length === 0;
+
+  // Placement mode state
+  const [pendingCard, setPendingCard] = useState<Card | null>(null);
+  const [mouseScreenPos, setMouseScreenPos] = useState({ x: 0, y: 0 });
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -120,13 +135,16 @@ export function Canvas({
         ...node,
         data: {
           ...node.data,
-          onDelete: () => onDeleteCard(node.id),
-          onLockToggle,
+          onDelete: () => onDeleteCard(parseCardId(node.id)),
           onComponentEdit,
           onTitleEdit,
+          onResize: onResizeCard
+            ? (cardId: string, width: number) =>
+                onResizeCard(parseCardId(cardId), width)
+            : undefined,
         },
       })),
-    [externalNodes, onDeleteCard, onLockToggle, onComponentEdit, onTitleEdit],
+    [externalNodes, onDeleteCard, onComponentEdit, onTitleEdit, onResizeCard],
   );
 
   // ReactFlow manages local node state (smooth dragging)
@@ -144,16 +162,16 @@ export function Canvas({
   }, [externalEdges, setLocalEdges]);
 
   // Inject onEdgeDataChange callback ref (set after handleEdgeDataChange is defined)
-  const edgeDataChangeRef = useRef<(edgeId: string, data: Record<string, unknown>) => void>();
+  const edgeDataChangeRef = useRef<(edgeId: NonDbId<'CanvasEdge'>, data: Record<string, unknown>) => void>();
 
   // Debounce edge saves to backend
   const edgeSaveTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const edgesToCanvasEdges = useCallback((rfEdges: Edge[]): CanvasEdge[] => {
     return rfEdges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
+      id: parseEdgeId(e.id),
+      source: parseCardId(e.source),
+      target: parseCardId(e.target),
       label: typeof e.label === 'string' ? e.label : undefined,
       strokeWidth: typeof e.data?.strokeWidth === 'number' ? e.data.strokeWidth : 2,
     }));
@@ -174,44 +192,62 @@ export function Canvas({
         if (exists) return prev;
 
         // Store as card-to-card — no handle IDs (computed dynamically)
+        if (!selectedOrgId) return prev;
+        const edgeId = packNonDbId('CanvasEdge', selectedOrgId);
         const newEdge: Edge = {
-          id: `e-${connection.source}-${connection.target}`,
+          id: edgeId,
           type: 'custom',
           source: connection.source,
           target: connection.target,
           data: { strokeWidth: 2 },
         };
-        const updated = [...prev, newEdge];
-        clearTimeout(edgeSaveTimer.current);
-        edgeSaveTimer.current = setTimeout(() => {
-          onEdgesChangeProp(edgesToCanvasEdges(updated));
-        }, 500);
-        return updated;
+        const canvasEdge: CanvasEdge = {
+          id: edgeId,
+          source: parseCardId(newEdge.source),
+          target: parseCardId(newEdge.target),
+          strokeWidth: 2,
+        };
+        if (onAddEdge) {
+          onAddEdge(canvasEdge);
+        } else {
+          const updated = [...prev, newEdge];
+          clearTimeout(edgeSaveTimer.current);
+          edgeSaveTimer.current = setTimeout(() => {
+            onEdgesChangeProp(edgesToCanvasEdges(updated));
+          }, 500);
+        }
+        return [...prev, newEdge];
       });
     },
-    [onEdgesChangeProp, setLocalEdges, edgesToCanvasEdges],
+    [onEdgesChangeProp, onAddEdge, setLocalEdges, edgesToCanvasEdges, selectedOrgId],
   );
 
   const onLocalEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
       handleEdgesChange(changes);
-      const hasRemoval = changes.some((c) => c.type === 'remove');
-      if (hasRemoval) {
-        clearTimeout(edgeSaveTimer.current);
-        edgeSaveTimer.current = setTimeout(() => {
-          setLocalEdges((current) => {
-            onEdgesChangeProp(edgesToCanvasEdges(current));
-            return current;
-          });
-        }, 500);
+      const removals = changes.filter((c) => c.type === 'remove');
+      if (removals.length > 0) {
+        if (onDeleteEdge) {
+          for (const removal of removals) {
+            onDeleteEdge(parseEdgeId(removal.id));
+          }
+        } else {
+          clearTimeout(edgeSaveTimer.current);
+          edgeSaveTimer.current = setTimeout(() => {
+            setLocalEdges((current) => {
+              onEdgesChangeProp(edgesToCanvasEdges(current));
+              return current;
+            });
+          }, 500);
+        }
       }
     },
-    [handleEdgesChange, onEdgesChangeProp, setLocalEdges, edgesToCanvasEdges],
+    [handleEdgesChange, onEdgesChangeProp, onDeleteEdge, setLocalEdges, edgesToCanvasEdges],
   );
 
   // Called by CustomEdge when arrow/stroke properties change
   const handleEdgeDataChange = useCallback(
-    (edgeId: string, newData: Record<string, unknown>) => {
+    (edgeId: NonDbId<'CanvasEdge'>, newData: Record<string, unknown>) => {
       setLocalEdges((prev) => {
         const updated = prev.map((e) =>
           e.id === edgeId ? { ...e, data: { ...e.data, ...newData } } : e,
@@ -226,7 +262,7 @@ export function Canvas({
     [onEdgesChangeProp, setLocalEdges, edgesToCanvasEdges],
   );
 
-  edgeDataChangeRef.current = handleEdgeDataChange;
+  useEffect(() => { edgeDataChangeRef.current = handleEdgeDataChange; }, [handleEdgeDataChange]);
 
   // Compute best handles + inject callbacks into edge data
   const edgesWithCallbacks = useMemo((): Edge[] => {
@@ -242,7 +278,7 @@ export function Canvas({
         data: {
           ...edge.data,
           onEdgeDataChange: (newData: Record<string, unknown>) => {
-            edgeDataChangeRef.current?.(edge.id, newData);
+            edgeDataChangeRef.current?.(parseEdgeId(edge.id), newData);
           },
         },
       };
@@ -256,53 +292,22 @@ export function Canvas({
     }
   }, [externalNodes.length]);
 
-  // Track node count (no auto-zoom on new cards)
+  // Auto-fit when first nodes appear (0 → N transition)
   useEffect(() => {
+    if (prevNodeCount.current === 0 && externalNodes.length > 0 && reactFlowRef.current) {
+      // Small delay lets ReactFlow measure the new nodes before fitting
+      setTimeout(() => {
+        reactFlowRef.current?.fitView(FIT_VIEW_OPTIONS);
+      }, 50);
+    }
     prevNodeCount.current = externalNodes.length;
   }, [externalNodes.length]);
 
   const handleNodeDragStop: OnNodeDrag = useCallback(
     (_event, node) => {
-      // Resolve collisions: nudge dragged node so it doesn't overlap others
-      const dragged = node;
-      const dw = (dragged.measured?.width ?? dragged.width ?? 400);
-      const dh = (dragged.measured?.height ?? dragged.height ?? 300);
-      let { x, y } = dragged.position;
-
-      for (const other of nodes) {
-        if (other.id === dragged.id) continue;
-        const ow = (other.measured?.width ?? other.width ?? 400);
-        const oh = (other.measured?.height ?? other.height ?? 300);
-
-        // AABB overlap check with padding
-        const overlapX = x < other.position.x + ow + COLLISION_PADDING && x + dw + COLLISION_PADDING > other.position.x;
-        const overlapY = y < other.position.y + oh + COLLISION_PADDING && y + dh + COLLISION_PADDING > other.position.y;
-
-        if (overlapX && overlapY) {
-          // Find the smallest nudge direction
-          const nudgeRight = other.position.x + ow + COLLISION_PADDING - x;
-          const nudgeLeft = x + dw + COLLISION_PADDING - other.position.x;
-          const nudgeDown = other.position.y + oh + COLLISION_PADDING - y;
-          const nudgeUp = y + dh + COLLISION_PADDING - other.position.y;
-          const min = Math.min(nudgeRight, nudgeLeft, nudgeDown, nudgeUp);
-
-          if (min === nudgeRight) x += nudgeRight;
-          else if (min === nudgeLeft) x -= nudgeLeft;
-          else if (min === nudgeDown) y += nudgeDown;
-          else y -= nudgeUp;
-        }
-      }
-
-      // If position changed due to collision, update the node visually
-      if (x !== dragged.position.x || y !== dragged.position.y) {
-        setNodes((prev) =>
-          prev.map((n) => (n.id === dragged.id ? { ...n, position: { x, y } } : n)),
-        );
-      }
-
-      onMoveCard(node.id, { x, y });
+      onMoveCard(parseCardId(node.id), node.position);
     },
-    [nodes, onMoveCard, setNodes],
+    [onMoveCard],
   );
 
   // Right-click context menu on nodes
@@ -314,10 +319,13 @@ export function Canvas({
     [],
   );
 
-  // Prevent default context menu on canvas pane
+  // Prevent default context menu on canvas pane + cancel placement
   const handlePaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent) => {
     event.preventDefault();
-  }, []);
+    if (pendingCard) {
+      setPendingCard(null);
+    }
+  }, [pendingCard]);
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
@@ -325,57 +333,85 @@ export function Canvas({
 
   // Context menu actions
   const handleContextDelete = useCallback(() => {
-    if (contextMenu) onDeleteCard(contextMenu.nodeId);
+    if (contextMenu) onDeleteCard(parseCardId(contextMenu.nodeId));
   }, [contextMenu, onDeleteCard]);
 
-  const handleContextLockToggle = useCallback(() => {
-    if (contextMenu) onLockToggle?.(contextMenu.nodeId);
-  }, [contextMenu, onLockToggle]);
-
   const handleBringToFront = useCallback(() => {
-    if (!contextMenu) return;
-    const maxZ = nodes.reduce((max, n) => Math.max(max, n.zIndex ?? 0), 0);
-    setNodes((prev) =>
-      prev.map((n) => (n.id === contextMenu.nodeId ? { ...n, zIndex: maxZ + 1 } : n)),
-    );
-  }, [contextMenu, nodes, setNodes]);
+    if (contextMenu && onReorderCard) onReorderCard(parseCardId(contextMenu.nodeId), 'front');
+  }, [contextMenu, onReorderCard]);
 
   const handleSendToBack = useCallback(() => {
-    if (!contextMenu) return;
-    const minZ = nodes.reduce((min, n) => Math.min(min, n.zIndex ?? 0), 0);
-    setNodes((prev) =>
-      prev.map((n) => (n.id === contextMenu.nodeId ? { ...n, zIndex: minZ - 1 } : n)),
-    );
-  }, [contextMenu, nodes, setNodes]);
+    if (contextMenu && onReorderCard) onReorderCard(parseCardId(contextMenu.nodeId), 'back');
+  }, [contextMenu, onReorderCard]);
 
   const handleDuplicate = useCallback(() => {
     if (!contextMenu || !onAddCard) return;
     const sourceNode = externalNodes.find((n) => n.id === contextMenu.nodeId);
     if (!sourceNode) return;
-    // node.data is the Card object (set in cardToNode), clone via JSON for deep copy
     const cloned: Card = JSON.parse(JSON.stringify(sourceNode.data));
-    cloned.id = `dup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    cloned.position = {
-      x: sourceNode.position.x + DUPLICATE_OFFSET,
-      y: sourceNode.position.y + DUPLICATE_OFFSET,
-    };
-    onAddCard(cloned);
-  }, [contextMenu, externalNodes, onAddCard]);
+    if (!selectedOrgId) return;
+    cloned.id = packNonDbId('CanvasCard', selectedOrgId);
+    cloned.position = { x: 0, y: 0 };
+    setPendingCard(cloned);
+  }, [contextMenu, externalNodes, onAddCard, selectedOrgId]);
 
-  // Get locked state for context menu
-  const contextMenuNode = contextMenu ? nodes.find((n) => n.id === contextMenu.nodeId) : null;
-  const contextMenuMeta = contextMenuNode?.data?.metadata;
-  const contextMenuIsLocked = contextMenuMeta !== null
-    && contextMenuMeta !== undefined
-    && typeof contextMenuMeta === 'object'
-    && 'locked' in contextMenuMeta
-    && contextMenuMeta.locked === true;
+  // --- Placement mode handlers ---
+
+  const ghostZoomRef = useRef(1);
+
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent) => {
+      if (!pendingCard) return;
+      setMouseScreenPos({ x: event.clientX, y: event.clientY });
+      if (reactFlowRef.current) {
+        ghostZoomRef.current = reactFlowRef.current.getZoom();
+      }
+    },
+    [pendingCard],
+  );
+
+  const handlePaneClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (!pendingCard || !onAddCard || !reactFlowRef.current) return;
+      event.stopPropagation();
+      const width = pendingCard.width ?? 400;
+      const flowPos = reactFlowRef.current.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      onAddCard({ ...pendingCard, position: { x: flowPos.x - width / 2, y: flowPos.y } });
+      setPendingCard(null);
+    },
+    [pendingCard, onAddCard],
+  );
+
+  // Escape key cancels placement
+  useEffect(() => {
+    if (!pendingCard) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPendingCard(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pendingCard]);
 
   const nodeTypes = useMemo(() => NODE_TYPES, []);
   const edgeTypes = useMemo(() => EDGE_TYPES, []);
 
+  const isPlacing = pendingCard !== null;
+
   return (
-    <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        cursor: isPlacing ? 'crosshair' : undefined,
+        bgcolor: theme.palette.mode === 'dark'
+          ? alpha(theme.palette.background.default, 0.6)
+          : alpha(theme.palette.text.primary, 0.02),
+      }}
+      onMouseMove={handleMouseMove}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edgesWithCallbacks}
@@ -389,19 +425,22 @@ export function Canvas({
         onNodeDragStop={handleNodeDragStop}
         onNodeContextMenu={handleNodeContextMenu}
         onPaneContextMenu={handlePaneContextMenu}
+        onPaneClick={handlePaneClick}
         fitView={externalNodes.length > 0}
         fitViewOptions={FIT_VIEW_OPTIONS}
         minZoom={0.1}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         connectionMode={ConnectionMode.Loose}
-        nodesDraggable
-        nodesConnectable
+        nodesDraggable={!isPlacing}
+        nodesConnectable={!isPlacing}
+        elementsSelectable={!isPlacing}
       >
         <Background
-          variant={BackgroundVariant.Lines}
-          gap={24}
-          color={alpha(theme.palette.text.primary, 0.04)}
+          variant={BackgroundVariant.Dots}
+          gap={20}
+          size={1}
+          color={alpha(theme.palette.text.primary, 0.08)}
         />
 
         {/* Empty state overlay */}
@@ -456,7 +495,7 @@ export function Canvas({
           </Panel>
         )}
 
-        {onAddCard && <CanvasToolbar onAddCard={onAddCard} />}
+        {onAddCard && <CanvasToolbar onStartPlacement={setPendingCard} />}
 
         {onToggleMaximize && (
           <Panel position="bottom-right">
@@ -481,15 +520,37 @@ export function Canvas({
         )}
       </ReactFlow>
 
+      {/* Ghost card overlay during placement mode */}
+      {pendingCard && (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: mouseScreenPos.x,
+            top: mouseScreenPos.y,
+            width: pendingCard.width ?? 400,
+            opacity: 0.7,
+            pointerEvents: 'none',
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: alpha(theme.palette.primary.main, 0.3),
+            borderRadius: 2,
+            p: 1,
+            boxShadow: `0 4px 20px ${alpha(theme.palette.text.primary, 0.15)}`,
+            transform: `translate(-50%, 0) scale(${ghostZoomRef.current})`,
+            transformOrigin: 'top center',
+          }}
+        >
+          {renderComponent(pendingCard.component, parseCardId(pendingCard.id))}
+        </Box>
+      )}
+
       <CanvasContextMenu
         anchorPosition={contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null}
-        isLocked={contextMenuIsLocked}
         onClose={closeContextMenu}
         onDelete={handleContextDelete}
-        onLockToggle={handleContextLockToggle}
         onDuplicate={handleDuplicate}
-        onBringToFront={handleBringToFront}
-        onSendToBack={handleSendToBack}
+        onBringToFront={onReorderCard ? handleBringToFront : undefined}
+        onSendToBack={onReorderCard ? handleSendToBack : undefined}
       />
     </Box>
   );

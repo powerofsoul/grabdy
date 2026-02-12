@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { sql } from 'kysely';
 
-import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import { type DbId, packId } from '@grabdy/common';
 
 import { DbService } from '../../db/db.module';
 
@@ -14,7 +14,7 @@ export class CollectionsService {
     const collection = await this.db.kysely
       .insertInto('data.collections')
       .values({
-        id: packId('Collection', extractOrgNumericId(orgId)),
+        id: packId('Collection', orgId),
         name: data.name,
         description: data.description ?? null,
         org_id: orgId,

@@ -36,6 +36,9 @@ export const DataSourceType = {
 } as const;
 export type DataSourceType = (typeof DataSourceType)[keyof typeof DataSourceType];
 
-export const dataSourceStatusEnum = z.enum(['UPLOADED', 'PROCESSING', 'READY', 'FAILED']);
-export const dataSourceTypeEnum = z.enum(['PDF', 'CSV', 'DOCX', 'TXT', 'JSON']);
-export const orgRoleEnum = z.enum(['OWNER', 'ADMIN', 'MEMBER']);
+const objectValues = <T extends Record<string, string>>(obj: T) =>
+  Object.values(obj) as [T[keyof T], ...T[keyof T][]];
+
+export const dataSourceStatusEnum = z.enum(objectValues(DataSourceStatus));
+export const dataSourceTypeEnum = z.enum(objectValues(DataSourceType));
+export const orgRoleEnum = z.enum(objectValues(OrgRole));

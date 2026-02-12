@@ -1,9 +1,10 @@
+import { ENTITY_TYPE_MAP } from '@grabdy/common';
 import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`
     CREATE TABLE auth.users (
-      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, 2),
+      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.User)}),
       email TEXT NOT NULL,
       name TEXT NOT NULL,
       password_hash TEXT,
@@ -13,7 +14,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE UNIQUE INDEX users_email_key ON auth.users (email);
-    ALTER TABLE auth.users ADD CONSTRAINT chk_users_entity_type CHECK (extract_entity_type(id) = 2);
+    ALTER TABLE auth.users ADD CONSTRAINT chk_users_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.User)});
     ALTER TABLE auth.users ADD CONSTRAINT chk_users_org CHECK (extract_org_numeric_id(id) = 0);
   `.execute(db);
 }

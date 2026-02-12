@@ -1,3 +1,4 @@
+import { ENTITY_TYPE_MAP } from '@grabdy/common';
 import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
@@ -5,7 +6,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     CREATE SCHEMA IF NOT EXISTS analytics;
 
     CREATE TABLE analytics.ai_usage_logs (
-      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, 64),
+      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.AiUsageLog)}),
       model TEXT NOT NULL,
       provider TEXT NOT NULL,
       caller_type TEXT NOT NULL CHECK (caller_type IN ('MEMBER', 'SYSTEM')),
@@ -26,7 +27,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     CREATE INDEX ai_usage_logs_org_id_model_idx ON analytics.ai_usage_logs (org_id, model);
     CREATE INDEX ai_usage_logs_org_id_request_type_idx ON analytics.ai_usage_logs (org_id, request_type);
 
-    ALTER TABLE analytics.ai_usage_logs ADD CONSTRAINT chk_ai_usage_logs_entity_type CHECK (extract_entity_type(id) = 64);
+    ALTER TABLE analytics.ai_usage_logs ADD CONSTRAINT chk_ai_usage_logs_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.AiUsageLog)});
     ALTER TABLE analytics.ai_usage_logs ADD CONSTRAINT chk_ai_usage_logs_org CHECK (extract_org_numeric_id(id) = extract_org_numeric_id(org_id));
 
     CREATE OR REPLACE FUNCTION ai_usage_logs_append_only()

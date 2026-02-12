@@ -12,6 +12,13 @@ export interface ModelInfo {
 }
 
 export const MODEL_INFO = {
+  'openai/gpt-5-mini': {
+    label: 'GPT-5 Mini',
+    provider: 'OpenAI',
+    contextWindow: 1047576,
+    maxOutput: 32768,
+    pricing: { inputPerMillion: 0.30, outputPerMillion: 1.25 },
+  },
   'openai/gpt-4o-mini': {
     label: 'GPT-4o Mini',
     provider: 'OpenAI',

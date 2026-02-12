@@ -15,7 +15,7 @@ import express from 'express';
 import basicAuth from 'express-basic-auth';
 
 import { env } from './config/env.config';
-import { DATA_SOURCE_QUEUE } from './modules/queue/queue.constants';
+import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE } from './modules/queue/queue.constants';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -31,9 +31,10 @@ async function bootstrap() {
   serverAdapter.setBasePath('/admin/queues');
 
   const dataSourceQueue = app.get<Queue>(getQueueToken(DATA_SOURCE_QUEUE));
+  const canvasOpsQueue = app.get<Queue>(getQueueToken(CANVAS_OPS_QUEUE));
 
   createBullBoard({
-    queues: [new BullMQAdapter(dataSourceQueue)],
+    queues: [new BullMQAdapter(dataSourceQueue), new BullMQAdapter(canvasOpsQueue)],
     serverAdapter,
   });
 
@@ -53,7 +54,14 @@ async function bootstrap() {
     origin: isDev ? true : env.frontendUrl,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'X-API-Key'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'X-API-Key',
+    ],
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });

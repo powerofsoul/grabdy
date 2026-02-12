@@ -1,9 +1,10 @@
+import { ENTITY_TYPE_MAP } from '@grabdy/common';
 import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`
     CREATE TABLE auth.auth_tokens (
-      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, 4),
+      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.AuthToken)}),
       token TEXT NOT NULL,
       type "TokenType" NOT NULL,
       expires_at TIMESTAMPTZ NOT NULL,
@@ -13,7 +14,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     );
     CREATE UNIQUE INDEX auth_tokens_token_key ON auth.auth_tokens (token);
     CREATE INDEX auth_tokens_user_id_idx ON auth.auth_tokens (user_id);
-    ALTER TABLE auth.auth_tokens ADD CONSTRAINT chk_auth_tokens_entity_type CHECK (extract_entity_type(id) = 4);
+    ALTER TABLE auth.auth_tokens ADD CONSTRAINT chk_auth_tokens_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.AuthToken)});
     ALTER TABLE auth.auth_tokens ADD CONSTRAINT chk_auth_tokens_org CHECK (extract_org_numeric_id(id) = 0);
   `.execute(db);
 }

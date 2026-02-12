@@ -1,6 +1,6 @@
-import type { ColumnType, GeneratedAlways } from 'kysely';
-
 import type { DbId, OrgNumericId } from '@grabdy/common';
+import type { CanvasState } from '@grabdy/contracts';
+import type { ColumnType, GeneratedAlways } from 'kysely';
 
 import type {
   AiCallerType,
@@ -132,6 +132,7 @@ export interface ChatThread {
   id: Generated<DbId<'ChatThread'>>;
   title: string | null;
   collection_id: DbId<'Collection'> | null;
+  canvas_state: ColumnType<CanvasState | null, CanvasState | null | undefined, CanvasState | null>;
   org_id: DbId<'Org'>;
   membership_id: DbId<'OrgMembership'>;
   created_at: Generated<Timestamp>;

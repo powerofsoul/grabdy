@@ -1,9 +1,10 @@
+import { ENTITY_TYPE_MAP } from '@grabdy/common';
 import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`
     CREATE TABLE org.org_invitations (
-      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, 3),
+      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.OrgInvitation)}),
       email TEXT NOT NULL,
       name TEXT NOT NULL,
       roles "OrgRole"[] NOT NULL,

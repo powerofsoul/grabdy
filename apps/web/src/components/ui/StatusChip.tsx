@@ -1,12 +1,13 @@
 import { Chip } from '@mui/material';
+import { green, grey, red } from '@mui/material/colors';
 
 import { type DataSourceStatus } from '@grabdy/contracts';
 
 const STATUS_CONFIG: Record<DataSourceStatus, { label: string; color: string; bgColor: string }> = {
-  UPLOADED: { label: 'Uploaded', color: '#6A6A6A', bgColor: '#F3F2EF' },
-  PROCESSING: { label: 'Processing', color: '#6A6A6A', bgColor: '#F3F2EF' },
-  READY: { label: 'Ready', color: '#4A6741', bgColor: '#EEF2EC' },
-  FAILED: { label: 'Failed', color: '#C44A4A', bgColor: '#FDF5F5' },
+  UPLOADED: { label: 'Uploaded', color: grey[600], bgColor: grey[100] },
+  PROCESSING: { label: 'Processing', color: grey[600], bgColor: grey[100] },
+  READY: { label: 'Ready', color: green[800], bgColor: green[50] },
+  FAILED: { label: 'Failed', color: red[700], bgColor: red[50] },
 };
 
 interface StatusChipProps {

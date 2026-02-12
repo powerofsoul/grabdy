@@ -3,7 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
-import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import { type DbId, packId } from '@grabdy/common';
 
 import { API_KEY_PREFIX_LENGTH, API_KEY_RANDOM_BYTES, BCRYPT_SALT_ROUNDS } from '../../config/constants';
 import { DbService } from '../../db/db.module';
@@ -21,7 +21,7 @@ export class ApiKeysService {
     const apiKey = await this.db.kysely
       .insertInto('api.api_keys')
       .values({
-        id: packId('ApiKey', extractOrgNumericId(orgId)),
+        id: packId('ApiKey', orgId),
         name,
         key_hash: keyHash,
         key_prefix: keyPrefix,

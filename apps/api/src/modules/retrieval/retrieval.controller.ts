@@ -1,18 +1,26 @@
-import { Body, Controller, Param, Post, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Body, Controller, Logger, NotFoundException, Param, Post, Res } from '@nestjs/common';
 
+import { type DbId, dbIdSchema } from '@grabdy/common';
+import { retrievalContract, streamChatBodySchema } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
+import { Response } from 'express';
+import type { z } from 'zod';
 
-import { dbIdSchema, extractOrgNumericId } from '@grabdy/common';
-import { retrievalContract } from '@grabdy/contracts';
+type StreamChatBody = z.infer<typeof streamChatBodySchema>;
 
-import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentMembership,
+  JwtMembership,
+} from '../../common/decorators/current-membership.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
 import { RetrievalService } from './retrieval.service';
 
 @Controller()
 export class RetrievalController {
+  private readonly logger = new Logger(RetrievalController.name);
+
   constructor(private retrievalService: RetrievalService) {}
 
   @OrgAccess(retrievalContract.query, { params: ['orgId'] })
@@ -45,19 +53,9 @@ export class RetrievalController {
 
   @OrgAccess(retrievalContract.chat, { params: ['orgId'] })
   @TsRestHandler(retrievalContract.chat)
-  async chat(@CurrentUser() user: JwtPayload) {
+  async chat(@CurrentMembership() membership: JwtMembership) {
     return tsRestHandler(retrievalContract.chat, async ({ params, body }) => {
       try {
-        const orgNum = extractOrgNumericId(params.orgId);
-        const membership = user.memberships.find((m) => extractOrgNumericId(m.id) === orgNum);
-
-        if (!membership) {
-          return {
-            status: 400 as const,
-            body: { success: false as const, error: 'No membership found' },
-          };
-        }
-
         const result = await this.retrievalService.chat(params.orgId, membership.id, body.message, {
           threadId: body.threadId,
           collectionId: body.collectionId,
@@ -82,20 +80,36 @@ export class RetrievalController {
     });
   }
 
-  @OrgAccess(retrievalContract.listThreads, { params: ['orgId'] })
-  @TsRestHandler(retrievalContract.listThreads)
-  async listThreads(@CurrentUser() user: JwtPayload) {
-    return tsRestHandler(retrievalContract.listThreads, async ({ params }) => {
-      const orgNum = extractOrgNumericId(params.orgId);
-      const membership = user.memberships.find((m) => extractOrgNumericId(m.id) === orgNum);
+  @OrgAccess(retrievalContract.createThread, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.createThread)
+  async createThread(@CurrentMembership() membership: JwtMembership) {
+    return tsRestHandler(retrievalContract.createThread, async ({ params, body }) => {
+      try {
+        const thread = await this.retrievalService.createThread(params.orgId, membership.id, {
+          title: body.title,
+          collectionId: body.collectionId,
+        });
 
-      if (!membership) {
         return {
           status: 200 as const,
-          body: { success: true as const, data: [] },
+          body: { success: true as const, data: thread },
+        };
+      } catch (error) {
+        return {
+          status: 400 as const,
+          body: {
+            success: false as const,
+            error: error instanceof Error ? error.message : 'Failed to create thread',
+          },
         };
       }
+    });
+  }
 
+  @OrgAccess(retrievalContract.listThreads, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.listThreads)
+  async listThreads(@CurrentMembership() membership: JwtMembership) {
+    return tsRestHandler(retrievalContract.listThreads, async ({ params }) => {
       const threads = await this.retrievalService.listThreads(params.orgId, membership.id);
 
       return {
@@ -159,7 +173,7 @@ export class RetrievalController {
         const thread = await this.retrievalService.renameThread(
           params.orgId,
           params.threadId,
-          body.title,
+          body.title
         );
 
         return {
@@ -178,49 +192,162 @@ export class RetrievalController {
     });
   }
 
+  @OrgAccess(retrievalContract.moveCanvasCard, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.moveCanvasCard)
+  async moveCanvasCard() {
+    return tsRestHandler(retrievalContract.moveCanvasCard, async ({ params, body }) => {
+      try {
+        const canvasState = await this.retrievalService.moveCanvasCard(
+          params.orgId,
+          params.threadId,
+          params.cardId,
+          body
+        );
+        return { status: 200 as const, body: { success: true as const, canvasState } };
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          return { status: 404 as const, body: { success: false as const, error: error.message } };
+        }
+        throw error;
+      }
+    });
+  }
+
+  @OrgAccess(retrievalContract.updateCanvasEdges, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.updateCanvasEdges)
+  async updateCanvasEdges() {
+    return tsRestHandler(retrievalContract.updateCanvasEdges, async ({ params, body }) => {
+      try {
+        const canvasState = await this.retrievalService.updateCanvasEdges(
+          params.orgId,
+          params.threadId,
+          body.edges
+        );
+        return { status: 200 as const, body: { success: true as const, canvasState } };
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          return { status: 404 as const, body: { success: false as const, error: error.message } };
+        }
+        throw error;
+      }
+    });
+  }
+
+  @OrgAccess(retrievalContract.deleteCanvasCard, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.deleteCanvasCard)
+  async deleteCanvasCard() {
+    return tsRestHandler(retrievalContract.deleteCanvasCard, async ({ params }) => {
+      try {
+        const canvasState = await this.retrievalService.deleteCanvasCard(
+          params.orgId,
+          params.threadId,
+          params.cardId
+        );
+        return { status: 200 as const, body: { success: true as const, canvasState } };
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          return { status: 404 as const, body: { success: false as const, error: error.message } };
+        }
+        throw error;
+      }
+    });
+  }
+
+  @OrgAccess(retrievalContract.addCanvasEdge, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.addCanvasEdge)
+  async addCanvasEdge() {
+    return tsRestHandler(retrievalContract.addCanvasEdge, async ({ params, body }) => {
+      try {
+        const canvasState = await this.retrievalService.addCanvasEdge(
+          params.orgId,
+          params.threadId,
+          body.edge
+        );
+        return { status: 200 as const, body: { success: true as const, canvasState } };
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          return { status: 404 as const, body: { success: false as const, error: error.message } };
+        }
+        throw error;
+      }
+    });
+  }
+
+  @OrgAccess(retrievalContract.deleteCanvasEdge, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.deleteCanvasEdge)
+  async deleteCanvasEdge() {
+    return tsRestHandler(retrievalContract.deleteCanvasEdge, async ({ params }) => {
+      try {
+        const canvasState = await this.retrievalService.deleteCanvasEdge(
+          params.orgId,
+          params.threadId,
+          params.edgeId
+        );
+        return { status: 200 as const, body: { success: true as const, canvasState } };
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          return { status: 404 as const, body: { success: false as const, error: error.message } };
+        }
+        throw error;
+      }
+    });
+  }
+
+  @OrgAccess(retrievalContract.updateCanvasComponent, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.updateCanvasComponent)
+  async updateCanvasComponent() {
+    return tsRestHandler(retrievalContract.updateCanvasComponent, async ({ params, body }) => {
+      try {
+        const canvasState = await this.retrievalService.updateCanvasComponent(
+          params.orgId,
+          params.threadId,
+          params.cardId,
+          params.componentId,
+          body.data
+        );
+        return { status: 200 as const, body: { success: true as const, canvasState } };
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          return { status: 404 as const, body: { success: false as const, error: error.message } };
+        }
+        throw error;
+      }
+    });
+  }
+
+  @OrgAccess(retrievalContract.addCanvasCard, { params: ['orgId'] })
+  @TsRestHandler(retrievalContract.addCanvasCard)
+  async addCanvasCard() {
+    return tsRestHandler(retrievalContract.addCanvasCard, async ({ params, body }) => {
+      try {
+        const canvasState = await this.retrievalService.addCanvasCard(
+          params.orgId,
+          params.threadId,
+          body.card
+        );
+        return { status: 200 as const, body: { success: true as const, canvasState } };
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          return { status: 404 as const, body: { success: false as const, error: error.message } };
+        }
+        throw error;
+      }
+    });
+  }
+
   @OrgAccess({ params: ['orgId'] })
   @Post('/api/orgs/:orgId/chat/stream')
   async streamChat(
-    @Param('orgId') orgIdRaw: string,
-    @CurrentUser() user: JwtPayload,
-    @Body() body: { message: string; threadId?: string; collectionId?: string },
-    @Res() res: Response,
+    @Param('orgId', new ZodValidationPipe(dbIdSchema('Org')))
+    orgId: DbId<'Org'>,
+    @CurrentMembership() membership: JwtMembership,
+    @Body(new ZodValidationPipe(streamChatBodySchema)) body: StreamChatBody,
+    @Res() res: Response
   ) {
-    const orgIdResult = dbIdSchema('Org').safeParse(orgIdRaw);
-    if (!orgIdResult.success) {
-      res.status(400).json({ success: false, error: 'Invalid org ID' });
-      return;
-    }
-    const orgId = orgIdResult.data;
-
-    const orgNum = extractOrgNumericId(orgId);
-    const membership = user.memberships.find((m) => extractOrgNumericId(m.id) === orgNum);
-
-    if (!membership) {
-      res.status(400).json({ success: false, error: 'No membership found' });
-      return;
-    }
-
-    const threadIdResult = body.threadId
-      ? dbIdSchema('ChatThread').safeParse(body.threadId)
-      : undefined;
-    if (threadIdResult && !threadIdResult.success) {
-      res.status(400).json({ success: false, error: 'Invalid thread ID' });
-      return;
-    }
-
-    const collectionIdResult = body.collectionId
-      ? dbIdSchema('Collection').safeParse(body.collectionId)
-      : undefined;
-    if (collectionIdResult && !collectionIdResult.success) {
-      res.status(400).json({ success: false, error: 'Invalid collection ID' });
-      return;
-    }
-
     try {
       const result = await this.retrievalService.streamChat(orgId, membership.id, body.message, {
-        threadId: threadIdResult?.data,
-        collectionId: collectionIdResult?.data,
+        threadId: body.threadId,
+        collectionId: body.collectionId,
       });
 
       // AI SDK v5 data stream protocol
@@ -230,9 +357,68 @@ export class RetrievalController {
       res.setHeader('X-Vercel-AI-Data-Stream', 'v1');
       res.flushHeaders();
 
-      for await (const chunk of result.streamResult.textStream) {
-        res.write(`0:${JSON.stringify(chunk)}\n`);
+      const canvasToolNames = new Set([
+        'canvas_add_card',
+        'canvas_remove_card',
+        'canvas_move_card',
+        'canvas_update_component',
+        'canvas_add_edge',
+        'canvas_remove_edge',
+      ]);
+
+      const streamStart = Date.now();
+      let textChunks = 0;
+
+      const reader = result.streamResult.fullStream.getReader();
+      try {
+        while (true) {
+          const { done, value: part } = await reader.read();
+          if (done) break;
+          if (!part) continue;
+
+          if (part.type === 'text-delta') {
+            const payload = part.payload;
+            if (textChunks === 0) {
+              this.logger.log(`[stream] First text chunk at +${Date.now() - streamStart}ms`);
+            }
+            textChunks++;
+            res.write(`0:${JSON.stringify(payload.text)}\n`);
+          } else if (part.type === 'tool-call') {
+            const payload = part.payload;
+            this.logger.log(
+              `[stream] Tool call: ${payload.toolName} at +${Date.now() - streamStart}ms args=${JSON.stringify(payload.args).slice(0, 200)}`
+            );
+          } else if (part.type === 'tool-result') {
+            const payload = part.payload;
+            const resultPreview = JSON.stringify(payload.result).slice(0, 300);
+            this.logger.log(
+              `[stream] Tool result: ${payload.toolName} at +${Date.now() - streamStart}ms result=${resultPreview}`
+            );
+            if (canvasToolNames.has(payload.toolName)) {
+              res.write(
+                `8:${JSON.stringify({
+                  type: 'canvas_update',
+                  tool: payload.toolName,
+                  args: payload.args,
+                  result: payload.result,
+                })}\n`
+              );
+            }
+          } else if (part.type === 'step-finish') {
+            this.logger.log(
+              `[stream] Step finished at +${Date.now() - streamStart}ms (${textChunks} text chunks so far)`
+            );
+          } else {
+            this.logger.debug(`[stream] ${part.type} at +${Date.now() - streamStart}ms`);
+          }
+        }
+      } finally {
+        reader.releaseLock();
       }
+
+      this.logger.log(
+        `[stream] Complete at +${Date.now() - streamStart}ms, ${textChunks} text chunks total`
+      );
 
       // Send done metadata
       res.write(
@@ -240,7 +426,7 @@ export class RetrievalController {
           type: 'done',
           threadId: result.threadId,
           sources: [],
-        })}\n`,
+        })}\n`
       );
 
       res.end();

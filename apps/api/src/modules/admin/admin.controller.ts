@@ -1,6 +1,6 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 
-import { DbId, extractOrgNumericId, GLOBAL_ORG, packId } from '@grabdy/common';
+import { dbIdSchema, GLOBAL_ORG, packId } from '@grabdy/common';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
@@ -80,7 +80,7 @@ export class AdminController {
       const membership = await trx
         .insertInto('org.org_memberships')
         .values({
-          id: packId('OrgMembership', extractOrgNumericId(newOrg.id)),
+          id: packId('OrgMembership', newOrg.id),
           user_id: newUser.id,
           org_id: newOrg.id,
           roles: ['OWNER'],
@@ -115,7 +115,11 @@ export class AdminController {
   ) {
     const { email, name, roles } = body;
     const normalizedEmail = email.toLowerCase();
-    const typedOrgId = orgId as DbId<'Org'>;
+    const parsed = dbIdSchema('Org').safeParse(orgId);
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid org ID' };
+    }
+    const typedOrgId = parsed.data;
 
     // Check org exists
     const org = await this.db.kysely
@@ -151,7 +155,7 @@ export class AdminController {
       await this.db.kysely
         .insertInto('org.org_memberships')
         .values({
-          id: packId('OrgMembership', extractOrgNumericId(typedOrgId)),
+          id: packId('OrgMembership', typedOrgId),
           user_id: existingUser.id,
           org_id: typedOrgId,
           roles,
@@ -168,7 +172,7 @@ export class AdminController {
     await this.db.kysely
       .insertInto('org.org_invitations')
       .values({
-        id: packId('OrgInvitation', extractOrgNumericId(typedOrgId)),
+        id: packId('OrgInvitation', typedOrgId),
         email: normalizedEmail,
         name,
         roles,

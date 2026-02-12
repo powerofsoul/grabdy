@@ -51,13 +51,12 @@ export class DataSourcesService {
     const storagePath = path.join(orgDir, filename);
     fs.writeFileSync(storagePath, file.buffer);
 
-    const orgNum = extractOrgNumericId(orgId);
     const collectionId = options.collectionId ?? null;
 
     const dataSource = await this.db.kysely
       .insertInto('data.data_sources')
       .values({
-        id: packId('DataSource', orgNum),
+        id: packId('DataSource', orgId),
         name: options.name ?? file.originalname,
         filename: file.originalname,
         mime_type: file.mimetype,

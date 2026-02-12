@@ -1,15 +1,16 @@
+import { ENTITY_TYPE_MAP } from '@grabdy/common';
 import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`
     CREATE TABLE org.orgs (
-      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, 1),
+      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.Org)}),
       name TEXT NOT NULL,
       numeric_id INT NOT NULL UNIQUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
-    ALTER TABLE org.orgs ADD CONSTRAINT chk_orgs_entity_type CHECK (extract_entity_type(id) = 1);
+    ALTER TABLE org.orgs ADD CONSTRAINT chk_orgs_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.Org)});
     ALTER TABLE org.orgs ADD CONSTRAINT chk_orgs_org CHECK (extract_org_numeric_id(id) = numeric_id);
 
     -- BEFORE INSERT trigger: generates a random numeric_id and a packed UUID
@@ -18,7 +19,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     LANGUAGE plpgsql AS $$
     BEGIN
       NEW.numeric_id := generate_random_org_numeric_id();
-      NEW.id := make_packed_uuid(NEW.numeric_id, 1);
+      NEW.id := make_packed_uuid(NEW.numeric_id, ${sql.lit(ENTITY_TYPE_MAP.Org)});
       RETURN NEW;
     END;
     $$;

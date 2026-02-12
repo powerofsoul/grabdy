@@ -7,11 +7,12 @@ import {
 import { JwtService } from '@nestjs/jwt';
 
 import type { OrgRole, UserStatus } from '@db/enums';
+import { type DbId, GLOBAL_ORG, packId } from '@grabdy/common';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import type { CookieOptions } from 'express';
 
-import { type DbId, extractOrgNumericId, GLOBAL_ORG, packId } from '@grabdy/common';
+import type { JwtMembership, JwtPayload } from '../../common/guards/auth.guard';
 import {
   BCRYPT_SALT_ROUNDS,
   JWT_EXPIRY,
@@ -20,8 +21,6 @@ import {
   OTP_MAX,
   OTP_MIN,
 } from '../../config/constants';
-
-import type { JwtMembership, JwtPayload } from '../../common/guards/auth.guard';
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { EmailService } from '../email/email.service';
@@ -192,7 +191,7 @@ export class AuthService {
       await trx
         .insertInto('org.org_memberships')
         .values({
-          id: packId('OrgMembership', extractOrgNumericId(newOrg.id)),
+          id: packId('OrgMembership', newOrg.id),
           user_id: newUser.id,
           org_id: newOrg.id,
           roles: ['OWNER'],
@@ -403,7 +402,7 @@ export class AuthService {
       await trx
         .insertInto('org.org_memberships')
         .values({
-          id: packId('OrgMembership', extractOrgNumericId(invitation.org_id)),
+          id: packId('OrgMembership', invitation.org_id),
           user_id: newUser.id,
           org_id: invitation.org_id,
           roles: invitation.roles,

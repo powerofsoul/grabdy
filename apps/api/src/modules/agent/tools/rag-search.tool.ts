@@ -42,6 +42,7 @@ export class RagSearchTool {
             'data.chunks.metadata',
             'data.data_sources.name as data_source_name',
             'data.data_sources.id as data_source_id',
+            'data.data_sources.collection_id',
             sql<number>`1 - (data.chunks.embedding <=> ${embeddingStr}::vector)`.as('score'),
           ])
           .where('data.chunks.org_id', '=', orgId);
@@ -63,6 +64,7 @@ export class RagSearchTool {
             metadata: (r.metadata ?? {}) as Record<string, unknown>,
             dataSourceName: r.data_source_name,
             dataSourceId: r.data_source_id,
+            collectionId: r.collection_id,
           })),
         };
       },

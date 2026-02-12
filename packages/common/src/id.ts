@@ -23,8 +23,14 @@ export type TableIdName =
 // ── Entity Type Maps ─────────────────────────────────────────────────────
 
 /**
+ * All entity names — DB tables + non-table entities.
+ * Non-table names listed inline to avoid circular dependency with non-db-id.ts.
+ */
+export type EntityIdName = TableIdName | 'CanvasCard' | 'CanvasEdge' | 'CanvasComponent';
+
+/**
  * Maps each entity type to a unique byte value embedded in packed UUIDs.
- * Used by packId() to stamp the entity type into byte 10 of the ID.
+ * Used by packId() / packNonDbId() to stamp the entity type into byte 10.
  */
 export const ENTITY_TYPE_MAP = {
   // Top-level / Global
@@ -42,13 +48,16 @@ export const ENTITY_TYPE_MAP = {
   ApiKey: 0x20,
   // Chat
   ChatThread: 0x30,
+  CanvasCard: 0x31,
+  CanvasEdge: 0x32,
+  CanvasComponent: 0x33,
   // Analytics
   AiUsageLog: 0x40,
-} as const satisfies Record<TableIdName, number>;
+} as const satisfies Record<EntityIdName, number>;
 
-const ENTITY_TYPE_REVERSE: Record<number, TableIdName> = Object.fromEntries(
+const ENTITY_TYPE_REVERSE: Record<number, EntityIdName> = Object.fromEntries(
   Object.entries(ENTITY_TYPE_MAP).map(([k, v]) => [v, k]),
-) as Record<number, TableIdName>;
+) as Record<number, EntityIdName>;
 
 // ── DbId<T> ──────────────────────────────────────────────────────────────
 
@@ -107,7 +116,7 @@ export function bytesToUuid(bytes: Uint8Array): string {
 }
 
 /**
- * Generates a packed UUID for the given entity type and organization.
+ * Generates a packed UUID for a database table entity.
  *
  * Layout (16 bytes):
  * - Bytes 0-3:   orgNumericId (uint32 big-endian)
@@ -117,25 +126,20 @@ export function bytesToUuid(bytes: Uint8Array): string {
  */
 export function packId<T extends TableIdName>(
   entityType: T,
-  orgNumericId: OrgNumericId,
+  org: DbId<'Org'> | OrgNumericId,
 ): DbId<T> {
   const buf = new Uint8Array(16);
   const view = new DataView(buf.buffer);
 
-  // Bytes 0-3: org numeric ID (uint32 big-endian)
-  view.setUint32(0, orgNumericId, false);
+  const orgNum = typeof org === 'string' ? extractOrgNumericId(org) : org;
+  view.setUint32(0, orgNum, false);
 
-  // Bytes 4-9: timestamp as uint48 big-endian
   const now = Date.now();
-  // Upper 16 bits of the 48-bit timestamp → bytes 4-5
   view.setUint16(4, Math.floor(now / 0x100000000), false);
-  // Lower 32 bits → bytes 6-9
   view.setUint32(6, now >>> 0, false);
 
-  // Byte 10: entity type
   buf[10] = ENTITY_TYPE_MAP[entityType];
 
-  // Bytes 11-15: crypto random
   const random = new Uint8Array(5);
   crypto.getRandomValues(random);
   buf.set(random, 11);
@@ -158,7 +162,7 @@ export function extractOrgNumericId(uuid: string): OrgNumericId {
 }
 
 /** Extracts the entity type (byte 10) from a packed UUID. Returns null if unknown. */
-export function extractEntityType(uuid: string): TableIdName | null {
+export function extractEntityType(uuid: string): EntityIdName | null {
   const hex = stripHyphens(uuid);
   const entityByte = parseInt(hex.slice(20, 22), 16);
   return ENTITY_TYPE_REVERSE[entityByte] ?? null;
@@ -188,7 +192,7 @@ export function idBelongsToOrg(
 }
 
 /** Returns true if the packed UUID has the expected entity type byte. */
-export function isEntityType<T extends TableIdName>(
+export function isEntityType<T extends EntityIdName>(
   id: string,
   expected: T,
 ): boolean {

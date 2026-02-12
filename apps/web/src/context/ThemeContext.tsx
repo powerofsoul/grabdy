@@ -13,7 +13,7 @@ import { PaletteMode, ThemeProvider as MuiThemeProvider } from '@mui/material';
 import { STORAGE_KEYS } from '../lib/storage-keys';
 import { createAppTheme } from '../theme';
 
-export type ThemePreference = 'light' | 'dark' | 'system';
+type ThemePreference = 'light' | 'dark' | 'system';
 
 interface ThemeContextValue {
   mode: PaletteMode;

@@ -1,6 +1,11 @@
 import { ApiFetcherArgs, initClient } from '@ts-rest/core';
 
+import { nonDbIdSchema } from '@grabdy/common';
+import type { CanvasEdge, Card } from '@grabdy/contracts';
 import { contract } from '@grabdy/contracts';
+
+const cardIdSchema = nonDbIdSchema('CanvasCard');
+const edgeIdSchema = nonDbIdSchema('CanvasEdge');
 
 const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -54,21 +59,109 @@ export const api = initClient(contract, {
   api: customFetcher,
 });
 
-export { baseUrl };
+export type CanvasUpdate =
+  | { tool: 'canvas_add_card'; args: { cards: unknown[] }; result: { cards?: Card[] } }
+  | { tool: 'canvas_remove_card'; args: { cardId: string }; result: unknown }
+  | { tool: 'canvas_move_card'; args: { cardId: string; position?: { x: number; y: number }; width?: number; height?: number }; result: unknown }
+  | { tool: 'canvas_update_component'; args: { cardId: string; componentId: string; data: Record<string, unknown> }; result: unknown }
+  | { tool: 'canvas_add_edge'; args: { edge: CanvasEdge }; result: unknown }
+  | { tool: 'canvas_remove_edge'; args: { edgeId: string }; result: unknown };
 
-export interface StreamCallbacks {
+interface StreamCallbacks {
   onText: (text: string) => void;
   onDone: (metadata: { threadId?: string; sources?: StreamSource[] }) => void;
+  onCanvasUpdate?: (update: CanvasUpdate) => void;
   onError?: (error: Error) => void;
 }
 
-export interface StreamSource {
+interface StreamSource {
   chunkId: string;
   content: string;
   score: number;
   metadata: Record<string, unknown>;
   dataSourceName: string;
   dataSourceId: string;
+}
+
+const CANVAS_TOOL_NAMES = new Set([
+  'canvas_add_card',
+  'canvas_remove_card',
+  'canvas_move_card',
+  'canvas_update_component',
+  'canvas_add_edge',
+  'canvas_remove_edge',
+]);
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
+function rec(v: unknown): Record<string, unknown> {
+  return isRecord(v) ? v : {};
+}
+
+function toCanvasUpdate(tool: string, args: unknown, result: unknown): CanvasUpdate | null {
+  if (!CANVAS_TOOL_NAMES.has(tool)) return null;
+  const a = rec(args);
+  switch (tool) {
+    case 'canvas_add_card': {
+      const r = rec(result);
+      return {
+        tool: 'canvas_add_card',
+        args: { cards: Array.isArray(a['cards']) ? a['cards'] : [] },
+        result: { cards: Array.isArray(r['cards']) ? r['cards'] : undefined },
+      };
+    }
+    case 'canvas_remove_card':
+      return { tool: 'canvas_remove_card', args: { cardId: String(a['cardId'] ?? '') }, result };
+    case 'canvas_move_card': {
+      const pos = rec(a['position']);
+      return {
+        tool: 'canvas_move_card',
+        args: {
+          cardId: String(a['cardId'] ?? ''),
+          position: a['position'] ? { x: Number(pos['x']), y: Number(pos['y']) } : undefined,
+          width: typeof a['width'] === 'number' ? a['width'] : undefined,
+          height: typeof a['height'] === 'number' ? a['height'] : undefined,
+        },
+        result,
+      };
+    }
+    case 'canvas_update_component':
+      return {
+        tool: 'canvas_update_component',
+        args: {
+          cardId: String(a['cardId'] ?? ''),
+          componentId: String(a['componentId'] ?? ''),
+          data: rec(a['data']),
+        },
+        result,
+      };
+    case 'canvas_add_edge': {
+      const e = rec(a['edge']);
+      const id = edgeIdSchema.safeParse(String(e['id'] ?? ''));
+      const source = cardIdSchema.safeParse(String(e['source'] ?? ''));
+      const target = cardIdSchema.safeParse(String(e['target'] ?? ''));
+      if (!id.success || !source.success || !target.success) return null;
+      return {
+        tool: 'canvas_add_edge',
+        args: {
+          edge: {
+            id: id.data,
+            source: source.data,
+            target: target.data,
+            label: typeof e['label'] === 'string' ? e['label'] : undefined,
+            strokeWidth: typeof e['strokeWidth'] === 'number' ? e['strokeWidth'] : 2,
+          },
+        },
+        result,
+      };
+    }
+    case 'canvas_remove_edge':
+      return { tool: 'canvas_remove_edge', args: { edgeId: String(a['edgeId'] ?? '') }, result };
+    default:
+      return null;
+  }
 }
 
 export async function streamChat(
@@ -129,16 +222,25 @@ export async function streamChat(
               type: string;
               threadId?: string;
               sources?: StreamSource[];
+              tool?: string;
+              args?: unknown;
+              result?: unknown;
             };
             if (metadata.type === 'done') {
               callbacks.onDone({
                 threadId: metadata.threadId,
                 sources: metadata.sources,
               });
+            } else if (metadata.type === 'canvas_update' && callbacks.onCanvasUpdate && metadata.tool) {
+              const update = toCanvasUpdate(metadata.tool, metadata.args, metadata.result);
+              if (update) {
+                callbacks.onCanvasUpdate(update);
+              }
             }
           }
-        } catch {
-          // skip malformed lines
+        } catch (e) {
+          console.error('[stream] Failed to parse line:', typeCode, e);
+          callbacks.onError?.(e instanceof Error ? e : new Error(String(e)));
         }
       }
     }

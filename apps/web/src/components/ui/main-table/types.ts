@@ -108,7 +108,7 @@ interface InternalBaseProps<T, K extends Record<string, string>> {
 }
 
 /** Data mode props for internal use */
-export interface InternalDataProps<T, K extends Record<string, string>> extends InternalBaseProps<
+interface InternalDataProps<T, K extends Record<string, string>> extends InternalBaseProps<
   T,
   K
 > {
@@ -118,7 +118,7 @@ export interface InternalDataProps<T, K extends Record<string, string>> extends 
 }
 
 /** Endpoint mode props for internal use */
-export interface InternalEndpointProps<
+interface InternalEndpointProps<
   T,
   K extends Record<string, string>,
 > extends InternalBaseProps<T, K> {

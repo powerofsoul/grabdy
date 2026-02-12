@@ -1,9 +1,10 @@
+import { ENTITY_TYPE_MAP } from '@grabdy/common';
 import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`
     CREATE TABLE data.data_sources (
-      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, 17),
+      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.DataSource)}),
       name TEXT NOT NULL,
       filename TEXT NOT NULL,
       mime_type TEXT NOT NULL,
@@ -21,7 +22,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     );
     CREATE INDEX data_sources_org_id_idx ON data.data_sources (org_id);
     CREATE INDEX data_sources_collection_id_idx ON data.data_sources (collection_id);
-    ALTER TABLE data.data_sources ADD CONSTRAINT chk_data_sources_entity_type CHECK (extract_entity_type(id) = 17);
+    ALTER TABLE data.data_sources ADD CONSTRAINT chk_data_sources_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.DataSource)});
     ALTER TABLE data.data_sources ADD CONSTRAINT chk_data_sources_org CHECK (extract_org_numeric_id(id) = extract_org_numeric_id(org_id));
   `.execute(db);
 }

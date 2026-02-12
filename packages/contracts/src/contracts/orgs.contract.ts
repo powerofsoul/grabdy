@@ -2,6 +2,8 @@ import { dbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
+import { orgRoleEnum } from '../enums.js';
+
 const c = initContract();
 
 const orgSchema = z.object({
@@ -69,7 +71,7 @@ export const orgsContract = c.router(
       body: z.object({
         email: z.string().email(),
         name: z.string(),
-        roles: z.array(z.enum(['OWNER', 'ADMIN', 'MEMBER'])),
+        roles: z.array(orgRoleEnum),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: pendingInvitationSchema }),

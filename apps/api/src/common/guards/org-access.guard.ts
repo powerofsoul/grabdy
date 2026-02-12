@@ -2,9 +2,8 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
 import { Reflector } from '@nestjs/core';
 
 import type { OrgRole } from '@db/enums';
-import { Request } from 'express';
-
 import { extractOrgNumericId, type OrgNumericId, UUID_RE } from '@grabdy/common';
+import { Request } from 'express';
 
 import { ORG_ACCESS_KEY, OrgAccessMetadata } from '../decorators/org-roles.decorator';
 
@@ -80,6 +79,9 @@ export class OrgAccessGuard implements CanActivate {
     if (!membership) {
       throw new ForbiddenException('You do not have access to this organization');
     }
+
+    // Attach resolved membership so handlers can use @CurrentMembership()
+    req.orgMembership = membership;
 
     if (metadata.roles.length > 0) {
       const memberRoles: OrgRole[] = membership.roles;

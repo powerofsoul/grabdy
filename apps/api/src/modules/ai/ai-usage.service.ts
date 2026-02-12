@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import { type DbId, packId } from '@grabdy/common';
 import { calculateCost, MODEL_INFO, type ModelId } from '@grabdy/contracts';
 
 import { DbService } from '../../db/db.module';
@@ -35,12 +35,10 @@ export class AiUsageService {
     try {
       const modelInfo = MODEL_INFO[model];
       const cost = calculateCost(model, inputTokens, outputTokens);
-      const orgNum = extractOrgNumericId(context.orgId);
-
       await this.db.kysely
         .insertInto('analytics.ai_usage_logs')
         .values({
-          id: packId('AiUsageLog', orgNum),
+          id: packId('AiUsageLog', context.orgId),
           model,
           provider: modelInfo.provider,
           caller_type: callerType,

@@ -27,6 +27,7 @@ createRoot(document.getElementById('root')!).render(
             <DrawerProvider>
               <Toaster
                 position="top-right"
+                closeButton
                 toastOptions={{
                   style: {
                     borderRadius: '10px',

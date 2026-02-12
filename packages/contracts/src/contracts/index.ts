@@ -6,7 +6,7 @@ import { authContract } from './auth.contract.js';
 import { collectionsContract } from './collections.contract.js';
 import { dataSourcesContract } from './data-sources.contract.js';
 import { orgsContract } from './orgs.contract.js';
-import { retrievalContract } from './retrieval.contract.js';
+import { retrievalContract, streamChatBodySchema } from './retrieval.contract.js';
 import { usersContract } from './users.contract.js';
 
 const c = initContract();
@@ -30,6 +30,7 @@ export {
   dataSourcesContract,
   orgsContract,
   retrievalContract,
+  streamChatBodySchema,
   usersContract,
 };
 

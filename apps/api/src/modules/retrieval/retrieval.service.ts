@@ -1,15 +1,16 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
+import { type DbId, type NonDbId, packId, packNonDbId } from '@grabdy/common';
+import type { CanvasEdge, CanvasState, Card } from '@grabdy/contracts';
 import { embed } from 'ai';
 import { sql } from 'kysely';
-
-import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 
 import { DEFAULT_SEARCH_LIMIT, THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { AgentFactory } from '../agent/services/agent.factory';
 import { AgentMemoryService } from '../agent/services/memory.service';
+import { CanvasOpsService } from '../queue/canvas-ops.service';
 
 interface SearchResult {
   chunkId: DbId<'Chunk'>;
@@ -28,12 +29,23 @@ export class RetrievalService {
     private db: DbService,
     private agentFactory: AgentFactory,
     private agentMemory: AgentMemoryService,
+    private canvasOps: CanvasOpsService
   ) {}
+
+  private async getCanvasState(threadId: DbId<'ChatThread'>): Promise<CanvasState | undefined> {
+    const row = await this.db.kysely
+      .selectFrom('data.chat_threads')
+      .select('canvas_state')
+      .where('id', '=', threadId)
+      .executeTakeFirst();
+
+    return row?.canvas_state ?? undefined;
+  }
 
   async query(
     orgId: DbId<'Org'>,
     queryText: string,
-    options: { collectionId?: DbId<'Collection'>; limit?: number },
+    options: { collectionId?: DbId<'Collection'>; limit?: number }
   ): Promise<{ results: SearchResult[]; queryTimeMs: number }> {
     const start = Date.now();
 
@@ -88,20 +100,19 @@ export class RetrievalService {
     options: {
       threadId?: DbId<'ChatThread'>;
       collectionId?: DbId<'Collection'>;
-    },
+    }
   ): Promise<{
     answer: string;
     threadId: DbId<'ChatThread'>;
     sources: SearchResult[];
   }> {
-    const orgNum = extractOrgNumericId(orgId);
     let threadId = options.threadId;
 
     if (!threadId) {
       const thread = await this.db.kysely
         .insertInto('data.chat_threads')
         .values({
-          id: packId('ChatThread', orgNum),
+          id: packId('ChatThread', orgId),
           title: message.slice(0, THREAD_TITLE_MAX_LENGTH),
           collection_id: options.collectionId ?? null,
           org_id: orgId,
@@ -113,15 +124,27 @@ export class RetrievalService {
 
       threadId = thread.id;
     } else {
+      // Set title from first message if thread is untitled
       await this.db.kysely
         .updateTable('data.chat_threads')
-        .set({ updated_at: new Date() })
+        .set({
+          title: sql`COALESCE(title, ${message.slice(0, THREAD_TITLE_MAX_LENGTH)})`,
+          updated_at: new Date(),
+        })
         .where('id', '=', threadId)
         .execute();
     }
 
-    const agent = this.agentFactory.createDataAgent(orgId, options.collectionId);
-    const result = await agent.generate(message, threadId, membershipId);
+    const canvasState = threadId ? await this.getCanvasState(threadId) : undefined;
+
+    const chatAgent = this.agentFactory.createDataAgent(
+      orgId,
+      options.collectionId,
+      undefined,
+      threadId,
+      canvasState
+    );
+    const result = await chatAgent.generate(message, threadId, membershipId);
 
     return {
       answer: result.text,
@@ -137,16 +160,15 @@ export class RetrievalService {
     options: {
       threadId?: DbId<'ChatThread'>;
       collectionId?: DbId<'Collection'>;
-    },
+    }
   ) {
-    const orgNum = extractOrgNumericId(orgId);
     let threadId = options.threadId;
 
     if (!threadId) {
       const thread = await this.db.kysely
         .insertInto('data.chat_threads')
         .values({
-          id: packId('ChatThread', orgNum),
+          id: packId('ChatThread', orgId),
           title: message.slice(0, THREAD_TITLE_MAX_LENGTH),
           collection_id: options.collectionId ?? null,
           org_id: orgId,
@@ -158,14 +180,26 @@ export class RetrievalService {
 
       threadId = thread.id;
     } else {
+      // Set title from first message if thread is untitled
       await this.db.kysely
         .updateTable('data.chat_threads')
-        .set({ updated_at: new Date() })
+        .set({
+          title: sql`COALESCE(title, ${message.slice(0, THREAD_TITLE_MAX_LENGTH)})`,
+          updated_at: new Date(),
+        })
         .where('id', '=', threadId)
         .execute();
     }
 
-    const agent = this.agentFactory.createDataAgent(orgId, options.collectionId);
+    const canvasState = threadId ? await this.getCanvasState(threadId) : undefined;
+
+    const agent = this.agentFactory.createDataAgent(
+      orgId,
+      options.collectionId,
+      undefined,
+      threadId,
+      canvasState
+    );
     const streamResult = await agent.stream(message, threadId, membershipId);
 
     return {
@@ -174,9 +208,42 @@ export class RetrievalService {
     };
   }
 
-  async listThreads(
+  async createThread(
     orgId: DbId<'Org'>,
     membershipId: DbId<'OrgMembership'>,
+    options: { title?: string; collectionId?: DbId<'Collection'> }
+  ): Promise<{
+    id: DbId<'ChatThread'>;
+    title: string | null;
+    collectionId: DbId<'Collection'> | null;
+    createdAt: string;
+    updatedAt: string;
+  }> {
+    const thread = await this.db.kysely
+      .insertInto('data.chat_threads')
+      .values({
+        id: packId('ChatThread', orgId),
+        title: options.title ?? null,
+        collection_id: options.collectionId ?? null,
+        org_id: orgId,
+        membership_id: membershipId,
+        updated_at: new Date(),
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return {
+      id: thread.id,
+      title: thread.title,
+      collectionId: thread.collection_id,
+      createdAt: new Date(thread.created_at).toISOString(),
+      updatedAt: new Date(thread.updated_at).toISOString(),
+    };
+  }
+
+  async listThreads(
+    orgId: DbId<'Org'>,
+    membershipId: DbId<'OrgMembership'>
   ): Promise<
     Array<{
       id: DbId<'ChatThread'>;
@@ -203,23 +270,7 @@ export class RetrievalService {
     }));
   }
 
-  async getThread(
-    orgId: DbId<'Org'>,
-    threadId: DbId<'ChatThread'>,
-  ): Promise<{
-    id: DbId<'ChatThread'>;
-    title: string | null;
-    collectionId: DbId<'Collection'> | null;
-    createdAt: string;
-    updatedAt: string;
-    messages: Array<{
-      id: string;
-      role: 'user' | 'assistant';
-      content: string;
-      sources: null;
-      createdAt: string;
-    }>;
-  }> {
+  async getThread(orgId: DbId<'Org'>, threadId: DbId<'ChatThread'>) {
     const thread = await this.db.kysely
       .selectFrom('data.chat_threads')
       .selectAll()
@@ -239,6 +290,7 @@ export class RetrievalService {
       collectionId: thread.collection_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
+      canvasState: thread.canvas_state ?? null,
       messages: messages.map((m) => ({
         id: m.id,
         role: m.role,
@@ -264,7 +316,7 @@ export class RetrievalService {
   async renameThread(
     orgId: DbId<'Org'>,
     threadId: DbId<'ChatThread'>,
-    title: string,
+    title: string
   ): Promise<{
     id: DbId<'ChatThread'>;
     title: string | null;
@@ -291,5 +343,84 @@ export class RetrievalService {
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
     };
+  }
+
+  async moveCanvasCard(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+    cardId: NonDbId<'CanvasCard'>,
+    update: {
+      position?: { x: number; y: number };
+      width?: number;
+      height?: number;
+      title?: string;
+      zIndex?: number;
+    }
+  ): Promise<CanvasState> {
+    return this.canvasOps.execute({ type: 'move_card', threadId, orgId, cardId, ...update });
+  }
+
+  async updateCanvasEdges(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+    edges: CanvasEdge[]
+  ): Promise<CanvasState> {
+    return this.canvasOps.execute({ type: 'update_edges', threadId, orgId, edges });
+  }
+
+  async addCanvasEdge(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+    edge: CanvasEdge
+  ): Promise<CanvasState> {
+    return this.canvasOps.execute({ type: 'add_edge', threadId, orgId, edge });
+  }
+
+  async deleteCanvasEdge(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+    edgeId: NonDbId<'CanvasEdge'>
+  ): Promise<CanvasState> {
+    return this.canvasOps.execute({ type: 'delete_edge', threadId, orgId, edgeId });
+  }
+
+  async deleteCanvasCard(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+    cardId: NonDbId<'CanvasCard'>
+  ): Promise<CanvasState> {
+    return this.canvasOps.execute({ type: 'remove_card', threadId, orgId, cardId });
+  }
+
+  async updateCanvasComponent(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+    cardId: NonDbId<'CanvasCard'>,
+    componentId: NonDbId<'CanvasComponent'>,
+    data: Record<string, unknown>
+  ): Promise<CanvasState> {
+    return this.canvasOps.execute({
+      type: 'update_component',
+      threadId,
+      orgId,
+      cardId,
+      componentId,
+      data,
+    });
+  }
+
+  async addCanvasCard(
+    orgId: DbId<'Org'>,
+    threadId: DbId<'ChatThread'>,
+    card: Card
+  ): Promise<CanvasState> {
+    // Replace client-provided id with a proper packed UUID
+    const cardId = packNonDbId('CanvasCard', orgId);
+    return this.canvasOps.execute({
+      type: 'add_card',
+      threadId,
+      orgId,
+      cards: [{ ...card, id: cardId }],
+    });
   }
 }

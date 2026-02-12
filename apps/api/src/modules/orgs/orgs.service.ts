@@ -3,7 +3,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { OrgRole } from '@db/enums';
 import { randomBytes } from 'crypto';
 
-import { type DbId, dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
+import { type DbId, dbIdSchema, packId } from '@grabdy/common';
 
 import { authLinks } from '../../common/auth-links';
 import { INVITE_EXPIRY_MS, INVITE_TOKEN_BYTES } from '../../config/constants';
@@ -35,7 +35,7 @@ export class OrgsService {
       await trx
         .insertInto('org.org_memberships')
         .values({
-          id: packId('OrgMembership', extractOrgNumericId(org.id)),
+          id: packId('OrgMembership', org.id),
           user_id: userId,
           org_id: org.id,
           roles: ['OWNER'],
@@ -120,7 +120,7 @@ export class OrgsService {
       const membership = await this.db.kysely
         .insertInto('org.org_memberships')
         .values({
-          id: packId('OrgMembership', extractOrgNumericId(orgId)),
+          id: packId('OrgMembership', orgId),
           user_id: existingUser.id,
           org_id: org.id,
           roles: data.roles,
@@ -146,7 +146,7 @@ export class OrgsService {
     const invitation = await this.db.kysely
       .insertInto('org.org_invitations')
       .values({
-        id: packId('OrgInvitation', extractOrgNumericId(orgId)),
+        id: packId('OrgInvitation', orgId),
         email: normalizedEmail,
         name: data.name,
         roles: data.roles,

@@ -7,7 +7,7 @@ import { Job } from 'bullmq';
 import * as fs from 'fs';
 
 import type { DbId } from '@grabdy/common';
-import { extractOrgNumericId, packId } from '@grabdy/common';
+import { packId } from '@grabdy/common';
 
 import { CHUNK_OVERLAP, CHUNK_SIZE, EMBEDDING_BATCH_SIZE, SUMMARY_MAX_LENGTH } from '../../../config/constants';
 import { DbService } from '../../../db/db.module';
@@ -63,7 +63,6 @@ export class DataSourceProcessor extends WorkerHost {
       this.logger.log(`Split into ${chunks.length} chunks`);
 
       // Generate embeddings in batches
-      const orgNum = extractOrgNumericId(orgId);
       const batchSize = EMBEDDING_BATCH_SIZE;
 
       for (let i = 0; i < chunks.length; i += batchSize) {
@@ -76,7 +75,7 @@ export class DataSourceProcessor extends WorkerHost {
 
         // Store chunks with embeddings
         const values = batch.map((content, idx) => ({
-          id: packId('Chunk', orgNum),
+          id: packId('Chunk', orgId),
           content,
           chunk_index: i + idx,
           metadata: null,

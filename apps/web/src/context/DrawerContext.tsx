@@ -16,7 +16,7 @@ export interface DrawerProps {
   onClose: () => void;
 }
 
-export type DrawerMode = 'drawer' | 'dialog';
+type DrawerMode = 'drawer' | 'dialog';
 
 interface DrawerStackItem {
   id: string;
