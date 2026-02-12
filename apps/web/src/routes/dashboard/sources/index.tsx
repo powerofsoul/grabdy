@@ -33,7 +33,7 @@ interface Collection {
   createdAt: string;
 }
 
-export const Route = createFileRoute('/dashboard/collections/')({
+export const Route = createFileRoute('/dashboard/sources/')({
   component: CollectionsPage,
 });
 
@@ -56,7 +56,7 @@ function CollectionsPage() {
         setCollections(res.body.data);
       }
     } catch {
-      toast.error('Failed to load collections');
+      toast.error('Failed to load sources');
     } finally {
       setIsLoading(false);
     }
@@ -75,14 +75,14 @@ function CollectionsPage() {
         body: { name: name.trim(), description: description.trim() || undefined },
       });
       if (res.status === 200) {
-        toast.success('Collection created');
+        toast.success('Source created');
         setDialogOpen(false);
         setName('');
         setDescription('');
         fetchCollections();
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create collection');
+      toast.error(err instanceof Error ? err.message : 'Failed to create source');
     } finally {
       setIsCreating(false);
     }
@@ -98,14 +98,14 @@ function CollectionsPage() {
 
   return (
     <DashboardPage
-      title="Collections"
+      title="Sources"
       actions={
         <Button
           variant="contained"
           startIcon={<Plus size={18} />}
           onClick={() => setDialogOpen(true)}
         >
-          New Collection
+          New Source
         </Button>
       }
     >
@@ -113,9 +113,9 @@ function CollectionsPage() {
       {collections.length === 0 ? (
         <EmptyState
           icon={<FolderOpen size={48} />}
-          message="No collections yet"
-          description="Create a collection to organize your data sources."
-          actionLabel="Create Collection"
+          message="No sources yet"
+          description="Create a source to organize your data."
+          actionLabel="Create Source"
           onAction={() => setDialogOpen(true)}
         />
       ) : (
@@ -126,7 +126,7 @@ function CollectionsPage() {
                 <CardActionArea
                   onClick={() =>
                     navigate({
-                      to: '/dashboard/collections/$collectionId',
+                      to: '/dashboard/sources/$collectionId',
                       params: { collectionId: collection.id },
                     })
                   }
@@ -155,7 +155,7 @@ function CollectionsPage() {
       )}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create Collection</DialogTitle>
+        <DialogTitle>Create Source</DialogTitle>
         <DialogContent>
           <TextField
             label="Name"

@@ -1,6 +1,6 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plus, Settings, Sun, Users } from 'lucide-react';
+import { ChevronRight, ChevronsLeft, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Settings, Sun, Users } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
@@ -71,23 +71,63 @@ function NavItem({ to, label, exact, icon, trailing }: {
   );
 }
 
-function SectionHeader({ label, action }: { label: string; action?: React.ReactNode }) {
+function SectionHeader({ label, to }: { label: string; to?: string }) {
   const theme = useTheme();
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: '20px', mb: 0.5 }}>
+  const ct = theme.palette.text.primary;
+
+  const content = (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        ...(to && {
+          cursor: 'pointer',
+          '&:hover .section-label': { color: alpha(ct, 0.6) },
+          '&:hover .section-arrow': { opacity: 1 },
+        }),
+      }}
+    >
       <Typography
+        className="section-label"
         sx={{
           fontSize: 11,
           fontWeight: 600,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: alpha(theme.palette.text.primary, 0.35),
+          color: alpha(ct, 0.35),
           lineHeight: 1.4,
+          transition: 'color 120ms ease',
         }}
       >
         {label}
       </Typography>
-      {action}
+      {to && (
+        <Box
+          className="section-arrow"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            color: alpha(ct, 0.35),
+            opacity: 0,
+            transition: 'opacity 120ms ease',
+          }}
+        >
+          <ChevronRight size={12} strokeWidth={2} />
+        </Box>
+      )}
+    </Box>
+  );
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', px: '20px', mb: 0.5 }}>
+      {to ? (
+        <Link to={to} style={{ textDecoration: 'none' }}>
+          {content}
+        </Link>
+      ) : (
+        content
+      )}
     </Box>
   );
 }
@@ -111,7 +151,7 @@ function CountBadge({ count }: { count: number }) {
   );
 }
 
-export function SidebarFull() {
+export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
   const { user, logout } = useAuth();
   const { preference, setPreference } = useThemeMode();
@@ -135,22 +175,38 @@ export function SidebarFull() {
         borderColor: alpha(ct, 0.08),
       }}
     >
-      {/* Wordmark */}
+      {/* Wordmark + collapse */}
       <Box sx={{ px: '20px', pt: '20px', pb: 0 }}>
-        <Link to="/dashboard/chat" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <Typography
-            sx={{
-              fontSize: 20,
-              fontWeight: 600,
-              color: 'text.primary',
-              fontFamily: FONT_SERIF,
-              cursor: 'pointer',
-              mb: '24px',
-            }}
-          >
-            grabdy.
-          </Typography>
-        </Link>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '24px' }}>
+          <Link to="/dashboard/chat" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Typography
+              sx={{
+                fontSize: 20,
+                fontWeight: 600,
+                color: 'text.primary',
+                fontFamily: FONT_SERIF,
+                cursor: 'pointer',
+              }}
+            >
+              grabdy.
+            </Typography>
+          </Link>
+          {onCollapse && (
+            <Tooltip title="Collapse sidebar">
+              <IconButton
+                size="small"
+                onClick={onCollapse}
+                sx={{
+                  color: alpha(ct, 0.3),
+                  p: 0.5,
+                  '&:hover': { color: 'text.primary', bgcolor: alpha(ct, 0.06) },
+                }}
+              >
+                <ChevronsLeft size={16} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
 
         <Box sx={{ height: '1px', bgcolor: alpha(ct, 0.08), mb: '16px' }} />
       </Box>
@@ -173,37 +229,12 @@ export function SidebarFull() {
         <Box sx={{ mt: 2.5 }}>
           <SectionHeader
             label="Sources"
-            action={
-              <Link to="/dashboard/collections" style={{ textDecoration: 'none' }}>
-                <Box
-                  sx={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: '5px',
-                    border: '1px solid',
-                    borderColor: alpha(ct, 0.15),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    color: alpha(ct, 0.35),
-                    transition: 'all 120ms ease',
-                    '&:hover': {
-                      bgcolor: alpha(ct, 0.06),
-                      borderColor: alpha(ct, 0.25),
-                      color: alpha(ct, 0.6),
-                    },
-                  }}
-                >
-                  <Plus size={12} strokeWidth={2} />
-                </Box>
-              </Link>
-            }
+            to="/dashboard/sources"
           />
           {collections.map((c) => (
             <NavItem
               key={c.id}
-              to={`/dashboard/collections/${c.id}`}
+              to={`/dashboard/sources/${c.id}`}
               label={c.name}
               icon={<Folder size={15} strokeWidth={1.5} />}
               trailing={<CountBadge count={c.sourceCount} />}

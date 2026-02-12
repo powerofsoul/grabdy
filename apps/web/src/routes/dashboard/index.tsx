@@ -141,10 +141,10 @@ function DashboardIndex() {
       <Grid container spacing={2} sx={{ mb: 4 }}>
         <Grid size={{ xs: 6, md: 4 }}>
           <StatCard
-            label="Collections"
+            label="Sources"
             value={stats.collections}
             icon={<FolderOpen size={20} />}
-            to="/dashboard/collections"
+            to="/dashboard/sources"
             color={p.primary.main}
           />
         </Grid>
@@ -167,9 +167,9 @@ function DashboardIndex() {
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <QuickAction
             icon={<Plus size={18} />}
-            label="Create a collection"
+            label="Create a source"
             description="Organize your data into searchable groups"
-            to="/dashboard/collections"
+            to="/dashboard/sources"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>

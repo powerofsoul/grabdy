@@ -9,7 +9,7 @@ import {
   Grid,
   Typography,
 } from '@mui/material';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router';
 import { Database, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -41,7 +41,7 @@ interface Collection {
   chunkCount: number;
 }
 
-export const Route = createFileRoute('/dashboard/collections/$collectionId')({
+export const Route = createFileRoute('/dashboard/sources/$collectionId')({
   component: CollectionDetailPage,
 });
 
@@ -83,7 +83,7 @@ function CollectionDetailPage() {
         setDataSources(sourcesRes.body.data);
       }
     } catch {
-      toast.error('Failed to load collection');
+      toast.error('Failed to load source');
     } finally {
       setIsLoading(false);
     }
@@ -126,8 +126,8 @@ function CollectionDetailPage() {
         body: {},
       });
       if (res.status === 200) {
-        toast.success('Collection deleted');
-        navigate({ to: '/dashboard/collections' });
+        toast.success('Source deleted');
+        navigate({ to: '/dashboard/sources' });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete failed');
@@ -146,11 +146,7 @@ function CollectionDetailPage() {
   }
 
   if (!collection) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography>Collection not found</Typography>
-      </Box>
-    );
+    throw notFound();
   }
 
   return (
@@ -215,8 +211,8 @@ function CollectionDetailPage() {
 
       <ConfirmDialog
         open={deleteConfirm}
-        title="Delete Collection"
-        message="Are you sure you want to delete this collection? All data sources and indexed data will be permanently removed."
+        title="Delete Source"
+        message="Are you sure you want to delete this source? All data and indexed content will be permanently removed."
         confirmLabel="Delete"
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirm(false)}

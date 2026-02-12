@@ -1,13 +1,15 @@
+import type { ReactNode } from 'react';
+
 import { alpha, Avatar, Box, IconButton, Tooltip, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { ChevronsRight, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Settings, Sun, Users } from 'lucide-react';
 
 const FONT_SERIF = '"Source Serif 4", "Georgia", serif';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
 
-function StripDot({ to, label, exact }: { to: string; label: string; exact?: boolean }) {
+function StripIcon({ to, label, icon, exact }: { to: string; label: string; icon: ReactNode; exact?: boolean }) {
   const location = useLocation();
   const theme = useTheme();
   const ct = theme.palette.text.primary;
@@ -27,29 +29,23 @@ function StripDot({ to, label, exact }: { to: string; label: string; exact?: boo
             justifyContent: 'center',
             borderRadius: 1,
             cursor: 'pointer',
+            color: isActive ? 'text.primary' : alpha(ct, 0.4),
             bgcolor: isActive ? alpha(ct, 0.06) : 'transparent',
-            transition: 'background-color 120ms ease',
+            transition: 'all 120ms ease',
             '&:hover': {
               bgcolor: alpha(ct, isActive ? 0.08 : 0.04),
+              color: 'text.primary',
             },
           }}
         >
-          <Box
-            sx={{
-              width: isActive ? 7 : 5,
-              height: isActive ? 7 : 5,
-              borderRadius: '50%',
-              bgcolor: isActive ? 'text.primary' : alpha(ct, 0.25),
-              transition: 'all 150ms ease',
-            }}
-          />
+          {icon}
         </Box>
       </Link>
     </Tooltip>
   );
 }
 
-export function SidebarStrip() {
+export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
   const theme = useTheme();
   const { user, logout } = useAuth();
   const { preference, setPreference } = useThemeMode();
@@ -75,9 +71,10 @@ export function SidebarStrip() {
         gap: 0.5,
       }}
     >
-      {/* Wordmark "g." */}
-      <Link to="/dashboard/chat" style={{ textDecoration: 'none', color: 'inherit' }}>
+      {/* Wordmark "G." */}
+      <Tooltip title="Expand sidebar" placement="right">
         <Box
+          onClick={onExpand}
           sx={{
             width: 36,
             height: 36,
@@ -85,7 +82,8 @@ export function SidebarStrip() {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            mb: 1,
+            borderRadius: 1,
+            '&:hover': { bgcolor: alpha(ct, 0.06) },
           }}
         >
           <Box
@@ -95,27 +93,45 @@ export function SidebarStrip() {
               fontWeight: 600,
               fontFamily: FONT_SERIF,
               color: 'text.primary',
+              lineHeight: 1,
+              ml: 0.35,
             }}
           >
-            g.
+            G.
           </Box>
         </Box>
-      </Link>
+      </Tooltip>
+      {onExpand && (
+        <Tooltip title="Expand sidebar" placement="right">
+          <IconButton
+            size="small"
+            onClick={onExpand}
+            sx={{
+              color: alpha(ct, 0.25),
+              p: 0.5,
+              mb: 0.5,
+              '&:hover': { color: 'text.primary' },
+            }}
+          >
+            <ChevronsRight size={14} />
+          </IconButton>
+        </Tooltip>
+      )}
 
-      {/* Nav dots */}
-      <StripDot to="/dashboard" label="Dashboard" exact />
-      <StripDot to="/dashboard/chat" label="Chat" />
-      <StripDot to="/dashboard/collections" label="Collections" />
-      <StripDot to="/dashboard/api-keys" label="API Keys" />
-      <StripDot to="/dashboard/members" label="Members" />
+      {/* Nav icons */}
+      <StripIcon to="/dashboard" label="Dashboard" icon={<LayoutGrid size={18} strokeWidth={1.5} />} exact />
+      <StripIcon to="/dashboard/chat" label="Chat" icon={<MessageSquare size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard/sources" label="Sources" icon={<Folder size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard/api-keys" label="API Keys" icon={<Key size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard/members" label="Members" icon={<Users size={18} strokeWidth={1.5} />} />
 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
 
-      {/* Settings dot */}
-      <StripDot to="/dashboard/settings" label="Settings" />
+      {/* Settings */}
+      <StripIcon to="/dashboard/settings" label="Settings" icon={<Settings size={18} strokeWidth={1.5} />} />
 
-      {/* Inline actions */}
+      {/* Theme toggle */}
       <Tooltip title={isDark ? 'Light mode' : 'Dark mode'} placement="right">
         <IconButton
           size="small"

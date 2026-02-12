@@ -24,8 +24,8 @@ import { Route as DashboardApiKeysRouteImport } from './routes/dashboard/api-key
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthCompleteAccountRouteImport } from './routes/auth/complete-account'
-import { Route as DashboardCollectionsIndexRouteImport } from './routes/dashboard/collections/index'
-import { Route as DashboardCollectionsCollectionIdRouteImport } from './routes/dashboard/collections/$collectionId'
+import { Route as DashboardSourcesIndexRouteImport } from './routes/dashboard/sources/index'
+import { Route as DashboardSourcesCollectionIdRouteImport } from './routes/dashboard/sources/$collectionId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -102,16 +102,15 @@ const AuthCompleteAccountRoute = AuthCompleteAccountRouteImport.update({
   path: '/complete-account',
   getParentRoute: () => AuthRoute,
 } as any)
-const DashboardCollectionsIndexRoute =
-  DashboardCollectionsIndexRouteImport.update({
-    id: '/collections/',
-    path: '/collections/',
-    getParentRoute: () => DashboardRoute,
-  } as any)
-const DashboardCollectionsCollectionIdRoute =
-  DashboardCollectionsCollectionIdRouteImport.update({
-    id: '/collections/$collectionId',
-    path: '/collections/$collectionId',
+const DashboardSourcesIndexRoute = DashboardSourcesIndexRouteImport.update({
+  id: '/sources/',
+  path: '/sources/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSourcesCollectionIdRoute =
+  DashboardSourcesCollectionIdRouteImport.update({
+    id: '/sources/$collectionId',
+    path: '/sources/$collectionId',
     getParentRoute: () => DashboardRoute,
   } as any)
 
@@ -131,8 +130,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/dashboard/collections/$collectionId': typeof DashboardCollectionsCollectionIdRoute
-  '/dashboard/collections/': typeof DashboardCollectionsIndexRoute
+  '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,8 +148,8 @@ export interface FileRoutesByTo {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard': typeof DashboardIndexRoute
-  '/dashboard/collections/$collectionId': typeof DashboardCollectionsCollectionIdRoute
-  '/dashboard/collections': typeof DashboardCollectionsIndexRoute
+  '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/sources': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -169,8 +168,8 @@ export interface FileRoutesById {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/dashboard/collections/$collectionId': typeof DashboardCollectionsCollectionIdRoute
-  '/dashboard/collections/': typeof DashboardCollectionsIndexRoute
+  '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -190,8 +189,8 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/usage'
     | '/dashboard/'
-    | '/dashboard/collections/$collectionId'
-    | '/dashboard/collections/'
+    | '/dashboard/sources/$collectionId'
+    | '/dashboard/sources/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -208,8 +207,8 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/usage'
     | '/dashboard'
-    | '/dashboard/collections/$collectionId'
-    | '/dashboard/collections'
+    | '/dashboard/sources/$collectionId'
+    | '/dashboard/sources'
   id:
     | '__root__'
     | '/'
@@ -227,8 +226,8 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/usage'
     | '/dashboard/'
-    | '/dashboard/collections/$collectionId'
-    | '/dashboard/collections/'
+    | '/dashboard/sources/$collectionId'
+    | '/dashboard/sources/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -347,18 +346,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCompleteAccountRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/dashboard/collections/': {
-      id: '/dashboard/collections/'
-      path: '/collections'
-      fullPath: '/dashboard/collections/'
-      preLoaderRoute: typeof DashboardCollectionsIndexRouteImport
+    '/dashboard/sources/': {
+      id: '/dashboard/sources/'
+      path: '/sources'
+      fullPath: '/dashboard/sources/'
+      preLoaderRoute: typeof DashboardSourcesIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/collections/$collectionId': {
-      id: '/dashboard/collections/$collectionId'
-      path: '/collections/$collectionId'
-      fullPath: '/dashboard/collections/$collectionId'
-      preLoaderRoute: typeof DashboardCollectionsCollectionIdRouteImport
+    '/dashboard/sources/$collectionId': {
+      id: '/dashboard/sources/$collectionId'
+      path: '/sources/$collectionId'
+      fullPath: '/dashboard/sources/$collectionId'
+      preLoaderRoute: typeof DashboardSourcesCollectionIdRouteImport
       parentRoute: typeof DashboardRoute
     }
   }
@@ -385,8 +384,8 @@ interface DashboardRouteChildren {
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardUsageRoute: typeof DashboardUsageRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
-  DashboardCollectionsCollectionIdRoute: typeof DashboardCollectionsCollectionIdRoute
-  DashboardCollectionsIndexRoute: typeof DashboardCollectionsIndexRoute
+  DashboardSourcesCollectionIdRoute: typeof DashboardSourcesCollectionIdRoute
+  DashboardSourcesIndexRoute: typeof DashboardSourcesIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -396,8 +395,8 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardUsageRoute: DashboardUsageRoute,
   DashboardIndexRoute: DashboardIndexRoute,
-  DashboardCollectionsCollectionIdRoute: DashboardCollectionsCollectionIdRoute,
-  DashboardCollectionsIndexRoute: DashboardCollectionsIndexRoute,
+  DashboardSourcesCollectionIdRoute: DashboardSourcesCollectionIdRoute,
+  DashboardSourcesIndexRoute: DashboardSourcesIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
