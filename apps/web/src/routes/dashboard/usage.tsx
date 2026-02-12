@@ -15,7 +15,8 @@ import {
   useTheme,
 } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
-import { Activity, Cpu, DollarSign, Zap } from 'lucide-react';
+import { Activity, Cpu, Zap } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { MainTable } from '@/components/ui/main-table';
@@ -27,7 +28,6 @@ interface UsageSummary {
   totalInputTokens: number;
   totalOutputTokens: number;
   totalTokens: number;
-  totalCost: number;
 }
 
 interface DailyUsage {
@@ -36,7 +36,6 @@ interface DailyUsage {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
-  cost: number;
 }
 
 interface ModelBreakdown {
@@ -46,14 +45,12 @@ interface ModelBreakdown {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
-  cost: number;
 }
 
 interface RequestTypeBreakdown {
   requestType: string;
   requests: number;
   totalTokens: number;
-  cost: number;
 }
 
 interface UsageData {
@@ -71,13 +68,6 @@ function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return n.toString();
-}
-
-function formatCost(n: number): string {
-  if (n === 0) return '$0';
-  if (n < 0.0001) return `$${n.toFixed(6)}`;
-  if (n < 0.01) return `$${n.toFixed(4)}`;
-  return `$${n.toFixed(2)}`;
 }
 
 function StatCard({
@@ -122,6 +112,8 @@ function StatCard({
 }
 
 function DailyChart({ data }: { data: DailyUsage[] }) {
+  const theme = useTheme();
+
   if (data.length === 0) {
     return (
       <Box sx={{ py: 4, textAlign: 'center' }}>
@@ -130,45 +122,42 @@ function DailyChart({ data }: { data: DailyUsage[] }) {
     );
   }
 
-  const maxTokens = Math.max(...data.map((d) => d.totalTokens), 1);
+  const chartData = data.map((d) => ({
+    ...d,
+    label: new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+  }));
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, height: 120 }}>
-      {data.map((day) => {
-        const height = (day.totalTokens / maxTokens) * 100;
-        const dateLabel = new Date(day.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        return (
-          <Box
-            key={day.date}
-            sx={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 0.5,
-              minWidth: 0,
-            }}
-          >
-            <Box
-              sx={{
-                width: '100%',
-                maxWidth: 24,
-                height: `${Math.max(height, 2)}%`,
-                bgcolor: 'primary.main',
-                borderRadius: '4px 4px 0 0',
-                minHeight: 2,
-              }}
-            />
-            <Typography
-              sx={{ fontSize: '0.6rem', color: 'text.secondary', writingMode: 'vertical-rl', height: 40 }}
-              noWrap
-            >
-              {dateLabel}
-            </Typography>
-          </Box>
-        );
-      })}
-    </Box>
+    <ResponsiveContainer width="100%" height={240}>
+      <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.text.primary, 0.06)} vertical={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 11, fill: alpha(theme.palette.text.primary, 0.4) }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <YAxis
+          tick={{ fontSize: 11, fill: alpha(theme.palette.text.primary, 0.4) }}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={formatNumber}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${alpha(theme.palette.text.primary, 0.08)}`,
+            borderRadius: 8,
+            fontSize: 13,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          }}
+          formatter={(value) => [formatNumber(Number(value)), 'Tokens']}
+          labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+          cursor={{ fill: alpha(theme.palette.text.primary, 0.04) }}
+        />
+        <Bar dataKey="totalTokens" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} maxBarSize={32} />
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -205,8 +194,8 @@ function UsagePage() {
 
   return (
     <DashboardPage
-      title="Usage"
-      subtitle="Monitor your AI usage and costs"
+      title="AI Usage"
+      subtitle="Monitor your AI token consumption"
       actions={
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Period</InputLabel>
@@ -229,7 +218,7 @@ function UsagePage() {
         <>
           {/* Summary cards */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={{ xs: 6, md: 4 }}>
               <StatCard
                 label="Total Requests"
                 value={formatNumber(data.summary.totalRequests)}
@@ -237,7 +226,7 @@ function UsagePage() {
                 color={p.primary.main}
               />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={{ xs: 6, md: 4 }}>
               <StatCard
                 label="Total Tokens"
                 value={formatNumber(data.summary.totalTokens)}
@@ -245,19 +234,11 @@ function UsagePage() {
                 color={p.grey[600]}
               />
             </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
+            <Grid size={{ xs: 6, md: 4 }}>
               <StatCard
                 label="Input Tokens"
                 value={formatNumber(data.summary.totalInputTokens)}
                 icon={<Cpu size={20} />}
-                color={p.grey[600]}
-              />
-            </Grid>
-            <Grid size={{ xs: 6, md: 3 }}>
-              <StatCard
-                label="Total Cost"
-                value={formatCost(data.summary.totalCost)}
-                icon={<DollarSign size={20} />}
                 color={p.grey[600]}
               />
             </Grid>
@@ -273,100 +254,74 @@ function UsagePage() {
             </CardContent>
           </Card>
 
-          {/* Breakdowns */}
-          <Grid container spacing={2}>
-            {/* By Model */}
-            <Grid size={{ xs: 12, md: 7 }}>
-              <Card>
-                <CardContent>
-                  <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>
-                    Usage by Model
+          {/* By Model */}
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Usage by Model
+          </Typography>
+          <MainTable
+            data={data.byModel}
+            headerNames={{
+              model: 'Model',
+              requests: 'Requests',
+              tokens: 'Tokens',
+            }}
+            rowTitle={(row) => row.model}
+            keyExtractor={(row) => row.model}
+            renderItems={{
+              model: (row) => (
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {row.model}
                   </Typography>
-                  {data.byModel.length === 0 ? (
-                    <Typography color="text.secondary" variant="body2">No data</Typography>
-                  ) : (
-                    <MainTable
-                      data={data.byModel}
-                      headerNames={{
-                        model: 'Model',
-                        requests: 'Requests',
-                        tokens: 'Tokens',
-                        cost: 'Cost',
-                      }}
-                      rowTitle={(row) => row.model}
-                      keyExtractor={(row) => row.model}
-                      renderItems={{
-                        model: (row) => (
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                              {row.model}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {row.provider}
-                            </Typography>
-                          </Box>
-                        ),
-                        requests: (row) => formatNumber(row.requests),
-                        tokens: (row) => formatNumber(row.totalTokens),
-                        cost: (row) => formatCost(row.cost),
-                      }}
-                      sorting={{
-                        sortableColumns: ['requests', 'tokens', 'cost'] as const,
-                        defaultSort: 'requests',
-                        defaultDirection: 'desc',
-                        getSortValue: (row, col) => {
-                          if (col === 'requests') return row.requests;
-                          if (col === 'tokens') return row.totalTokens;
-                          if (col === 'cost') return row.cost;
-                          return null;
-                        },
-                      }}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
+                  <Typography variant="caption" color="text.secondary">
+                    {row.provider}
+                  </Typography>
+                </Box>
+              ),
+              requests: (row) => formatNumber(row.requests),
+              tokens: (row) => formatNumber(row.totalTokens),
+            }}
+            sorting={{
+              sortableColumns: ['requests', 'tokens'] as const,
+              defaultSort: 'requests',
+              defaultDirection: 'desc',
+              getSortValue: (row, col) => {
+                if (col === 'requests') return row.requests;
+                if (col === 'tokens') return row.totalTokens;
+                return null;
+              },
+            }}
+          />
 
-            {/* By Request Type */}
-            <Grid size={{ xs: 12, md: 5 }}>
-              <Card>
-                <CardContent>
-                  <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>
-                    Usage by Type
-                  </Typography>
-                  {data.byRequestType.length === 0 ? (
-                    <Typography color="text.secondary" variant="body2">No data</Typography>
-                  ) : (
-                    <MainTable
-                      data={data.byRequestType}
-                      headerNames={{
-                        type: 'Type',
-                        requests: 'Requests',
-                        cost: 'Cost',
-                      }}
-                      rowTitle={(row) => row.requestType}
-                      keyExtractor={(row) => row.requestType}
-                      renderItems={{
-                        type: (row) => row.requestType,
-                        requests: (row) => formatNumber(row.requests),
-                        cost: (row) => formatCost(row.cost),
-                      }}
-                      sorting={{
-                        sortableColumns: ['requests', 'cost'] as const,
-                        defaultSort: 'requests',
-                        defaultDirection: 'desc',
-                        getSortValue: (row, col) => {
-                          if (col === 'requests') return row.requests;
-                          if (col === 'cost') return row.cost;
-                          return null;
-                        },
-                      }}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+          {/* By Request Type */}
+          <Typography variant="h6" sx={{ fontWeight: 600, mt: 4, mb: 2 }}>
+            Usage by Type
+          </Typography>
+          <MainTable
+            data={data.byRequestType}
+            headerNames={{
+              type: 'Type',
+              requests: 'Requests',
+              tokens: 'Tokens',
+            }}
+            rowTitle={(row) => row.requestType}
+            keyExtractor={(row) => row.requestType}
+            renderItems={{
+              type: (row) => row.requestType,
+              requests: (row) => formatNumber(row.requests),
+              tokens: (row) => formatNumber(row.totalTokens),
+            }}
+            sorting={{
+              sortableColumns: ['requests', 'tokens'] as const,
+              defaultSort: 'requests',
+              defaultDirection: 'desc',
+              getSortValue: (row, col) => {
+                if (col === 'requests') return row.requests;
+                if (col === 'tokens') return row.totalTokens;
+                return null;
+              },
+            }}
+          />
         </>
       )}
     </DashboardPage>

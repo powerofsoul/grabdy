@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { alpha, Avatar, Box, IconButton, Tooltip, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { ChevronsRight, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Settings, Sun, Users } from 'lucide-react';
+import { BarChart3, ChevronsRight, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Settings, Sun, Users } from 'lucide-react';
 
 const FONT_SERIF = '"Source Serif 4", "Georgia", serif';
 
@@ -129,6 +129,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
       <Box sx={{ flex: 1 }} />
 
       {/* Settings */}
+      <StripIcon to="/dashboard/usage" label="AI Usage" icon={<BarChart3 size={18} strokeWidth={1.5} />} />
       <StripIcon to="/dashboard/settings" label="Settings" icon={<Settings size={18} strokeWidth={1.5} />} />
 
       {/* Theme toggle */}

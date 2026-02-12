@@ -1,6 +1,6 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { ChevronRight, ChevronsLeft, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Settings, Sun, Users } from 'lucide-react';
+import { BarChart3, ChevronRight, ChevronsLeft, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Settings, Sun, Users } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
@@ -267,7 +267,12 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
       <Box>
         <Box sx={{ height: '1px', bgcolor: alpha(ct, 0.08), mx: '20px', mb: '12px' }} />
 
-        <Box sx={{ mb: '8px' }}>
+        <Box sx={{ mb: '8px', display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+          <NavItem
+            to="/dashboard/usage"
+            label="AI Usage"
+            icon={<BarChart3 size={16} strokeWidth={1.5} />}
+          />
           <NavItem
             to="/dashboard/settings"
             label="Settings"
