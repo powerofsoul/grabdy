@@ -20,14 +20,14 @@ const HERO_FEATURES = [
     icon: FileText,
     title: 'Cites real sources',
     description: 'Every response links back to the exact file, page, and passage. No hallucinated answers.',
-    proof: 'Every answer includes direct source links',
+    proof: 'Searching manually: hope for the best. Grabdy: direct link to file, page, and paragraph.',
     colorKey: 'primary',
   },
   {
     icon: Zap,
     title: 'Sub-second answers',
     description: 'Fast enough that people use it instead of asking a teammate.',
-    proof: 'Median query time: 23ms',
+    proof: 'Asking a teammate: 4 hours. Grabdy: 23ms.',
     colorKey: 'warning',
   },
 ] satisfies ReadonlyArray<Feature>;
@@ -37,14 +37,14 @@ const SECONDARY_FEATURES = [
     icon: Puzzle,
     title: 'Works across your whole stack',
     description: 'Searches Slack, Drive, Linear, Notion at once.',
-    proof: '8 integrations, one query',
+    proof: 'One query searches Slack, Drive, Linear, Notion, Confluence, and Gmail at once.',
     colorKey: 'info',
   },
   {
     icon: Sparkles,
     title: 'Remembers context',
     description: 'Follow-up questions build on previous answers.',
-    proof: 'Threaded conversations, no repetition',
+    proof: 'Ask follow-ups like you would a colleague — no re-explaining.',
     colorKey: 'success',
   },
 ] satisfies ReadonlyArray<Feature>;
@@ -60,13 +60,11 @@ function FeatureCard({ feature, large }: { feature: Feature; large?: boolean }) 
       sx={{
         p: large ? { xs: 3, md: 4 } : 3,
         borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
         borderTop: '2px solid',
         borderTopColor: alpha(paletteColor, 0.25),
-        borderBottom: '1px solid',
-        borderBottomColor: 'divider',
-        borderLeft: 'none',
-        borderRight: 'none',
-        bgcolor: 'transparent',
+        bgcolor: 'background.paper',
       }}
     >
       <Box

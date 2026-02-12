@@ -75,7 +75,7 @@ export function WhatYouCanAskSection() {
       ref={sectionRef}
       sx={{
         py: { xs: 10, md: 14 },
-        bgcolor: 'background.default',
+        bgcolor: 'grey.50',
       }}
     >
       <Container maxWidth="lg">
@@ -173,13 +173,16 @@ export function WhatYouCanAskSection() {
         >
           <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
             {BRAND_LOGOS.map((brand) => (
-              <Box key={brand.name} sx={{ opacity: 0.5 }}>
-                <brand.Logo size={20} />
+              <Box key={brand.name} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, opacity: 0.7 }}>
+                <brand.Logo size={28} />
+                <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                  {brand.name}
+                </Typography>
               </Box>
             ))}
           </Box>
           <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary' }}>
-            Works with the tools you already use
+            Syncs with your stack in minutes
           </Typography>
         </Box>
       </Container>

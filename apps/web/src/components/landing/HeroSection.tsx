@@ -22,8 +22,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-import heroCloudsLight from '@/assets/hero-clouds-light.svg';
-import heroCloudsDark from '@/assets/hero-clouds-dark.svg';
+import heroClouds from '@/assets/hero-clouds-light.svg';
 
 import { useWaitlist } from './WaitlistModal';
 
@@ -943,7 +942,7 @@ export function HeroSection() {
       {/* Hero cloud banner */}
       <Box
         component="img"
-        src={isDark ? heroCloudsDark : heroCloudsLight}
+        src={heroClouds}
         alt=""
         sx={{
           position: 'absolute',
@@ -953,6 +952,7 @@ export function HeroSection() {
           height: '100%',
           pointerEvents: 'none',
           objectFit: 'cover',
+          filter: isDark ? 'invert(1)' : 'none',
         }}
       />
 
@@ -1012,12 +1012,24 @@ export function HeroSection() {
             cited, and ready to act on.
           </Typography>
 
+          <Typography
+            className="hero-subtitle"
+            sx={{
+              fontSize: '0.85rem',
+              color: 'text.secondary',
+              mb: 4,
+            }}
+          >
+            For product, ops, and support teams drowning in documents.
+          </Typography>
+
           <Box
             className="hero-ctas"
             sx={{
               display: 'flex',
-              flexDirection: 'column',
+              flexDirection: { xs: 'column', sm: 'row' },
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 2,
               mb: { xs: 5, md: 6 },
             }}
@@ -1037,14 +1049,19 @@ export function HeroSection() {
             >
               Join Waitlist
             </Button>
-            <Typography
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={openWaitlist}
               sx={{
-                fontSize: '0.82rem',
-                color: 'text.secondary',
+                px: 4,
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 700,
               }}
             >
-              Be first in line for early access
-            </Typography>
+              Watch Demo
+            </Button>
           </Box>
         </Box>
 

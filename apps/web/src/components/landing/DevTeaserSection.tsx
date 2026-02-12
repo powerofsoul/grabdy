@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -38,12 +37,14 @@ export function DevTeaserSection() {
     return () => ctx.revert();
   }, []);
 
+  const isDark = theme.palette.mode === 'dark';
+
   return (
     <Box
       ref={sectionRef}
       sx={{
-        py: { xs: 5, md: '60px' },
-        bgcolor: 'background.default',
+        py: { xs: 8, md: 10 },
+        bgcolor: isDark ? 'grey.50' : 'grey.900',
       }}
     >
       <Container maxWidth="lg">
@@ -56,9 +57,6 @@ export function DevTeaserSection() {
             alignItems: 'center',
             p: { xs: 3, md: 5 },
             borderRadius: 1,
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
           }}
         >
           {/* Left — copy */}
@@ -70,13 +68,14 @@ export function DevTeaserSection() {
                 fontSize: { xs: '1.5rem', md: '1.75rem' },
                 letterSpacing: '-0.02em',
                 mb: 2,
+                color: isDark ? 'text.primary' : 'grey.50',
               }}
             >
               Built for developers, too.
             </Typography>
             <Typography
               sx={{
-                color: 'text.secondary',
+                color: isDark ? 'text.secondary' : 'grey.400',
                 fontSize: '0.95rem',
                 lineHeight: 1.7,
                 mb: 3,
@@ -84,16 +83,8 @@ export function DevTeaserSection() {
               }}
             >
               Two REST endpoints, an MCP server for AI agents, and SDKs
-              in TypeScript and Python. Ship integrations in an afternoon.
+              for every major language. Ship integrations in an afternoon.
             </Typography>
-            <Button
-              variant="text"
-              endIcon={<ArrowRight size={16} />}
-              href="/developers"
-              sx={{ fontWeight: 600 }}
-            >
-              Read the docs
-            </Button>
           </Box>
 
           {/* Right — code snippet */}

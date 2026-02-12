@@ -38,7 +38,7 @@ export function CTASection() {
     <Box
       ref={sectionRef}
       sx={{
-        py: { xs: 10, md: 14 },
+        py: { xs: 12, md: 16 },
         position: 'relative',
         bgcolor: 'background.default',
       }}
@@ -55,16 +55,22 @@ export function CTASection() {
             letterSpacing: '-0.02em',
           }}
         >
-          Ready when you are.
+          Your team&apos;s knowledge, one question away.
         </Typography>
         <Typography
           className="cta-subtitle"
-          sx={{ mb: 5, color: 'text.secondary', fontSize: '1.05rem', lineHeight: 1.6 }}
+          sx={{ mb: 1.5, color: 'text.secondary', fontSize: '1.05rem', lineHeight: 1.6 }}
         >
           Join the waitlist today. We&apos;re onboarding teams in batches.
         </Typography>
+        <Typography
+          className="cta-subtitle"
+          sx={{ mb: 5, color: 'text.secondary', fontSize: '0.85rem' }}
+        >
+          Teams from startups to enterprises are already on the waitlist.
+        </Typography>
 
-        <Box className="cta-button" sx={{ mb: 2 }}>
+        <Box className="cta-button" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'center', gap: 2, mb: 2 }}>
           <Button
             variant="contained"
             size="large"
@@ -81,12 +87,22 @@ export function CTASection() {
           >
             Join Waitlist
           </Button>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={openWaitlist}
+            sx={{
+              px: 6,
+              py: 1.75,
+              fontSize: '1.05rem',
+              fontWeight: 700,
+            }}
+          >
+            Watch Demo
+          </Button>
         </Box>
 
         <Box className="cta-note" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-          <Typography sx={{ fontSize: '0.82rem', color: 'text.secondary' }}>
-            Be first in line for early access
-          </Typography>
           <Typography
             component="a"
             href="mailto:hello@grabdy.com"
