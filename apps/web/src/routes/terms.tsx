@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { Footer } from '@/components/landing/Footer';
 import { LandingNav } from '@/components/landing/LandingNav';
+import { WaitlistProvider } from '@/components/landing/WaitlistModal';
 
 export const Route = createFileRoute('/terms')({
   component: TermsPage,
@@ -10,6 +11,7 @@ export const Route = createFileRoute('/terms')({
 
 function TermsPage() {
   return (
+    <WaitlistProvider>
     <Box>
       <LandingNav />
       <Container maxWidth="md" sx={{ py: 12 }}>
@@ -70,5 +72,6 @@ function TermsPage() {
       </Container>
       <Footer />
     </Box>
+    </WaitlistProvider>
   );
 }

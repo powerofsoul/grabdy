@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { Footer } from '@/components/landing/Footer';
 import { LandingNav } from '@/components/landing/LandingNav';
+import { WaitlistProvider } from '@/components/landing/WaitlistModal';
 
 export const Route = createFileRoute('/privacy')({
   component: PrivacyPage,
@@ -10,6 +11,7 @@ export const Route = createFileRoute('/privacy')({
 
 function PrivacyPage() {
   return (
+    <WaitlistProvider>
     <Box>
       <LandingNav />
       <Container maxWidth="md" sx={{ py: 12 }}>
@@ -62,5 +64,6 @@ function PrivacyPage() {
       </Container>
       <Footer />
     </Box>
+    </WaitlistProvider>
   );
 }

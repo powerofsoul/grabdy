@@ -414,6 +414,27 @@ export function createAppTheme(mode: PaletteMode) {
           },
         },
       },
+      MuiRadio: {
+        styleOverrides: {
+          root: {
+            color: t.border,
+            padding: 6,
+            '&.Mui-checked': {
+              color: t.text,
+            },
+            '& .MuiSvgIcon-root': {
+              fontSize: 18,
+            },
+          },
+        },
+      },
+      MuiFormControlLabel: {
+        styleOverrides: {
+          root: {
+            gap: 4,
+          },
+        },
+      },
       MuiCheckbox: {
         styleOverrides: {
           root: {
