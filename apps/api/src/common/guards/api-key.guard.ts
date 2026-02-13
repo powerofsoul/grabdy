@@ -1,6 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 
-import { extractOrgNumericId } from '@grabdy/common';
 import * as bcrypt from 'bcryptjs';
 import { Request } from 'express';
 
@@ -54,7 +53,6 @@ export class ApiKeyGuard implements CanActivate {
 
     request.apiKey = {
       orgId: keyRecord.org_id,
-      orgNumericId: extractOrgNumericId(keyRecord.org_id),
     };
 
     return true;

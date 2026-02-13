@@ -9,7 +9,10 @@ import {
 import { z } from 'zod';
 
 function zodSchema(schema: z.ZodType) {
-  const { $schema: _, ...rest } = z.toJSONSchema(schema);
+  // dbIdSchema uses .transform() to brand strings, which Zod's JSON Schema
+  // converter can't represent. Use `unrepresentable: 'any'` to skip transforms
+  // (they emit `{}` which is valid "any" in JSON Schema — fine for UUIDs).
+  const { $schema: _, ...rest } = z.toJSONSchema(schema, { unrepresentable: 'any' });
   return rest;
 }
 

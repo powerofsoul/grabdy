@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { type DbId, dbIdSchema, idBelongsToOrg } from '@grabdy/common';
+import { type DbId, dbIdSchema, extractOrgNumericId, idBelongsToOrg } from '@grabdy/common';
 import { Tool } from '@rekog/mcp-nest';
 import type { Request } from 'express';
 import { z } from 'zod';
@@ -45,17 +45,17 @@ export class McpTools {
   ) {
     const ctx = getApiKeyContext(request);
 
-    const collectionIds = rawCollectionIds
-      ? rawCollectionIds.map((id) => {
-          if (!idBelongsToOrg(id, ctx.orgNumericId)) {
-            throw new Error('Collection does not belong to this organization');
-          }
-          return id;
-        })
-      : undefined;
+    if (rawCollectionIds) {
+      const orgNumericId = extractOrgNumericId(ctx.orgId);
+      for (const id of rawCollectionIds) {
+        if (!idBelongsToOrg(id, orgNumericId)) {
+          throw new Error('Invalid collection ID');
+        }
+      }
+    }
 
     const result = await this.retrievalService.query(ctx.orgId, query, {
-      collectionIds,
+      collectionIds: rawCollectionIds,
       limit,
     });
 

@@ -1,6 +1,6 @@
 import { Controller, Req, UseGuards } from '@nestjs/common';
 
-import { dbIdSchema, idBelongsToOrg } from '@grabdy/common';
+import { type DbId, extractOrgNumericId, idBelongsToOrg } from '@grabdy/common';
 import { publicApiContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { Request } from 'express';
@@ -14,15 +14,13 @@ function apiError(code: string, message: string) {
   return { success: false as const, error: { code, message } };
 }
 
-function parseCollectionIds(ids: string[] | undefined, orgNumericId: Parameters<typeof idBelongsToOrg>[1]) {
-  if (!ids) return undefined;
-  return ids.map((id) => {
-    const parsed = dbIdSchema('Collection').parse(id);
-    if (!idBelongsToOrg(parsed, orgNumericId)) {
-      throw new Error(`Collection ${id} does not belong to this organization`);
+function ensureCollectionsBelongToOrg(ids: DbId<'Collection'>[], orgId: DbId<'Org'>) {
+  const orgNumericId = extractOrgNumericId(orgId);
+  for (const id of ids) {
+    if (!idBelongsToOrg(id, orgNumericId)) {
+      throw new Error('Invalid collection ID');
     }
-    return parsed;
-  });
+  }
 }
 
 // ApiKeyGuard guarantees request.apiKey is set before any handler runs.
@@ -48,10 +46,10 @@ export class PublicApiController {
       const ctx = getApiKeyContext(req);
 
       try {
-        const collectionIds = parseCollectionIds(body.collectionIds, ctx.orgNumericId);
+        if (body.collectionIds) ensureCollectionsBelongToOrg(body.collectionIds, ctx.orgId);
 
         const { results, queryTimeMs } = await this.retrievalService.query(ctx.orgId, body.query, {
-          collectionIds,
+          collectionIds: body.collectionIds,
           limit: body.topK,
         });
 
@@ -85,10 +83,10 @@ export class PublicApiController {
       const ctx = getApiKeyContext(req);
 
       try {
-        const collectionIds = parseCollectionIds(body.collectionIds, ctx.orgNumericId);
+        if (body.collectionIds) ensureCollectionsBelongToOrg(body.collectionIds, ctx.orgId);
 
         const result = await this.retrievalService.publicQuery(ctx.orgId, body.query, {
-          collectionIds,
+          collectionIds: body.collectionIds,
           topK: body.topK,
         });
 

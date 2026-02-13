@@ -4,11 +4,14 @@
  * Enforces that any identifier ending with "Id" (camelCase) is typed as
  * DbId<'...'> or NonDbId<'...'> rather than plain string.
  *
+ * Also enforces that identifiers ending with "Ids" or "ids" (plural) are
+ * typed as arrays of DbId<'...'> or NonDbId<'...'>.
+ *
  * Checks: function parameters, variable declarations, class properties,
  * interface/type properties, object destructuring.
  *
- * Catches: `userId: string`, `collectionId: string`, `orgId: string`, etc.
- * Allows: `DbId<'User'>`, `NonDbId<'CanvasCard'>`, `DbId<'Collection'> | null`, etc.
+ * Catches: `userId: string`, `collectionIds: string[]`, `orgId: string`, etc.
+ * Allows: `DbId<'User'>`, `DbId<'Collection'>[]`, `NonDbId<'CanvasCard'>[]`, etc.
  *
  * Exceptions:
  * - The bare name `id` (primary keys are Generated<DbId<...>>)
@@ -16,6 +19,9 @@
 
 /** @type {Set<string>} Names that are NOT branded IDs */
 const EXCEPTIONS = new Set([]);
+
+/** Names containing these substrings before Id/Ids are third-party identifiers, not our packed UUIDs */
+const EXTERNAL_PATTERNS = ['externalId', 'ExternalId', 'externalIds', 'ExternalIds'];
 
 
 /**
@@ -64,10 +70,55 @@ function containsBrandedId(node) {
   return false;
 }
 
-/** @param {string} name */
+/**
+ * Check if a name refers to a singular ID (e.g. userId, collectionId).
+ * @param {string} name
+ */
 function nameEndsWithId(name) {
   if (name === 'id') return false;
   return /[a-z]Id$/.test(name);
+}
+
+/**
+ * Check if a name refers to a plural ID array (e.g. collectionIds, userIds, ids).
+ * Matches: ids, collectionIds, rawIds, etc.
+ * @param {string} name
+ */
+function nameEndsWithIds(name) {
+  return /[iI]ds$/.test(name);
+}
+
+/**
+ * Check if a type annotation is an array containing branded IDs.
+ * Matches: DbId<'X'>[], Array<DbId<'X'>>, NonDbId<'X'>[], etc.
+ */
+function containsBrandedIdArray(node) {
+  if (!node) return false;
+
+  // TSTypeAnnotation wrapper
+  if (node.type === 'TSTypeAnnotation') {
+    return containsBrandedIdArray(node.typeAnnotation);
+  }
+
+  // DbId<'X'>[]
+  if (node.type === 'TSArrayType') {
+    return containsBrandedId(node.elementType);
+  }
+
+  // Array<DbId<'X'>>
+  if (node.type === 'TSTypeReference') {
+    if (node.typeName?.type === 'Identifier' && node.typeName.name === 'Array') {
+      const params = node.typeArguments?.params || node.typeParameters?.params;
+      if (params) return params.some(containsBrandedId);
+    }
+  }
+
+  // Union: DbId<'X'>[] | undefined
+  if (node.type === 'TSUnionType') {
+    return node.types.some(containsBrandedIdArray);
+  }
+
+  return false;
 }
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -76,11 +127,13 @@ const rule = {
     type: 'problem',
     docs: {
       description:
-        'Enforce DbId branded type for all identifiers ending with "Id"',
+        'Enforce DbId branded type for all identifiers ending with "Id" or "Ids"',
     },
     messages: {
       requireDbId:
         '"{{name}}" ends with "Id" but is typed as plain string. Use DbId<\'Table\'> or NonDbId<\'Entity\'> instead.',
+      requireDbIdArray:
+        '"{{name}}" ends with "Ids" but is not typed as a branded ID array. Use DbId<\'Table\'>[] or NonDbId<\'Entity\'>[] instead.',
     },
     schema: [],
   },
@@ -88,15 +141,28 @@ const rule = {
   create(context) {
     function check(name, typeAnnotation, reportNode) {
       if (!name || !typeAnnotation) return;
-      if (!nameEndsWithId(name)) return;
       if (EXCEPTIONS.has(name)) return;
+      if (EXTERNAL_PATTERNS.some((p) => name.includes(p))) return;
 
-      if (!containsBrandedId(typeAnnotation)) {
-        context.report({
-          node: reportNode,
-          messageId: 'requireDbId',
-          data: { name },
-        });
+      if (nameEndsWithIds(name)) {
+        if (!containsBrandedIdArray(typeAnnotation)) {
+          context.report({
+            node: reportNode,
+            messageId: 'requireDbIdArray',
+            data: { name },
+          });
+        }
+        return;
+      }
+
+      if (nameEndsWithId(name)) {
+        if (!containsBrandedId(typeAnnotation)) {
+          context.report({
+            node: reportNode,
+            messageId: 'requireDbId',
+            data: { name },
+          });
+        }
       }
     }
 

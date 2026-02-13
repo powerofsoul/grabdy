@@ -3,11 +3,10 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { openai } from '@ai-sdk/openai';
 import { type DbId, type NonDbId, packId, packNonDbId } from '@grabdy/common';
 import type { CanvasEdge, CanvasState, Card } from '@grabdy/contracts';
+import { CHAT_MODEL } from '@grabdy/contracts';
 import { embed } from 'ai';
 import { sql } from 'kysely';
 import { z } from 'zod';
-
-import { CHAT_MODEL } from '@grabdy/contracts';
 
 import { DEFAULT_SEARCH_LIMIT, THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 
