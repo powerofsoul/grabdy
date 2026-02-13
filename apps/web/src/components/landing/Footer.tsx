@@ -51,7 +51,7 @@ export function Footer() {
               <Typography component="a" href="#integrations" sx={linkSx}>
                 Integrations
               </Typography>
-              <Typography component="a" href="/developers" sx={linkSx}>
+              <Typography component="a" href="#developers" sx={linkSx}>
                 Developers
               </Typography>
             </Box>

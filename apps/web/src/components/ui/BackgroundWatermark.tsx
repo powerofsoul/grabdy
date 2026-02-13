@@ -38,12 +38,14 @@ export function BackgroundWatermark() {
         right: -60,
         width: 600,
         height: 600,
+        maxWidth: '100vw',
         mixBlendMode: isDark ? 'screen' : 'multiply',
         opacity: isDark ? 0.05 : 0.07,
         filter: isDark ? 'invert(1)' : 'none',
         pointerEvents: 'none',
         userSelect: 'none',
         zIndex: 0,
+        display: { xs: 'none', sm: 'block' },
       }}
     />
   );

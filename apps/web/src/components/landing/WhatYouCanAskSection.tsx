@@ -73,6 +73,7 @@ export function WhatYouCanAskSection() {
   return (
     <Box
       ref={sectionRef}
+      id="integrations"
       sx={{
         py: { xs: 10, md: 14 },
         bgcolor: 'background.default',

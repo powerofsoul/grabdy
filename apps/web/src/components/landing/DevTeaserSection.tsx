@@ -42,6 +42,7 @@ export function DevTeaserSection() {
   return (
     <Box
       ref={sectionRef}
+      id="developers"
       sx={{
         py: { xs: 8, md: 10 },
         bgcolor: isDark ? 'grey.50' : 'grey.900',

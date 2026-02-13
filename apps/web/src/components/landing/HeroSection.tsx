@@ -937,24 +937,19 @@ export function HeroSection() {
         pb: { xs: 10, md: 14 },
         position: 'relative',
         overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `url(${heroClouds})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          pointerEvents: 'none',
+          filter: isDark ? 'invert(1)' : 'none',
+        },
       }}
     >
-      {/* Hero cloud banner */}
-      <Box
-        component="img"
-        src={heroClouds}
-        alt=""
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          objectFit: 'cover',
-          filter: isDark ? 'invert(1)' : 'none',
-        }}
-      />
 
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
         <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto' }}>
@@ -1061,12 +1056,13 @@ export function HeroSection() {
           </Box>
         </Box>
 
-        {/* ── Showcase ── */}
+        {/* ── Showcase (hidden on mobile) ── */}
         <Box
           ref={showcaseRef}
           className="hero-showcase"
           sx={{
-            maxWidth: { xs: 700, md: 1200 },
+            display: { xs: 'none', md: 'block' },
+            maxWidth: 1200,
             mx: 'auto',
             borderRadius: 2.5,
             overflow: 'hidden',
