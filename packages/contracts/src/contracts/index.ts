@@ -10,6 +10,7 @@ import { orgsContract } from './orgs.contract.js';
 import { publicApiContract } from './public-api.contract.js';
 import { retrievalContract, streamChatBodySchema } from './retrieval.contract.js';
 import { usersContract } from './users.contract.js';
+import { waitlistContract } from './waitlist.contract.js';
 
 const c = initContract();
 
@@ -23,6 +24,7 @@ export const contract = c.router({
   retrieval: retrievalContract,
   apiKeys: apiKeysContract,
   users: usersContract,
+  waitlist: waitlistContract,
 });
 
 export {
@@ -37,6 +39,7 @@ export {
   retrievalContract,
   streamChatBodySchema,
   usersContract,
+  waitlistContract,
 };
 
 export {

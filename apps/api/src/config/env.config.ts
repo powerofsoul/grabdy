@@ -54,7 +54,10 @@ export const env = {
   bullBoardPassword: requiredInProd('BULL_BOARD_PASSWORD', 'admin'),
 
   // Integration encryption
-  integrationEncryptionKey: requiredInProd('INTEGRATION_ENCRYPTION_KEY', 'dev-encryption-key-32chars-paddd'),
+  integrationEncryptionKey: requiredInProd(
+    'INTEGRATION_ENCRYPTION_KEY',
+    'dev-encryption-key-32chars-paddd'
+  ),
 
   // Linear
   linearClientId: requiredInProd('LINEAR_CLIENT_ID', ''),
@@ -93,6 +96,9 @@ export const env = {
   // Figma
   figmaClientId: requiredInProd('FIGMA_CLIENT_ID', ''),
   figmaClientSecret: requiredInProd('FIGMA_CLIENT_SECRET', ''),
+
+  // Waitlist Slack webhook
+  slackWaitlistWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
 } as const;
 
 type EnvKey = keyof typeof env;

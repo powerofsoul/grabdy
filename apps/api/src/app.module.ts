@@ -33,6 +33,7 @@ import { PublicApiModule } from './modules/public-api/public-api.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { RetrievalModule } from './modules/retrieval/retrieval.module';
 import { UsersModule } from './modules/users/users.module';
+import { WaitlistModule } from './modules/waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { UsersModule } from './modules/users/users.module';
     IntegrationsModule,
     PublicApiModule,
     McpModule,
+    WaitlistModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },

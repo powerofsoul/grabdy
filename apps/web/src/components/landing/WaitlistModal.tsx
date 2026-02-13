@@ -13,10 +13,7 @@ import {
 } from '@mui/material';
 import { CheckCircle, Sparkle, X } from '@phosphor-icons/react';
 
-
-
-const SLACK_WEBHOOK_URL =
-  'https://hooks.slack.com/services/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';
+import { api } from '../../lib/api';
 
 interface WaitlistContextType {
   open: () => void;
@@ -72,13 +69,12 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
     setError('');
 
     try {
-      await fetch(SLACK_WEBHOOK_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-          text: `New waitlist signup:\n*Name:* ${name.trim()}\n*Email:* ${email.trim()}`,
-        }),
-      });
-      setSubmitted(true);
+      const res = await api.waitlist.join({ body: { name: name.trim(), email: email.trim() } });
+      if (res.status === 200) {
+        setSubmitted(true);
+      } else if (res.status === 400) {
+        setError(res.body.error);
+      }
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -137,11 +133,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
           <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', lineHeight: 1.6, mb: 3 }}>
             We&apos;ll reach out soon with early access details. Keep an eye on your inbox.
           </Typography>
-          <Button
-            variant="outlined"
-            onClick={handleClose}
-            sx={{ px: 4 }}
-          >
+          <Button variant="outlined" onClick={handleClose} sx={{ px: 4 }}>
             Done
           </Button>
         </Box>
@@ -214,11 +206,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
                 fontSize: '0.95rem',
               }}
             >
-              {isSubmitting ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                'Join Waitlist'
-              )}
+              {isSubmitting ? <CircularProgress size={20} color="inherit" /> : 'Join Waitlist'}
             </Button>
 
             <Typography
