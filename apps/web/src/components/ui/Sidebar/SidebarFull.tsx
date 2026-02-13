@@ -1,13 +1,12 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { BarChart3, BookOpen, ChevronRight, ChevronsLeft, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users, Waypoints } from 'lucide-react';
+import { BarChart3, BookOpen, ChevronRight, ChevronsLeft, Eye, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users, Waypoints } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
+import { FONT_SERIF } from '@/theme';
 
 import { useSidebarCollections } from './useSidebarCollections';
-
-const FONT_SERIF = '"Source Serif 4", "Georgia", serif';
 
 function NavItem({ to, label, exact, icon, trailing, activePrefix }: {
   to: string;
@@ -35,12 +34,13 @@ function NavItem({ to, label, exact, icon, trailing, activePrefix }: {
           height: 34,
           px: 2,
           mx: '8px',
-          borderRadius: 1,
+          borderRadius: 0,
           cursor: 'pointer',
-          bgcolor: isActive ? alpha(ct, 0.06) : 'transparent',
-          transition: 'color 120ms ease, background-color 120ms ease',
+          borderLeft: isActive ? `2px solid ${ct}` : '2px solid transparent',
+          bgcolor: 'transparent',
+          transition: 'color 120ms ease, border-color 120ms ease',
           '&:hover': {
-            bgcolor: alpha(ct, isActive ? 0.08 : 0.04),
+            bgcolor: alpha(ct, 0.03),
           },
         }}
       >
@@ -94,9 +94,10 @@ function SectionHeader({ label, to }: { label: string; to?: string }) {
         className="section-label"
         sx={{
           fontSize: 11,
-          fontWeight: 600,
+          fontFamily: FONT_SERIF,
+          fontWeight: 400,
           textTransform: 'uppercase',
-          letterSpacing: '0.06em',
+          letterSpacing: '0.08em',
           color: alpha(ct, 0.35),
           lineHeight: 1.4,
           transition: 'color 120ms ease',
@@ -140,6 +141,7 @@ function CountBadge({ count }: { count: number }) {
   return (
     <Typography
       component="span"
+      className="font-mono"
       sx={{
         fontSize: 11,
         fontWeight: 500,
@@ -155,7 +157,7 @@ function CountBadge({ count }: { count: number }) {
 
 export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { preference, setPreference } = useThemeMode();
   const collections = useSidebarCollections();
   const isDark = preference === 'dark';
@@ -174,20 +176,20 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
         flexDirection: 'column',
         bgcolor: 'background.default',
         borderRight: '1px solid',
-        borderColor: alpha(ct, 0.08),
+        borderColor: 'grey.900',
       }}
     >
-      {/* Wordmark + collapse */}
+      {/* Logo + collapse */}
       <Box sx={{ px: '20px', pt: '20px', pb: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '24px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: '24px', position: 'relative' }}>
           <Link to="/dashboard/chat" style={{ textDecoration: 'none', color: 'inherit' }}>
             <Typography
               sx={{
-                fontSize: 20,
-                fontWeight: 600,
-                color: 'text.primary',
+                fontSize: 22,
+                fontWeight: 400,
                 fontFamily: FONT_SERIF,
-                cursor: 'pointer',
+                color: 'text.primary',
+                letterSpacing: '-0.01em',
               }}
             >
               grabdy.
@@ -199,9 +201,11 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 size="small"
                 onClick={onCollapse}
                 sx={{
+                  position: 'absolute',
+                  right: 0,
                   color: alpha(ct, 0.3),
                   p: 0.5,
-                  '&:hover': { color: 'text.primary', bgcolor: alpha(ct, 0.06) },
+                  '&:hover': { color: 'text.primary' },
                 }}
               >
                 <ChevronsLeft size={16} />
@@ -210,7 +214,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           )}
         </Box>
 
-        <Box sx={{ height: '1px', bgcolor: alpha(ct, 0.08), mb: '16px' }} />
+        <Box sx={{ height: '1px', bgcolor: 'grey.900', mb: '16px' }} />
       </Box>
 
       {/* Nav */}
@@ -287,7 +291,39 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
 
       {/* Footer */}
       <Box>
-        <Box sx={{ height: '1px', bgcolor: alpha(ct, 0.08), mx: '20px', mb: '12px' }} />
+        {/* View as Member link for admins/owners */}
+        {isAdmin && (
+          <Link to="/app" style={{ textDecoration: 'none' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mx: '12px',
+                mb: '8px',
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 0,
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor: alpha(ct, 0.1),
+                transition: 'all 120ms ease',
+                '&:hover': {
+                  bgcolor: alpha(ct, 0.03),
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', color: alpha(ct, 0.4) }}>
+                <Eye size={14} strokeWidth={1.5} />
+              </Box>
+              <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
+                View as Member
+              </Typography>
+            </Box>
+          </Link>
+        )}
+
+        <Box sx={{ height: '1px', bgcolor: 'grey.900', mx: '20px', mb: '12px' }} />
 
         <Box sx={{ mb: '8px', display: 'flex', flexDirection: 'column', gap: 0.25 }}>
           <NavItem
@@ -302,7 +338,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           />
         </Box>
 
-        <Box sx={{ height: '1px', bgcolor: alpha(ct, 0.08), mx: '20px', mb: '8px' }} />
+        <Box sx={{ height: '1px', bgcolor: 'grey.900', mx: '20px', mb: '8px' }} />
 
         {user && (
           <Box
@@ -323,6 +359,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 bgcolor: 'text.primary',
                 color: 'background.default',
                 flexShrink: 0,
+                borderRadius: 0,
               }}
             >
               {initials}

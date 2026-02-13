@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
 
-import { alpha, Avatar, Box, IconButton, Tooltip, useTheme } from '@mui/material';
+import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { BarChart3, BookOpen, ChevronsRight, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users, Waypoints } from 'lucide-react';
-
-const FONT_SERIF = '"Source Serif 4", "Georgia", serif';
+import { BarChart3, BookOpen, ChevronsRight, Eye, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users, Waypoints } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
+import { FONT_SERIF } from '@/theme';
 
 function StripIcon({ to, label, icon, exact, activePrefix }: { to: string; label: string; icon: ReactNode; exact?: boolean; activePrefix?: string }) {
   const location = useLocation();
@@ -28,13 +27,14 @@ function StripIcon({ to, label, icon, exact, activePrefix }: { to: string; label
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: 1,
+            borderRadius: 0,
             cursor: 'pointer',
             color: isActive ? 'text.primary' : alpha(ct, 0.4),
-            bgcolor: isActive ? alpha(ct, 0.06) : 'transparent',
+            borderLeft: isActive ? `2px solid ${ct}` : '2px solid transparent',
+            bgcolor: 'transparent',
             transition: 'all 120ms ease',
             '&:hover': {
-              bgcolor: alpha(ct, isActive ? 0.08 : 0.04),
+              bgcolor: alpha(ct, 0.03),
               color: 'text.primary',
             },
           }}
@@ -48,7 +48,7 @@ function StripIcon({ to, label, icon, exact, activePrefix }: { to: string; label
 
 export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
   const theme = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { preference, setPreference } = useThemeMode();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
@@ -67,39 +67,34 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
         alignItems: 'center',
         bgcolor: 'background.default',
         borderRight: '1px solid',
-        borderColor: alpha(ct, 0.08),
+        borderColor: 'grey.900',
         py: 2.5,
         gap: 0.5,
       }}
     >
-      {/* Wordmark "G." */}
+      {/* Logo mark */}
       <Tooltip title="Expand sidebar" placement="right">
         <Box
           onClick={onExpand}
           sx={{
-            width: 36,
-            height: 36,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            borderRadius: 1,
-            '&:hover': { bgcolor: alpha(ct, 0.06) },
+            '&:hover': { opacity: 0.7 },
           }}
         >
-          <Box
-            component="span"
+          <Typography
             sx={{
-              fontSize: 18,
-              fontWeight: 600,
+              fontSize: 22,
+              fontWeight: 400,
               fontFamily: FONT_SERIF,
               color: 'text.primary',
-              lineHeight: 1,
-              ml: 0.35,
+              letterSpacing: '-0.01em',
             }}
           >
-            G.
-          </Box>
+            grabdy.
+          </Typography>
         </Box>
       </Tooltip>
       {onExpand && (
@@ -131,6 +126,33 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
+
+      {/* View as Member link for admins/owners */}
+      {isAdmin && (
+        <Tooltip title="View as Member" placement="right">
+          <Link to="/app" style={{ textDecoration: 'none' }}>
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 0,
+                cursor: 'pointer',
+                color: alpha(ct, 0.35),
+                transition: 'all 120ms ease',
+                '&:hover': {
+                  bgcolor: alpha(ct, 0.03),
+                  color: 'text.primary',
+                },
+              }}
+            >
+              <Eye size={16} />
+            </Box>
+          </Link>
+        </Tooltip>
+      )}
 
       {/* Settings */}
       <StripIcon to="/dashboard/usage" label="AI Usage" icon={<BarChart3 size={18} strokeWidth={1.5} />} />
@@ -164,6 +186,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
               color: 'background.default',
               cursor: 'pointer',
               mt: 0.5,
+              borderRadius: 0,
             }}
           >
             {initials}

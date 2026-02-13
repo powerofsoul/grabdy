@@ -1,6 +1,6 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { createFileRoute, Navigate, useNavigate, useSearch } from '@tanstack/react-router';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, LogOut, Moon, Sun } from 'lucide-react';
 import { z } from 'zod';
 
 import { ChatPanel } from '@/components/chat';
@@ -31,10 +31,6 @@ function AppPage() {
     return <Navigate to="/auth/login" />;
   }
 
-  if (isAdmin) {
-    return <Navigate to="/dashboard" />;
-  }
-
   if (!user || !selectedOrgId) {
     return null;
   }
@@ -62,6 +58,17 @@ function AppPage() {
         headerHeight={56}
         headerSlot={
           <>
+            {isAdmin && (
+              <Tooltip title="Back to Dashboard">
+                <IconButton
+                  size="small"
+                  onClick={() => navigate({ to: '/dashboard' })}
+                  sx={{ color: alpha(ct, 0.5), mr: 0.5, '&:hover': { color: 'text.primary' } }}
+                >
+                  <ArrowLeft size={18} />
+                </IconButton>
+              </Tooltip>
+            )}
             <Typography
               onClick={() => {
                 navigate({ to: '/app', search: {}, replace: true });
