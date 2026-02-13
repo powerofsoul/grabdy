@@ -28,14 +28,14 @@ export abstract class BaseAgent {
     instructions: string,
     tools: ToolsInput,
     memory: Memory,
-    model: string,
+    model: ModelId,
     usageService?: AiUsageService,
     usageConfig?: AgentUsageConfig,
   ) {
     this.logger = new Logger(this.constructor.name);
     this.usageService = usageService ?? null;
     this.usageConfig = usageConfig ?? null;
-    this.modelName = model as ModelId;
+    this.modelName = model;
 
     this.agent = new Agent({
       id,
@@ -83,14 +83,15 @@ export abstract class BaseAgent {
     return result;
   }
 
-  generate(message: string, threadId: string, resourceId: string) {
-    this.logger.debug(`Generating message for thread: ${threadId}`);
+  generate(message: string, threadId?: string, resourceId?: string) {
+    this.logger.debug(`Generating message${threadId ? ` for thread: ${threadId}` : ''}`);
+
+    const memoryOpts = threadId && resourceId
+      ? { memory: { thread: threadId, resource: resourceId } }
+      : {};
 
     const result = this.agent.generate(message, {
-      memory: {
-        thread: threadId,
-        resource: resourceId,
-      },
+      ...memoryOpts,
       maxSteps: 10,
     });
 

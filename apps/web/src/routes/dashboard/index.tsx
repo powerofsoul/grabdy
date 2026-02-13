@@ -153,7 +153,7 @@ function DashboardIndex() {
             label="API Keys"
             value={stats.apiKeys}
             icon={<Key size={20} />}
-            to="/dashboard/api-keys"
+            to="/dashboard/api/keys"
             color={p.grey[600]}
           />
         </Grid>
@@ -177,7 +177,7 @@ function DashboardIndex() {
             icon={<Key size={18} />}
             label="Generate an API key"
             description="Connect your app to Grabdy"
-            to="/dashboard/api-keys"
+            to="/dashboard/api/keys"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>

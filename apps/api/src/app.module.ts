@@ -13,6 +13,7 @@ import {
 } from './config/constants';
 import { OrgAccessGuard } from './common/guards/org-access.guard';
 import { TokenRefreshInterceptor } from './common/interceptors/token-refresh.interceptor';
+import { ApiKeyModule } from './common/guards/api-key.module';
 import { EnvModule } from './config/env.config';
 import { DbModule } from './db/db.module';
 import { AgentModule } from './modules/agent/agent.module';
@@ -20,6 +21,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { McpModule } from './modules/mcp/mcp.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CollectionsModule } from './modules/collections/collections.module';
@@ -27,6 +29,7 @@ import { DataSourcesModule } from './modules/data-sources/data-sources.module';
 import { EmailModule } from './modules/email/email.module';
 import { HealthModule } from './modules/health/health.module';
 import { OrgsModule } from './modules/orgs/orgs.module';
+import { PublicApiModule } from './modules/public-api/public-api.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { RetrievalModule } from './modules/retrieval/retrieval.module';
 import { UsersModule } from './modules/users/users.module';
@@ -35,6 +38,7 @@ import { UsersModule } from './modules/users/users.module';
   imports: [
     EnvModule,
     DbModule,
+    ApiKeyModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',
@@ -67,6 +71,8 @@ import { UsersModule } from './modules/users/users.module';
     RetrievalModule,
     ApiKeysModule,
     IntegrationsModule,
+    PublicApiModule,
+    McpModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },

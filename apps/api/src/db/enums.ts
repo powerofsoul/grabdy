@@ -39,6 +39,7 @@ export type DataSourceType = (typeof DataSourceType)[keyof typeof DataSourceType
 export const AiCallerType = {
   MEMBER: 'MEMBER',
   SYSTEM: 'SYSTEM',
+  API_KEY: 'API_KEY',
 } as const;
 export type AiCallerType = (typeof AiCallerType)[keyof typeof AiCallerType];
 

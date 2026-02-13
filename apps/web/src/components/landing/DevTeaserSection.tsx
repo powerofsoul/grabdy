@@ -7,7 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const CURL_SNIPPET = `curl -X POST https://api.grabdy.com/query \\
-  -H "X-API-Key: gbd_sk_live_..." \\
+  -H "Authorization: Bearer gbd_sk_live_..." \\
   -d '{"query": "refund policy?"}'`;
 
 export function DevTeaserSection() {

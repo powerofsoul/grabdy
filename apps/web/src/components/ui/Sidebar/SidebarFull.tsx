@@ -1,6 +1,6 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { BarChart3, ChevronRight, ChevronsLeft, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users } from 'lucide-react';
+import { BarChart3, BookOpen, ChevronRight, ChevronsLeft, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users, Waypoints } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
@@ -9,19 +9,21 @@ import { useSidebarCollections } from './useSidebarCollections';
 
 const FONT_SERIF = '"Source Serif 4", "Georgia", serif';
 
-function NavItem({ to, label, exact, icon, trailing }: {
+function NavItem({ to, label, exact, icon, trailing, activePrefix }: {
   to: string;
   label: string;
   exact?: boolean;
   icon?: React.ReactNode;
   trailing?: React.ReactNode;
+  activePrefix?: string;
 }) {
   const location = useLocation();
   const theme = useTheme();
   const ct = theme.palette.text.primary;
+  const matchPath = activePrefix ?? to;
   const isActive = exact
-    ? location.pathname === to
-    : location.pathname.startsWith(to);
+    ? location.pathname === matchPath
+    : location.pathname.startsWith(matchPath);
 
   return (
     <Link to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -250,10 +252,25 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
             label="Integrations"
             icon={<Plug size={16} strokeWidth={1.5} />}
           />
+        </Box>
+
+        {/* API */}
+        <Box sx={{ mt: 2.5 }}>
+          <SectionHeader label="API" />
           <NavItem
-            to="/dashboard/api-keys"
-            label="API Keys"
+            to="/dashboard/api/keys"
+            label="Keys"
             icon={<Key size={16} strokeWidth={1.5} />}
+          />
+          <NavItem
+            to="/dashboard/api/docs"
+            label="Docs"
+            icon={<BookOpen size={16} strokeWidth={1.5} />}
+          />
+          <NavItem
+            to="/dashboard/api/mcp"
+            label="MCP"
+            icon={<Waypoints size={16} strokeWidth={1.5} />}
           />
         </Box>
 

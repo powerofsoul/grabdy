@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
+import type { DbId } from '@grabdy/common';
 import { createTool } from '@mastra/core/tools';
 import { embed } from 'ai';
 import { sql } from 'kysely';
 import { z } from 'zod';
-
-import type { DbId } from '@grabdy/common';
 
 import { DbService } from '../../../db/db.module';
 
@@ -14,7 +13,7 @@ import { DbService } from '../../../db/db.module';
 export class RagSearchTool {
   constructor(private db: DbService) {}
 
-  create(orgId: DbId<'Org'>, collectionId?: DbId<'Collection'>) {
+  create(orgId: DbId<'Org'>, collectionIds?: DbId<'Collection'>[], defaultTopK = 5) {
     const db = this.db;
 
     return createTool({
@@ -23,7 +22,7 @@ export class RagSearchTool {
         'Search the knowledge base for relevant information. Use this tool to find context before answering questions.',
       inputSchema: z.object({
         query: z.string().describe('The search query to find relevant documents'),
-        topK: z.number().optional().default(5).describe('Number of results to return'),
+        topK: z.number().optional().default(defaultTopK).describe('Number of results to return'),
       }),
       execute: async (input) => {
         const { embedding } = await embed({
@@ -47,8 +46,8 @@ export class RagSearchTool {
           ])
           .where('data.chunks.org_id', '=', orgId);
 
-        if (collectionId) {
-          query = query.where('data.chunks.collection_id', '=', collectionId);
+        if (collectionIds && collectionIds.length > 0) {
+          query = query.where('data.chunks.collection_id', 'in', collectionIds);
         }
 
         const results = await query

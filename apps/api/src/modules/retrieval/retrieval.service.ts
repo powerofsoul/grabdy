@@ -5,9 +5,23 @@ import { type DbId, type NonDbId, packId, packNonDbId } from '@grabdy/common';
 import type { CanvasEdge, CanvasState, Card } from '@grabdy/contracts';
 import { embed } from 'ai';
 import { sql } from 'kysely';
+import { z } from 'zod';
+
+import { CHAT_MODEL } from '@grabdy/contracts';
 
 import { DEFAULT_SEARCH_LIMIT, THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
+
+const ragResultSchema = z.object({
+  results: z.array(z.object({
+    content: z.string(),
+    score: z.number(),
+    dataSourceId: z.string(),
+    dataSourceName: z.string(),
+    metadata: z.record(z.string(), z.unknown()).default({}),
+  })),
+});
 import { DbService } from '../../db/db.module';
+import { AiCallerType } from '../../db/enums';
 import { AgentFactory } from '../agent/services/agent.factory';
 import { AgentMemoryService } from '../agent/services/memory.service';
 import { CanvasOpsService } from '../queue/canvas-ops.service';
@@ -45,7 +59,7 @@ export class RetrievalService {
   async query(
     orgId: DbId<'Org'>,
     queryText: string,
-    options: { collectionId?: DbId<'Collection'>; limit?: number }
+    options: { collectionIds?: DbId<'Collection'>[]; limit?: number }
   ): Promise<{ results: SearchResult[]; queryTimeMs: number }> {
     const start = Date.now();
 
@@ -69,8 +83,8 @@ export class RetrievalService {
       ])
       .where('data.chunks.org_id', '=', orgId);
 
-    if (options.collectionId) {
-      query = query.where('data.chunks.collection_id', '=', options.collectionId);
+    if (options.collectionIds && options.collectionIds.length > 0) {
+      query = query.where('data.chunks.collection_id', 'in', options.collectionIds);
     }
 
     const results = await query
@@ -85,11 +99,80 @@ export class RetrievalService {
         chunkId: r.chunk_id,
         content: r.content,
         score: Number(r.score),
-        metadata: (r.metadata ?? {}) as Record<string, unknown>,
+        metadata: r.metadata ?? {},
         dataSourceName: r.data_source_name,
         dataSourceId: r.data_source_id,
       })),
       queryTimeMs,
+    };
+  }
+
+  async publicQuery(
+    orgId: DbId<'Org'>,
+    queryText: string,
+    options: { collectionIds?: DbId<'Collection'>[]; topK?: number }
+  ): Promise<{
+    answer: string;
+    sources: Array<{
+      content: string;
+      score: number;
+      dataSource: { id: string; name: string };
+      metadata: Record<string, unknown>;
+    }>;
+    model: string;
+    usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+  }> {
+    const agent = this.agentFactory.createDataAgent({
+      orgId,
+      collectionIds: options.collectionIds,
+      callerType: AiCallerType.API_KEY,
+      enableCanvas: false,
+      defaultTopK: options.topK,
+    });
+
+    const result = await agent.generate(queryText);
+
+    // Extract sources from rag-search tool results across all steps
+    const sources: Array<{
+      content: string;
+      score: number;
+      dataSource: { id: string; name: string };
+      metadata: Record<string, unknown>;
+    }> = [];
+
+    for (const step of result.steps) {
+      for (const tr of step.toolResults) {
+        if (tr.payload.toolName !== 'rag-search') continue;
+        const parsed = ragResultSchema.safeParse(tr.payload.result);
+        if (!parsed.success) {
+          this.logger.warn(`Failed to parse rag-search result: ${parsed.error.message}`);
+          continue;
+        }
+
+        for (const r of parsed.data.results) {
+          sources.push({
+            content: r.content,
+            score: r.score,
+            dataSource: { id: r.dataSourceId, name: r.dataSourceName },
+            metadata: r.metadata,
+          });
+        }
+      }
+    }
+
+    const totalUsage = result.totalUsage;
+    const promptTokens = totalUsage.inputTokens ?? 0;
+    const completionTokens = totalUsage.outputTokens ?? 0;
+
+    return {
+      answer: result.text,
+      sources,
+      model: CHAT_MODEL,
+      usage: {
+        promptTokens,
+        completionTokens,
+        totalTokens: promptTokens + completionTokens,
+      },
     };
   }
 
@@ -137,13 +220,12 @@ export class RetrievalService {
 
     const canvasState = threadId ? await this.getCanvasState(threadId) : undefined;
 
-    const chatAgent = this.agentFactory.createDataAgent(
+    const chatAgent = this.agentFactory.createDataAgent({
       orgId,
-      options.collectionId,
-      undefined,
+      collectionIds: options.collectionId ? [options.collectionId] : undefined,
       threadId,
-      canvasState
-    );
+      canvasState,
+    });
     const result = await chatAgent.generate(message, threadId, membershipId);
 
     return {
@@ -193,13 +275,12 @@ export class RetrievalService {
 
     const canvasState = threadId ? await this.getCanvasState(threadId) : undefined;
 
-    const agent = this.agentFactory.createDataAgent(
+    const agent = this.agentFactory.createDataAgent({
       orgId,
-      options.collectionId,
-      undefined,
+      collectionIds: options.collectionId ? [options.collectionId] : undefined,
       threadId,
-      canvasState
-    );
+      canvasState,
+    });
     const streamResult = await agent.stream(message, threadId, membershipId);
 
     return {

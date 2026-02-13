@@ -102,36 +102,41 @@ export class AgentFactory {
     private aiUsageService: AiUsageService
   ) {}
 
-  createDataAgent(
-    orgId: DbId<'Org'>,
-    collectionId?: DbId<'Collection'>,
-    userId?: DbId<'User'>,
-    threadId?: DbId<'ChatThread'>,
-    canvasState?: CanvasState
-  ): DataAgent {
-    const ragTool = this.ragSearchTool.create(orgId, collectionId);
+  createDataAgent(opts: {
+    orgId: DbId<'Org'>;
+    collectionIds?: DbId<'Collection'>[];
+    userId?: DbId<'User'>;
+    threadId?: DbId<'ChatThread'>;
+    canvasState?: CanvasState;
+    callerType?: AiCallerType;
+    enableCanvas?: boolean;
+    defaultTopK?: number;
+  }): DataAgent {
+    const { orgId, collectionIds, userId, threadId, canvasState, callerType, enableCanvas = true, defaultTopK } = opts;
+    const ragTool = this.ragSearchTool.create(orgId, collectionIds, defaultTopK);
 
     const tools: ToolsInput = {
       'rag-search': ragTool,
     };
 
-    if (threadId) {
+    if (enableCanvas && threadId) {
       const canvasToolSet = this.canvasTools.create(threadId, orgId);
       Object.assign(tools, canvasToolSet);
     }
 
-    const canvasContext = canvasState ? summarizeCanvas(canvasState) : undefined;
+    const canvasContext = enableCanvas && canvasState ? summarizeCanvas(canvasState) : undefined;
 
     return new DataAgent(
       tools,
       this.memoryService.getMemory(),
       this.aiUsageService,
       {
-        callerType: AiCallerType.MEMBER,
+        callerType: callerType ?? AiCallerType.MEMBER,
         requestType: AiRequestType.CHAT,
         context: { orgId, userId },
       },
-      canvasContext
+      canvasContext,
+      enableCanvas
     );
   }
 }

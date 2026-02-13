@@ -7,6 +7,7 @@ import { collectionsContract } from './collections.contract.js';
 import { dataSourcesContract } from './data-sources.contract.js';
 import { integrationsContract } from './integrations.contract.js';
 import { orgsContract } from './orgs.contract.js';
+import { publicApiContract } from './public-api.contract.js';
 import { retrievalContract, streamChatBodySchema } from './retrieval.contract.js';
 import { usersContract } from './users.contract.js';
 
@@ -32,9 +33,21 @@ export {
   dataSourcesContract,
   integrationsContract,
   orgsContract,
+  publicApiContract,
   retrievalContract,
   streamChatBodySchema,
   usersContract,
 };
+
+export {
+  listCollectionsResponseSchema,
+  publicApiErrorSchema,
+  publicCollectionSchema,
+  publicSourceSchema,
+  queryBodySchema,
+  queryResponseSchema,
+  searchBodySchema,
+  searchResponseSchema,
+} from './public-api.contract.js';
 
 export type Contract = typeof contract;

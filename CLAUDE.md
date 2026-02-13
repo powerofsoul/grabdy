@@ -124,8 +124,8 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 ### API Key Auth
 
-- External API access uses `X-API-Key` header with `gbd_` prefixed keys.
-- Cookie auth for dashboard, API key auth for external REST API.
+- External API access uses `Authorization: Bearer` header with `gbd_` prefixed keys.
+- Cookie auth for dashboard, Bearer API key auth for external REST API and MCP.
 
 ### General
 

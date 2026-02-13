@@ -29,7 +29,7 @@ export class RetrievalController {
     return tsRestHandler(retrievalContract.query, async ({ params, body }) => {
       try {
         const result = await this.retrievalService.query(params.orgId, body.query, {
-          collectionId: body.collectionId,
+          collectionIds: body.collectionId ? [body.collectionId] : undefined,
           limit: body.limit,
         });
         return {

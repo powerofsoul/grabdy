@@ -37,6 +37,9 @@ export const MODEL_INFO = {
 
 export type ModelId = keyof typeof MODEL_INFO;
 
+export const CHAT_MODEL: ModelId = 'openai/gpt-5-mini';
+export const EMBEDDING_MODEL: ModelId = 'openai/text-embedding-3-small';
+
 export function calculateCost(model: ModelId, inputTokens: number, outputTokens: number): number {
   const { pricing } = MODEL_INFO[model];
   return (

@@ -1,13 +1,21 @@
 import type { ToolsInput } from '@mastra/core/agent';
 import type { Memory } from '@mastra/memory';
 
-import { generateComponentPrompt } from '@grabdy/contracts';
+import { CHAT_MODEL, generateComponentPrompt } from '@grabdy/contracts';
 
 import type { AiUsageService } from '../ai/ai-usage.service';
 
 import { type AgentUsageConfig, BaseAgent } from './base-agent';
 
-const SYSTEM_PROMPT = `You are a data assistant with a visual canvas. The user sees a split screen: chat on the left, canvas on the right. Use the canvas to present structured information that is easier to scan visually than to read in chat.
+const CHAT_ONLY_PROMPT = `You are a data assistant that answers questions using a knowledge base.
+
+When answering questions:
+1. Use the rag-search tool to find relevant information from the knowledge base
+2. If the search results don't contain relevant information, say so clearly
+3. Cite which documents your answer came from
+4. Be concise and accurate`;
+
+const CANVAS_PROMPT = `You are a data assistant with a visual canvas. The user sees a split screen: chat on the left, canvas on the right. Use the canvas to present structured information that is easier to scan visually than to read in chat.
 
 When answering questions:
 1. Use the rag-search tool to find relevant information from the knowledge base
@@ -115,9 +123,15 @@ export class DataAgent extends BaseAgent {
     memory: Memory,
     usageService?: AiUsageService,
     usageConfig?: AgentUsageConfig,
-    canvasContext?: string
+    canvasContext?: string,
+    enableCanvas = true
   ) {
-    const prompt = canvasContext ? `${SYSTEM_PROMPT}\n\n${canvasContext}` : SYSTEM_PROMPT;
+    let prompt: string;
+    if (enableCanvas) {
+      prompt = canvasContext ? `${CANVAS_PROMPT}\n\n${canvasContext}` : CANVAS_PROMPT;
+    } else {
+      prompt = CHAT_ONLY_PROMPT;
+    }
 
     super(
       'data-assistant',
@@ -125,7 +139,7 @@ export class DataAgent extends BaseAgent {
       prompt,
       tools,
       memory,
-      'openai/gpt-5-mini',
+      CHAT_MODEL,
       usageService,
       usageConfig
     );

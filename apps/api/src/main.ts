@@ -15,6 +15,7 @@ import express from 'express';
 import basicAuth from 'express-basic-auth';
 
 import { env } from './config/env.config';
+import { buildOpenApiDocument } from './config/openapi';
 import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE } from './modules/queue/queue.constants';
 import { AppModule } from './app.module';
 
@@ -48,6 +49,9 @@ async function bootstrap() {
     serverAdapter.getRouter()
   );
 
+  // Build OpenAPI spec from Zod schemas
+  const openApiDocument = buildOpenApiDocument();
+
   const isDev = env.nodeEnv === 'development';
 
   app.enableCors({
@@ -60,10 +64,16 @@ async function bootstrap() {
       'Accept',
       'Origin',
       'X-Requested-With',
-      'X-API-Key',
+      'Mcp-Session-Id',
     ],
+    exposedHeaders: ['Mcp-Session-Id'],
     preflightContinue: false,
     optionsSuccessStatus: 204,
+  });
+
+  // Register after CORS so headers are applied
+  server.get('/api/v1/openapi.json', (_req, res) => {
+    res.json(openApiDocument);
   });
 
   await app.listen(env.port);

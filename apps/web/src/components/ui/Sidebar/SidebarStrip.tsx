@@ -2,20 +2,21 @@ import type { ReactNode } from 'react';
 
 import { alpha, Avatar, Box, IconButton, Tooltip, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { BarChart3, ChevronsRight, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Settings, Sun, Users } from 'lucide-react';
+import { BarChart3, BookOpen, ChevronsRight, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users, Waypoints } from 'lucide-react';
 
 const FONT_SERIF = '"Source Serif 4", "Georgia", serif';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
 
-function StripIcon({ to, label, icon, exact }: { to: string; label: string; icon: ReactNode; exact?: boolean }) {
+function StripIcon({ to, label, icon, exact, activePrefix }: { to: string; label: string; icon: ReactNode; exact?: boolean; activePrefix?: string }) {
   const location = useLocation();
   const theme = useTheme();
   const ct = theme.palette.text.primary;
+  const matchPath = activePrefix ?? to;
   const isActive = exact
-    ? location.pathname === to
-    : location.pathname.startsWith(to);
+    ? location.pathname === matchPath
+    : location.pathname.startsWith(matchPath);
 
   return (
     <Tooltip title={label} placement="right">
@@ -122,7 +123,10 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
       <StripIcon to="/dashboard" label="Dashboard" icon={<LayoutGrid size={18} strokeWidth={1.5} />} exact />
       <StripIcon to="/dashboard/chat" label="Chat" icon={<MessageSquare size={18} strokeWidth={1.5} />} />
       <StripIcon to="/dashboard/sources" label="Sources" icon={<Folder size={18} strokeWidth={1.5} />} />
-      <StripIcon to="/dashboard/api-keys" label="API Keys" icon={<Key size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard/integrations" label="Integrations" icon={<Plug size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard/api/keys" label="Keys" icon={<Key size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard/api/docs" label="Docs" icon={<BookOpen size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard/api/mcp" label="MCP" icon={<Waypoints size={18} strokeWidth={1.5} />} />
       <StripIcon to="/dashboard/members" label="Members" icon={<Users size={18} strokeWidth={1.5} />} />
 
       {/* Spacer */}
