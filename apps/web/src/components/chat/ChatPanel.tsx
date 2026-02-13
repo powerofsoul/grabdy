@@ -12,7 +12,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Columns2, Edit3, History, MessageSquare, Plus, Rows2, Trash2, X } from 'lucide-react';
+import { Edit3, History, MessageSquare, PanelBottom, PanelLeft, PanelRight, PanelTop, Plus, Trash2, X } from 'lucide-react';
 
 import { Canvas, useCanvasState } from '@/components/canvas';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -44,9 +44,12 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
   const [canvasMaximized, setCanvasMaximized] = useState(
     () => localStorage.getItem(STORAGE_KEYS.CANVAS_MAXIMIZED) === 'true',
   );
-  const [layoutMode, setLayoutMode] = useState<'horizontal' | 'vertical'>(
-    () => (localStorage.getItem(STORAGE_KEYS.CHAT_LAYOUT_MODE) === 'vertical' ? 'vertical' : 'horizontal'),
-  );
+  const [layoutMode, setLayoutMode] = useState<'chat-left' | 'chat-right' | 'chat-top' | 'chat-bottom'>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.CHAT_LAYOUT_MODE);
+    if (stored === 'chat-right' || stored === 'chat-top' || stored === 'chat-bottom') return stored;
+    if (stored === 'vertical') return 'chat-top'; // migrate old value
+    return 'chat-left';
+  });
 
   const canvasActions = useCanvasState();
   const { nodes, edges, loadState, applyUpdate, clearCanvas } = canvasActions;
@@ -88,7 +91,9 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
 
   const handleToggleLayout = useCallback(() => {
     setLayoutMode((prev) => {
-      const next = prev === 'horizontal' ? 'vertical' : 'horizontal';
+      const cycle = ['chat-left', 'chat-right', 'chat-top', 'chat-bottom'] satisfies typeof prev[];
+      const idx = cycle.indexOf(prev);
+      const next = cycle[(idx + 1) % cycle.length];
       localStorage.setItem(STORAGE_KEYS.CHAT_LAYOUT_MODE, next);
       return next;
     });
@@ -167,13 +172,13 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
               <History size={18} />
             </IconButton>
           </Tooltip>
-          <Tooltip title={layoutMode === 'horizontal' ? 'Stack vertically' : 'Side by side'}>
+          <Tooltip title={{ 'chat-left': 'Chat left', 'chat-right': 'Chat right', 'chat-top': 'Chat top', 'chat-bottom': 'Chat bottom' }[layoutMode]}>
             <IconButton
               size="small"
               onClick={handleToggleLayout}
               sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
             >
-              {layoutMode === 'horizontal' ? <Rows2 size={18} /> : <Columns2 size={18} />}
+              {{ 'chat-left': <PanelLeft size={18} />, 'chat-right': <PanelRight size={18} />, 'chat-top': <PanelTop size={18} />, 'chat-bottom': <PanelBottom size={18} /> }[layoutMode]}
             </IconButton>
           </Tooltip>
           {trailingSlot}
@@ -335,16 +340,21 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
       </Drawer>
 
       {/* Main content: Chat + Canvas */}
-      <Box sx={{ display: 'flex', flexDirection: layoutMode === 'horizontal' ? 'row' : 'column', flex: 1, minHeight: 0 }}>
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { 'chat-left': 'row', 'chat-right': 'row-reverse', 'chat-top': 'column', 'chat-bottom': 'column-reverse' }[layoutMode],
+        flex: 1,
+        minHeight: 0,
+      }}>
         {!canvasMaximized && (
           <ResizablePanel
             key={layoutMode}
-            direction={layoutMode === 'horizontal' ? 'horizontal' : 'vertical'}
-            defaultSize={layoutMode === 'horizontal' ? Math.round(window.innerWidth * 0.4) : Math.round(window.innerHeight * 0.4)}
-            minSize={layoutMode === 'horizontal' ? 320 : 200}
-            maxSize={layoutMode === 'horizontal' ? 900 : 800}
-            storageKey={layoutMode === 'horizontal' ? STORAGE_KEYS.CHAT_PANEL_WIDTH : STORAGE_KEYS.CHAT_PANEL_HEIGHT}
-            resizeFrom="end"
+            direction={layoutMode === 'chat-left' || layoutMode === 'chat-right' ? 'horizontal' : 'vertical'}
+            defaultSize={layoutMode === 'chat-left' || layoutMode === 'chat-right' ? Math.round(window.innerWidth * 0.4) : Math.round(window.innerHeight * 0.4)}
+            minSize={layoutMode === 'chat-left' || layoutMode === 'chat-right' ? 320 : 200}
+            maxSize={layoutMode === 'chat-left' || layoutMode === 'chat-right' ? 900 : 800}
+            storageKey={layoutMode === 'chat-left' || layoutMode === 'chat-right' ? STORAGE_KEYS.CHAT_PANEL_WIDTH : STORAGE_KEYS.CHAT_PANEL_HEIGHT}
+            resizeFrom={layoutMode === 'chat-left' || layoutMode === 'chat-top' ? 'end' : 'start'}
             sx={{ minWidth: 0, minHeight: 0 }}
           >
             {chatContent}
