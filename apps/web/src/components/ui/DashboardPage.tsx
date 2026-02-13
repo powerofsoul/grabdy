@@ -1,8 +1,10 @@
 import { type ReactNode } from 'react';
 
-import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import { alpha, Box, IconButton, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { useRouter } from '@tanstack/react-router';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeft, List } from '@phosphor-icons/react';
+
+import { useMobileSidebar } from '@/components/ui/Sidebar';
 
 interface DashboardPageProps {
   title?: string;
@@ -28,6 +30,8 @@ export function DashboardPage({
   const theme = useTheme();
   const router = useRouter();
   const ct = theme.palette.text.primary;
+  const isMobile = useMediaQuery('(max-width:767px)');
+  const { toggle: toggleMobileSidebar } = useMobileSidebar();
 
   const contentMaxWidth = maxWidth !== undefined
     ? maxWidth || undefined
@@ -42,7 +46,7 @@ export function DashboardPage({
         flexDirection: 'column',
       }}
     >
-      {/* Header */}
+      {/* Header — on mobile, only show if there's a title (pages without titles handle their own header) */}
       {title && (
         <Box
           sx={{
@@ -52,13 +56,12 @@ export function DashboardPage({
           }}
         >
           <Box sx={{ maxWidth: contentMaxWidth, mx: 'auto', width: '100%' }}>
-            {/* Title row: back + icon + title + actions */}
+            {/* Title row: title left, hamburger right on mobile */}
             <Box
               sx={{
                 display: 'flex',
-                alignItems: 'flex-start',
-                gap: { xs: 1.5, md: 2 },
-                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: { xs: 1, md: 2 },
               }}
             >
               {/* Left side: back + icon + title */}
@@ -90,28 +93,51 @@ export function DashboardPage({
                     {icon}
                   </Box>
                 )}
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="h3"
-                    noWrap
-                  >
-                    {title}
-                  </Typography>
-                  {subtitle && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {subtitle}
+                {title && (
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="h3" noWrap>
+                      {title}
                     </Typography>
-                  )}
-                </Box>
+                    {subtitle && !isMobile && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        {subtitle}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </Box>
 
-              {/* Right side: actions */}
-              {actions && (
-                <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center' }}>
-                  {actions}
-                </Box>
+              {/* Right side: actions on desktop, hamburger on mobile */}
+              {isMobile ? (
+                <IconButton
+                  onClick={toggleMobileSidebar}
+                  size="small"
+                  sx={{ flexShrink: 0, color: 'text.primary' }}
+                >
+                  <List size={22} weight="regular" />
+                </IconButton>
+              ) : (
+                actions && (
+                  <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center' }}>
+                    {actions}
+                  </Box>
+                )
               )}
             </Box>
+
+            {/* Mobile subtitle below title row */}
+            {isMobile && subtitle && title && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {subtitle}
+              </Typography>
+            )}
+
+            {/* Mobile actions row below */}
+            {isMobile && actions && (
+              <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
+                {actions}
+              </Box>
+            )}
           </Box>
         </Box>
       )}

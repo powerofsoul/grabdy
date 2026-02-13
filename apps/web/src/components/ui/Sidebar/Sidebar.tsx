@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
 
-import { Box, useMediaQuery } from '@mui/material';
+import { Box, Drawer, useMediaQuery } from '@mui/material';
 
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 
+import { useMobileSidebar } from './MobileSidebarContext';
 import { SidebarFull } from './SidebarFull';
 import { SidebarStrip } from './SidebarStrip';
 
@@ -20,6 +21,7 @@ export function Sidebar() {
   const isDesktop = useMediaQuery('(min-width:1024px)');
   const isTablet = useMediaQuery('(min-width:768px)');
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
+  const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
@@ -29,9 +31,24 @@ export function Sidebar() {
     });
   }, []);
 
-  // Mobile: hidden entirely
+  // Mobile: drawer only (hamburger button is in DashboardPage header)
   if (!isTablet) {
-    return null;
+    return (
+      <Drawer
+        anchor="right"
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 240,
+            bgcolor: 'background.default',
+            borderLeft: 'none',
+          },
+        }}
+      >
+        <SidebarFull />
+      </Drawer>
+    );
   }
 
   // Tablet: always strip

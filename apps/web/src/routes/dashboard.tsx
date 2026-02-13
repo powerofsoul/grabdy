@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router';
 
 import { BackgroundWatermark } from '@/components/ui/BackgroundWatermark';
-import { Sidebar } from '@/components/ui/Sidebar';
+import { MobileSidebarProvider, Sidebar } from '@/components/ui/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 
 export const Route = createFileRoute('/dashboard')({
@@ -21,12 +21,14 @@ function DashboardLayout() {
   }
 
   return (
-    <Box sx={{ display: 'flex', height: '100%' }}>
-      <Sidebar />
-      <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <Outlet />
+    <MobileSidebarProvider>
+      <Box sx={{ display: 'flex', height: '100%' }}>
+        <Sidebar />
+        <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <Outlet />
+        </Box>
+        <BackgroundWatermark />
       </Box>
-      <BackgroundWatermark />
-    </Box>
+    </MobileSidebarProvider>
   );
 }
