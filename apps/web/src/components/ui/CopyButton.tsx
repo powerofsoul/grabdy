@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { IconButton, Tooltip } from '@mui/material';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy } from '@phosphor-icons/react';
 
 interface CopyButtonProps {
   text: string;
@@ -20,7 +20,7 @@ export function CopyButton({ text, size = 16 }: CopyButtonProps) {
   return (
     <Tooltip title={copied ? 'Copied!' : 'Copy'}>
       <IconButton onClick={handleCopy} size="small" sx={{ color: 'text.secondary' }}>
-        {copied ? <Check size={size} /> : <Copy size={size} />}
+        {copied ? <Check size={size} weight="light" color="currentColor" /> : <Copy size={size} weight="light" color="currentColor" />}
       </IconButton>
     </Tooltip>
   );

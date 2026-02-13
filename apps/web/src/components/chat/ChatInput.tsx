@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { alpha, Box, IconButton, useTheme } from '@mui/material';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp } from '@phosphor-icons/react';
 
 interface ChatInputProps {
   onSend: (message: string) => void | Promise<void>;
@@ -70,10 +70,6 @@ export function ChatInput({
         px: { xs: 2, md: 3 },
         pb: elevated ? 0 : 2,
         pt: elevated ? 0 : 1,
-        ...(elevated ? {} : {
-          borderTop: '1px solid',
-          borderColor: alpha(ct, 0.06),
-        }),
         flexShrink: 0,
       }}
     >
@@ -91,14 +87,8 @@ export function ChatInput({
             gap: 1,
             px: 2.5,
             py: 1.5,
-            borderRadius: elevated ? 3 : 2,
-            border: '1px solid',
-            borderColor: focused ? alpha(ct, 0.15) : alpha(ct, 0.08),
-            bgcolor: elevated ? 'background.paper' : 'transparent',
-            boxShadow: elevated
-              ? `0 2px 12px ${alpha(ct, 0.06)}, 0 0 0 1px ${alpha(ct, focused ? 0.12 : 0.04)}`
-              : 'none',
-            transition: 'border-color 150ms ease, box-shadow 150ms ease',
+            borderBottom: focused ? `2px solid ${ct}` : `1px solid ${ct}`,
+            transition: 'border-color 150ms ease',
           }}
         >
           <Box
@@ -138,7 +128,6 @@ export function ChatInput({
             sx={{
               width: 28,
               height: 28,
-              borderRadius: '8px',
               bgcolor: hasInput ? 'text.primary' : alpha(ct, 0.06),
               color: hasInput ? 'background.default' : alpha(ct, 0.2),
               transition: 'all 150ms ease',
@@ -151,7 +140,7 @@ export function ChatInput({
               },
             }}
           >
-            <ArrowUp size={16} strokeWidth={2.5} />
+            <ArrowUp size={16} weight="bold" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

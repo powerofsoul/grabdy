@@ -1,5 +1,5 @@
 import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { File } from 'lucide-react';
+import { File } from '@phosphor-icons/react';
 
 interface DocumentLinkComponentProps {
   data: {
@@ -29,7 +29,7 @@ export function DocumentLinkComponent({ data }: DocumentLinkComponentProps) {
             '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.08) },
           }}
         >
-          <File size={14} style={{ flexShrink: 0, opacity: 0.5 }} />
+          <File size={14} weight="light" color="currentColor" style={{ flexShrink: 0, opacity: 0.5 }} />
           <Typography sx={{ fontSize: 12 }} noWrap>
             {doc.name}
           </Typography>

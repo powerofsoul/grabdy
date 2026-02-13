@@ -11,7 +11,9 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { CheckCircle, Sparkles, X } from 'lucide-react';
+import { CheckCircle, Sparkle, X } from '@phosphor-icons/react';
+
+
 
 const SLACK_WEBHOOK_URL =
   'https://hooks.slack.com/services/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';
@@ -92,7 +94,6 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
           overflow: 'hidden',
           bgcolor: 'background.paper',
         },
@@ -109,7 +110,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
           zIndex: 1,
         }}
       >
-        <X size={18} />
+        <X size={18} weight="light" color="currentColor" />
       </IconButton>
 
       {submitted ? (
@@ -119,7 +120,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
             sx={{
               width: 56,
               height: 56,
-              borderRadius: '50%',
+              borderRadius: 1,
               bgcolor: alpha(primary, 0.08),
               display: 'flex',
               alignItems: 'center',
@@ -128,9 +129,9 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
               mb: 2.5,
             }}
           >
-            <CheckCircle size={28} color={primary} />
+            <CheckCircle size={28} color={primary} weight="light" />
           </Box>
-          <Typography sx={{ fontWeight: 700, fontSize: '1.25rem', mb: 1 }}>
+          <Typography variant="h4" sx={{ mb: 1 }}>
             You&apos;re on the list
           </Typography>
           <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', lineHeight: 1.6, mb: 3 }}>
@@ -139,7 +140,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
           <Button
             variant="outlined"
             onClick={handleClose}
-            sx={{ borderRadius: 2, px: 4 }}
+            sx={{ px: 4 }}
           >
             Done
           </Button>
@@ -162,9 +163,9 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
                 mb: 2,
               }}
             >
-              <Sparkles size={24} color={primary} />
+              <Sparkle size={24} color={primary} weight="light" />
             </Box>
-            <Typography sx={{ fontWeight: 700, fontSize: '1.25rem', mb: 0.75 }}>
+            <Typography variant="h4" sx={{ mb: 0.75 }}>
               Join the Waitlist
             </Typography>
             <Typography sx={{ color: 'text.secondary', fontSize: '0.88rem', lineHeight: 1.6 }}>
@@ -210,13 +211,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
               disabled={isSubmitting || !name.trim() || !email.trim()}
               sx={{
                 py: 1.5,
-                fontWeight: 700,
                 fontSize: '0.95rem',
-                borderRadius: 2,
-                boxShadow: `0 4px 16px ${alpha(primary, 0.25)}`,
-                '&:hover': {
-                  boxShadow: `0 6px 24px ${alpha(primary, 0.35)}`,
-                },
               }}
             >
               {isSubmitting ? (

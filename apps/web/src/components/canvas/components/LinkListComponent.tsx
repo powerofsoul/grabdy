@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, Link, TextField, Typography, useTheme } from '@mui/material';
-import { ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { ArrowSquareOut, Plus, Trash } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -81,7 +81,7 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
                   onClick={() => handleDeleteLink(i)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash2 size={12} />
+                  <Trash size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <TextField
@@ -105,7 +105,7 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddLink} sx={{ color: 'primary.main' }}>
-            <Plus size={14} />
+            <Plus size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>
@@ -118,7 +118,7 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
         {data.links.map((link, i) => (
           <Box key={i} sx={{ py: 0.25 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <ExternalLink size={12} color={theme.palette.primary.main} style={{ flexShrink: 0 }} />
+              <ArrowSquareOut size={12} weight="light" color={theme.palette.primary.main} style={{ flexShrink: 0 }} />
               <Link
                 href={link.url}
                 target="_blank"

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, TextField, Typography, useTheme } from '@mui/material';
-import { Star } from 'lucide-react';
+import { Star } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -108,6 +108,7 @@ export function RatingComponent({ data, onSave }: RatingComponentProps) {
             >
               <Star
                 size={14}
+                weight="light"
                 fill={i < item.value ? color : 'transparent'}
                 color={i < item.value ? color : alpha(theme.palette.text.primary, 0.15)}
               />

@@ -45,15 +45,12 @@ export const MessageRow = memo(
               maxWidth: '85%',
               ...(isUser
                 ? {
-                    bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+                    bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
                     color: 'text.primary',
-                    borderRadius: '12px 4px 12px 12px',
                   }
                 : {
-                    bgcolor: 'grey.50',
-                    borderLeft: '3px solid',
+                    borderLeft: '2px solid',
                     borderColor: 'primary.main',
-                    borderRadius: '0 12px 12px 0',
                     width: '100%',
                     maxWidth: '100%',
                   }),

@@ -103,7 +103,7 @@ export class OrgsController {
     });
   }
 
-  @OrgAccess(orgsContract.invite, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
+  @OrgAccess(orgsContract.invite, { roles: ['OWNER'], params: ['orgId'] })
   @TsRestHandler(orgsContract.invite)
   async invite() {
     return tsRestHandler(orgsContract.invite, async ({ params, body }) => {
@@ -159,7 +159,45 @@ export class OrgsController {
     });
   }
 
-  @OrgAccess(orgsContract.removeMember, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'memberId'] })
+  @OrgAccess(orgsContract.updateMemberRole, { roles: ['OWNER'], params: ['orgId', 'memberId'] })
+  @TsRestHandler(orgsContract.updateMemberRole)
+  async updateMemberRole(@CurrentUser() user: JwtPayload) {
+    return tsRestHandler(orgsContract.updateMemberRole, async ({ params, body }) => {
+      try {
+        const member = await this.orgsService.updateMemberRole(
+          params.orgId,
+          params.memberId,
+          body.roles,
+          user.sub
+        );
+        return {
+          status: 200 as const,
+          body: {
+            success: true as const,
+            data: {
+              id: member.id,
+              userId: member.userId,
+              orgId: member.orgId,
+              roles: member.roles,
+              email: member.email,
+              name: member.name,
+              createdAt: toISOString(member.createdAt),
+            },
+          },
+        };
+      } catch (error) {
+        return {
+          status: 400 as const,
+          body: {
+            success: false as const,
+            error: error instanceof Error ? error.message : 'Failed to update member role',
+          },
+        };
+      }
+    });
+  }
+
+  @OrgAccess(orgsContract.removeMember, { roles: ['OWNER'], params: ['orgId', 'memberId'] })
   @TsRestHandler(orgsContract.removeMember)
   async removeMember(@CurrentUser() user: JwtPayload) {
     return tsRestHandler(orgsContract.removeMember, async ({ params }) => {
@@ -181,7 +219,7 @@ export class OrgsController {
     });
   }
 
-  @OrgAccess(orgsContract.listPendingInvitations, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
+  @OrgAccess(orgsContract.listPendingInvitations, { roles: ['OWNER'], params: ['orgId'] })
   @TsRestHandler(orgsContract.listPendingInvitations)
   async listPendingInvitations() {
     return tsRestHandler(orgsContract.listPendingInvitations, async ({ params }) => {
@@ -204,7 +242,7 @@ export class OrgsController {
     });
   }
 
-  @OrgAccess(orgsContract.revokeInvitation, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
+  @OrgAccess(orgsContract.revokeInvitation, { roles: ['OWNER'], params: ['orgId'] })
   @TsRestHandler(orgsContract.revokeInvitation)
   async revokeInvitation() {
     return tsRestHandler(orgsContract.revokeInvitation, async ({ params }) => {

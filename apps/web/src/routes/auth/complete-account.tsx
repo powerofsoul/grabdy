@@ -11,7 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
-import { Eye, EyeOff, Lock } from 'lucide-react';
+import { Eye, EyeSlash, Lock } from '@phosphor-icons/react';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { api } from '@/lib/api';
@@ -165,7 +165,7 @@ function CompleteAccountPage() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                <Lock size={20} />
+                <Lock size={20} weight="light" color="currentColor" />
               </InputAdornment>
             ),
             endAdornment: (
@@ -177,7 +177,7 @@ function CompleteAccountPage() {
                   tabIndex={-1}
                   sx={{ color: 'text.disabled' }}
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeSlash size={20} weight="light" color="currentColor" /> : <Eye size={20} weight="light" color="currentColor" />}
                 </IconButton>
               </InputAdornment>
             ),

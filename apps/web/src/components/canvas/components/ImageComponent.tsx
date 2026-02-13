@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, TextField, Typography, useTheme } from '@mui/material';
-import { ImageOff } from 'lucide-react';
+import { ImageBroken } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -95,7 +95,7 @@ export function ImageComponent({ data, onSave }: ImageComponentProps) {
             borderRadius: `${data.borderRadius ?? 0}px`,
           }}
         >
-          <ImageOff size={24} color={alpha(theme.palette.text.primary, 0.2)} />
+          <ImageBroken size={24} weight="light" color={alpha(theme.palette.text.primary, 0.2)} />
           <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>Image failed to load</Typography>
         </Box>
       ) : (

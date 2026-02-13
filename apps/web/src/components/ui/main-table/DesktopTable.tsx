@@ -15,7 +15,7 @@ import {
   TableSortLabel,
   Tooltip,
 } from '@mui/material';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { CaretDown, CaretUp } from '@phosphor-icons/react';
 
 import type {
   ColumnConfig,
@@ -66,7 +66,7 @@ export function DesktopTable<T>({
                   sx={{
                     width: 48,
                     py: 1.5,
-                    backgroundColor: 'grey.50',
+                    backgroundColor: 'transparent',
                     position: 'sticky',
                     top: 0,
                     zIndex: 1,
@@ -84,7 +84,7 @@ export function DesktopTable<T>({
                     sx={{
                       whiteSpace: 'nowrap',
                       py: 1.5,
-                      backgroundColor: 'grey.50',
+                      backgroundColor: 'transparent',
                       width: columns.widths?.[key],
                       position: 'sticky',
                       top: 0,
@@ -144,7 +144,7 @@ export function DesktopTable<T>({
                       '&:hover':
                         interaction.expandable || interaction.onRowClick
                           ? {
-                              backgroundColor: 'grey.50',
+                              backgroundColor: 'transparent',
                             }
                           : undefined,
                       '& > td': {
@@ -156,7 +156,7 @@ export function DesktopTable<T>({
                       <TableCell sx={{ py: 1, px: 1, width: 48 }}>
                         <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
                           <IconButton size="small" sx={{ p: 0.5 }}>
-                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            {isExpanded ? <CaretUp size={16} weight="light" color="currentColor" /> : <CaretDown size={16} weight="light" color="currentColor" />}
                           </IconButton>
                         </Tooltip>
                       </TableCell>
@@ -177,7 +177,7 @@ export function DesktopTable<T>({
                     <TableRow>
                       <TableCell colSpan={columnCount} sx={{ p: 0 }}>
                         <Collapse in={isExpanded}>
-                          <Box sx={{ p: 2, bgcolor: 'grey.50' }}>
+                          <Box sx={{ p: 2 }}>
                             {interaction.expandable.renderExpanded(item)}
                           </Box>
                         </Collapse>

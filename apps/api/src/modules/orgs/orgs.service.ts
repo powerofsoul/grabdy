@@ -229,6 +229,73 @@ export class OrgsService {
     }
   }
 
+  async updateMemberRole(
+    orgId: DbId<'Org'>,
+    memberId: DbId<'OrgMembership'>,
+    roles: OrgRole[],
+    requestingUserId: DbId<'User'>
+  ) {
+    const membership = await this.db.kysely
+      .selectFrom('org.org_memberships')
+      .innerJoin('auth.users', 'auth.users.id', 'org.org_memberships.user_id')
+      .select([
+        'org.org_memberships.id',
+        'org.org_memberships.user_id',
+        'org.org_memberships.org_id',
+        'org.org_memberships.roles',
+        'org.org_memberships.created_at',
+        'auth.users.email',
+        'auth.users.name',
+      ])
+      .where('org.org_memberships.id', '=', memberId)
+      .where('org.org_memberships.org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (!membership) {
+      throw new NotFoundException('Membership not found');
+    }
+
+    if (membership.user_id === requestingUserId) {
+      throw new BadRequestException('Cannot change your own role');
+    }
+
+    if (roles.includes('OWNER')) {
+      throw new BadRequestException('Cannot assign OWNER role via this endpoint');
+    }
+
+    // If removing OWNER from this member, check they're not the last owner
+    if (membership.roles.includes('OWNER') && !roles.includes('OWNER')) {
+      const ownerCount = await this.db.kysely
+        .selectFrom('org.org_memberships')
+        .select(this.db.kysely.fn.countAll().as('count'))
+        .where('org_id', '=', orgId)
+        .where('roles', '@>', ['OWNER'])
+        .executeTakeFirstOrThrow();
+
+      if (Number(ownerCount.count) <= 1) {
+        throw new BadRequestException('Cannot remove the last owner of the organization');
+      }
+    }
+
+    const updated = await this.db.kysely
+      .updateTable('org.org_memberships')
+      .set({ roles })
+      .where('id', '=', memberId)
+      .where('org_id', '=', orgId)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return {
+      id: updated.id,
+      userId: updated.user_id,
+      orgId: updated.org_id,
+      roles: updated.roles,
+      createdAt: updated.created_at,
+      email: membership.email,
+      name: membership.name,
+    };
+  }
+
   async removeMember(orgId: DbId<'Org'>, memberId: DbId<'OrgMembership'>, requestingUserId: DbId<'User'>) {
     const membership = await this.db.kysely
       .selectFrom('org.org_memberships')

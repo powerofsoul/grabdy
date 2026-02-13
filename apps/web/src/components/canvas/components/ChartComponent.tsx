@@ -11,7 +11,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, Plus, Trash2, X } from 'lucide-react';
+import { ChartBar, ChartLine, ChartPie, Plus, Trash, X } from '@phosphor-icons/react';
 
 import {
   Bar,
@@ -148,9 +148,9 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
             size="small"
             sx={{ '& .MuiToggleButton-root': { px: 1, py: 0.25 } }}
           >
-            <ToggleButton value="bar"><Tooltip title="Bar"><BarChart3 size={14} /></Tooltip></ToggleButton>
-            <ToggleButton value="line"><Tooltip title="Line"><LineChartIcon size={14} /></Tooltip></ToggleButton>
-            <ToggleButton value="pie"><Tooltip title="Pie"><PieChartIcon size={14} /></Tooltip></ToggleButton>
+            <ToggleButton value="bar"><Tooltip title="Bar"><ChartBar size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
+            <ToggleButton value="line"><Tooltip title="Line"><ChartLine size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
+            <ToggleButton value="pie"><Tooltip title="Pie"><ChartPie size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
@@ -159,7 +159,7 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>Labels</Typography>
             <IconButton size="small" onClick={handleAddLabel} sx={{ width: 20, height: 20, color: 'primary.main' }}>
-              <Plus size={12} />
+              <Plus size={12} weight="light" color="currentColor" />
             </IconButton>
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -177,7 +177,7 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
                     onClick={() => handleRemoveLabel(i)}
                     sx={{ width: 16, height: 16, p: 0, color: alpha(theme.palette.text.primary, 0.3) }}
                   >
-                    <X size={10} />
+                    <X size={10} weight="light" color="currentColor" />
                   </IconButton>
                 )}
               </Box>
@@ -190,7 +190,7 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>Series</Typography>
             <IconButton size="small" onClick={handleAddDataset} sx={{ width: 20, height: 20, color: 'primary.main' }}>
-              <Plus size={12} />
+              <Plus size={12} weight="light" color="currentColor" />
             </IconButton>
           </Box>
           {draftDatasets.map((ds, di) => (
@@ -216,7 +216,7 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
                     onClick={() => handleRemoveDataset(di)}
                     sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                   >
-                    <Trash2 size={11} />
+                    <Trash size={11} weight="light" color="currentColor" />
                   </IconButton>
                 )}
               </Box>

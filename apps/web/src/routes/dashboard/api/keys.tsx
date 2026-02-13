@@ -5,22 +5,23 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
+  Chip,
   CircularProgress,
-  IconButton,
+  FormControlLabel,
+  Switch,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
-import { Key, Plus, Trash2 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { Key, Plus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { MainTable } from '@/components/ui/main-table';
 import { useAuth } from '@/context/AuthContext';
 import { type DrawerProps, useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
@@ -37,6 +38,10 @@ interface ApiKey {
 export const Route = createFileRoute('/dashboard/api/keys')({
   component: ApiKeysPage,
 });
+
+function relativeDate(iso: string): string {
+  return formatDistanceToNow(new Date(iso), { addSuffix: true });
+}
 
 function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () => void }) {
   const { selectedOrgId } = useAuth();
@@ -74,8 +79,8 @@ function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () =
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            bgcolor: 'grey.100',
-            borderRadius: 1,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
             p: 1.5,
             fontSize: '0.85rem',
             wordBreak: 'break-all',
@@ -117,6 +122,7 @@ function ApiKeysPage() {
   const { pushDrawer } = useDrawer();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showRevoked, setShowRevoked] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<ApiKey | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
 
@@ -124,7 +130,10 @@ function ApiKeysPage() {
     if (!selectedOrgId) return;
     setIsLoading(true);
     try {
-      const res = await api.apiKeys.list({ params: { orgId: selectedOrgId } });
+      const res = await api.apiKeys.list({
+        params: { orgId: selectedOrgId },
+        query: { includeRevoked: showRevoked },
+      });
       if (res.status === 200) {
         setKeys(res.body.data);
       }
@@ -137,7 +146,7 @@ function ApiKeysPage() {
 
   useEffect(() => {
     fetchKeys();
-  }, [selectedOrgId]);
+  }, [selectedOrgId, showRevoked]);
 
   const openCreateDrawer = () => {
     pushDrawer(CreateKeyDrawer, {
@@ -170,6 +179,9 @@ function ApiKeysPage() {
     }
   };
 
+  const activeKeys = keys.filter((k) => !k.revokedAt);
+  const revokedKeys = keys.filter((k) => !!k.revokedAt);
+
   if (isLoading) {
     return (
       <DashboardPage title="API Keys">
@@ -180,59 +192,145 @@ function ApiKeysPage() {
     );
   }
 
-  const activeKeys = keys.filter((k) => !k.revokedAt);
-
   return (
     <DashboardPage
-      title="API Keys"
+      title={`API Keys (${activeKeys.length})`}
       actions={
-        <Button variant="contained" startIcon={<Plus size={18} />} onClick={openCreateDrawer}>
-          Create Key
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={showRevoked}
+                onChange={(_, checked) => setShowRevoked(checked)}
+              />
+            }
+            label={
+              <Typography variant="body2" color="text.secondary">
+                Show revoked
+              </Typography>
+            }
+            sx={{ mr: 1 }}
+          />
+          <Button variant="contained" startIcon={<Plus size={18} weight="light" color="currentColor" />} onClick={openCreateDrawer}>
+            Create Key
+          </Button>
+        </Box>
       }
     >
-      {activeKeys.length === 0 ? (
-        <EmptyState
-          icon={<Key size={48} />}
-          message="No API keys"
-          description="Create an API key to authenticate your requests."
-          actionLabel="Create Key"
-          onAction={openCreateDrawer}
-        />
-      ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {activeKeys.map((key) => (
-            <Card key={key.id}>
-              <CardContent
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  p: 2.5,
-                  '&:last-child': { pb: 2.5 },
-                }}
-              >
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    {key.name}
+      <MainTable
+        data={activeKeys}
+        headerNames={{
+          name: 'Name',
+          prefix: 'Key',
+          lastUsed: 'Last Used',
+          created: 'Created',
+          actions: '',
+        }}
+        columnWidths={{ actions: 80 }}
+        rowTitle={(k) => k.name}
+        keyExtractor={(k) => k.id}
+        renderItems={{
+          name: (k) => (
+            <Typography variant="body2" fontWeight={500}>
+              {k.name}
+            </Typography>
+          ),
+          prefix: (k) => (
+            <Typography variant="body2" color="text.secondary" className="font-mono">
+              {k.keyPrefix}...
+            </Typography>
+          ),
+          lastUsed: (k) => (
+            <Typography variant="body2" color="text.secondary">
+              {k.lastUsedAt ? relativeDate(k.lastUsedAt) : 'Never used'}
+            </Typography>
+          ),
+          created: (k) => (
+            <Typography variant="body2" color="text.secondary">
+              {relativeDate(k.createdAt)}
+            </Typography>
+          ),
+          actions: (k) => (
+            <Typography
+              component="span"
+              onClick={(e) => {
+                e.stopPropagation();
+                setRevokeTarget(k);
+              }}
+              sx={{
+                fontSize: '0.82rem',
+                color: 'error.main',
+                cursor: 'pointer',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              Revoke
+            </Typography>
+          ),
+        }}
+        emptyState={
+          <EmptyState
+            icon={<Key size={48} weight="light" color="currentColor" />}
+            message="No API keys"
+            description="Create an API key to authenticate your requests."
+            actionLabel="Create Key"
+            onAction={openCreateDrawer}
+          />
+        }
+      />
+
+      {showRevoked && revokedKeys.length > 0 && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="subtitle1" sx={{ mb: 2 }}>
+            Revoked Keys
+          </Typography>
+          <MainTable
+            data={revokedKeys}
+            headerNames={{
+              name: 'Name',
+              prefix: 'Key',
+              lastUsed: 'Last Used',
+              revokedAt: 'Revoked',
+              created: 'Created',
+            }}
+            rowTitle={(k) => k.name}
+            keyExtractor={(k) => k.id}
+            renderItems={{
+              name: (k) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={500}
+                    sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
+                  >
+                    {k.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" className="font-mono">
-                    {key.keyPrefix}...
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Created {new Date(key.createdAt).toLocaleDateString()}
-                    {key.lastUsedAt &&
-                      ` \u00B7 Last used ${new Date(key.lastUsedAt).toLocaleDateString()}`}
-                  </Typography>
+                  <Chip label="Revoked" size="small" color="error" variant="outlined" />
                 </Box>
-                <Tooltip title="Revoke">
-                  <IconButton color="error" size="small" onClick={() => setRevokeTarget(key)}>
-                    <Trash2 size={18} />
-                  </IconButton>
-                </Tooltip>
-              </CardContent>
-            </Card>
-          ))}
+              ),
+              prefix: (k) => (
+                <Typography variant="body2" color="text.secondary" className="font-mono">
+                  {k.keyPrefix}...
+                </Typography>
+              ),
+              lastUsed: (k) => (
+                <Typography variant="body2" color="text.secondary">
+                  {k.lastUsedAt ? relativeDate(k.lastUsedAt) : 'Never used'}
+                </Typography>
+              ),
+              revokedAt: (k) => (
+                <Typography variant="body2" color="text.secondary">
+                  {k.revokedAt ? relativeDate(k.revokedAt) : '-'}
+                </Typography>
+              ),
+              created: (k) => (
+                <Typography variant="body2" color="text.secondary">
+                  {relativeDate(k.createdAt)}
+                </Typography>
+              ),
+            }}
+          />
         </Box>
       )}
 

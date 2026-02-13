@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router';
-import { Database, Trash2 } from 'lucide-react';
+import { Database, Trash } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -157,7 +157,7 @@ function CollectionDetailPage() {
         <Button
           variant="outlined"
           color="error"
-          startIcon={<Trash2 size={16} />}
+          startIcon={<Trash size={16} weight="light" color="currentColor" />}
           onClick={() => setDeleteConfirm(true)}
         >
           Delete
@@ -180,7 +180,7 @@ function CollectionDetailPage() {
 
       {dataSources.length === 0 ? (
         <EmptyState
-          icon={<Database size={48} />}
+          icon={<Database size={48} weight="light" color="currentColor" />}
           message="No data sources"
           description="Upload a file to get started."
         />
@@ -191,7 +191,7 @@ function CollectionDetailPage() {
               <Card>
                 <CardContent sx={{ p: 2.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                    <Typography variant="subtitle2" fontWeight={600} noWrap sx={{ flex: 1 }}>
+                    <Typography variant="subtitle2" noWrap sx={{ flex: 1 }}>
                       {source.name}
                     </Typography>
                     <StatusChip status={source.status} />

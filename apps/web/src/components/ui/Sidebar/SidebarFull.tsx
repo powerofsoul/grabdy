@@ -1,10 +1,9 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { BarChart3, BookOpen, ChevronRight, ChevronsLeft, Eye, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users, Waypoints } from 'lucide-react';
+import { ChartBar, BookOpen, CaretRight, CaretDoubleLeft, Eye, Folder, Key, SquaresFour, SignOut, ChatCircle, Moon, Plug, Gear, Sun, Users, GitFork } from '@phosphor-icons/react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
-import { FONT_SERIF } from '@/theme';
 
 import { useSidebarCollections } from './useSidebarCollections';
 
@@ -34,7 +33,7 @@ function NavItem({ to, label, exact, icon, trailing, activePrefix }: {
           height: 34,
           px: 2,
           mx: '8px',
-          borderRadius: 0,
+
           cursor: 'pointer',
           borderLeft: isActive ? `2px solid ${ct}` : '2px solid transparent',
           bgcolor: 'transparent',
@@ -91,15 +90,10 @@ function SectionHeader({ label, to }: { label: string; to?: string }) {
       }}
     >
       <Typography
+        variant="overline"
         className="section-label"
         sx={{
-          fontSize: 11,
-          fontFamily: FONT_SERIF,
-          fontWeight: 400,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
           color: alpha(ct, 0.35),
-          lineHeight: 1.4,
           transition: 'color 120ms ease',
         }}
       >
@@ -116,7 +110,7 @@ function SectionHeader({ label, to }: { label: string; to?: string }) {
             transition: 'opacity 120ms ease',
           }}
         >
-          <ChevronRight size={12} strokeWidth={2} />
+          <CaretRight size={12} weight="light" color="currentColor" />
         </Box>
       )}
     </Box>
@@ -184,13 +178,8 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: '24px', position: 'relative' }}>
           <Link to="/dashboard/chat" style={{ textDecoration: 'none', color: 'inherit' }}>
             <Typography
-              sx={{
-                fontSize: 22,
-                fontWeight: 400,
-                fontFamily: FONT_SERIF,
-                color: 'text.primary',
-                letterSpacing: '-0.01em',
-              }}
+              variant="h5"
+              sx={{ fontSize: 22, color: 'text.primary' }}
             >
               grabdy.
             </Typography>
@@ -208,7 +197,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                   '&:hover': { color: 'text.primary' },
                 }}
               >
-                <ChevronsLeft size={16} />
+                <CaretDoubleLeft size={16} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
           )}
@@ -223,12 +212,12 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           to="/dashboard"
           label="Dashboard"
           exact
-          icon={<LayoutGrid size={16} strokeWidth={1.5} />}
+          icon={<SquaresFour size={16} weight="light" color="currentColor" />}
         />
         <NavItem
           to="/dashboard/chat"
           label="Chat"
-          icon={<MessageSquare size={16} strokeWidth={1.5} />}
+          icon={<ChatCircle size={16} weight="light" color="currentColor" />}
         />
 
         {/* Sources */}
@@ -242,7 +231,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               key={c.id}
               to={`/dashboard/sources/${c.id}`}
               label={c.name}
-              icon={<Folder size={15} strokeWidth={1.5} />}
+              icon={<Folder size={15} weight="light" color="currentColor" />}
               trailing={<CountBadge count={c.sourceCount} />}
             />
           ))}
@@ -254,7 +243,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           <NavItem
             to="/dashboard/integrations"
             label="Integrations"
-            icon={<Plug size={16} strokeWidth={1.5} />}
+            icon={<Plug size={16} weight="light" color="currentColor" />}
           />
         </Box>
 
@@ -264,17 +253,17 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           <NavItem
             to="/dashboard/api/keys"
             label="Keys"
-            icon={<Key size={16} strokeWidth={1.5} />}
+            icon={<Key size={16} weight="light" color="currentColor" />}
           />
           <NavItem
             to="/dashboard/api/docs"
             label="Docs"
-            icon={<BookOpen size={16} strokeWidth={1.5} />}
+            icon={<BookOpen size={16} weight="light" color="currentColor" />}
           />
           <NavItem
             to="/dashboard/api/mcp"
             label="MCP"
-            icon={<Waypoints size={16} strokeWidth={1.5} />}
+            icon={<GitFork size={16} weight="light" color="currentColor" />}
           />
         </Box>
 
@@ -284,7 +273,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           <NavItem
             to="/dashboard/members"
             label="Members"
-            icon={<Users size={16} strokeWidth={1.5} />}
+            icon={<Users size={16} weight="light" color="currentColor" />}
           />
         </Box>
       </Box>
@@ -303,7 +292,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 mb: '8px',
                 px: 1.5,
                 py: 0.75,
-                borderRadius: 0,
+      
                 cursor: 'pointer',
                 border: '1px solid',
                 borderColor: alpha(ct, 0.1),
@@ -314,7 +303,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', color: alpha(ct, 0.4) }}>
-                <Eye size={14} strokeWidth={1.5} />
+                <Eye size={14} weight="light" color="currentColor" />
               </Box>
               <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
                 View as Member
@@ -329,12 +318,12 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           <NavItem
             to="/dashboard/usage"
             label="AI Usage"
-            icon={<BarChart3 size={16} strokeWidth={1.5} />}
+            icon={<ChartBar size={16} weight="light" color="currentColor" />}
           />
           <NavItem
             to="/dashboard/settings"
             label="Settings"
-            icon={<Settings size={16} strokeWidth={1.5} />}
+            icon={<Gear size={16} weight="light" color="currentColor" />}
           />
         </Box>
 
@@ -359,7 +348,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 bgcolor: 'text.primary',
                 color: 'background.default',
                 flexShrink: 0,
-                borderRadius: 0,
+      
               }}
             >
               {initials}
@@ -390,7 +379,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                     '&:hover': { color: 'text.primary' },
                   }}
                 >
-                  {isDark ? <Sun size={14} /> : <Moon size={14} />}
+                  {isDark ? <Sun size={14} weight="light" color="currentColor" /> : <Moon size={14} weight="light" color="currentColor" />}
                 </IconButton>
               </Tooltip>
               <Tooltip title="Sign out">
@@ -403,7 +392,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                     '&:hover': { color: 'error.main' },
                   }}
                 >
-                  <LogOut size={14} />
+                  <SignOut size={14} weight="light" color="currentColor" />
                 </IconButton>
               </Tooltip>
             </Box>

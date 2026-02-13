@@ -16,7 +16,7 @@ export function EditActions({ onDiscard, onSave }: EditActionsProps) {
           px: 1,
           py: 0,
           fontSize: 11,
-          textTransform: 'none',
+
           color: 'text.secondary',
         }}
       >
@@ -31,9 +31,7 @@ export function EditActions({ onDiscard, onSave }: EditActionsProps) {
           px: 1,
           py: 0,
           fontSize: 11,
-          textTransform: 'none',
-          boxShadow: 'none',
-          '&:hover': { boxShadow: 'none' },
+
         }}
       >
         Save

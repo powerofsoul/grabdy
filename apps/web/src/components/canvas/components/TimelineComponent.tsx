@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, MenuItem, Select, TextField, Typography, useTheme } from '@mui/material';
-import { Circle, CircleCheck, CircleDot, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle, Circle, Plus, RadioButton, Trash } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -19,8 +19,8 @@ interface TimelineComponentProps {
 }
 
 const STATUS_ICONS = {
-  completed: CircleCheck,
-  in_progress: CircleDot,
+  completed: CheckCircle,
+  in_progress: RadioButton,
   pending: Circle,
 } as const;
 
@@ -109,7 +109,7 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
                   onClick={() => handleDeleteEvent(i)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash2 size={12} />
+                  <Trash size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <TextField
@@ -125,7 +125,7 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddEvent} sx={{ color: 'primary.main' }}>
-            <Plus size={14} />
+            <Plus size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>
@@ -152,7 +152,7 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
           return (
             <Box key={i} sx={{ display: 'flex', gap: 1.25 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 16 }}>
-                <StatusIcon size={16} color={color} fill={event.status === 'completed' ? color : 'transparent'} />
+                <StatusIcon size={16} weight="light" color={color} fill={event.status === 'completed' ? color : 'transparent'} />
                 {!isLast && (
                   <Box
                     sx={{

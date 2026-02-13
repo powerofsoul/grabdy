@@ -107,6 +107,21 @@ export const orgsContract = c.router(
         200: z.object({ success: z.literal(true), data: z.array(pendingInvitationSchema) }),
       },
     },
+    updateMemberRole: {
+      method: 'PATCH',
+      path: '/orgs/:orgId/members/:memberId',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        memberId: dbIdSchema('OrgMembership'),
+      }),
+      body: z.object({
+        roles: z.array(orgRoleEnum),
+      }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: memberSchema }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
     revokeInvitation: {
       method: 'DELETE',
       path: '/orgs/:orgId/invitations/:invitationId',

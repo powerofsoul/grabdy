@@ -2,7 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { red } from '@mui/material/colors';
-import { AlertCircle } from 'lucide-react';
+import { WarningCircle } from '@phosphor-icons/react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               gap: 2,
             }}
           >
-            <AlertCircle size={48} color={red[700]} />
+            <WarningCircle size={48} color={red[700]} weight="light" />
             <Typography variant="h6">Something went wrong</Typography>
             <Typography variant="body2" color="text.secondary">
               {this.state.error?.message || 'An unexpected error occurred'}

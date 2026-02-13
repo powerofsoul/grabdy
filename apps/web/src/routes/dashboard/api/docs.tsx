@@ -16,6 +16,8 @@ function ApiDocsPage() {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
   const darkModeState = isDark ? 'dark' : 'light';
 
+  const t = theme.palette;
+
   return (
     <DashboardPage title="API Docs" noPadding maxWidth={false}>
       <Box
@@ -28,6 +30,46 @@ function ApiDocsPage() {
             position: 'absolute',
             inset: 0,
             overflow: 'auto',
+
+            // Fonts only — let Scalar keep its own colors
+            '--scalar-font': '"Inter", "SF Pro", system-ui, sans-serif',
+            '--scalar-font-code': '"Geist Mono", "JetBrains Mono", monospace',
+
+            // No border radius
+            '--scalar-radius': '0px',
+            '--scalar-radius-lg': '0px',
+            '--scalar-radius-xl': '0px',
+
+            // No shadows
+            '--scalar-shadow-1': 'none',
+            '--scalar-shadow-2': 'none',
+          },
+          // Force Inter on everything, no border-radius
+          '& .scalar-app.scalar-app *': {
+            fontFamily: '"Inter", "SF Pro", system-ui, sans-serif !important',
+            borderRadius: '0 !important',
+          },
+          // Headings get Instrument Serif
+          '& .scalar-app.scalar-app h1': {
+            fontFamily: '"Instrument Serif", "Source Serif 4", Georgia, serif !important',
+            fontWeight: '400 !important',
+            letterSpacing: '-0.02em',
+            fontSize: '1.875rem !important',
+          },
+          '& .scalar-app.scalar-app h2': {
+            fontFamily: '"Instrument Serif", "Source Serif 4", Georgia, serif !important',
+            fontWeight: '400 !important',
+            letterSpacing: '-0.02em',
+            fontSize: '1.5rem !important',
+          },
+          '& .scalar-app.scalar-app h3, & .scalar-app.scalar-app h4, & .scalar-app.scalar-app h5, & .scalar-app.scalar-app h6': {
+            fontFamily: '"Instrument Serif", "Source Serif 4", Georgia, serif !important',
+            fontWeight: '400 !important',
+            letterSpacing: '-0.01em',
+          },
+          // Code gets Geist Mono
+          '& .scalar-app.scalar-app code, & .scalar-app.scalar-app pre, & .scalar-app.scalar-app .font-code, & .scalar-app.scalar-app code *, & .scalar-app.scalar-app pre *, & .scalar-app.scalar-app .font-code *': {
+            fontFamily: '"Geist Mono", "JetBrains Mono", monospace !important',
           },
         }}
       >

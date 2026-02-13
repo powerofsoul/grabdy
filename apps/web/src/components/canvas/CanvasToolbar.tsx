@@ -3,34 +3,34 @@ import { useCallback, useState } from 'react';
 import { alpha, Box, IconButton, Popover, Tooltip, Typography, useTheme } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import {
-  BarChart3,
-  Bookmark,
+  ChartBar,
+  BookmarkSimple,
   CheckSquare,
-  ChevronsDownUp,
+  ArrowsInSimple,
   Clock,
-  Code2,
-  Columns3,
-  FileJson,
-  Filter,
-  GaugeCircle,
-  Grid3X3,
+  CodeSimple,
+  Columns,
+  FileJs,
+  Funnel,
+  Gauge,
+  GridNine,
   Hash,
-  Heading,
-  Image,
-  LayoutGrid,
-  Link2,
+  TextHOne,
+  ImageSquare,
+  SquaresFour,
+  LinkSimple,
   ListChecks,
-  MessageSquareQuote,
-  OctagonAlert,
+  Quotes,
+  Warning,
   Palette,
   Star,
-  StickyNote,
-  Table2,
-  Tags,
-  Target,
+  Note,
+  Table,
+  Tag,
+  Crosshair,
   ThumbsUp,
-  Type,
-} from 'lucide-react';
+  TextT,
+} from '@phosphor-icons/react';
 import { Panel } from '@xyflow/react';
 
 import { packNonDbId } from '@grabdy/common';
@@ -282,45 +282,45 @@ const COMPONENT_TEMPLATES = {
 
 type ComponentType = keyof typeof COMPONENT_TEMPLATES;
 
-type ToolbarItem = { type: ComponentType; icon: typeof Table2; label: string };
+type ToolbarItem = { type: ComponentType; icon: typeof Table; label: string };
 
 const PRIMARY_ITEMS: ToolbarItem[] = [
-  { type: 'text', icon: Type, label: 'Text' },
-  { type: 'sticky_note', icon: StickyNote, label: 'Sticky Note' },
-  { type: 'table', icon: Table2, label: 'Table' },
-  { type: 'chart', icon: BarChart3, label: 'Chart' },
+  { type: 'text', icon: TextT, label: 'Text' },
+  { type: 'sticky_note', icon: Note, label: 'Sticky Note' },
+  { type: 'table', icon: Table, label: 'Table' },
+  { type: 'chart', icon: ChartBar, label: 'Chart' },
   { type: 'checklist', icon: CheckSquare, label: 'Checklist' },
-  { type: 'code', icon: Code2, label: 'Code' },
-  { type: 'alert', icon: OctagonAlert, label: 'Alert' },
+  { type: 'code', icon: CodeSimple, label: 'Code' },
+  { type: 'alert', icon: Warning, label: 'Alert' },
 ];
 
 const SECONDARY_ITEMS: ToolbarItem[] = [
   // Row 1: Numbers & metrics
-  { type: 'kpi_row', icon: Columns3, label: 'KPI Row' },
+  { type: 'kpi_row', icon: Columns, label: 'KPI Row' },
   { type: 'number', icon: Hash, label: 'Number' },
-  { type: 'progress', icon: GaugeCircle, label: 'Progress' },
-  { type: 'funnel', icon: Filter, label: 'Funnel' },
+  { type: 'progress', icon: Gauge, label: 'Progress' },
+  { type: 'funnel', icon: Funnel, label: 'Funnel' },
   // Row 2: Lists & data
   { type: 'key_value', icon: ListChecks, label: 'Key-Value' },
   { type: 'status_list', icon: Palette, label: 'Status List' },
-  { type: 'link_list', icon: Link2, label: 'Links' },
-  { type: 'tag_cloud', icon: Tags, label: 'Tags' },
+  { type: 'link_list', icon: LinkSimple, label: 'Links' },
+  { type: 'tag_cloud', icon: Tag, label: 'Tags' },
   // Row 3: Boards & comparisons
   { type: 'timeline', icon: Clock, label: 'Timeline' },
-  { type: 'kanban', icon: LayoutGrid, label: 'Kanban' },
-  { type: 'comparison', icon: Columns3, label: 'Compare' },
-  { type: 'matrix', icon: Grid3X3, label: 'Matrix' },
-  { type: 'swot', icon: Target, label: 'SWOT' },
+  { type: 'kanban', icon: SquaresFour, label: 'Kanban' },
+  { type: 'comparison', icon: Columns, label: 'Compare' },
+  { type: 'matrix', icon: GridNine, label: 'Matrix' },
+  { type: 'swot', icon: Crosshair, label: 'SWOT' },
   // Row 4: Content blocks
-  { type: 'header', icon: Heading, label: 'Header' },
-  { type: 'accordion', icon: ChevronsDownUp, label: 'Accordion' },
+  { type: 'header', icon: TextHOne, label: 'Header' },
+  { type: 'accordion', icon: ArrowsInSimple, label: 'Accordion' },
   { type: 'pros_cons', icon: ThumbsUp, label: 'Pros/Cons' },
-  { type: 'json', icon: FileJson, label: 'JSON' },
+  { type: 'json', icon: FileJs, label: 'JSON' },
   // Row 5: Misc
-  { type: 'quote', icon: MessageSquareQuote, label: 'Quote' },
+  { type: 'quote', icon: Quotes, label: 'Quote' },
   { type: 'rating', icon: Star, label: 'Rating' },
-  { type: 'image', icon: Image, label: 'Image' },
-  { type: 'bookmark', icon: Bookmark, label: 'Bookmark' },
+  { type: 'image', icon: ImageSquare, label: 'Image' },
+  { type: 'bookmark', icon: BookmarkSimple, label: 'Bookmark' },
 ];
 
 const SMALL_TYPES = new Set<string>(['progress', 'number', 'header']);
@@ -405,7 +405,7 @@ export function CanvasToolbar({ onStartPlacement }: CanvasToolbarProps) {
                 },
               }}
             >
-              <Icon size={15} />
+              <Icon size={15} weight="light" />
             </IconButton>
           </Tooltip>
         ))}
@@ -438,7 +438,7 @@ export function CanvasToolbar({ onStartPlacement }: CanvasToolbarProps) {
               },
             }}
           >
-            <Grid3X3 size={15} />
+            <GridNine size={15} weight="light" />
           </IconButton>
         </Tooltip>
       </Box>
@@ -490,7 +490,7 @@ export function CanvasToolbar({ onStartPlacement }: CanvasToolbarProps) {
                 },
               }}
             >
-              <Icon size={18} />
+              <Icon size={18} weight="light" />
               <Typography
                 variant="caption"
                 sx={{

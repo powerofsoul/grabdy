@@ -1,5 +1,5 @@
 import { Box, IconButton, Typography } from '@mui/material';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from '@phosphor-icons/react';
 
 import { useThemeMode } from '@/context/ThemeContext';
 
@@ -15,7 +15,7 @@ export function ThemeToggle({ collapsed }: { collapsed?: boolean }) {
   if (collapsed) {
     return (
       <IconButton size="small" onClick={toggle} sx={{ color: 'text.secondary' }}>
-        {isDark ? <Moon size={20} /> : <Sun size={20} />}
+        {isDark ? <Moon size={20} weight="light" color="currentColor" /> : <Sun size={20} weight="light" color="currentColor" />}
       </IconButton>
     );
   }
@@ -32,7 +32,7 @@ export function ThemeToggle({ collapsed }: { collapsed?: boolean }) {
         '&:hover': { color: 'text.primary' },
       }}
     >
-      {isDark ? <Moon size={18} /> : <Sun size={18} />}
+      {isDark ? <Moon size={18} weight="light" color="currentColor" /> : <Sun size={18} weight="light" color="currentColor" />}
       <Typography sx={{ fontSize: '0.82rem' }}>
         {isDark ? 'Dark' : 'Light'}
       </Typography>

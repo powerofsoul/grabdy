@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { Box, Typography } from '@mui/material';
-import { Upload } from 'lucide-react';
+import { UploadSimple } from '@phosphor-icons/react';
 
 const ACCEPTED_TYPES = [
   'application/pdf',
@@ -63,7 +63,6 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
       sx={{
         border: '2px dashed',
         borderColor: isDragOver ? 'primary.main' : 'grey.300',
-        borderRadius: 3,
         p: 4,
         display: 'flex',
         flexDirection: 'column',
@@ -85,7 +84,7 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
         style={{ display: 'none' }}
       />
       <Box sx={{ color: 'grey.400', mb: 1 }}>
-        <Upload size={32} />
+        <UploadSimple size={32} weight="light" color="currentColor" />
       </Box>
       <Typography variant="body1" fontWeight={500}>
         Drop a file here or click to browse

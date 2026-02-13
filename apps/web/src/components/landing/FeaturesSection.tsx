@@ -3,12 +3,12 @@ import { useEffect, useRef } from 'react';
 import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { FileText, Puzzle, Sparkles, Zap } from 'lucide-react';
+import { FileText, Lightning, PuzzlePiece, Sparkle } from '@phosphor-icons/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface Feature {
-  icon: typeof Zap;
+  icon: typeof Lightning;
   title: string;
   description: string;
   proof: string;
@@ -24,7 +24,7 @@ const HERO_FEATURES = [
     colorKey: 'primary',
   },
   {
-    icon: Zap,
+    icon: Lightning,
     title: 'Sub-second answers',
     description: 'Fast enough that people use it instead of asking a teammate.',
     proof: 'Asking a teammate: 4 hours. Grabdy: 23ms.',
@@ -34,14 +34,14 @@ const HERO_FEATURES = [
 
 const SECONDARY_FEATURES = [
   {
-    icon: Puzzle,
+    icon: PuzzlePiece,
     title: 'Works across your whole stack',
     description: 'Searches Slack, Drive, Linear, Notion at once.',
     proof: 'One query searches Slack, Drive, Linear, Notion, Confluence, and Gmail at once.',
     colorKey: 'info',
   },
   {
-    icon: Sparkles,
+    icon: Sparkle,
     title: 'Remembers context',
     description: 'Follow-up questions build on previous answers.',
     proof: 'Ask follow-ups like you would a colleague — no re-explaining.',
@@ -52,42 +52,25 @@ const SECONDARY_FEATURES = [
 function FeatureCard({ feature, large }: { feature: Feature; large?: boolean }) {
   const theme = useTheme();
   const Icon = feature.icon;
-  const paletteColor = theme.palette[feature.colorKey].main;
+  const ct = theme.palette.text.primary;
 
   return (
     <Box
       className={large ? 'feature-hero-card' : 'feature-secondary-card'}
       sx={{
         p: large ? { xs: 3, md: 4 } : 3,
-        borderRadius: 2,
         border: '1px solid',
-        borderColor: 'divider',
-        borderTop: '2px solid',
-        borderTopColor: alpha(paletteColor, 0.25),
-        bgcolor: 'background.paper',
+        borderColor: 'grey.900',
+        borderTop: `2px solid ${ct}`,
+        bgcolor: 'transparent',
       }}
     >
-      <Box
-        sx={{
-          width: large ? 52 : 44,
-          height: large ? 52 : 44,
-          borderRadius: 1.5,
-          bgcolor: alpha(paletteColor, 0.1),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          mb: 2,
-        }}
-      >
-        <Icon size={large ? 26 : 22} color={paletteColor} />
+      <Box sx={{ mb: 2, color: 'text.primary' }}>
+        <Icon size={large ? 26 : 22} weight="light" color="currentColor" />
       </Box>
       <Typography
-        variant="body1"
-        sx={{
-          fontWeight: 700,
-          mb: 1,
-          fontSize: large ? '1.1rem' : '0.95rem',
-        }}
+        variant={large ? 'h5' : 'h6'}
+        sx={{ mb: 1 }}
       >
         {feature.title}
       </Typography>
@@ -102,7 +85,7 @@ function FeatureCard({ feature, large }: { feature: Feature; large?: boolean }) 
         sx={{
           fontSize: '0.75rem',
           fontWeight: 600,
-          color: alpha(paletteColor, 0.85),
+          color: alpha(ct, 0.5),
         }}
       >
         {feature.proof}
@@ -147,9 +130,7 @@ export function FeaturesSection() {
           sx={{
             textAlign: 'center',
             mb: { xs: 5, md: 7 },
-            fontWeight: 800,
             fontSize: { xs: '2rem', md: '2.5rem' },
-            letterSpacing: '-0.02em',
           }}
         >
           Why Grabdy.

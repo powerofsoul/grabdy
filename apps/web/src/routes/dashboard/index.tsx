@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 
-import { alpha, Box, Card, CardActionArea, CardContent, Grid, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Typography, useTheme } from '@mui/material';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowRight, FolderOpen, Key, MessageSquare, Plus } from 'lucide-react';
+import { ArrowRight, Key, ChatCircle, Plus } from '@phosphor-icons/react';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { FONT_MONO } from '@/theme';
 
 interface Stats {
   collections: number;
@@ -17,57 +18,8 @@ export const Route = createFileRoute('/dashboard/')({
   component: DashboardIndex,
 });
 
-function StatCard({
-  label,
-  value,
-  icon,
-  to,
-  color,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  to: string;
-  color: string;
-}) {
-  return (
-    <Link to={to} style={{ textDecoration: 'none' }}>
-      <Card sx={{ height: '100%' }}>
-        <CardActionArea sx={{ height: '100%' }}>
-          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 1,
-                  bgcolor: alpha(color, 0.08),
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color,
-                }}
-              >
-                {icon}
-              </Box>
-              <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, lineHeight: 1 }}>
-                {value}
-              </Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              {label}
-            </Typography>
-          </CardContent>
-        </CardActionArea>
-      </Card>
-    </Link>
-  );
-}
-
 function QuickAction({
-  icon,
   label,
-  description,
   to,
 }: {
   icon: React.ReactNode;
@@ -75,29 +27,28 @@ function QuickAction({
   description: string;
   to: string;
 }) {
+  const theme = useTheme();
+  const ct = theme.palette.text.primary;
+
   return (
     <Link to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
       <Box
         sx={{
-          display: 'flex',
+          display: 'inline-flex',
           alignItems: 'center',
-          gap: 2,
-          p: 2,
-          borderRadius: 1,
-          border: '1px solid',
-          borderColor: 'divider',
-          transition: 'border-color 0.15s, background-color 0.15s',
-          '&:hover': { borderColor: 'primary.main', bgcolor: 'grey.50' },
+          gap: 0.5,
+          py: 0.5,
+          cursor: 'pointer',
+          borderBottom: '1px solid',
+          borderColor: alpha(ct, 0.2),
+          transition: 'border-color 0.15s',
+          '&:hover': { borderColor: ct },
         }}
       >
-        <Box sx={{ color: 'text.secondary', flexShrink: 0 }}>{icon}</Box>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ fontWeight: 500, fontSize: '0.875rem' }}>{label}</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.78rem' }}>
-            {description}
-          </Typography>
-        </Box>
-        <ArrowRight size={16} style={{ opacity: 0.3, flexShrink: 0 }} />
+        <Typography sx={{ fontSize: '0.875rem', color: 'text.primary' }}>
+          {label}
+        </Typography>
+        <ArrowRight size={14} weight="light" color="currentColor" />
       </Box>
     </Link>
   );
@@ -130,65 +81,80 @@ function DashboardIndex() {
     fetchStats();
   }, [selectedOrgId]);
 
-  const p = theme.palette;
+  const ct = theme.palette.text.primary;
 
   return (
     <DashboardPage
       title={`Welcome back, ${user?.name?.split(' ')[0] ?? ''}`}
       subtitle="Here's what's happening in your workspace"
     >
-      {/* Stat cards */}
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 6, md: 4 }}>
-          <StatCard
-            label="Sources"
-            value={stats.collections}
-            icon={<FolderOpen size={20} />}
-            to="/dashboard/sources"
-            color={p.primary.main}
-          />
-        </Grid>
-        <Grid size={{ xs: 6, md: 4 }}>
-          <StatCard
-            label="API Keys"
-            value={stats.apiKeys}
-            icon={<Key size={20} />}
-            to="/dashboard/api/keys"
-            color={p.grey[600]}
-          />
-        </Grid>
-      </Grid>
+      {/* Stat display — floating mono numbers */}
+      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 4, mb: 5 }}>
+        <Link to="/dashboard/sources" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <Box sx={{ cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
+            <Typography
+              sx={{
+                fontFamily: FONT_MONO,
+                fontSize: '3rem',
+                fontWeight: 400,
+                lineHeight: 1,
+                letterSpacing: '0.02em',
+                color: 'text.primary',
+              }}
+            >
+              {stats.collections}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Sources
+            </Typography>
+          </Box>
+        </Link>
+        <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
+        <Link to="/dashboard/api/keys" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <Box sx={{ cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
+            <Typography
+              sx={{
+                fontFamily: FONT_MONO,
+                fontSize: '3rem',
+                fontWeight: 400,
+                lineHeight: 1,
+                letterSpacing: '0.02em',
+                color: 'text.primary',
+              }}
+            >
+              {stats.apiKeys}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              API Keys
+            </Typography>
+          </Box>
+        </Link>
+      </Box>
 
-      {/* Quick Actions */}
-      <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', mb: 1.5, color: 'text.secondary' }}>
+      {/* Quick Actions — underlined text links */}
+      <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5, display: 'block' }}>
         Quick actions
       </Typography>
-      <Grid container spacing={1.5}>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <QuickAction
-            icon={<Plus size={18} />}
-            label="Create a source"
-            description="Organize your data into searchable groups"
-            to="/dashboard/sources"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <QuickAction
-            icon={<Key size={18} />}
-            label="Generate an API key"
-            description="Connect your app to Grabdy"
-            to="/dashboard/api/keys"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <QuickAction
-            icon={<MessageSquare size={18} />}
-            label="Ask a question"
-            description="Chat with your documents"
-            to="/dashboard/chat"
-          />
-        </Grid>
-      </Grid>
+      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+        <QuickAction
+          icon={<Plus size={14} weight="light" color="currentColor" />}
+          label="Create a source"
+          description=""
+          to="/dashboard/sources"
+        />
+        <QuickAction
+          icon={<Key size={14} weight="light" color="currentColor" />}
+          label="Generate an API key"
+          description=""
+          to="/dashboard/api/keys"
+        />
+        <QuickAction
+          icon={<ChatCircle size={14} weight="light" color="currentColor" />}
+          label="Ask a question"
+          description=""
+          to="/dashboard/chat"
+        />
+      </Box>
     </DashboardPage>
   );
 }

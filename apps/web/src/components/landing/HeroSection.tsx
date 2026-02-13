@@ -3,24 +3,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { alpha, Box, Button, Container, IconButton, Typography, useTheme } from '@mui/material';
 import gsap from 'gsap';
 import {
-  AlertTriangle,
+  WarningDiamond,
   ArrowRight,
-  BarChart3,
+  ChartBar,
   Brain,
-  ChevronRight,
+  CaretRight,
   Clock,
   FileText,
   Lightbulb,
   Minus,
   Plus,
   Rocket,
-  Send,
-  Share2,
+  PaperPlaneTilt,
+  ShareNetwork,
   Shield,
-  Target,
-  TrendingUp,
-  Zap,
-} from 'lucide-react';
+  Crosshair,
+  TrendUp,
+  Lightning,
+} from '@phosphor-icons/react';
 
 import heroClouds from '@/assets/hero-clouds-light.svg';
 
@@ -875,7 +875,7 @@ export function HeroSection() {
           flexShrink: 0,
         }}
       >
-        <Icon size={12} color={alpha(color, isDark ? 0.85 : 0.75)} />
+        <Icon size={12} weight="light" color={alpha(color, isDark ? 0.85 : 0.75)} />
       </Box>
       <Typography
         sx={{ fontSize: '0.8rem', fontWeight: 700, color: alpha(color, isDark ? 0.85 : 0.7) }}
@@ -897,7 +897,7 @@ export function HeroSection() {
       case 'linear':
         return <LinearIcon size={14} />;
       default:
-        return <FileText size={12} color={alpha(ct, 0.3)} />;
+        return <FileText size={12} weight="light" color={alpha(ct, 0.3)} />;
     }
   };
 
@@ -963,7 +963,7 @@ export function HeroSection() {
             variant="h1"
             sx={{
               fontSize: { xs: '2.5rem', sm: '3rem', md: '3.75rem' },
-              fontWeight: 800,
+              fontWeight: 400,
               lineHeight: 1.1,
               mb: 3,
               letterSpacing: '-0.03em',
@@ -986,7 +986,6 @@ export function HeroSection() {
                   width: '108%',
                   height: 6,
                   background: `linear-gradient(90deg, ${alpha(p.primary.main, 0.05)}, ${alpha(p.primary.main, 0.25)}, ${alpha(p.primary.main, 0.05)})`,
-                  borderRadius: 3,
                 },
               }}
             >
@@ -1037,14 +1036,12 @@ export function HeroSection() {
             <Button
               variant="contained"
               size="large"
-              endIcon={<ArrowRight size={18} />}
+              endIcon={<ArrowRight size={18} weight="light" />}
               onClick={openWaitlist}
               sx={{
                 px: 4,
                 py: 1.5,
                 fontSize: '1rem',
-                fontWeight: 700,
-                boxShadow: 'none',
               }}
             >
               Join Waitlist
@@ -1057,7 +1054,6 @@ export function HeroSection() {
                 px: 4,
                 py: 1.5,
                 fontSize: '1rem',
-                fontWeight: 700,
               }}
             >
               Watch Demo
@@ -1206,7 +1202,7 @@ export function HeroSection() {
                           ) : s.startsWith('Linear') ? (
                             <LinearIcon size={11} />
                           ) : (
-                            <FileText size={10} color={alpha(ct, 0.35)} />
+                            <FileText size={10} weight="light" color={alpha(ct, 0.35)} />
                           );
                           return (
                             <Box key={s} sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
@@ -1219,7 +1215,7 @@ export function HeroSection() {
                         })}
                         {msg.responseMs && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, ml: 'auto' }}>
-                            <Clock size={9} color={alpha(ct, 0.3)} />
+                            <Clock size={9} weight="light" color={alpha(ct, 0.3)} />
                             <Typography sx={{ fontSize: '0.6rem', color: alpha(ct, 0.3) }}>
                               {(msg.responseMs / 1000).toFixed(1)}s
                             </Typography>
@@ -1247,7 +1243,7 @@ export function HeroSection() {
                       borderColor: alpha(p.primary.main, 0.15),
                     }}
                   >
-                    <Brain size={12} color={p.primary.main} />
+                    <Brain size={12} weight="light" color={p.primary.main} />
                     <Typography sx={{ color: 'primary.main', fontSize: '0.7rem', fontWeight: 600 }}>
                       Thinking
                     </Typography>
@@ -1477,7 +1473,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('hub') ? 'auto' : 'none',
                   }}
                 >
-                  <Brain size={15} color={alpha(p.primary.main, 0.8)} />
+                  <Brain size={15} weight="light" color={alpha(p.primary.main, 0.8)} />
                   <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: alpha(ct, 0.85) }}>
                     Market Research Analysis
                   </Typography>
@@ -1501,7 +1497,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('market') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.info.main, BarChart3, 'Market Size')}
+                  {labelRow(p.info.main, ChartBar, 'Market Size')}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
                     {MARKET_BARS.map((d) => (
                       <Box key={d.label}>
@@ -1551,7 +1547,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('competitors') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.warning.main, Target, 'Competitive Landscape')}
+                  {labelRow(p.warning.main, Crosshair, 'Competitive Landscape')}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
                     {COMPETITORS.map((c) => (
                       <Box
@@ -1672,7 +1668,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('metrics') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.success.main, TrendingUp, 'Key Metrics')}
+                  {labelRow(p.success.main, TrendUp, 'Key Metrics')}
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
                     {METRICS_DATA.map((m) => (
                       <Box key={m.label} sx={{ textAlign: 'center', flex: 1 }}>
@@ -1707,7 +1703,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('channels') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.info.main, Zap, 'Growth Channels')}
+                  {labelRow(p.info.main, Lightning, 'Growth Channels')}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
                     {CHANNEL_FLOW.map((step, i) => (
                       <Box key={step} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -1731,7 +1727,7 @@ export function HeroSection() {
                           </Typography>
                         </Box>
                         {i < CHANNEL_FLOW.length - 1 && (
-                          <ChevronRight size={10} color={alpha(ct, 0.25)} />
+                          <CaretRight size={10} weight="light" color={alpha(ct, 0.25)} />
                         )}
                       </Box>
                     ))}
@@ -1771,7 +1767,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('risks') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.error.main, AlertTriangle, 'Risk Assessment')}
+                  {labelRow(p.error.main, WarningDiamond, 'Risk Assessment')}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
                     {RISKS.map((r) => (
                       <Box
@@ -1972,7 +1968,7 @@ export function HeroSection() {
                       flexShrink: 0,
                     }}
                   >
-                    <Brain size={15} color={alpha(p.primary.main, 0.85)} />
+                    <Brain size={15} weight="light" color={alpha(p.primary.main, 0.85)} />
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography
@@ -2031,7 +2027,7 @@ export function HeroSection() {
                 }}
               >
                 <IconButton size="small" sx={{ p: 0.4 }} onClick={() => zoomBtn(-0.1)}>
-                  <Minus size={12} color={alpha(ct, 0.5)} />
+                  <Minus size={12} weight="light" color={alpha(ct, 0.5)} />
                 </IconButton>
                 <Typography
                   sx={{
@@ -2067,7 +2063,7 @@ export function HeroSection() {
                   }}
                   onClick={() => zoomBtn(0.1)}
                 >
-                  <Plus size={12} color={alpha(p.primary.main, 0.7)} />
+                  <Plus size={12} weight="light" color={alpha(p.primary.main, 0.7)} />
                 </IconButton>
                 <Box sx={{ width: '1px', height: 14, bgcolor: alpha(ct, 0.1), mx: 0.25 }} />
                 <Box sx={{ position: 'relative' }}>
@@ -2079,7 +2075,7 @@ export function HeroSection() {
                       setTimeout(() => setShareToast(false), 1500);
                     }}
                   >
-                    <Share2 size={12} color={alpha(ct, 0.5)} />
+                    <ShareNetwork size={12} weight="light" color={alpha(ct, 0.5)} />
                   </IconButton>
                   {shareToast && (
                     <Box
@@ -2186,7 +2182,7 @@ export function HeroSection() {
                   Ask anything about your documents...
                 </Typography>
               )}
-              <Send size={14} color={inputText ? p.primary.main : alpha(ct, 0.15)} />
+              <PaperPlaneTilt size={14} weight="light" color={inputText ? p.primary.main : alpha(ct, 0.15)} />
             </Box>
           </Box>
         </Box>

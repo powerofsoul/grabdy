@@ -30,9 +30,13 @@ createRoot(document.getElementById('root')!).render(
                 closeButton
                 toastOptions={{
                   style: {
-                    borderRadius: '10px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                    border: 'none',
+                    borderRadius: '0',
+                    boxShadow: 'none',
+                    border: '1px solid var(--border-color)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.84rem',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
                   },
                 }}
               />

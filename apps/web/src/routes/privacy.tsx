@@ -13,11 +13,11 @@ function PrivacyPage() {
     <Box>
       <LandingNav />
       <Container maxWidth="md" sx={{ py: 12 }}>
-        <Typography variant="h2" sx={{ fontWeight: 800, mb: 4 }}>
+        <Typography variant="h2" sx={{ mb: 4 }}>
           Privacy Policy
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           1. Information We Collect
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -26,7 +26,7 @@ function PrivacyPage() {
           platform for indexing and retrieval purposes.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           2. How We Use Your Data
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -35,7 +35,7 @@ function PrivacyPage() {
           and is never shared with other tenants.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           3. Data Storage & Security
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -44,7 +44,7 @@ function PrivacyPage() {
           only for as long as your account is active.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           4. Your Rights
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -53,7 +53,7 @@ function PrivacyPage() {
           within 30 days.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           5. Contact
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>

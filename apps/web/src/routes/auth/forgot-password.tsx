@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { KeyRound, Mail, ShieldCheck } from 'lucide-react';
+import { Envelope, Key, ShieldCheck } from '@phosphor-icons/react';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -85,7 +85,7 @@ function ForgotPasswordPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                  <Mail size={20} />
+                  <Envelope size={20} weight="light" color="currentColor" />
                 </InputAdornment>
               ),
             }}
@@ -114,7 +114,7 @@ function ForgotPasswordPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                  <ShieldCheck size={20} />
+                  <ShieldCheck size={20} weight="light" color="currentColor" />
                 </InputAdornment>
               ),
             }}
@@ -132,7 +132,7 @@ function ForgotPasswordPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                  <KeyRound size={20} />
+                  <Key size={20} weight="light" color="currentColor" />
                 </InputAdornment>
               ),
             }}

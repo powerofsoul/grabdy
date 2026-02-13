@@ -1,28 +1,27 @@
 import { useEffect, useState } from 'react';
 
 import {
+  alpha,
   Box,
   Button,
-  Card,
-  CardActionArea,
-  CardContent,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Grid,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { FolderOpen, Plus } from 'lucide-react';
+import { FolderOpen, Plus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { FONT_MONO } from '@/theme';
 
 interface Collection {
   id: string;
@@ -40,6 +39,8 @@ export const Route = createFileRoute('/dashboard/sources/')({
 function CollectionsPage() {
   const { selectedOrgId } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const ct = theme.palette.text.primary;
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -102,7 +103,7 @@ function CollectionsPage() {
       actions={
         <Button
           variant="contained"
-          startIcon={<Plus size={18} />}
+          startIcon={<Plus size={18} weight="light" color="currentColor" />}
           onClick={() => setDialogOpen(true)}
         >
           New Source
@@ -112,46 +113,83 @@ function CollectionsPage() {
 
       {collections.length === 0 ? (
         <EmptyState
-          icon={<FolderOpen size={48} />}
+          icon={<FolderOpen size={48} weight="light" color="currentColor" />}
           message="No sources yet"
           description="Create a source to organize your data."
           actionLabel="Create Source"
           onAction={() => setDialogOpen(true)}
         />
       ) : (
-        <Grid container spacing={2}>
-          {collections.map((collection) => (
-            <Grid key={collection.id} size={{ xs: 12, sm: 6, md: 4 }}>
-              <Card>
-                <CardActionArea
-                  onClick={() =>
-                    navigate({
-                      to: '/dashboard/sources/$collectionId',
-                      params: { collectionId: collection.id },
-                    })
-                  }
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <FolderOpen size={20} />
-                      <Typography variant="h6" fontWeight={600}>
-                        {collection.name}
-                      </Typography>
-                    </Box>
-                    {collection.description && (
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {collection.description}
-                      </Typography>
-                    )}
-                    <Typography variant="caption" color="text.secondary">
-                      {collection.sourceCount} sources &middot; {collection.chunkCount} chunks
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          {collections.map((collection, index) => (
+            <Box
+              key={collection.id}
+              onClick={() =>
+                navigate({
+                  to: '/dashboard/sources/$collectionId',
+                  params: { collectionId: collection.id },
+                })
+              }
+              sx={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 2,
+                py: 1.5,
+                px: 1,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                cursor: 'pointer',
+                transition: 'background-color 0.12s',
+                '&:hover': { bgcolor: alpha(ct, 0.02) },
+              }}
+            >
+              {/* Number */}
+              <Typography
+                className="font-mono"
+                sx={{
+                  fontSize: '0.85rem',
+                  color: 'text.secondary',
+                  minWidth: 28,
+                  textAlign: 'right',
+                }}
+              >
+                {String(index + 1).padStart(2, '0')}.
+              </Typography>
+
+              {/* Name */}
+              <Typography
+                sx={{
+                  fontWeight: 500,
+                  fontSize: '0.9rem',
+                  flex: 1,
+                }}
+              >
+                {collection.name}
+              </Typography>
+
+              {/* Dotted leader + counts */}
+              <Box
+                sx={{
+                  flex: 1,
+                  borderBottom: `1px dotted ${alpha(ct, 0.15)}`,
+                  mb: '0.3em',
+                  minWidth: 40,
+                }}
+              />
+              <Typography
+                className="font-mono"
+                sx={{
+                  fontSize: '0.8rem',
+                  color: 'text.secondary',
+                  whiteSpace: 'nowrap',
+                  fontFamily: FONT_MONO,
+                }}
+              >
+                {collection.sourceCount} sources &middot; {collection.chunkCount} chunks
+              </Typography>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       )}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>

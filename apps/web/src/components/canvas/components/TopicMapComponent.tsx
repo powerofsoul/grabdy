@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, Button, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -136,7 +136,7 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
                   onClick={() => handleDeleteBranch(i)}
                   sx={{ width: 28, height: 28, color: alpha(theme.palette.error.main, 0.5), '&:hover': { color: 'error.main' } }}
                 >
-                  <Trash2 size={15} />
+                  <Trash size={15} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               {/* Children tags */}
@@ -169,18 +169,17 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
                       onClick={() => handleDeleteChild(i, j)}
                       sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3), '&:hover': { color: 'error.main' } }}
                     >
-                      <Trash2 size={12} />
+                      <Trash size={12} weight="light" color="currentColor" />
                     </IconButton>
                   </Box>
                 ))}
                 <Button
                   size="small"
                   variant="text"
-                  startIcon={<Plus size={14} />}
+                  startIcon={<Plus size={14} weight="light" color="currentColor" />}
                   onClick={() => handleAddChild(i)}
                   sx={{
                     fontSize: 11,
-                    textTransform: 'none',
                     color: alpha(theme.palette.primary.main, 0.7),
                     minWidth: 0,
                     px: 1,
@@ -197,13 +196,12 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
         <Button
           size="small"
           variant="outlined"
-          startIcon={<Plus size={16} />}
+          startIcon={<Plus size={16} weight="light" color="currentColor" />}
           onClick={handleAddBranch}
           fullWidth
           sx={{
             mt: 1.5,
             fontSize: 12,
-            textTransform: 'none',
             borderStyle: 'dashed',
             color: alpha(theme.palette.primary.main, 0.7),
             borderColor: alpha(theme.palette.primary.main, 0.3),

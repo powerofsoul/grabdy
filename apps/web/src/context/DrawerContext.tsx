@@ -10,7 +10,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 
 export interface DrawerProps {
   onClose: () => void;
@@ -124,12 +124,12 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
               zIndex: 1,
             }}
           >
-            <Typography variant="h6" className="font-serif" sx={{ fontWeight: 700, color: 'text.primary' }}>
+            <Typography variant="h6" sx={{ color: 'text.primary' }}>
               {item.title || 'Details'}
             </Typography>
             <Tooltip title="Close">
               <IconButton onClick={popDrawer} size="small" sx={{ color: 'grey.500' }}>
-                <X size={20} />
+                <X size={20} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
           </Box>
@@ -154,9 +154,7 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
               fullWidth
               sx={{
                 zIndex: drawerZ,
-                '& .MuiDialog-paper': {
-                  ...(isMobile ? { borderRadius: 0 } : { maxHeight: '90vh' }),
-                },
+                ...(!isMobile && { '& .MuiDialog-paper': { maxHeight: '90vh' } }),
               }}
             >
               {headerContent}
@@ -175,7 +173,8 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
               zIndex: drawerZ,
               '& .MuiDrawer-paper': {
                 width: item.width ?? { xs: '100%', sm: 480, md: 560 },
-                boxShadow: '-4px 0 24px rgba(0,0,0,0.08)',
+                borderLeft: '1px solid',
+                borderColor: 'grey.900',
               },
             }}
           >

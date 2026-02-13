@@ -2,17 +2,17 @@ import { useEffect } from 'react';
 
 import { alpha, Box, IconButton, Tooltip, useTheme } from '@mui/material';
 import {
-  Bold,
+  TextB,
   Code,
-  Heading1,
-  Heading2,
-  Heading3,
-  Italic,
-  List,
-  ListOrdered,
-  Quote,
-  Strikethrough,
-} from 'lucide-react';
+  TextHOne,
+  TextHTwo,
+  TextHThree,
+  TextItalic,
+  ListBullets,
+  ListNumbers,
+  Quotes,
+  TextStrikethrough,
+} from '@phosphor-icons/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -76,7 +76,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleBold().run()}
           sx={editor.isActive('bold') ? activeBtnSx : btnSx}
         >
-          <Bold size={14} />
+          <TextB size={14} weight="light" />
         </IconButton>
       </Tooltip>
       <Tooltip title="Italic">
@@ -85,7 +85,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleItalic().run()}
           sx={editor.isActive('italic') ? activeBtnSx : btnSx}
         >
-          <Italic size={14} />
+          <TextItalic size={14} weight="light" />
         </IconButton>
       </Tooltip>
       <Tooltip title="Strikethrough">
@@ -94,7 +94,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleStrike().run()}
           sx={editor.isActive('strike') ? activeBtnSx : btnSx}
         >
-          <Strikethrough size={14} />
+          <TextStrikethrough size={14} weight="light" />
         </IconButton>
       </Tooltip>
       <Tooltip title="Code">
@@ -103,7 +103,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleCode().run()}
           sx={editor.isActive('code') ? activeBtnSx : btnSx}
         >
-          <Code size={14} />
+          <Code size={14} weight="light" />
         </IconButton>
       </Tooltip>
 
@@ -115,7 +115,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           sx={editor.isActive('heading', { level: 1 }) ? activeBtnSx : btnSx}
         >
-          <Heading1 size={14} />
+          <TextHOne size={14} weight="light" />
         </IconButton>
       </Tooltip>
       <Tooltip title="Heading 2">
@@ -124,7 +124,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           sx={editor.isActive('heading', { level: 2 }) ? activeBtnSx : btnSx}
         >
-          <Heading2 size={14} />
+          <TextHTwo size={14} weight="light" />
         </IconButton>
       </Tooltip>
       <Tooltip title="Heading 3">
@@ -133,7 +133,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           sx={editor.isActive('heading', { level: 3 }) ? activeBtnSx : btnSx}
         >
-          <Heading3 size={14} />
+          <TextHThree size={14} weight="light" />
         </IconButton>
       </Tooltip>
 
@@ -145,7 +145,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           sx={editor.isActive('bulletList') ? activeBtnSx : btnSx}
         >
-          <List size={14} />
+          <ListBullets size={14} weight="light" />
         </IconButton>
       </Tooltip>
       <Tooltip title="Ordered list">
@@ -154,7 +154,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           sx={editor.isActive('orderedList') ? activeBtnSx : btnSx}
         >
-          <ListOrdered size={14} />
+          <ListNumbers size={14} weight="light" />
         </IconButton>
       </Tooltip>
       <Tooltip title="Blockquote">
@@ -163,7 +163,7 @@ function EditorToolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           sx={editor.isActive('blockquote') ? activeBtnSx : btnSx}
         >
-          <Quote size={14} />
+          <Quotes size={14} weight="light" />
         </IconButton>
       </Tooltip>
     </Box>

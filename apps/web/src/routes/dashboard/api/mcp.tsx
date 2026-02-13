@@ -54,7 +54,7 @@ function McpPage() {
         <Card>
           <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="subtitle2" fontWeight={600}>
+              <Typography variant="subtitle2">
                 Server URL
               </Typography>
               <CopyButton text={mcpUrl} />
@@ -76,7 +76,7 @@ function McpPage() {
         <Card>
           <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="subtitle2" fontWeight={600}>
+              <Typography variant="subtitle2">
                 Claude Desktop / Claude Code (stdio)
               </Typography>
               <CopyButton text={stdioConfig} />
@@ -105,7 +105,7 @@ function McpPage() {
         <Card>
           <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="subtitle2" fontWeight={600}>
+              <Typography variant="subtitle2">
                 Cursor / Other MCP Clients (HTTP)
               </Typography>
               <CopyButton text={httpConfig} />
@@ -133,7 +133,7 @@ function McpPage() {
 
         <Card>
           <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
               Available Tools
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

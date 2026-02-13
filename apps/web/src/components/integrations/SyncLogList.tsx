@@ -1,5 +1,5 @@
 import { alpha, Box, CircularProgress, Tooltip, Typography, useTheme } from '@mui/material';
-import { Check, Clock, TriangleAlert, Webhook, Zap, User } from 'lucide-react';
+import { Check, Clock, Lightning, Plugs, User, Warning } from '@phosphor-icons/react';
 
 interface SyncLogEntry {
   id: string;
@@ -21,13 +21,13 @@ function StatusIcon({ status }: { status: string }) {
   const theme = useTheme();
   switch (status) {
     case 'COMPLETED':
-      return <Check size={13} color={theme.palette.success.main} />;
+      return <Check size={13} color={theme.palette.success.main} weight="light" />;
     case 'FAILED':
-      return <TriangleAlert size={13} color={theme.palette.error.main} />;
+      return <Warning size={13} color={theme.palette.error.main} weight="light" />;
     case 'RUNNING':
       return <CircularProgress size={12} thickness={5} />;
     case 'PENDING':
-      return <Clock size={13} color={theme.palette.info.main} />;
+      return <Clock size={13} color={theme.palette.info.main} weight="light" />;
     default:
       return null;
   }
@@ -36,9 +36,9 @@ function StatusIcon({ status }: { status: string }) {
 function TriggerIcon({ trigger }: { trigger: string }) {
   const size = 11;
   switch (trigger) {
-    case 'MANUAL': return <User size={size} />;
-    case 'WEBHOOK': return <Webhook size={size} />;
-    default: return <Zap size={size} />;
+    case 'MANUAL': return <User size={size} weight="light" color="currentColor" />;
+    case 'WEBHOOK': return <Plugs size={size} weight="light" color="currentColor" />;
+    default: return <Lightning size={size} weight="light" color="currentColor" />;
   }
 }
 
@@ -70,7 +70,7 @@ export function SyncLogList({ logs }: SyncLogListProps) {
   if (logs.length === 0) {
     return (
       <Box sx={{ py: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-        <Clock size={20} style={{ opacity: 0.25 }} />
+        <Clock size={20} weight="light" color="currentColor" style={{ opacity: 0.25 }} />
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13 }}>
           No sync history yet
         </Typography>

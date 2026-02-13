@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { BarChart3, BookOpen, ChevronsRight, Eye, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users, Waypoints } from 'lucide-react';
+import { ChartBar, BookOpen, CaretDoubleRight, Eye, Folder, Key, SquaresFour, SignOut, ChatCircle, Moon, Plug, Gear, Sun, Users, GitFork } from '@phosphor-icons/react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
-import { FONT_SERIF } from '@/theme';
+
 
 function StripIcon({ to, label, icon, exact, activePrefix }: { to: string; label: string; icon: ReactNode; exact?: boolean; activePrefix?: string }) {
   const location = useLocation();
@@ -27,7 +27,7 @@ function StripIcon({ to, label, icon, exact, activePrefix }: { to: string; label
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: 0,
+
             cursor: 'pointer',
             color: isActive ? 'text.primary' : alpha(ct, 0.4),
             borderLeft: isActive ? `2px solid ${ct}` : '2px solid transparent',
@@ -85,15 +85,10 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
           }}
         >
           <Typography
-            sx={{
-              fontSize: 22,
-              fontWeight: 400,
-              fontFamily: FONT_SERIF,
-              color: 'text.primary',
-              letterSpacing: '-0.01em',
-            }}
+            variant="h5"
+            sx={{ fontSize: 22, color: 'text.primary' }}
           >
-            grabdy.
+            g.
           </Typography>
         </Box>
       </Tooltip>
@@ -109,20 +104,20 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
               '&:hover': { color: 'text.primary' },
             }}
           >
-            <ChevronsRight size={14} />
+            <CaretDoubleRight size={14} weight="light" color="currentColor" />
           </IconButton>
         </Tooltip>
       )}
 
       {/* Nav icons */}
-      <StripIcon to="/dashboard" label="Dashboard" icon={<LayoutGrid size={18} strokeWidth={1.5} />} exact />
-      <StripIcon to="/dashboard/chat" label="Chat" icon={<MessageSquare size={18} strokeWidth={1.5} />} />
-      <StripIcon to="/dashboard/sources" label="Sources" icon={<Folder size={18} strokeWidth={1.5} />} />
-      <StripIcon to="/dashboard/integrations" label="Integrations" icon={<Plug size={18} strokeWidth={1.5} />} />
-      <StripIcon to="/dashboard/api/keys" label="Keys" icon={<Key size={18} strokeWidth={1.5} />} />
-      <StripIcon to="/dashboard/api/docs" label="Docs" icon={<BookOpen size={18} strokeWidth={1.5} />} />
-      <StripIcon to="/dashboard/api/mcp" label="MCP" icon={<Waypoints size={18} strokeWidth={1.5} />} />
-      <StripIcon to="/dashboard/members" label="Members" icon={<Users size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard" label="Dashboard" icon={<SquaresFour size={18} weight="light" color="currentColor" />} exact />
+      <StripIcon to="/dashboard/chat" label="Chat" icon={<ChatCircle size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/sources" label="Sources" icon={<Folder size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/integrations" label="Integrations" icon={<Plug size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/api/keys" label="Keys" icon={<Key size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/api/docs" label="Docs" icon={<BookOpen size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/api/mcp" label="MCP" icon={<GitFork size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/members" label="Members" icon={<Users size={18} weight="light" color="currentColor" />} />
 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
@@ -138,7 +133,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 0,
+    
                 cursor: 'pointer',
                 color: alpha(ct, 0.35),
                 transition: 'all 120ms ease',
@@ -148,15 +143,15 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
                 },
               }}
             >
-              <Eye size={16} />
+              <Eye size={16} weight="light" color="currentColor" />
             </Box>
           </Link>
         </Tooltip>
       )}
 
       {/* Settings */}
-      <StripIcon to="/dashboard/usage" label="AI Usage" icon={<BarChart3 size={18} strokeWidth={1.5} />} />
-      <StripIcon to="/dashboard/settings" label="Settings" icon={<Settings size={18} strokeWidth={1.5} />} />
+      <StripIcon to="/dashboard/usage" label="AI Usage" icon={<ChartBar size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/settings" label="Settings" icon={<Gear size={18} weight="light" color="currentColor" />} />
 
       {/* Theme toggle */}
       <Tooltip title={isDark ? 'Light mode' : 'Dark mode'} placement="right">
@@ -169,7 +164,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
             '&:hover': { color: 'text.primary' },
           }}
         >
-          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          {isDark ? <Sun size={16} weight="light" color="currentColor" /> : <Moon size={16} weight="light" color="currentColor" />}
         </IconButton>
       </Tooltip>
 
@@ -186,7 +181,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
               color: 'background.default',
               cursor: 'pointer',
               mt: 0.5,
-              borderRadius: 0,
+  
             }}
           >
             {initials}
@@ -206,7 +201,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
             '&:hover': { color: 'error.main' },
           }}
         >
-          <LogOut size={14} />
+          <SignOut size={14} weight="light" color="currentColor" />
         </IconButton>
       </Tooltip>
     </Box>

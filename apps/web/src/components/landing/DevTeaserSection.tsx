@@ -64,9 +64,7 @@ export function DevTeaserSection() {
             <Typography
               variant="h3"
               sx={{
-                fontWeight: 800,
                 fontSize: { xs: '1.5rem', md: '1.75rem' },
-                letterSpacing: '-0.02em',
                 mb: 2,
                 color: isDark ? 'text.primary' : 'grey.50',
               }}

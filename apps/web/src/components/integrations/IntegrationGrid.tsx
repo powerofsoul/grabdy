@@ -42,12 +42,8 @@ const gridColumns = {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <Typography
-      variant="caption"
+      variant="overline"
       sx={{
-        textTransform: 'uppercase',
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: '0.06em',
         color: 'text.secondary',
       }}
     >

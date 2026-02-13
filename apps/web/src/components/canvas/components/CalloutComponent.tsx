@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
 import { alpha, Box, TextField, Typography, useTheme } from '@mui/material';
-import { AlertCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { CheckCircle, Info, Warning, WarningCircle } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -20,9 +20,9 @@ interface CalloutComponentProps {
 
 const VARIANT_CONFIG = {
   info: { Icon: Info, paletteKey: 'info' as const },
-  success: { Icon: CheckCircle2, paletteKey: 'success' as const },
-  warning: { Icon: AlertTriangle, paletteKey: 'warning' as const },
-  error: { Icon: AlertCircle, paletteKey: 'error' as const },
+  success: { Icon: CheckCircle, paletteKey: 'success' as const },
+  warning: { Icon: Warning, paletteKey: 'warning' as const },
+  error: { Icon: WarningCircle, paletteKey: 'error' as const },
 };
 
 export function CalloutComponent({ data, onSave }: CalloutComponentProps) {
@@ -74,7 +74,7 @@ export function CalloutComponent({ data, onSave }: CalloutComponentProps) {
         {data.icon ? (
           <Typography sx={{ fontSize: 16 }}>{data.icon}</Typography>
         ) : (
-          <Icon size={16} color={variantColor} />
+          <Icon size={16} weight="light" color={variantColor} />
         )}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>

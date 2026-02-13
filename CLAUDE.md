@@ -131,5 +131,5 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - Do not reinvent the wheel. Use existing libraries.
 - **ALWAYS check if a library is already installed before adding a new one.**
-- Use icon libraries (lucide-react) instead of inline SVGs.
+- Use icon libraries (@phosphor-icons/react with weight="light") instead of inline SVGs.
 - **NEVER use browser prompts: `window.alert()`, `window.confirm()`, `window.prompt()`.**

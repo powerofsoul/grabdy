@@ -1,6 +1,6 @@
 import { alpha, Box, Typography, useTheme } from '@mui/material';
 import { useNavigate } from '@tanstack/react-router';
-import { FileText } from 'lucide-react';
+import { FileText } from '@phosphor-icons/react';
 
 interface SourceLinkComponentProps {
   data: {
@@ -63,7 +63,7 @@ export function SourceLinkComponent({ data }: SourceLinkComponentProps) {
                 : { bgcolor: alpha(theme.palette.text.primary, 0.08) },
             }}
           >
-            <FileText size={10} color={alpha(theme.palette.text.primary, 0.35)} style={{ flexShrink: 0 }} />
+            <FileText size={10} weight="light" color={alpha(theme.palette.text.primary, 0.35)} style={{ flexShrink: 0 }} />
             <Typography
               className="source-name"
               sx={{

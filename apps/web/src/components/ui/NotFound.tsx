@@ -2,9 +2,7 @@ import { useState } from 'react';
 
 import { alpha, Box, Button, Typography, useTheme } from '@mui/material';
 import { useRouter } from '@tanstack/react-router';
-import { Home, Search } from 'lucide-react';
-
-const FONT_SERIF = '"Source Serif 4", "Georgia", serif';
+import { House, MagnifyingGlass } from '@phosphor-icons/react';
 
 const PHRASES = [
   'We searched every chunk. Nothing.',
@@ -61,15 +59,14 @@ export function NotFound() {
           mb: 4,
         }}
       >
-        <Search size={36} color={alpha(ct, 0.2)} />
+        <MagnifyingGlass size={36} weight="light" color={alpha(ct, 0.2)} />
       </Box>
 
       {/* 404 */}
       <Typography
+        variant="h1"
         sx={{
           fontSize: { xs: '5rem', sm: '7rem' },
-          fontWeight: 700,
-          fontFamily: FONT_SERIF,
           color: alpha(ct, 0.08),
           lineHeight: 1,
           letterSpacing: '-0.04em',
@@ -107,15 +104,13 @@ export function NotFound() {
       {/* CTA */}
       <Button
         variant="contained"
-        startIcon={<Home size={16} />}
+        startIcon={<House size={16} weight="light" color="currentColor" />}
         onClick={() => router.navigate({ to: '/dashboard' })}
         sx={{
-          textTransform: 'none',
           fontWeight: 600,
           fontSize: 14,
           px: 3,
           py: 1,
-          borderRadius: 2,
         }}
       >
         Back to safety
@@ -123,12 +118,11 @@ export function NotFound() {
 
       {/* Wordmark */}
       <Typography
+        variant="h5"
         sx={{
           position: 'absolute',
           bottom: 24,
-          fontFamily: FONT_SERIF,
           fontSize: 16,
-          fontWeight: 600,
           color: alpha(ct, 0.12),
           userSelect: 'none',
         }}

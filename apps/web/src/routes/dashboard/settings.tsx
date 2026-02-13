@@ -71,7 +71,7 @@ function SettingsPage() {
         onSubmit={handleSave}
         sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
       >
-        <Typography variant="subtitle1" fontWeight={600}>
+        <Typography variant="subtitle1">
           Organization
         </Typography>
         <TextField

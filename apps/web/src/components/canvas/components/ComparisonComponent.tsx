@@ -13,7 +13,7 @@ import {
   TextField,
   useTheme,
 } from '@mui/material';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -106,14 +106,14 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                         onClick={() => handleDeleteColumn(i)}
                         sx={{ width: 16, height: 16, color: alpha(theme.palette.text.primary, 0.25) }}
                       >
-                        <Trash2 size={10} />
+                        <Trash size={10} weight="light" color="currentColor" />
                       </IconButton>
                     </Box>
                   </TableCell>
                 ))}
                 <TableCell sx={{ p: 0.5, width: 30 }}>
                   <IconButton size="small" onClick={handleAddColumn} sx={{ width: 20, height: 20, color: 'primary.main' }}>
-                    <Plus size={12} />
+                    <Plus size={12} weight="light" color="currentColor" />
                   </IconButton>
                 </TableCell>
               </TableRow>
@@ -138,7 +138,7 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                         onClick={() => handleDeleteRow(ai)}
                         sx={{ width: 16, height: 16, color: alpha(theme.palette.text.primary, 0.25) }}
                       >
-                        <Trash2 size={10} />
+                        <Trash size={10} weight="light" color="currentColor" />
                       </IconButton>
                     </Box>
                   </TableCell>
@@ -168,7 +168,7 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
         </TableContainer>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, py: 0.5 }}>
           <IconButton size="small" onClick={handleAddRow} sx={{ color: 'primary.main' }}>
-            <Plus size={14} />
+            <Plus size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

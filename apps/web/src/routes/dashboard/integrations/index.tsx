@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { CircularProgress, Box } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
-import { Plug } from 'lucide-react';
+import { Plug } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import type { IntegrationProvider } from '@grabdy/contracts';
@@ -77,7 +77,7 @@ function IntegrationsPage() {
     <DashboardPage
       title="Integrations"
       subtitle="Connect your tools to search across all your data"
-      icon={<Plug size={22} />}
+      icon={<Plug size={22} weight="light" color="currentColor" />}
     >
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>

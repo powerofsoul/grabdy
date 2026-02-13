@@ -7,7 +7,7 @@ import {
   getBezierPath,
   useReactFlow,
 } from '@xyflow/react';
-import { Trash2 } from 'lucide-react';
+import { Trash } from '@phosphor-icons/react';
 
 const STROKE_OPTIONS = [2, 3, 4, 6] as const;
 
@@ -181,7 +181,7 @@ export function CustomEdge({
                     '&:hover': { color: 'error.main', bgcolor: alpha(theme.palette.error.main, 0.08) },
                   }}
                 >
-                  <Trash2 size={14} />
+                  <Trash size={14} weight="light" color="currentColor" />
                 </IconButton>
               </Tooltip>
             </Box>

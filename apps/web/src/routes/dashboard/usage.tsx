@@ -3,10 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   alpha,
   Box,
-  Card,
-  CardContent,
   FormControl,
-  Grid,
   InputLabel,
   LinearProgress,
   MenuItem,
@@ -15,13 +12,13 @@ import {
   useTheme,
 } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
-import { Activity, Cpu, Zap } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { MainTable } from '@/components/ui/main-table';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { FONT_MONO } from '@/theme';
 
 interface UsageSummary {
   totalRequests: number;
@@ -70,47 +67,6 @@ function formatNumber(n: number): string {
   return n.toString();
 }
 
-function StatCard({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  color: string;
-}) {
-  return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: 1,
-              bgcolor: alpha(color, 0.08),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color,
-            }}
-          >
-            {icon}
-          </Box>
-          <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, lineHeight: 1 }}>
-            {value}
-          </Typography>
-        </Box>
-        <Typography variant="body2" color="text.secondary">
-          {label}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
-}
-
 function DailyChart({ data }: { data: DailyUsage[] }) {
   const theme = useTheme();
 
@@ -130,7 +86,6 @@ function DailyChart({ data }: { data: DailyUsage[] }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.text.primary, 0.06)} vertical={false} />
         <XAxis
           dataKey="label"
           tick={{ fontSize: 11, fill: alpha(theme.palette.text.primary, 0.4) }}
@@ -146,16 +101,16 @@ function DailyChart({ data }: { data: DailyUsage[] }) {
         <Tooltip
           contentStyle={{
             backgroundColor: theme.palette.background.paper,
-            border: `1px solid ${alpha(theme.palette.text.primary, 0.08)}`,
-            borderRadius: 8,
+            border: `1px solid ${theme.palette.grey[900]}`,
+            borderRadius: 0,
             fontSize: 13,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            boxShadow: 'none',
           }}
           formatter={(value) => [formatNumber(Number(value)), 'Tokens']}
           labelStyle={{ fontWeight: 600, marginBottom: 4 }}
           cursor={{ fill: alpha(theme.palette.text.primary, 0.04) }}
         />
-        <Bar dataKey="totalTokens" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} maxBarSize={32} />
+        <Bar dataKey="totalTokens" fill={theme.palette.text.primary} radius={0} maxBarSize={32} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -190,7 +145,7 @@ function UsagePage() {
     fetchUsage();
   }, [fetchUsage]);
 
-  const p = theme.palette;
+  const ct = theme.palette.text.primary;
 
   return (
     <DashboardPage
@@ -216,46 +171,73 @@ function UsagePage() {
 
       {data && (
         <>
-          {/* Summary cards */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 6, md: 4 }}>
-              <StatCard
-                label="Total Requests"
-                value={formatNumber(data.summary.totalRequests)}
-                icon={<Activity size={20} />}
-                color={p.primary.main}
-              />
-            </Grid>
-            <Grid size={{ xs: 6, md: 4 }}>
-              <StatCard
-                label="Total Tokens"
-                value={formatNumber(data.summary.totalTokens)}
-                icon={<Zap size={20} />}
-                color={p.grey[600]}
-              />
-            </Grid>
-            <Grid size={{ xs: 6, md: 4 }}>
-              <StatCard
-                label="Input Tokens"
-                value={formatNumber(data.summary.totalInputTokens)}
-                icon={<Cpu size={20} />}
-                color={p.grey[600]}
-              />
-            </Grid>
-          </Grid>
+          {/* Summary — floating mono numbers with separators */}
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 4, mb: 4 }}>
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: FONT_MONO,
+                  fontSize: '3rem',
+                  fontWeight: 400,
+                  lineHeight: 1,
+                  letterSpacing: '0.05em',
+                  color: 'text.primary',
+                }}
+              >
+                {formatNumber(data.summary.totalRequests)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Total Requests
+              </Typography>
+            </Box>
+            <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: FONT_MONO,
+                  fontSize: '3rem',
+                  fontWeight: 400,
+                  lineHeight: 1,
+                  letterSpacing: '0.05em',
+                  color: 'text.primary',
+                }}
+              >
+                {formatNumber(data.summary.totalTokens)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Total Tokens
+              </Typography>
+            </Box>
+            <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: FONT_MONO,
+                  fontSize: '3rem',
+                  fontWeight: 400,
+                  lineHeight: 1,
+                  letterSpacing: '0.05em',
+                  color: 'text.primary',
+                }}
+              >
+                {formatNumber(data.summary.totalInputTokens)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Input Tokens
+              </Typography>
+            </Box>
+          </Box>
 
           {/* Daily usage chart */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>
-                Daily Token Usage
-              </Typography>
-              <DailyChart data={data.daily} />
-            </CardContent>
-          </Card>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2 }}>
+              Daily Token Usage
+            </Typography>
+            <DailyChart data={data.daily} />
+          </Box>
 
           {/* By Model */}
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
             Usage by Model
           </Typography>
           <MainTable
@@ -278,8 +260,16 @@ function UsagePage() {
                   </Typography>
                 </Box>
               ),
-              requests: (row) => formatNumber(row.requests),
-              tokens: (row) => formatNumber(row.totalTokens),
+              requests: (row) => (
+                <Typography className="font-mono" variant="body2">
+                  {formatNumber(row.requests)}
+                </Typography>
+              ),
+              tokens: (row) => (
+                <Typography className="font-mono" variant="body2">
+                  {formatNumber(row.totalTokens)}
+                </Typography>
+              ),
             }}
             sorting={{
               sortableColumns: ['requests', 'tokens'] as const,
@@ -294,7 +284,7 @@ function UsagePage() {
           />
 
           {/* By Request Type */}
-          <Typography variant="h6" sx={{ fontWeight: 600, mt: 4, mb: 2 }}>
+          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
             Usage by Type
           </Typography>
           <MainTable
@@ -308,8 +298,16 @@ function UsagePage() {
             keyExtractor={(row) => row.requestType}
             renderItems={{
               type: (row) => row.requestType,
-              requests: (row) => formatNumber(row.requests),
-              tokens: (row) => formatNumber(row.totalTokens),
+              requests: (row) => (
+                <Typography className="font-mono" variant="body2">
+                  {formatNumber(row.requests)}
+                </Typography>
+              ),
+              tokens: (row) => (
+                <Typography className="font-mono" variant="body2">
+                  {formatNumber(row.totalTokens)}
+                </Typography>
+              ),
             }}
             sorting={{
               sortableColumns: ['requests', 'tokens'] as const,

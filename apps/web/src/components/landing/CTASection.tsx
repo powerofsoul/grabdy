@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Box, Button, Container, Typography } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from '@phosphor-icons/react';
 
 import { useWaitlist } from './WaitlistModal';
 
@@ -49,10 +49,8 @@ export function CTASection() {
           className="cta-title"
           variant="h2"
           sx={{
-            fontWeight: 800,
             mb: 2,
             fontSize: { xs: '2rem', md: '2.75rem' },
-            letterSpacing: '-0.02em',
           }}
         >
           Your team&apos;s knowledge, one question away.
@@ -74,15 +72,12 @@ export function CTASection() {
           <Button
             variant="contained"
             size="large"
-            endIcon={<ArrowRight size={18} />}
+            endIcon={<ArrowRight size={18} weight="light" color="currentColor" />}
             onClick={openWaitlist}
             sx={{
               px: 6,
               py: 1.75,
               fontSize: '1.05rem',
-              fontWeight: 700,
-              boxShadow: 'none',
-              '&:hover': { boxShadow: 'none' },
             }}
           >
             Join Waitlist
@@ -95,7 +90,6 @@ export function CTASection() {
               px: 6,
               py: 1.75,
               fontSize: '1.05rem',
-              fontWeight: 700,
             }}
           >
             Watch Demo

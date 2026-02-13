@@ -23,7 +23,7 @@ export function InviteMemberDrawer({ onClose, onInvited }: InviteMemberDrawerPro
   const { selectedOrgId } = useAuth();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'OWNER' | 'ADMIN' | 'MEMBER'>('MEMBER');
+  const [role, setRole] = useState<'ADMIN' | 'MEMBER'>('MEMBER');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,11 +79,10 @@ export function InviteMemberDrawer({ onClose, onInvited }: InviteMemberDrawerPro
         <Select
           value={role}
           label="Role"
-          onChange={(e) => setRole(e.target.value as 'OWNER' | 'ADMIN' | 'MEMBER')}
+          onChange={(e) => setRole(e.target.value as 'ADMIN' | 'MEMBER')}
         >
           <MenuItem value="MEMBER">Member</MenuItem>
           <MenuItem value="ADMIN">Admin</MenuItem>
-          <MenuItem value="OWNER">Owner</MenuItem>
         </Select>
       </FormControl>
       <Button

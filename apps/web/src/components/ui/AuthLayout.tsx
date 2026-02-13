@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import { useRouter } from '@tanstack/react-router';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from '@phosphor-icons/react';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -46,9 +46,9 @@ export function AuthLayout({
           <Tooltip title="Go back">
             <IconButton
               onClick={() => router.history.back()}
-              sx={{ color: 'text.secondary', '&:hover': { bgcolor: 'grey.100' } }}
+              sx={{ color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
             >
-              <ArrowLeft size={22} />
+              <ArrowLeft size={22} weight="light" color="currentColor" />
             </IconButton>
           </Tooltip>
         </Box>
@@ -71,9 +71,7 @@ export function AuthLayout({
             <Typography
               variant="h4"
               sx={{
-                fontWeight: 600,
                 color: 'text.primary',
-                letterSpacing: '-0.02em',
                 mb: subtitle ? 1 : 0,
               }}
             >

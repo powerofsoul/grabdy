@@ -18,9 +18,9 @@ export function Footer() {
       component="footer"
       sx={{
         py: { xs: 5, md: 6 },
-        bgcolor: 'grey.50',
+        bgcolor: 'background.default',
         borderTop: '1px solid',
-        borderColor: 'divider',
+        borderColor: 'grey.900',
       }}
     >
       <Container maxWidth="lg">
@@ -33,7 +33,7 @@ export function Footer() {
         >
           {/* Logo + tagline */}
           <Box>
-            <Logo size="sm" />
+            <Logo />
             <Typography sx={{ mt: 0.75, fontSize: '0.78rem', color: 'text.secondary', maxWidth: 280 }}>
               Smart document retrieval for teams that move fast.
             </Typography>
@@ -41,7 +41,7 @@ export function Footer() {
 
           {/* Product column */}
           <Box>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'text.primary', mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Typography variant="overline" sx={{ color: 'text.primary', mb: 1.5, display: 'block' }}>
               Product
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -59,7 +59,7 @@ export function Footer() {
 
           {/* Company column */}
           <Box>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'text.primary', mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Typography variant="overline" sx={{ color: 'text.primary', mb: 1.5, display: 'block' }}>
               Company
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -77,7 +77,7 @@ export function Footer() {
         </Box>
 
         {/* Bottom copyright */}
-        <Box sx={{ mt: 4, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ mt: 4, pt: 2.5, borderTop: '1px solid', borderColor: 'grey.900' }}>
           <Typography sx={{ fontSize: '0.72rem', color: alpha(theme.palette.text.secondary, 0.6) }}>
             &copy; {new Date().getFullYear()} Grabdy. All rights reserved.
           </Typography>

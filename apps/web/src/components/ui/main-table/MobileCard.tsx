@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 
 import { Box, Card, CardContent, Collapse, IconButton, Tooltip, Typography } from '@mui/material';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { CaretDown, CaretUp } from '@phosphor-icons/react';
 
 import type { ColumnConfig, HeaderConfig, InteractionConfig, RenderConfig } from './types';
 
@@ -58,12 +58,10 @@ export function MobileCard<T>({
           }}
         >
           <Typography
-            variant="h6"
+            variant="subtitle1"
             component="div"
             sx={{
-              fontWeight: 600,
               color: 'text.primary',
-              fontSize: '0.9375rem',
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
               flex: 1,
@@ -74,7 +72,7 @@ export function MobileCard<T>({
           {interaction.expandable && (
             <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
               <IconButton size="small" sx={{ p: 0.5, flexShrink: 0 }}>
-                {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                {isExpanded ? <CaretUp size={18} weight="light" color="currentColor" /> : <CaretDown size={18} weight="light" color="currentColor" />}
               </IconButton>
             </Tooltip>
           )}
@@ -140,7 +138,6 @@ export function MobileCard<T>({
                       sx={{
                         fontWeight: 500,
                         color: 'text.secondary',
-                        fontSize: '0.75rem',
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -179,7 +176,7 @@ export function MobileCard<T>({
               pt: 1,
               borderTop: '1px solid',
               borderColor: 'divider',
-              bgcolor: 'grey.50',
+              bgcolor: 'transparent',
             }}
           >
             {interaction.expandable.renderExpanded(item)}

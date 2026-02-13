@@ -1,5 +1,5 @@
 import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { Check, ChevronRight, CircleAlert, Pause } from 'lucide-react';
+import { Check, CaretRight, WarningCircle, Pause } from '@phosphor-icons/react';
 
 import type { IntegrationProvider } from '@grabdy/contracts';
 
@@ -51,7 +51,7 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
                 ? theme.palette.success.main
                 : theme.palette.warning.main
           }`,
-          borderRadius: 0,
+
           p: 2.5,
           minHeight: 164,
           display: 'flex',
@@ -77,9 +77,9 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
               gap: 0.5,
             }}
           >
-            {isActive && <Check size={12} color={theme.palette.success.main} />}
-            {isError && <CircleAlert size={12} color={theme.palette.error.main} />}
-            {connection.status === 'PAUSED' && <Pause size={12} color={theme.palette.warning.main} />}
+            {isActive && <Check size={12} weight="light" color={theme.palette.success.main} />}
+            {isError && <WarningCircle size={12} weight="light" color={theme.palette.error.main} />}
+            {connection.status === 'PAUSED' && <Pause size={12} weight="light" color={theme.palette.warning.main} />}
             <Typography
               variant="caption"
               sx={{
@@ -99,7 +99,7 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
         </Box>
 
         {/* Middle: Name + account name */}
-        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.3 }}>
+        <Typography variant="subtitle1">
           {getProviderLabel(provider)}
         </Typography>
         {connection.externalAccountName && (
@@ -115,7 +115,7 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
               ? `Synced ${relativeTime(connection.lastSyncedAt)}`
               : 'Not synced yet'}
           </Typography>
-          <ChevronRight size={16} color={theme.palette.text.disabled} />
+          <CaretRight size={16} weight="light" color={theme.palette.text.disabled} />
         </Box>
       </Box>
     );
@@ -126,7 +126,6 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
       sx={{
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: 0,
         p: 2.5,
         minHeight: 164,
         display: 'flex',
@@ -139,7 +138,7 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
       </Box>
 
       {/* Name + description + details */}
-      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.3 }}>
+      <Typography variant="subtitle1">
         {getProviderLabel(provider)}
       </Typography>
       <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, lineHeight: 1.4 }}>

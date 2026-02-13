@@ -1,5 +1,5 @@
 import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { Brain } from 'lucide-react';
+import { Brain } from '@phosphor-icons/react';
 
 export function ThinkingIndicator() {
   const theme = useTheme();
@@ -21,7 +21,7 @@ export function ThinkingIndicator() {
           borderColor: alpha(primary, 0.15),
         }}
       >
-        <Brain size={12} color={primary} />
+        <Brain size={12} color={primary} weight="light" />
         <Typography
           sx={{
             fontSize: '0.7rem',

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Box, CircularProgress, Fab, Stack } from '@mui/material';
-import { ChevronUp } from 'lucide-react';
+import { CaretUp } from '@phosphor-icons/react';
 
 import { MobileCard } from './MobileCard';
 import type {
@@ -125,11 +125,11 @@ export function MobileLayout<T>({
             bottom: 80,
             right: 24,
             zIndex: 1000,
-            boxShadow: 3,
-            '&:hover': { boxShadow: 6 },
+            border: '1px solid',
+            borderColor: 'grey.900',
           }}
         >
-          <ChevronUp size={24} />
+          <CaretUp size={24} weight="light" color="currentColor" />
         </Fab>
       )}
     </Box>

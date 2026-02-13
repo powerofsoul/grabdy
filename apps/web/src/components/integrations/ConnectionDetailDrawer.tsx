@@ -13,7 +13,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Check, CircleAlert, Pause, RefreshCw, Unplug } from 'lucide-react';
+import { Check, WarningCircle, Pause, ArrowsClockwise, PlugsConnected } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import type { IntegrationProvider } from '@grabdy/contracts';
@@ -59,9 +59,9 @@ const INTERVAL_OPTIONS = [
 function StatusIndicator({ status }: { status: string }) {
   const theme = useTheme();
   const map: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
-    ACTIVE: { icon: <Check size={14} color={theme.palette.success.main} />, label: 'Connected', color: 'success.main' },
-    ERROR: { icon: <CircleAlert size={14} color={theme.palette.error.main} />, label: 'Error', color: 'error.main' },
-    PAUSED: { icon: <Pause size={14} color={theme.palette.warning.main} />, label: 'Paused', color: 'warning.main' },
+    ACTIVE: { icon: <Check size={14} weight="light" color={theme.palette.success.main} />, label: 'Connected', color: 'success.main' },
+    ERROR: { icon: <WarningCircle size={14} weight="light" color={theme.palette.error.main} />, label: 'Error', color: 'error.main' },
+    PAUSED: { icon: <Pause size={14} weight="light" color={theme.palette.warning.main} />, label: 'Paused', color: 'warning.main' },
   };
   const info = map[status];
   if (!info) return <Typography variant="body2" color="text.secondary">{status}</Typography>;
@@ -199,7 +199,7 @@ export function ConnectionDetailDrawer({
             <ProviderIcon provider={provider} size={28} />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="h6" sx={{ fontSize: '1.0625rem', fontWeight: 600, lineHeight: 1.3 }}>
+            <Typography variant="subtitle1" sx={{ fontSize: '1.0625rem' }}>
               {getProviderLabel(provider)}
             </Typography>
             {externalAccountName && (
@@ -283,11 +283,11 @@ export function ConnectionDetailDrawer({
         <Box sx={{ display: 'flex', gap: 1.5 }}>
           <Button
             variant="outlined"
-            startIcon={syncing ? <CircularProgress size={14} thickness={5} /> : <RefreshCw size={15} />}
+            startIcon={syncing ? <CircularProgress size={14} thickness={5} /> : <ArrowsClockwise size={15} weight="light" color="currentColor" />}
             onClick={handleSync}
             disabled={syncing}
             size="small"
-            sx={{ textTransform: 'none', flex: 1, borderRadius: 1.5 }}
+            sx={{ flex: 1, borderRadius: 1.5 }}
           >
             {syncing ? 'Syncing...' : 'Sync Now'}
           </Button>
@@ -295,10 +295,10 @@ export function ConnectionDetailDrawer({
             <Button
               variant="outlined"
               color="error"
-              startIcon={<Unplug size={15} />}
+              startIcon={<PlugsConnected size={15} weight="light" color="currentColor" />}
               onClick={() => setConfirmDisconnect(true)}
               size="small"
-              sx={{ textTransform: 'none', borderRadius: 1.5 }}
+              sx={{ borderRadius: 1.5 }}
             >
               Disconnect
             </Button>
@@ -309,8 +309,7 @@ export function ConnectionDetailDrawer({
               onClick={handleDisconnect}
               disabled={disconnecting}
               size="small"
-              disableElevation
-              sx={{ textTransform: 'none', borderRadius: 1.5 }}
+              sx={{ borderRadius: 1.5 }}
             >
               {disconnecting ? 'Removing...' : 'Confirm'}
             </Button>

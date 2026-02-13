@@ -12,7 +12,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Edit3, History, MessageSquare, PanelBottom, PanelLeft, PanelRight, PanelTop, Plus, Trash2, X } from 'lucide-react';
+import { ChatCircle, ClockCounterClockwise, PencilSimple, Plus, SidebarSimple, Trash, X } from '@phosphor-icons/react';
 
 import { Canvas, useCanvasState } from '@/components/canvas';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -160,7 +160,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
               onClick={threadManager.handleNewThread}
               sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
             >
-              <Plus size={18} />
+              <Plus size={18} weight="light" color="currentColor" />
             </IconButton>
           </Tooltip>
           <Tooltip title="History">
@@ -169,7 +169,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
               onClick={() => setThreadPanelOpen(true)}
               sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
             >
-              <History size={18} />
+              <ClockCounterClockwise size={18} weight="light" color="currentColor" />
             </IconButton>
           </Tooltip>
           <Tooltip title={{ 'chat-left': 'Chat left', 'chat-right': 'Chat right', 'chat-top': 'Chat top', 'chat-bottom': 'Chat bottom' }[layoutMode]}>
@@ -178,7 +178,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
               onClick={handleToggleLayout}
               sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
             >
-              {{ 'chat-left': <PanelLeft size={18} />, 'chat-right': <PanelRight size={18} />, 'chat-top': <PanelTop size={18} />, 'chat-bottom': <PanelBottom size={18} /> }[layoutMode]}
+              {{ 'chat-left': <SidebarSimple size={18} weight="light" color="currentColor" />, 'chat-right': <SidebarSimple size={18} weight="light" color="currentColor" style={{ transform: 'scaleX(-1)' }} />, 'chat-top': <SidebarSimple size={18} weight="light" color="currentColor" style={{ transform: 'rotate(90deg)' }} />, 'chat-bottom': <SidebarSimple size={18} weight="light" color="currentColor" style={{ transform: 'rotate(-90deg)' }} /> }[layoutMode]}
             </IconButton>
           </Tooltip>
           {trailingSlot}
@@ -198,7 +198,6 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
             bgcolor: 'background.default',
             borderLeft: '1px solid',
             borderColor: alpha(ct, 0.08),
-            boxShadow: `0 0 40px ${alpha(ct, 0.08)}`,
           },
         }}
       >
@@ -214,7 +213,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
             flexShrink: 0,
           }}
         >
-          <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Conversations</Typography>
+          <Typography variant="subtitle1">Conversations</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Tooltip title="New chat">
               <IconButton
@@ -222,7 +221,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                 onClick={threadManager.handleNewThread}
                 sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
               >
-                <Plus size={16} />
+                <Plus size={16} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
             <IconButton
@@ -230,7 +229,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
               onClick={() => setThreadPanelOpen(false)}
               sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
             >
-              <X size={16} />
+              <X size={16} weight="light" color="currentColor" />
             </IconButton>
           </Box>
         </Box>
@@ -268,7 +267,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                     },
                   }}
                 >
-                  <MessageSquare size={15} style={{ flexShrink: 0, opacity: 0.35 }} />
+                  <ChatCircle size={15} weight="light" color="currentColor" style={{ flexShrink: 0, opacity: 0.35 }} />
                   {threadManager.renamingThreadId === thread.id ? (
                     <TextField
                       size="small"
@@ -319,7 +318,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                       }}
                       sx={{ color: alpha(ct, 0.35), p: 0.5, '&:hover': { color: 'text.primary' } }}
                     >
-                      <Edit3 size={13} />
+                      <PencilSimple size={13} weight="light" color="currentColor" />
                     </IconButton>
                     <IconButton
                       size="small"
@@ -329,7 +328,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                       }}
                       sx={{ color: alpha(ct, 0.35), p: 0.5, '&:hover': { color: 'error.main' } }}
                     >
-                      <Trash2 size={13} />
+                      <Trash size={13} weight="light" color="currentColor" />
                     </IconButton>
                   </Box>
                 </Box>

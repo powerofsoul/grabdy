@@ -33,6 +33,9 @@ export const apiKeysContract = c.router(
       method: 'GET',
       path: '/orgs/:orgId/api-keys',
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
+      query: z.object({
+        includeRevoked: z.coerce.boolean().optional().default(false),
+      }),
       responses: {
         200: z.object({ success: z.literal(true), data: z.array(apiKeySchema) }),
       },

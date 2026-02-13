@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { Brain, Maximize2, Minimize2 } from 'lucide-react';
+import { Brain, ArrowsOut, ArrowsIn } from '@phosphor-icons/react';
 import {
   Background,
   BackgroundVariant,
@@ -467,7 +467,7 @@ export function Canvas({
                 textAlign: 'center',
               }}
             >
-              <Brain size={48} strokeWidth={1} color={alpha(theme.palette.text.primary, 0.12)} />
+              <Brain size={48} weight="light" color={alpha(theme.palette.text.primary, 0.12)} />
               <Typography sx={{ fontSize: 16, fontWeight: 500, color: alpha(theme.palette.text.primary, 0.22), mt: 1 }}>
                 Nothing here yet
               </Typography>
@@ -496,7 +496,7 @@ export function Canvas({
                   height: 32,
                 }}
               >
-                {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                {isMaximized ? <ArrowsIn size={16} weight="light" color="currentColor" /> : <ArrowsOut size={16} weight="light" color="currentColor" />}
               </IconButton>
             </Tooltip>
           </Panel>

@@ -42,13 +42,17 @@ export class ApiKeysService {
     };
   }
 
-  async list(orgId: DbId<'Org'>) {
-    const keys = await this.db.kysely
+  async list(orgId: DbId<'Org'>, includeRevoked: boolean) {
+    let query = this.db.kysely
       .selectFrom('api.api_keys')
       .select(['id', 'name', 'key_prefix', 'last_used_at', 'revoked_at', 'created_at'])
-      .where('org_id', '=', orgId)
-      .orderBy('created_at', 'desc')
-      .execute();
+      .where('org_id', '=', orgId);
+
+    if (!includeRevoked) {
+      query = query.where('revoked_at', 'is', null);
+    }
+
+    const keys = await query.orderBy('created_at', 'desc').execute();
 
     return keys.map((k) => ({
       id: k.id,

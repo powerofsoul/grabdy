@@ -13,11 +13,11 @@ function TermsPage() {
     <Box>
       <LandingNav />
       <Container maxWidth="md" sx={{ py: 12 }}>
-        <Typography variant="h2" sx={{ fontWeight: 800, mb: 4 }}>
+        <Typography variant="h2" sx={{ mb: 4 }}>
           Terms of Service
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           1. Acceptance of Terms
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -25,7 +25,7 @@ function TermsPage() {
           do not agree, you may not use the platform.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           2. Service Description
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -34,7 +34,7 @@ function TermsPage() {
           functionality.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           3. Your Content
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -43,7 +43,7 @@ function TermsPage() {
           ownership of your data.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           4. Acceptable Use
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -52,7 +52,7 @@ function TermsPage() {
           violate these terms.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           5. Limitation of Liability
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
@@ -61,7 +61,7 @@ function TermsPage() {
           service.
         </Typography>
 
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
           6. Contact
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>

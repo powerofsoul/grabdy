@@ -1,6 +1,7 @@
 import { Box } from '@mui/material';
 import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router';
 
+import { BackgroundWatermark } from '@/components/ui/BackgroundWatermark';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 
@@ -25,6 +26,7 @@ function DashboardLayout() {
       <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
         <Outlet />
       </Box>
+      <BackgroundWatermark />
     </Box>
   );
 }

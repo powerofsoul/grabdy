@@ -34,7 +34,7 @@ export function LandingNav() {
             transition: 'min-height 0.3s',
           }}
         >
-          <Logo />
+          <Logo size="lg" />
 
           {/* Right actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -52,9 +52,6 @@ export function LandingNav() {
               variant="contained"
               size="small"
               onClick={open}
-              sx={{
-                boxShadow: 'none',
-              }}
             >
               Join Waitlist
             </Button>

@@ -1,6 +1,6 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { createFileRoute, Navigate, useNavigate, useSearch } from '@tanstack/react-router';
-import { ArrowLeft, LogOut, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, SignOut, Moon, Sun } from '@phosphor-icons/react';
 import { z } from 'zod';
 
 import { ChatPanel } from '@/components/chat';
@@ -16,7 +16,6 @@ export const Route = createFileRoute('/app')({
   validateSearch: appSearchSchema,
 });
 
-const FONT_SERIF = '"Source Serif 4", "Georgia", serif';
 
 function AppPage() {
   const { user, selectedOrgId, isAuthenticated, isAdmin, logout } = useAuth();
@@ -65,19 +64,18 @@ function AppPage() {
                   onClick={() => navigate({ to: '/dashboard' })}
                   sx={{ color: alpha(ct, 0.5), mr: 0.5, '&:hover': { color: 'text.primary' } }}
                 >
-                  <ArrowLeft size={18} />
+                  <ArrowLeft size={18} weight="light" color="currentColor" />
                 </IconButton>
               </Tooltip>
             )}
             <Typography
+              variant="h5"
               onClick={() => {
                 navigate({ to: '/app', search: {}, replace: true });
               }}
               sx={{
                 fontSize: 18,
-                fontWeight: 600,
                 color: 'text.primary',
-                fontFamily: FONT_SERIF,
                 flexShrink: 0,
                 cursor: 'pointer',
               }}
@@ -95,7 +93,7 @@ function AppPage() {
                 onClick={() => setPreference(isDark ? 'light' : 'dark')}
                 sx={{ color: alpha(ct, 0.35), '&:hover': { color: 'text.primary' } }}
               >
-                {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                {isDark ? <Sun size={16} weight="light" color="currentColor" /> : <Moon size={16} weight="light" color="currentColor" />}
               </IconButton>
             </Tooltip>
             <Tooltip title="Sign out">
@@ -104,7 +102,7 @@ function AppPage() {
                 onClick={logout}
                 sx={{ color: alpha(ct, 0.35), '&:hover': { color: 'error.main' } }}
               >
-                <LogOut size={16} />
+                <SignOut size={16} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
             <Avatar

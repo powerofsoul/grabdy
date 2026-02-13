@@ -1,9 +1,9 @@
 :root {
   --app-height: 100dvh;
   --font-sans: 'Inter', 'SF Pro', system-ui, sans-serif;
-  --font-serif: 'Source Serif 4', 'Georgia', serif;
+  --font-serif: 'Instrument Serif', 'Source Serif 4', serif;
   --font-serif-landing: 'Newsreader', 'Georgia', serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
 }
 
 *,

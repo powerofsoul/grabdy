@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -99,12 +99,12 @@ export function SwotComponent({ data, onSave }: SwotComponentProps) {
                       onClick={() => handleDeleteItem(key, i)}
                       sx={{ width: 16, height: 16, p: 0 }}
                     >
-                      <Trash2 size={10} />
+                      <Trash size={10} weight="light" color="currentColor" />
                     </IconButton>
                   </Box>
                 ))}
                 <IconButton size="small" onClick={() => handleAddItem(key)} sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}>
-                  <Plus size={12} />
+                  <Plus size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
             </Box>

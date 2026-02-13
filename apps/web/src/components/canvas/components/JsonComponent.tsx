@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { alpha, Box, TextField, Typography, useTheme } from '@mui/material';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { CaretDown, CaretRight } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -92,9 +92,9 @@ function JsonNode({ keyName, value, depth }: { keyName?: string; value: unknown;
         onClick={() => setCollapsed((prev) => !prev)}
       >
         {collapsed ? (
-          <ChevronRight size={12} color={theme.palette.text.secondary} />
+          <CaretRight size={12} weight="light" color={theme.palette.text.secondary} />
         ) : (
-          <ChevronDown size={12} color={theme.palette.text.secondary} />
+          <CaretDown size={12} weight="light" color={theme.palette.text.secondary} />
         )}
         {keyName !== undefined && (
           <>

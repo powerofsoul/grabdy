@@ -14,7 +14,7 @@ import {
   Tooltip,
   useTheme,
 } from '@mui/material';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash, X } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -117,7 +117,7 @@ export function TableComponent({ data, onSave }: TableComponentProps) {
                           onClick={() => handleDeleteColumn(ci)}
                           sx={{ width: 16, height: 16, p: 0, color: alpha(theme.palette.text.primary, 0.25) }}
                         >
-                          <X size={10} />
+                          <X size={10} weight="light" color="currentColor" />
                         </IconButton>
                       )}
                     </Box>
@@ -130,7 +130,7 @@ export function TableComponent({ data, onSave }: TableComponentProps) {
                       onClick={handleAddColumn}
                       sx={{ width: 22, height: 22, color: 'primary.main' }}
                     >
-                      <Plus size={12} />
+                      <Plus size={12} weight="light" color="currentColor" />
                     </IconButton>
                   </Tooltip>
                 </TableCell>
@@ -156,7 +156,7 @@ export function TableComponent({ data, onSave }: TableComponentProps) {
                       onClick={() => handleDeleteRow(i)}
                       sx={{ width: 24, height: 24, color: alpha(theme.palette.text.primary, 0.3) }}
                     >
-                      <Trash2 size={12} />
+                      <Trash size={12} weight="light" color="currentColor" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -167,7 +167,7 @@ export function TableComponent({ data, onSave }: TableComponentProps) {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, py: 0.5 }}>
           <Tooltip title="Add row">
             <IconButton size="small" onClick={handleAddRow} sx={{ color: 'primary.main' }}>
-              <Plus size={14} />
+              <Plus size={14} weight="light" color="currentColor" />
             </IconButton>
           </Tooltip>
         </Box>

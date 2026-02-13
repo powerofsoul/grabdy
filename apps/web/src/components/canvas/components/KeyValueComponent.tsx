@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -88,14 +88,14 @@ export function KeyValueComponent({ data, onSave }: KeyValueComponentProps) {
                 onClick={() => handleDeletePair(i)}
                 sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
               >
-                <Trash2 size={12} />
+                <Trash size={12} weight="light" color="currentColor" />
               </IconButton>
             </Box>
           ))}
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddPair} sx={{ color: 'primary.main' }}>
-            <Plus size={14} />
+            <Plus size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

@@ -75,7 +75,7 @@ export function WhatYouCanAskSection() {
       ref={sectionRef}
       sx={{
         py: { xs: 10, md: 14 },
-        bgcolor: 'grey.50',
+        bgcolor: 'background.default',
       }}
     >
       <Container maxWidth="lg">
@@ -85,9 +85,7 @@ export function WhatYouCanAskSection() {
           sx={{
             textAlign: 'center',
             mb: { xs: 5, md: 7 },
-            fontWeight: 800,
             fontSize: { xs: '1.75rem', md: '2.5rem' },
-            letterSpacing: '-0.02em',
             maxWidth: 700,
             mx: 'auto',
           }}

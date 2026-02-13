@@ -1,5 +1,5 @@
 import { alpha, Box, ListItemIcon, ListItemText, MenuItem, MenuList, Popover, useTheme } from '@mui/material';
-import { ArrowDownToLine, ArrowUpToLine, Copy, Trash2 } from 'lucide-react';
+import { ArrowLineDown, ArrowLineUp, Copy, Trash } from '@phosphor-icons/react';
 
 interface CanvasContextMenuProps {
   anchorPosition: { x: number; y: number } | null;
@@ -48,7 +48,7 @@ export function CanvasContextMenu({
     >
       <MenuList dense sx={{ py: 0.5 }}>
         <MenuItem onClick={() => { onDuplicate(); onClose(); }} sx={itemSx}>
-          <ListItemIcon><Copy size={14} /></ListItemIcon>
+          <ListItemIcon><Copy size={14} weight="light" color="currentColor" /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: 13 }}>Duplicate</ListItemText>
         </MenuItem>
 
@@ -57,13 +57,13 @@ export function CanvasContextMenu({
         )}
         {onBringToFront && (
           <MenuItem onClick={() => { onBringToFront(); onClose(); }} sx={itemSx}>
-            <ListItemIcon><ArrowUpToLine size={14} /></ListItemIcon>
+            <ListItemIcon><ArrowLineUp size={14} weight="light" color="currentColor" /></ListItemIcon>
             <ListItemText primaryTypographyProps={{ fontSize: 13 }}>Bring to Front</ListItemText>
           </MenuItem>
         )}
         {onSendToBack && (
           <MenuItem onClick={() => { onSendToBack(); onClose(); }} sx={itemSx}>
-            <ListItemIcon><ArrowDownToLine size={14} /></ListItemIcon>
+            <ListItemIcon><ArrowLineDown size={14} weight="light" color="currentColor" /></ListItemIcon>
             <ListItemText primaryTypographyProps={{ fontSize: 13 }}>Send to Back</ListItemText>
           </MenuItem>
         )}
@@ -78,7 +78,7 @@ export function CanvasContextMenu({
             '& .MuiListItemIcon-root': { minWidth: 28, color: 'inherit' },
           }}
         >
-          <ListItemIcon><Trash2 size={14} /></ListItemIcon>
+          <ListItemIcon><Trash size={14} weight="light" color="currentColor" /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: 13 }}>Delete</ListItemText>
         </MenuItem>
       </MenuList>

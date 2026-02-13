@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
-import { GripVertical, Pencil, Sparkles, Trash2 } from 'lucide-react';
+import { DotsSixVertical, PencilSimple, Sparkle, Trash } from '@phosphor-icons/react';
 
 import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
 
@@ -202,7 +202,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
             '&:active': { cursor: 'grabbing' },
           }}
         >
-          <GripVertical size={14} />
+          <DotsSixVertical size={14} weight="light" color="currentColor" />
         </Box>
 
         {/* Content */}
@@ -299,7 +299,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                   color: 'primary.main',
                 }}
               >
-                <Sparkles size={14} />
+                <Sparkle size={14} weight="light" color="currentColor" />
                 <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1 }}>
                   AI
                 </Typography>
@@ -325,7 +325,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                       '&:hover': { color: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.08) },
                     }}
                   >
-                    <Pencil size={15} />
+                    <PencilSimple size={15} weight="light" color="currentColor" />
                   </IconButton>
                 </Tooltip>
               )}
@@ -341,7 +341,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                       '&:hover': { color: 'error.main', bgcolor: alpha(theme.palette.error.main, 0.08) },
                     }}
                   >
-                    <Trash2 size={15} />
+                    <Trash size={15} weight="light" color="currentColor" />
                   </IconButton>
                 </Tooltip>
               )}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { alpha, Box, Collapse, Typography, useTheme } from '@mui/material';
-import { FileText, Image, Video } from 'lucide-react';
+import { FileText, ImageSquare, VideoCamera } from '@phosphor-icons/react';
 
 import type { Source } from './MessageRow';
 
@@ -61,7 +61,7 @@ function groupSources(sources: Source[], ct: string): SourceGroup[] {
     result.push({
       category: 'document',
       label: `Documents (${pluralize(groups.get('document')?.length ?? 0, 'file')})`,
-      icon: <FileText size={11} color={iconColor} />,
+      icon: <FileText size={11} weight="light" color={iconColor} />,
       sources: groups.get('document') ?? [],
     });
   }
@@ -70,7 +70,7 @@ function groupSources(sources: Source[], ct: string): SourceGroup[] {
     result.push({
       category: 'image',
       label: `Images (${pluralize(groups.get('image')?.length ?? 0, 'file')})`,
-      icon: <Image size={11} color={iconColor} />,
+      icon: <ImageSquare size={11} weight="light" color={iconColor} />,
       sources: groups.get('image') ?? [],
     });
   }
@@ -79,7 +79,7 @@ function groupSources(sources: Source[], ct: string): SourceGroup[] {
     result.push({
       category: 'video',
       label: `Videos (${pluralize(groups.get('video')?.length ?? 0, 'file')})`,
-      icon: <Video size={11} color={iconColor} />,
+      icon: <VideoCamera size={11} weight="light" color={iconColor} />,
       sources: groups.get('video') ?? [],
     });
   }

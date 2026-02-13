@@ -53,8 +53,8 @@ export class ApiKeysController {
   @OrgAccess(apiKeysContract.list, { params: ['orgId'] })
   @TsRestHandler(apiKeysContract.list)
   async list() {
-    return tsRestHandler(apiKeysContract.list, async ({ params }) => {
-      const keys = await this.apiKeysService.list(params.orgId);
+    return tsRestHandler(apiKeysContract.list, async ({ params, query }) => {
+      const keys = await this.apiKeysService.list(params.orgId, query.includeRevoked);
       return {
         status: 200 as const,
         body: {

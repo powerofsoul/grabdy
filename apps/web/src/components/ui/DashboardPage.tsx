@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { useRouter } from '@tanstack/react-router';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from '@phosphor-icons/react';
 
 interface DashboardPageProps {
   title?: string;
@@ -74,20 +74,15 @@ export function DashboardPage({
                         '&:hover': { color: 'text.primary' },
                       }}
                     >
-                      <ArrowLeft size={20} />
+                      <ArrowLeft size={20} weight="light" color="currentColor" />
                     </IconButton>
                   </Tooltip>
                 )}
                 {icon && (
                   <Box
                     sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 1,
-                      bgcolor: 'grey.100',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
                       color: 'text.secondary',
                       flexShrink: 0,
                     }}
@@ -97,9 +92,7 @@ export function DashboardPage({
                 )}
                 <Box sx={{ minWidth: 0 }}>
                   <Typography
-                    variant="h5"
-                    className="font-serif"
-                    sx={{ fontWeight: 500, fontSize: '1.625rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}
+                    variant="h3"
                     noWrap
                   >
                     {title}

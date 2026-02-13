@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { CaretDown, CaretRight, Plus, Trash } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -93,7 +93,7 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
                   onClick={() => handleDeleteSection(i)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash2 size={12} />
+                  <Trash size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <TextField
@@ -111,7 +111,7 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddSection} sx={{ color: 'primary.main' }}>
-            <Plus size={14} />
+            <Plus size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>
@@ -147,9 +147,9 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
                 }}
               >
                 {isOpen ? (
-                  <ChevronDown size={14} color={theme.palette.text.secondary} />
+                  <CaretDown size={14} weight="light" color={theme.palette.text.secondary} />
                 ) : (
-                  <ChevronRight size={14} color={theme.palette.text.secondary} />
+                  <CaretRight size={14} weight="light" color={theme.palette.text.secondary} />
                 )}
                 <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.4 }}>
                   {section.title}

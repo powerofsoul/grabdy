@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, MenuItem, Select, TextField, Typography, useTheme } from '@mui/material';
-import { Circle, CircleCheck, CircleDot, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle, Circle, Plus, RadioButton, Trash } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -31,9 +31,9 @@ const STATUS_OPTIONS = [
 ] as const;
 
 const TIMELINE_ICONS = {
-  success: CircleCheck,
-  info: CircleDot,
-  warning: CircleDot,
+  success: CheckCircle,
+  info: RadioButton,
+  warning: RadioButton,
   neutral: Circle,
   error: Circle,
 } as const;
@@ -141,7 +141,7 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
                   onClick={() => handleDeleteItem(i)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash2 size={12} />
+                  <Trash size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <TextField
@@ -157,7 +157,7 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddItem} sx={{ color: 'primary.main' }}>
-            <Plus size={14} />
+            <Plus size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>
@@ -176,7 +176,7 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
             return (
               <Box key={i} sx={{ display: 'flex', gap: 1.25 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 16 }}>
-                  <StatusIcon size={16} color={color} fill={item.status === 'success' ? color : 'transparent'} />
+                  <StatusIcon size={16} weight="light" color={color} fill={item.status === 'success' ? color : 'transparent'} />
                   {!isLast && (
                     <Box
                       sx={{

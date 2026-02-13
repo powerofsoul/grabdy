@@ -1,5 +1,5 @@
 import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { ExternalLink, FileText } from 'lucide-react';
+import { ArrowSquareOut, FileText } from '@phosphor-icons/react';
 
 import type { Citation } from '@grabdy/contracts';
 
@@ -50,7 +50,7 @@ export function CitationList({ citations }: CitationListProps) {
                 : {},
             }}
           >
-            {isClickable ? <ExternalLink size={9} /> : <FileText size={9} />}
+            {isClickable ? <ArrowSquareOut size={9} weight="light" color="currentColor" /> : <FileText size={9} weight="light" color="currentColor" />}
             <Typography component="span" sx={{ fontSize: 10, fontWeight: 500, color: 'inherit' }}>
               {citation.label}
             </Typography>

@@ -5,12 +5,15 @@ import {
   Button,
   Chip,
   CircularProgress,
+  FormControl,
   IconButton,
+  MenuItem,
+  Select,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
-import { Copy, Plus, Users } from 'lucide-react';
+import { Copy, Plus, Users } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -48,7 +51,7 @@ export const Route = createFileRoute('/dashboard/members')({
 });
 
 function MembersPage() {
-  const { selectedOrgId, user } = useAuth();
+  const { selectedOrgId, user, isOwner } = useAuth();
   const { pushDrawer } = useDrawer();
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
@@ -62,15 +65,18 @@ function MembersPage() {
     if (!selectedOrgId) return;
     setIsLoading(true);
     try {
-      const [membersRes, invitationsRes] = await Promise.all([
-        api.orgs.listMembers({ params: { orgId: selectedOrgId } }),
-        api.orgs.listPendingInvitations({ params: { orgId: selectedOrgId } }),
-      ]);
+      const membersRes = await api.orgs.listMembers({ params: { orgId: selectedOrgId } });
       if (membersRes.status === 200) {
         setMembers(membersRes.body.data);
       }
-      if (invitationsRes.status === 200) {
-        setInvitations(invitationsRes.body.data);
+
+      if (isOwner) {
+        const invitationsRes = await api.orgs.listPendingInvitations({ params: { orgId: selectedOrgId } });
+        if (invitationsRes.status === 200) {
+          setInvitations(invitationsRes.body.data);
+        }
+      } else {
+        setInvitations([]);
       }
     } catch {
       toast.error('Failed to load members');
@@ -127,6 +133,24 @@ function MembersPage() {
     }
   };
 
+  const handleRoleChange = async (member: Member, newRole: 'ADMIN' | 'MEMBER') => {
+    if (!selectedOrgId) return;
+    try {
+      const res = await api.orgs.updateMemberRole({
+        params: { orgId: selectedOrgId, memberId: member.id as never },
+        body: { roles: [newRole] },
+      });
+      if (res.status === 200) {
+        toast.success('Role updated');
+        fetchData();
+      } else if (res.status === 400) {
+        toast.error(res.body.error);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update role');
+    }
+  };
+
   const openInviteDrawer = () => {
     pushDrawer(InviteMemberDrawer, {
       title: 'Invite Member',
@@ -148,9 +172,11 @@ function MembersPage() {
     <DashboardPage
       title="Members"
       actions={
-        <Button variant="contained" startIcon={<Plus size={18} />} onClick={openInviteDrawer}>
-          Invite Member
-        </Button>
+        isOwner ? (
+          <Button variant="contained" startIcon={<Plus size={18} weight="light" color="currentColor" />} onClick={openInviteDrawer}>
+            Invite Member
+          </Button>
+        ) : undefined
       }
     >
 
@@ -182,26 +208,43 @@ function MembersPage() {
               {m.email ?? '-'}
             </Typography>
           ),
-          role: (m) => (
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              {m.roles.map((role) => (
-                <Chip
-                  key={role}
-                  label={role}
-                  size="small"
-                  color={role === 'OWNER' ? 'primary' : 'default'}
-                  sx={{ height: 22, fontSize: '0.72rem' }}
-                />
-              ))}
-            </Box>
-          ),
+          role: (m) => {
+            const memberIsOwner = m.roles.includes('OWNER');
+            if (isOwner && !isCurrentUser(m) && !memberIsOwner) {
+              return (
+                <FormControl size="small" sx={{ minWidth: 110 }}>
+                  <Select<'ADMIN' | 'MEMBER'>
+                    value={(m.roles[0] ?? 'MEMBER') === 'ADMIN' ? 'ADMIN' : 'MEMBER'}
+                    onChange={(e) => handleRoleChange(m, e.target.value)}
+                    sx={{ height: 28, fontSize: '0.78rem' }}
+                  >
+                    <MenuItem value="MEMBER">Member</MenuItem>
+                    <MenuItem value="ADMIN">Admin</MenuItem>
+                  </Select>
+                </FormControl>
+              );
+            }
+            return (
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {m.roles.map((role) => (
+                  <Chip
+                    key={role}
+                    label={role}
+                    size="small"
+                    color={role === 'OWNER' ? 'primary' : 'default'}
+                    sx={{ height: 22, fontSize: '0.72rem' }}
+                  />
+                ))}
+              </Box>
+            );
+          },
           joined: (m) => (
             <Typography variant="body2" color="text.secondary">
               {new Date(m.createdAt).toLocaleDateString()}
             </Typography>
           ),
           actions: (m) =>
-            !isCurrentUser(m) ? (
+            isOwner && !isCurrentUser(m) ? (
               <Typography
                 component="span"
                 onClick={(e) => {
@@ -221,18 +264,18 @@ function MembersPage() {
         }}
         emptyState={
           <EmptyState
-            icon={<Users size={48} />}
+            icon={<Users size={48} weight="light" color="currentColor" />}
             message="No members"
             description="Invite team members to collaborate."
-            actionLabel="Invite Member"
-            onAction={openInviteDrawer}
+            actionLabel={isOwner ? 'Invite Member' : undefined}
+            onAction={isOwner ? openInviteDrawer : undefined}
           />
         }
       />
 
-      {invitations.length > 0 && (
+      {isOwner && invitations.length > 0 && (
         <Box sx={{ mt: 4 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
             Pending Invitations
           </Typography>
           <MainTable
@@ -283,7 +326,7 @@ function MembersPage() {
                       }}
                       sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
                     >
-                      <Copy size={15} />
+                      <Copy size={15} weight="light" color="currentColor" />
                     </IconButton>
                   </Tooltip>
                   <Typography

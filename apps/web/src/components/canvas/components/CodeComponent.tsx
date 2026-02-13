@@ -2,7 +2,7 @@ import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 
 import { alpha, Box, IconButton, MenuItem, Select, useTheme } from '@mui/material';
 import { common, createLowlight } from 'lowlight';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -378,7 +378,7 @@ export function CodeComponent({ data, onSave }: CodeComponentProps) {
           color: copied ? 'success.main' : alpha(theme.palette.text.primary, 0.5),
         }}
       >
-        {copied ? <Check size={12} /> : <Copy size={12} />}
+        {copied ? <Check size={12} weight="light" color="currentColor" /> : <Copy size={12} weight="light" color="currentColor" />}
       </IconButton>
     </Box>
   );

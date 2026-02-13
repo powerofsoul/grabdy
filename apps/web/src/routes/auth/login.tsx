@@ -11,7 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Envelope, Eye, EyeSlash, Lock } from '@phosphor-icons/react';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -89,7 +89,7 @@ function LoginPage() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                <Mail size={20} />
+                <Envelope size={20} weight="light" color="currentColor" />
               </InputAdornment>
             ),
           }}
@@ -108,7 +108,7 @@ function LoginPage() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                <Lock size={20} />
+                <Lock size={20} weight="light" color="currentColor" />
               </InputAdornment>
             ),
             endAdornment: (
@@ -120,7 +120,7 @@ function LoginPage() {
                   tabIndex={-1}
                   sx={{ color: 'text.disabled' }}
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeSlash size={20} weight="light" color="currentColor" /> : <Eye size={20} weight="light" color="currentColor" />}
                 </IconButton>
               </InputAdornment>
             ),
