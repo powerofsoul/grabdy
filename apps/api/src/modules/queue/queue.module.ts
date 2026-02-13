@@ -14,7 +14,7 @@ import { env } from '../../config/env.config';
 import { CanvasOpsProcessor } from './processors/canvas-ops.processor';
 import { DataSourceProcessor } from './processors/data-source.processor';
 import { CanvasOpsService } from './canvas-ops.service';
-import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE } from './queue.constants';
+import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE } from './queue.constants';
 
 @Global()
 @Module({
@@ -38,6 +38,7 @@ import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE } from './queue.constants';
     }),
     BullModule.registerQueue({ name: DATA_SOURCE_QUEUE }),
     BullModule.registerQueue({ name: CANVAS_OPS_QUEUE }),
+    BullModule.registerQueue({ name: INTEGRATION_SYNC_QUEUE }),
   ],
   providers: [DataSourceProcessor, CanvasOpsProcessor, CanvasOpsService],
   exports: [BullModule, CanvasOpsService],

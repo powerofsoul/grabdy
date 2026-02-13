@@ -195,7 +195,7 @@ export class DataSourcesService {
     page_count: number | null;
     collection_id: DbId<'Collection'> | null;
     org_id: DbId<'Org'>;
-    uploaded_by_id: DbId<'User'>;
+    uploaded_by_id: DbId<'User'> | null;
     created_at: Date;
     updated_at: Date;
   }) {

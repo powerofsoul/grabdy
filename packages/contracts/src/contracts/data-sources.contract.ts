@@ -18,7 +18,7 @@ const dataSourceSchema = z.object({
   pageCount: z.number().nullable(),
   collectionId: dbIdSchema('Collection').nullable(),
   orgId: dbIdSchema('Org'),
-  uploadedById: dbIdSchema('User'),
+  uploadedById: dbIdSchema('User').nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

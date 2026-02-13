@@ -18,7 +18,9 @@ export type TableIdName =
   | 'Chunk'
   | 'ApiKey'
   | 'ChatThread'
-  | 'AiUsageLog';
+  | 'AiUsageLog'
+  | 'Connection'
+  | 'SyncLog';
 
 // ── Entity Type Maps ─────────────────────────────────────────────────────
 
@@ -53,6 +55,9 @@ export const ENTITY_TYPE_MAP = {
   CanvasComponent: 0x33,
   // Analytics
   AiUsageLog: 0x40,
+  // Integrations
+  Connection: 0x50,
+  SyncLog: 0x51,
 } as const satisfies Record<EntityIdName, number>;
 
 const ENTITY_TYPE_REVERSE: Record<number, EntityIdName> = Object.fromEntries(

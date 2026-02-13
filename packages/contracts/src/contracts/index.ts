@@ -5,6 +5,7 @@ import { apiKeysContract } from './api-keys.contract.js';
 import { authContract } from './auth.contract.js';
 import { collectionsContract } from './collections.contract.js';
 import { dataSourcesContract } from './data-sources.contract.js';
+import { integrationsContract } from './integrations.contract.js';
 import { orgsContract } from './orgs.contract.js';
 import { retrievalContract, streamChatBodySchema } from './retrieval.contract.js';
 import { usersContract } from './users.contract.js';
@@ -17,6 +18,7 @@ export const contract = c.router({
   orgs: orgsContract,
   collections: collectionsContract,
   dataSources: dataSourcesContract,
+  integrations: integrationsContract,
   retrieval: retrievalContract,
   apiKeys: apiKeysContract,
   users: usersContract,
@@ -28,6 +30,7 @@ export {
   authContract,
   collectionsContract,
   dataSourcesContract,
+  integrationsContract,
   orgsContract,
   retrievalContract,
   streamChatBodySchema,

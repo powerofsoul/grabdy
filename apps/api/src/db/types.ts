@@ -5,9 +5,13 @@ import type { ColumnType, GeneratedAlways } from 'kysely';
 import type {
   AiCallerType,
   AiRequestType,
+  ConnectionStatus,
   DataSourceStatus,
   DataSourceType,
+  IntegrationProvider,
   OrgRole,
+  SyncStatus,
+  SyncTrigger,
   TokenType,
   UserStatus,
 } from './enums';
@@ -98,8 +102,10 @@ export interface DataSource {
   summary: string | null;
   page_count: number | null;
   collection_id: DbId<'Collection'> | null;
+  connection_id: DbId<'Connection'> | null;
+  external_id: string | null;
   org_id: DbId<'Org'>;
-  uploaded_by_id: DbId<'User'>;
+  uploaded_by_id: DbId<'User'> | null;
   created_at: Generated<Timestamp>;
   updated_at: Timestamp;
 }
@@ -112,6 +118,43 @@ export interface Chunk {
   embedding: string; // vector(1536) stored as string
   data_source_id: DbId<'DataSource'>;
   collection_id: DbId<'Collection'> | null;
+  org_id: DbId<'Org'>;
+  created_at: Generated<Timestamp>;
+}
+
+export interface Connection {
+  id: Generated<DbId<'Connection'>>;
+  provider: IntegrationProvider;
+  status: Generated<ConnectionStatus>;
+  access_token: string;
+  refresh_token: string | null;
+  token_expires_at: Timestamp | null;
+  scopes: string[] | null;
+  external_account_id: string | null;
+  external_account_name: string | null;
+  sync_cursor: Record<string, unknown> | null;
+  last_synced_at: Timestamp | null;
+  sync_enabled: Generated<boolean>;
+  sync_interval_minutes: Generated<number>;
+  config: Generated<Record<string, unknown>>;
+  webhook_id: string | null;
+  webhook_secret: string | null;
+  org_id: DbId<'Org'>;
+  created_by_id: DbId<'User'>;
+  created_at: Generated<Timestamp>;
+  updated_at: Timestamp;
+}
+
+export interface SyncLog {
+  id: Generated<DbId<'SyncLog'>>;
+  connection_id: DbId<'Connection'>;
+  status: Generated<SyncStatus>;
+  trigger: SyncTrigger;
+  items_synced: Generated<number>;
+  items_failed: Generated<number>;
+  error_message: string | null;
+  started_at: Timestamp | null;
+  completed_at: Timestamp | null;
   org_id: DbId<'Org'>;
   created_at: Generated<Timestamp>;
 }
@@ -183,6 +226,8 @@ export interface DB {
   'data.collections': Collection;
   'data.data_sources': DataSource;
   'data.chunks': Chunk;
+  'data.connections': Connection;
+  'data.sync_logs': SyncLog;
   'data.chat_threads': ChatThread;
   // analytics
   'analytics.ai_usage_logs': AiUsageLog;

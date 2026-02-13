@@ -19,6 +19,7 @@ import { AgentModule } from './modules/agent/agent.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CollectionsModule } from './modules/collections/collections.module';
@@ -65,6 +66,7 @@ import { UsersModule } from './modules/users/users.module';
     DataSourcesModule,
     RetrievalModule,
     ApiKeysModule,
+    IntegrationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },
