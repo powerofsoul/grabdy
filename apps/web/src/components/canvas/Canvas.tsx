@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { Maximize2, Minimize2, MousePointerClick } from 'lucide-react';
+import { Brain, Maximize2, Minimize2 } from 'lucide-react';
 import {
   Background,
   BackgroundVariant,
@@ -443,56 +443,39 @@ export function Canvas({
           color={alpha(theme.palette.text.primary, 0.08)}
         />
 
-        {/* Empty state overlay */}
+        {/* Empty state overlay — centered via absolute positioning so it stays mid-canvas in every layout */}
         {isEmpty && (
-          <Panel position="top-center">
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              zIndex: 5,
+            }}
+          >
             <Box
               sx={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 2,
+                gap: 1.5,
                 userSelect: 'none',
-                maxWidth: 240,
+                maxWidth: 280,
                 textAlign: 'center',
-                mt: '20%',
               }}
             >
-              <Box
-                sx={{
-                  fontSize: 48,
-                  lineHeight: 1,
-                  animation: 'empty-float 3s ease-in-out infinite',
-                  '@keyframes empty-float': {
-                    '0%, 100%': { transform: 'translateY(0)' },
-                    '50%': { transform: 'translateY(-8px)' },
-                  },
-                }}
-              >
-                {'🧠'}
-              </Box>
-              <Typography sx={{ fontSize: 15, fontWeight: 700, color: alpha(theme.palette.text.primary, 0.3) }}>
+              <Brain size={48} strokeWidth={1} color={alpha(theme.palette.text.primary, 0.12)} />
+              <Typography sx={{ fontSize: 16, fontWeight: 500, color: alpha(theme.palette.text.primary, 0.22), mt: 1 }}>
                 Nothing here yet
               </Typography>
-              <Typography sx={{ fontSize: 12, color: alpha(theme.palette.text.primary, 0.2), lineHeight: 1.6 }}>
-                Type something on the left and the AI will magically fill this space with charts, tables, and insights
+              <Typography sx={{ fontSize: 13, color: alpha(theme.palette.text.primary, 0.14), lineHeight: 1.6 }}>
+                Ask something in the chat and cards will appear here
               </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  mt: 0.5,
-                  color: alpha(theme.palette.text.primary, 0.15),
-                }}
-              >
-                <MousePointerClick size={12} />
-                <Typography sx={{ fontSize: 10 }}>
-                  cards will appear here
-                </Typography>
-              </Box>
             </Box>
-          </Panel>
+          </Box>
         )}
 
         {onAddCard && <CanvasToolbar onStartPlacement={setPendingCard} />}

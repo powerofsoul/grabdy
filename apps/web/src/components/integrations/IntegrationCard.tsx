@@ -51,51 +51,30 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
                 ? theme.palette.success.main
                 : theme.palette.warning.main
           }`,
-          borderRadius: 2.5,
+          borderRadius: 0,
           p: 2.5,
           minHeight: 164,
           display: 'flex',
           flexDirection: 'column',
-          transition: 'border-color 180ms ease, box-shadow 180ms ease',
+          transition: 'border-color 180ms ease',
           cursor: 'pointer',
           '&:hover': {
-            borderColor: alpha(ct, 0.2),
-            boxShadow: `0 2px 8px ${alpha(ct, 0.05)}`,
+            borderColor: alpha(ct, 0.3),
           },
           '&:focus-visible': {
-            outline: `2px solid ${theme.palette.primary.main}`,
+            outline: `2px solid ${ct}`,
             outlineOffset: 2,
           },
         }}
       >
-        {/* Top row: Icon + Status chip */}
+        {/* Top row: Icon + Status */}
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
-          <Box
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: 2,
-              bgcolor: alpha(ct, 0.04),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ProviderIcon provider={provider} size={24} />
-          </Box>
+          <ProviderIcon provider={provider} size={24} />
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
               gap: 0.5,
-              px: 1,
-              py: 0.25,
-              borderRadius: 1,
-              bgcolor: isError
-                ? alpha(theme.palette.error.main, 0.08)
-                : isActive
-                  ? alpha(theme.palette.success.main, 0.08)
-                  : alpha(theme.palette.warning.main, 0.08),
             }}
           >
             {isActive && <Check size={12} color={theme.palette.success.main} />}
@@ -146,8 +125,8 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
     <Box
       sx={{
         border: '1px solid',
-        borderColor: theme.palette.divider,
-        borderRadius: 2.5,
+        borderColor: 'divider',
+        borderRadius: 0,
         p: 2.5,
         minHeight: 164,
         display: 'flex',
@@ -156,19 +135,7 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
     >
       {/* Icon */}
       <Box sx={{ mb: 1.5 }}>
-        <Box
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 2,
-            bgcolor: alpha(ct, 0.04),
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <ProviderIcon provider={provider} size={24} />
-        </Box>
+        <ProviderIcon provider={provider} size={24} />
       </Box>
 
       {/* Name + description + details */}
@@ -183,8 +150,8 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
       </Typography>
 
       {/* Coming soon */}
-      <Box sx={{ mt: 'auto', pt: 2, textAlign: 'center' }}>
-        <Typography variant="caption" sx={{ fontSize: 12, fontWeight: 500, color: 'text.disabled' }}>
+      <Box sx={{ mt: 'auto', pt: 2 }}>
+        <Typography variant="caption" sx={{ fontSize: 12, fontStyle: 'italic', color: 'text.disabled' }}>
           Coming soon
         </Typography>
       </Box>
