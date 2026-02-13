@@ -19,6 +19,8 @@ export interface DataSourceJobData {
   storagePath: string;
   mimeType: string;
   collectionId: DbId<'Collection'> | null;
+  /** Pre-extracted text content (used by integration sources to skip file extraction). */
+  content?: string;
 }
 
 function chunkText(text: string): string[] {
@@ -52,8 +54,8 @@ export class DataSourceProcessor extends WorkerHost {
         .where('id', '=', dataSourceId)
         .execute();
 
-      // Extract text based on mime type
-      const text = await this.extractText(storagePath, mimeType);
+      // Extract text: use pre-extracted content for integration sources, otherwise read from file
+      const text = job.data.content ?? await this.extractText(storagePath, mimeType);
       if (!text.trim()) {
         throw new Error('No text content extracted from file');
       }
