@@ -8,17 +8,18 @@ interface EmailLayoutProps {
 
 const colors = {
   grey: {
-    50: '#F8F7F4',
-    100: '#F3F2EF',
-    200: '#E5E5E2',
-    300: '#D4D4D0',
-    400: '#A3A39E',
-    500: '#73736E',
-    600: '#525250',
+    50: '#FAFAF9',
+    100: '#F5F5F4',
+    200: '#E5E5E5',
+    300: '#D4D4D4',
+    400: '#A3A3A3',
+    500: '#737373',
+    600: '#525252',
     700: '#404040',
     800: '#262626',
-    900: '#111111',
+    900: '#171717',
   },
+  text: '#000000',
 };
 
 export function EmailLayout({ preview, children }: EmailLayoutProps) {
@@ -45,9 +46,9 @@ export function EmailLayout({ preview, children }: EmailLayoutProps) {
 }
 
 const main = {
-  backgroundColor: colors.grey[100],
+  backgroundColor: colors.grey[50],
   fontFamily:
-    '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    '"Inter", "SF Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   padding: '40px 0',
 };
 
@@ -63,20 +64,18 @@ const header = {
 
 const logoText = {
   fontSize: '24px',
-  fontWeight: '700' as const,
-  color: colors.grey[900],
+  fontWeight: '400' as const,
+  color: colors.text,
   letterSpacing: '-0.03em',
   margin: '0',
-  fontFamily: '"Source Serif 4", Georgia, serif',
+  fontFamily: '"Instrument Serif", "Source Serif 4", Georgia, serif',
 };
 
 const card = {
   backgroundColor: '#FFFFFF',
-  borderRadius: '16px',
+  borderRadius: '0',
   padding: '44px 36px',
-  boxShadow:
-    '0 4px 6px rgba(0, 0, 0, 0.04), 0 10px 24px rgba(0, 0, 0, 0.08), 0 20px 48px rgba(0, 0, 0, 0.04)',
-  border: `1px solid ${colors.grey[200]}`,
+  border: `1px solid ${colors.grey[900]}`,
 };
 
 const footer = {
@@ -86,11 +85,11 @@ const footer = {
 
 const footerText = {
   fontSize: '14px',
-  fontWeight: '600' as const,
+  fontWeight: '400' as const,
   color: colors.grey[500],
   margin: '0 0 4px',
   letterSpacing: '-0.01em',
-  fontFamily: '"Source Serif 4", Georgia, serif',
+  fontFamily: '"Instrument Serif", "Source Serif 4", Georgia, serif',
 };
 
 const footerSubtext = {
@@ -103,12 +102,13 @@ const footerSubtext = {
 export const sharedStyles = {
   heading: {
     fontSize: '28px',
-    fontWeight: '700' as const,
-    color: colors.grey[900],
+    fontWeight: '400' as const,
+    color: colors.text,
     textAlign: 'center' as const,
     margin: '0 0 8px',
     lineHeight: '34px',
     letterSpacing: '-0.02em',
+    fontFamily: '"Instrument Serif", "Source Serif 4", Georgia, serif',
   },
   subheading: {
     fontSize: '15px',
@@ -124,17 +124,16 @@ export const sharedStyles = {
     margin: '0 0 16px',
   },
   button: {
-    backgroundColor: colors.grey[900],
-    borderRadius: '8px',
+    backgroundColor: colors.text,
+    borderRadius: '0',
     color: '#FFFFFF',
     fontSize: '15px',
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     textDecoration: 'none',
     padding: '14px 28px',
     display: 'block',
     textAlign: 'center' as const,
     margin: '28px 0',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
   },
   smallText: {
     fontSize: '13px',
@@ -143,9 +142,10 @@ export const sharedStyles = {
   },
   link: {
     fontSize: '12px',
-    color: colors.grey[900],
+    color: colors.text,
     wordBreak: 'break-all' as const,
     textDecoration: 'underline',
+    textDecorationColor: colors.grey[200],
   },
   divider: {
     borderTop: `1px solid ${colors.grey[200]}`,
@@ -161,7 +161,7 @@ export const sharedStyles = {
   },
   codeContainer: {
     backgroundColor: colors.grey[100],
-    borderRadius: '12px',
+    borderRadius: '0',
     padding: '28px',
     textAlign: 'center' as const,
     margin: '24px 0',
@@ -171,16 +171,16 @@ export const sharedStyles = {
     fontSize: '36px',
     fontWeight: '700' as const,
     letterSpacing: '8px',
-    color: colors.grey[900],
+    color: colors.text,
     margin: '0',
-    fontFamily: 'monospace',
+    fontFamily: '"Geist Mono", "JetBrains Mono", monospace',
   },
   highlightBox: {
     backgroundColor: colors.grey[50],
-    borderRadius: '10px',
+    borderRadius: '0',
     padding: '18px 22px',
     margin: '24px 0',
-    borderLeft: `4px solid ${colors.grey[900]}`,
+    borderLeft: `4px solid ${colors.text}`,
   },
   highlightText: {
     fontSize: '14px',
