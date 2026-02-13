@@ -1,6 +1,6 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { Link, useLocation } from '@tanstack/react-router';
-import { BarChart3, ChevronRight, ChevronsLeft, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Settings, Sun, Users } from 'lucide-react';
+import { BarChart3, ChevronRight, ChevronsLeft, Folder, Key, LayoutGrid, LogOut, MessageSquare, Moon, Plug, Settings, Sun, Users } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
@@ -245,6 +245,11 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
         {/* Integrate */}
         <Box sx={{ mt: 2.5 }}>
           <SectionHeader label="Integrate" />
+          <NavItem
+            to="/dashboard/integrations"
+            label="Integrations"
+            icon={<Plug size={16} strokeWidth={1.5} />}
+          />
           <NavItem
             to="/dashboard/api-keys"
             label="API Keys"

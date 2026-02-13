@@ -6,4 +6,5 @@ export const STORAGE_KEYS = {
   CHAT_PANEL_HEIGHT: 'grabdy-chat-panel-height',
   CANVAS_MAXIMIZED: 'grabdy-canvas-maximized',
   CHAT_LAYOUT_MODE: 'grabdy-chat-layout-mode',
+  INTEGRATION_DRAWER: 'grabdy-integration-drawer',
 } as const;

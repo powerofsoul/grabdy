@@ -25,6 +25,7 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthCompleteAccountRouteImport } from './routes/auth/complete-account'
 import { Route as DashboardSourcesIndexRouteImport } from './routes/dashboard/sources/index'
+import { Route as DashboardIntegrationsIndexRouteImport } from './routes/dashboard/integrations/index'
 import { Route as DashboardSourcesCollectionIdRouteImport } from './routes/dashboard/sources/$collectionId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -107,6 +108,12 @@ const DashboardSourcesIndexRoute = DashboardSourcesIndexRouteImport.update({
   path: '/sources/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardIntegrationsIndexRoute =
+  DashboardIntegrationsIndexRouteImport.update({
+    id: '/integrations/',
+    path: '/integrations/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardSourcesCollectionIdRoute =
   DashboardSourcesCollectionIdRouteImport.update({
     id: '/sources/$collectionId',
@@ -131,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/integrations/': typeof DashboardIntegrationsIndexRoute
   '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -149,6 +157,7 @@ export interface FileRoutesByTo {
   '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsIndexRoute
   '/dashboard/sources': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesById {
@@ -169,6 +178,7 @@ export interface FileRoutesById {
   '/dashboard/usage': typeof DashboardUsageRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/integrations/': typeof DashboardIntegrationsIndexRoute
   '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRouteTypes {
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/dashboard/'
     | '/dashboard/sources/$collectionId'
+    | '/dashboard/integrations/'
     | '/dashboard/sources/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/dashboard'
     | '/dashboard/sources/$collectionId'
+    | '/dashboard/integrations'
     | '/dashboard/sources'
   id:
     | '__root__'
@@ -227,6 +239,7 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/dashboard/'
     | '/dashboard/sources/$collectionId'
+    | '/dashboard/integrations/'
     | '/dashboard/sources/'
   fileRoutesById: FileRoutesById
 }
@@ -353,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSourcesIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/integrations/': {
+      id: '/dashboard/integrations/'
+      path: '/integrations'
+      fullPath: '/dashboard/integrations/'
+      preLoaderRoute: typeof DashboardIntegrationsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/sources/$collectionId': {
       id: '/dashboard/sources/$collectionId'
       path: '/sources/$collectionId'
@@ -385,6 +405,7 @@ interface DashboardRouteChildren {
   DashboardUsageRoute: typeof DashboardUsageRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardSourcesCollectionIdRoute: typeof DashboardSourcesCollectionIdRoute
+  DashboardIntegrationsIndexRoute: typeof DashboardIntegrationsIndexRoute
   DashboardSourcesIndexRoute: typeof DashboardSourcesIndexRoute
 }
 
@@ -396,6 +417,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardUsageRoute: DashboardUsageRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardSourcesCollectionIdRoute: DashboardSourcesCollectionIdRoute,
+  DashboardIntegrationsIndexRoute: DashboardIntegrationsIndexRoute,
   DashboardSourcesIndexRoute: DashboardSourcesIndexRoute,
 }
 

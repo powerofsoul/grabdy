@@ -95,4 +95,4 @@ const BRAND_LOGOS = [
   { name: 'Gmail', Logo: GmailLogo },
 ] satisfies ReadonlyArray<{ name: string; Logo: typeof SlackLogo }>;
 
-export { SlackLogo, GoogleDriveLogo, LinearLogo, NotionLogo, GmailLogo, BRAND_LOGOS, };
+export { SlackLogo, GoogleDriveLogo, LinearLogo, NotionLogo, ConfluenceLogo, GmailLogo, BRAND_LOGOS };
