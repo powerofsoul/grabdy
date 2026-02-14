@@ -1,0 +1,6 @@
+name: grabdy
+runtime:
+  name: nodejs
+  options:
+    typescript: true
+description: Grabdy AWS infrastructure

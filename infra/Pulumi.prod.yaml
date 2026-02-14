@@ -1,0 +1,19 @@
+config:
+  aws:region: eu-central-1
+  grabdy:domain: grabdy.com
+  grabdy:apiDomain: api.grabdy.com
+  grabdy:bullBoardUsername: admin
+  grabdy:openaiApiKey:
+    secure: AAABAPte5JwcV7qIRtrDSK+lUN1fmSQvp8P/YKBlqMImFWKKu32eADkFqZLN0zOoFZ/NKcTUEUprebEvk6p+JQqGA8O5OYqxVm1J7U1QJuPZEsYqrkTh1VLUszxWYy14nhLX2QPJ6fQ7Ae6WmSnUP0fPubPqi0/Fi46PWAm5tmcq+q7Q7cAKfigzkMZ0OMG26rx2KR8s7jG3UWHhz0mtRi7gNHKhw/Xx1sSqOkhtG2YJIOoq2be6HgXybgXjNomklvW1Og==
+  grabdy:jwtSecret:
+    secure: AAABALKNr4Dh35Z9rrdbM6q79mO9uhOCesLpP1jeEwfAWwAxiliYQRfCF0bWFDzw9G55mpzlteXZr8VKOwQ/4Ns6hUClVJCYZBvnwXbIJcrjNfSrcLFwfwXnPLtjkYMI
+  grabdy:dbPassword:
+    secure: AAABAKuwDZ03s0xKV7oN9yOgubhIQTubvO5DBl0yKDnaFR7hLR1ah4Nrx5ocPYDtN4sVWKWTlZheK4e5h6CA/g==
+  grabdy:adminApiKey:
+    secure: AAABAKNblgkrDR3dkk9gTiUwA71eFwDypF2pWs0NqDu5gvfakYYk5klNbZqs3deBBVwJw3IgDttpUNDqFuyto7iylWrJKVyTHQwAUKHGzOBNlrQx
+  grabdy:bullBoardPassword:
+    secure: AAABAKQoKeECnV8ZtbOMvWJIb7ra8Pw7GCgCFlDY+RGz4ck7+BWAgU+FjZl0MGSNdDO9v3PAwDQ=
+  grabdy:integrationEncryptionKey:
+    secure: AAABANBiOWcf/LGBPe6QbK7XVQcv9jBaIj7H9M73qtK2spiRYRLfuGSqg18NbCn3eawV6PePLU57UVhBrm1+Yg==
+  grabdy:slackWebhookUrl:
+    secure: AAABAOsZ1aYUxYHzB8UF+Rbkgd98YDH/ZmZLvvw+aNjm/gvvNd5i/1EauLZfySPw5suCUuWxtXgfbOtLPtyLhJ2acwAn/OOzRXRHo+/2AK4Cwd8DWnuIZCz8u9pX9AVv7DL5jQAGI0WhoRBfMxNJzI0=
