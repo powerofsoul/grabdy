@@ -35,7 +35,7 @@ function chunkText(text: string): string[] {
   return chunks;
 }
 
-@Processor(DATA_SOURCE_QUEUE)
+@Processor(DATA_SOURCE_QUEUE, { concurrency: 25 })
 export class DataSourceProcessor extends WorkerHost {
   private readonly logger = new Logger(DataSourceProcessor.name);
   private readonly s3 = new S3Client({ region: env.awsRegion });
