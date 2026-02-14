@@ -1,11 +1,10 @@
 import { Controller, InternalServerErrorException, Req, UseGuards } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
+import { authContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { type CookieOptions, Request } from 'express';
 import * as jwt from 'jsonwebtoken';
-
-import { authContract } from '@grabdy/contracts';
 
 import { Public } from '../../common/decorators/public.decorator';
 import { parseJwtPayload } from '../../common/guards/auth.guard';

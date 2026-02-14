@@ -1,8 +1,7 @@
 import { Controller } from '@nestjs/common';
 
-import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
-
 import { waitlistContract } from '@grabdy/contracts';
+import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 
 import { Public } from '../../common/decorators/public.decorator';
 

@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { SendEmailCommand,SESClient } from '@aws-sdk/client-ses';
 import { render } from '@react-email/components';
 
 import { authLinks } from '../../common/auth-links';

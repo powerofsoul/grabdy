@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import type { OrgRole, UserStatus } from '@db/enums';
 import { type DbId, GLOBAL_ORG, packId } from '@grabdy/common';
+import { orgRoleEnum } from '@grabdy/contracts';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import type { CookieOptions } from 'express';
@@ -35,7 +36,11 @@ function parseRoles(roles: OrgRole[] | string): OrgRole[] {
     return roles
       .replace(/^\{|\}$/g, '')
       .split(',')
-      .filter(Boolean) as OrgRole[];
+      .filter(Boolean)
+      .flatMap((r) => {
+        const parsed = orgRoleEnum.safeParse(r);
+        return parsed.success ? [parsed.data] : [];
+      });
   }
   return [];
 }

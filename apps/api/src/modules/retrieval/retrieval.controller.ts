@@ -4,7 +4,7 @@ import { type DbId, dbIdSchema } from '@grabdy/common';
 import { retrievalContract, streamChatBodySchema } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { Response } from 'express';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 type StreamChatBody = z.infer<typeof streamChatBodySchema>;
 
@@ -14,14 +14,27 @@ import {
 } from '../../common/decorators/current-membership.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import { DbService } from '../../db/db.module';
 
+import { CANVAS_TOOL_NAME_SET, ragResultItemSchema, ragResultsSchema, ragSearchArgsSchema, summarizeToolCall } from '../agent/tool-summary';
 import { RetrievalService } from './retrieval.service';
+
+// ---------------------------------------------------------------------------
+// Zod schemas used only by this controller
+// ---------------------------------------------------------------------------
+
+const mastraContentSchema = z.object({
+  metadata: z.record(z.string(), z.unknown()).optional(),
+}).passthrough();
 
 @Controller()
 export class RetrievalController {
   private readonly logger = new Logger(RetrievalController.name);
 
-  constructor(private retrievalService: RetrievalService) {}
+  constructor(
+    private retrievalService: RetrievalService,
+    private db: DbService,
+  ) {}
 
   @OrgAccess(retrievalContract.query, { params: ['orgId'] })
   @TsRestHandler(retrievalContract.query)
@@ -357,17 +370,13 @@ export class RetrievalController {
       res.setHeader('X-Vercel-AI-Data-Stream', 'v1');
       res.flushHeaders();
 
-      const canvasToolNames = new Set([
-        'canvas_add_card',
-        'canvas_remove_card',
-        'canvas_move_card',
-        'canvas_update_component',
-        'canvas_add_edge',
-        'canvas_remove_edge',
-      ]);
+      const canvasToolNames = CANVAS_TOOL_NAME_SET;
 
       const streamStart = Date.now();
       let textChunks = 0;
+      const collectedSteps: { toolName: string; summary: string }[] = [];
+      const collectedSources = new Map<string, { dataSourceId: DbId<'DataSource'>; dataSourceName: string; score: number; pages: Set<number> }>();
+      const pendingToolArgs = new Map<string, unknown>();
 
       const reader = result.streamResult.fullStream.getReader();
       try {
@@ -388,11 +397,57 @@ export class RetrievalController {
             this.logger.log(
               `[stream] Tool call: ${payload.toolName} at +${Date.now() - streamStart}ms args=${JSON.stringify(payload.args).slice(0, 200)}`
             );
+            // For rag-search, include the query so the UI can show what's being searched
+            let label: string | undefined;
+            if (payload.toolName === 'rag-search') {
+              const argsParsed = ragSearchArgsSchema.safeParse(payload.args);
+              if (argsParsed.success) {
+                label = `Searching "${argsParsed.data.query}"`;
+              }
+            }
+            pendingToolArgs.set(payload.toolName, payload.args);
+            res.write(`8:${JSON.stringify({
+              type: 'tool_start',
+              toolName: payload.toolName,
+              ...(label ? { label } : {}),
+            })}\n`);
           } else if (part.type === 'tool-result') {
             const payload = part.payload;
             const resultPreview = JSON.stringify(payload.result).slice(0, 300);
             this.logger.log(
               `[stream] Tool result: ${payload.toolName} at +${Date.now() - streamStart}ms result=${resultPreview}`
+            );
+            const args = pendingToolArgs.get(payload.toolName);
+            pendingToolArgs.delete(payload.toolName);
+            const summary = summarizeToolCall(payload.toolName, args, payload.result);
+            collectedSteps.push({ toolName: payload.toolName, summary });
+
+            // Extract sources from rag-search results
+            if (payload.toolName === 'rag-search') {
+              const ragParsed = ragResultsSchema.safeParse(payload.result);
+              if (ragParsed.success) {
+                for (const item of ragParsed.data.results) {
+                  const p = ragResultItemSchema.safeParse(item);
+                  if (!p.success || p.data.score < 0.3) continue;
+                  const { dataSourceId, dataSourceName, score } = p.data;
+                  const itemPages = p.data.metadata?.pages ?? [];
+                  const existing = collectedSources.get(dataSourceId);
+
+                  if (existing) {
+                    if (score > existing.score) existing.score = score;
+                    for (const pg of itemPages) existing.pages.add(pg);
+                  } else {
+                    collectedSources.set(dataSourceId, { dataSourceId, dataSourceName, score, pages: new Set(itemPages) });
+                  }
+                }
+              }
+            }
+            res.write(
+              `8:${JSON.stringify({
+                type: 'tool_end',
+                toolName: payload.toolName,
+                summary,
+              })}\n`
             );
             if (canvasToolNames.has(payload.toolName)) {
               res.write(
@@ -421,13 +476,60 @@ export class RetrievalController {
       );
 
       // Send done metadata
+      const sources = collectedSources.size > 0
+        ? [...collectedSources.values()].map((s) => ({
+            dataSourceId: s.dataSourceId,
+            dataSourceName: s.dataSourceName,
+            score: s.score,
+            pages: s.pages.size > 0 ? [...s.pages].sort((a, b) => a - b) : undefined,
+          }))
+        : undefined;
       res.write(
         `8:${JSON.stringify({
           type: 'done',
           threadId: result.threadId,
-          sources: [],
+          sources,
+          thinkingSteps: collectedSteps.length > 0 ? collectedSteps : undefined,
         })}\n`
       );
+
+      // Persist metadata into the Mastra message's content.metadata field
+      if (sources || collectedSteps.length > 0) {
+        try {
+          const lastMsg = await this.db.kysely
+            .selectFrom('agent.mastra_messages')
+            .select(['id', 'content'])
+            .where('thread_id', '=', result.threadId)
+            .where('role', '=', 'assistant')
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .executeTakeFirst();
+
+          if (lastMsg && typeof lastMsg.content === 'string') {
+            let contentObj: unknown;
+            try { contentObj = JSON.parse(lastMsg.content); } catch { /* not JSON */ }
+
+            const envelope = mastraContentSchema.safeParse(contentObj);
+            if (envelope.success) {
+              const metadata = {
+                ...envelope.data.metadata,
+                ...(sources ? { sources } : {}),
+                ...(collectedSteps.length > 0 ? { thinkingSteps: collectedSteps } : {}),
+              };
+
+              const updated = { ...envelope.data, metadata };
+
+              await this.db.kysely
+                .updateTable('agent.mastra_messages')
+                .set({ content: JSON.stringify(updated) })
+                .where('id', '=', lastMsg.id)
+                .execute();
+            }
+          }
+        } catch (metaErr) {
+          this.logger.warn(`Failed to persist chat message metadata: ${metaErr}`);
+        }
+      }
 
       res.end();
     } catch (error) {

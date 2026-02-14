@@ -1,9 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { OrgRole } from '@db/enums';
+import { type DbId, packId } from '@grabdy/common';
 import { randomBytes } from 'crypto';
-
-import { type DbId, dbIdSchema, packId } from '@grabdy/common';
 
 import { authLinks } from '../../common/auth-links';
 import { INVITE_EXPIRY_MS, INVITE_TOKEN_BYTES } from '../../config/constants';
@@ -215,12 +214,11 @@ export class OrgsService {
     }));
   }
 
-  async revokeInvitation(orgId: DbId<'Org'>, invitationId: string) {
-    const parsedId = dbIdSchema('OrgInvitation').parse(invitationId);
+  async revokeInvitation(orgId: DbId<'Org'>, invitationId: DbId<'OrgInvitation'>) {
 
     const result = await this.db.kysely
       .deleteFrom('org.org_invitations')
-      .where('id', '=', parsedId)
+      .where('id', '=', invitationId)
       .where('org_id', '=', orgId)
       .executeTakeFirst();
 

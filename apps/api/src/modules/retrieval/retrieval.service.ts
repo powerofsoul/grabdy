@@ -3,7 +3,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { openai } from '@ai-sdk/openai';
 import { type DbId, type NonDbId, packId, packNonDbId } from '@grabdy/common';
 import type { CanvasEdge, CanvasState, Card } from '@grabdy/contracts';
-import { CHAT_MODEL } from '@grabdy/contracts';
+import { CHAT_MODEL, EMBEDDING_MODEL } from '@grabdy/contracts';
 import { embed } from 'ai';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -20,9 +20,10 @@ const ragResultSchema = z.object({
   })),
 });
 import { DbService } from '../../db/db.module';
-import { AiCallerType } from '../../db/enums';
+import { AiCallerType, AiRequestType } from '../../db/enums';
 import { AgentFactory } from '../agent/services/agent.factory';
 import { AgentMemoryService } from '../agent/services/memory.service';
+import { AiUsageService } from '../ai/ai-usage.service';
 import { CanvasOpsService } from '../queue/canvas-ops.service';
 
 interface SearchResult {
@@ -42,7 +43,8 @@ export class RetrievalService {
     private db: DbService,
     private agentFactory: AgentFactory,
     private agentMemory: AgentMemoryService,
-    private canvasOps: CanvasOpsService
+    private canvasOps: CanvasOpsService,
+    private aiUsageService: AiUsageService,
   ) {}
 
   private async getCanvasState(threadId: DbId<'ChatThread'>): Promise<CanvasState | undefined> {
@@ -62,10 +64,20 @@ export class RetrievalService {
   ): Promise<{ results: SearchResult[]; queryTimeMs: number }> {
     const start = Date.now();
 
-    const { embedding } = await embed({
+    const { embedding, usage: embedUsage } = await embed({
       model: openai.embedding('text-embedding-3-small'),
       value: queryText,
     });
+
+    // Log embedding usage
+    this.aiUsageService.logUsage(
+      EMBEDDING_MODEL,
+      embedUsage.tokens,
+      0,
+      AiCallerType.SYSTEM,
+      AiRequestType.EMBEDDING,
+      { orgId },
+    ).catch((err) => this.logger.error(`Query embedding usage logging failed: ${err}`));
 
     const embeddingStr = `[${embedding.join(',')}]`;
 
@@ -375,7 +387,8 @@ export class RetrievalService {
         id: m.id,
         role: m.role,
         content: m.content,
-        sources: null,
+        sources: m.sources,
+        thinkingSteps: m.thinkingSteps,
         createdAt: m.createdAt ? m.createdAt.toISOString() : new Date().toISOString(),
       })),
     };

@@ -1,10 +1,11 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 
-import { dbIdSchema, GLOBAL_ORG, packId } from '@grabdy/common';
+import { type DbId, dbIdSchema, GLOBAL_ORG, packId } from '@grabdy/common';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
 import { Public } from '../../common/decorators/public.decorator';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { DbService } from '../../db/db.module';
 import type { OrgRole } from '../../db/enums';
 import { EmailService } from '../email/email.service';
@@ -110,22 +111,17 @@ export class AdminController {
    */
   @Post('orgs/:orgId/invite')
   async inviteMember(
-    @Param('orgId') orgId: string,
+    @Param('orgId', new ZodValidationPipe(dbIdSchema('Org'))) orgId: DbId<'Org'>,
     @Body() body: InviteMemberBody,
   ) {
     const { email, name, roles } = body;
     const normalizedEmail = email.toLowerCase();
-    const parsed = dbIdSchema('Org').safeParse(orgId);
-    if (!parsed.success) {
-      return { success: false, error: 'Invalid org ID' };
-    }
-    const typedOrgId = parsed.data;
 
     // Check org exists
     const org = await this.db.kysely
       .selectFrom('org.orgs')
       .select(['id', 'name'])
-      .where('id', '=', typedOrgId)
+      .where('id', '=', orgId)
       .executeTakeFirst();
 
     if (!org) {
@@ -144,7 +140,7 @@ export class AdminController {
         .selectFrom('org.org_memberships')
         .select(['id'])
         .where('user_id', '=', existingUser.id)
-        .where('org_id', '=', typedOrgId)
+        .where('org_id', '=', orgId)
         .executeTakeFirst();
 
       if (existingMembership) {
@@ -155,9 +151,9 @@ export class AdminController {
       await this.db.kysely
         .insertInto('org.org_memberships')
         .values({
-          id: packId('OrgMembership', typedOrgId),
+          id: packId('OrgMembership', orgId),
           user_id: existingUser.id,
-          org_id: typedOrgId,
+          org_id: orgId,
           roles,
         })
         .execute();
@@ -172,13 +168,13 @@ export class AdminController {
     await this.db.kysely
       .insertInto('org.org_invitations')
       .values({
-        id: packId('OrgInvitation', typedOrgId),
+        id: packId('OrgInvitation', orgId),
         email: normalizedEmail,
         name,
         roles,
         token,
         expires_at: expiresAt,
-        org_id: typedOrgId,
+        org_id: orgId,
       })
       .execute();
 

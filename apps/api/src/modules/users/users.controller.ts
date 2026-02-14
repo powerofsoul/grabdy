@@ -1,8 +1,7 @@
 import { Controller } from '@nestjs/common';
 
-import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
-
 import { usersContract } from '@grabdy/contracts';
+import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 

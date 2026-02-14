@@ -1,10 +1,10 @@
 import { Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
+import type { ModelId } from '@grabdy/contracts';
+import type { ToolsInput } from '@mastra/core/agent';
 import { Agent } from '@mastra/core/agent';
 import type { Memory } from '@mastra/memory';
-import type { ToolsInput } from '@mastra/core/agent';
-
-import type { ModelId } from '@grabdy/contracts';
 
 import type { AiCallerType, AiRequestType } from '../../db/enums';
 import type { AiUsageService, UsageContext } from '../ai/ai-usage.service';
@@ -47,13 +47,13 @@ export abstract class BaseAgent {
     });
   }
 
-  stream(message: string, threadId: string, resourceId: string) {
+  stream(message: string, threadId: DbId<'ChatThread'>, membershipId: DbId<'OrgMembership'>) {
     this.logger.debug(`Streaming message for thread: ${threadId}`);
 
     const result = this.agent.stream(message, {
       memory: {
         thread: threadId,
-        resource: resourceId,
+        resource: membershipId,
       },
       maxSteps: 10,
     });
@@ -83,11 +83,11 @@ export abstract class BaseAgent {
     return result;
   }
 
-  generate(message: string, threadId?: string, resourceId?: string) {
+  generate(message: string, threadId?: DbId<'ChatThread'>, membershipId?: DbId<'OrgMembership'>) {
     this.logger.debug(`Generating message${threadId ? ` for thread: ${threadId}` : ''}`);
 
-    const memoryOpts = threadId && resourceId
-      ? { memory: { thread: threadId, resource: resourceId } }
+    const memoryOpts = threadId && membershipId
+      ? { memory: { thread: threadId, resource: membershipId } }
       : {};
 
     const result = this.agent.generate(message, {

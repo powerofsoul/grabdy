@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { sql } from 'kysely';
-
 import type { DbId } from '@grabdy/common';
+import { sql } from 'kysely';
 
 import { DbService } from '../../db/db.module';
 

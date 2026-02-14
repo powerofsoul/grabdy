@@ -2,12 +2,11 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { Reflector } from '@nestjs/core';
 
 import { OrgRole } from '@db/enums';
+import type { DbId } from '@grabdy/common';
+import { dbIdSchema } from '@grabdy/common';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { z } from 'zod';
-
-import type { DbId } from '@grabdy/common';
-import { dbIdSchema } from '@grabdy/common';
 
 import { InjectEnv } from '../../config/env.config';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
