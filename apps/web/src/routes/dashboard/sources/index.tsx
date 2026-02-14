@@ -145,8 +145,8 @@ function CollectionsPage() {
             >
               {/* Number */}
               <Typography
-                className="font-mono"
                 sx={{
+                  fontFamily: FONT_MONO,
                   fontSize: '0.85rem',
                   color: 'text.secondary',
                   minWidth: 28,
@@ -177,12 +177,11 @@ function CollectionsPage() {
                 }}
               />
               <Typography
-                className="font-mono"
                 sx={{
+                  fontFamily: FONT_MONO,
                   fontSize: '0.8rem',
                   color: 'text.secondary',
                   whiteSpace: 'nowrap',
-                  fontFamily: FONT_MONO,
                 }}
               >
                 {collection.sourceCount} sources &middot; {collection.chunkCount} chunks

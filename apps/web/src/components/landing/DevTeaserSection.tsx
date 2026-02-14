@@ -4,6 +4,8 @@ import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+import { FONT_MONO } from '@/theme';
+
 gsap.registerPlugin(ScrollTrigger);
 
 const CURL_SNIPPET = `curl -X POST https://api.grabdy.com/query \\
@@ -102,7 +104,7 @@ export function DevTeaserSection() {
               style={{
                 margin: 0,
                 padding: '20px',
-                fontFamily: 'var(--font-mono)',
+                fontFamily: FONT_MONO,
                 fontSize: '0.78rem',
                 lineHeight: 1.8,
                 whiteSpace: 'pre-wrap',

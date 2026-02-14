@@ -4,6 +4,8 @@ import { Box, Container, Typography } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+import { FONT_SERIF } from '@/theme';
+
 import { BRAND_LOGOS, GmailLogo, GoogleDriveLogo, LinearLogo, NotionLogo, SlackLogo } from './IntegrationLogos';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -119,6 +121,7 @@ export function WhatYouCanAskSection() {
             >
               <Typography
                 sx={{
+                  fontFamily: FONT_SERIF,
                   fontWeight: 500,
                   fontSize: '1rem',
                   mb: 1.5,

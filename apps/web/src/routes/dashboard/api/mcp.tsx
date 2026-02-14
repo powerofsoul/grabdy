@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { FONT_MONO } from '@/theme';
 
 export const Route = createFileRoute('/dashboard/api/mcp')({
   component: McpPage,
@@ -60,8 +61,8 @@ function McpPage() {
               <CopyButton text={mcpUrl} />
             </Box>
             <Box
-              className="font-mono"
               sx={{
+                fontFamily: FONT_MONO,
                 bgcolor: alpha(ct, 0.04),
                 borderRadius: 1,
                 p: 1.5,
@@ -87,8 +88,8 @@ function McpPage() {
             </Typography>
             <Box
               component="pre"
-              className="font-mono"
               sx={{
+                fontFamily: FONT_MONO,
                 bgcolor: alpha(ct, 0.04),
                 borderRadius: 1,
                 p: 1.5,
@@ -116,8 +117,8 @@ function McpPage() {
             </Typography>
             <Box
               component="pre"
-              className="font-mono"
               sx={{
+                fontFamily: FONT_MONO,
                 bgcolor: alpha(ct, 0.04),
                 borderRadius: 1,
                 p: 1.5,

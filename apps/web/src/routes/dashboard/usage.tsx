@@ -261,12 +261,12 @@ function UsagePage() {
                 </Box>
               ),
               requests: (row) => (
-                <Typography className="font-mono" variant="body2">
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
                   {formatNumber(row.requests)}
                 </Typography>
               ),
               tokens: (row) => (
-                <Typography className="font-mono" variant="body2">
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
                   {formatNumber(row.totalTokens)}
                 </Typography>
               ),
@@ -299,12 +299,12 @@ function UsagePage() {
             renderItems={{
               type: (row) => row.requestType,
               requests: (row) => (
-                <Typography className="font-mono" variant="body2">
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
                   {formatNumber(row.requests)}
                 </Typography>
               ),
               tokens: (row) => (
-                <Typography className="font-mono" variant="body2">
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
                   {formatNumber(row.totalTokens)}
                 </Typography>
               ),

@@ -33,7 +33,7 @@ createRoot(document.getElementById('root')!).render(
                     borderRadius: '0',
                     boxShadow: 'none',
                     border: '1px solid var(--border-color)',
-                    fontFamily: 'var(--font-sans)',
+                    fontFamily: '"Inter", "SF Pro", system-ui, sans-serif',
                     fontSize: '0.84rem',
                     backgroundColor: 'var(--bg)',
                     color: 'var(--text)',

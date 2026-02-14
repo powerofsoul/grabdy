@@ -4,7 +4,7 @@ const FONT_SERIF = '"Instrument Serif", "Source Serif 4", "Georgia", serif';
 const FONT_SANS = '"Inter", "SF Pro", system-ui, sans-serif';
 const FONT_MONO = '"Geist Mono", "JetBrains Mono", monospace';
 
-export { FONT_MONO };
+export { FONT_MONO, FONT_SERIF };
 
 const light = {
   bg: '#FAFAF9',

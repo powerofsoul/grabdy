@@ -4,6 +4,8 @@ import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+import { FONT_MONO } from '@/theme';
+
 gsap.registerPlugin(ScrollTrigger);
 
 const MCP_CONFIG = `{
@@ -51,7 +53,7 @@ export function McpSection() {
   }, []);
 
   const monoStyle = {
-    fontFamily: 'var(--font-mono)',
+    fontFamily: FONT_MONO,
     fontSize: '0.78rem',
     lineHeight: 1.8,
   } satisfies React.CSSProperties;
@@ -227,7 +229,7 @@ function TitleBar({ label, borderColor, textColor }: { label: string; borderColo
     >
       <Typography
         sx={{
-          fontFamily: 'var(--font-mono)',
+          fontFamily: FONT_MONO,
           fontSize: '0.7rem',
           color: textColor,
         }}

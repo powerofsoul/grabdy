@@ -1,5 +1,7 @@
 import type { SxProps, Theme } from '@mui/material';
 
+import { FONT_MONO } from '@/theme';
+
 /**
  * Markdown styling for assistant messages.
  * Dark code blocks with GitHub-style syntax highlighting.
@@ -28,7 +30,7 @@ export const markdownStyles: SxProps<Theme> = {
   '& th, & td': { border: '1px solid', borderColor: 'divider', px: 1.5, py: 0.75, textAlign: 'left' },
   '& th': { fontWeight: 600, bgcolor: 'action.hover' },
   '& :not(pre) > code, & pre': {
-    fontFamily: 'var(--font-mono)',
+    fontFamily: FONT_MONO,
   },
   '& :not(pre) > code': {
     bgcolor: 'grey.100',

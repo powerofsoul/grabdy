@@ -25,6 +25,7 @@ import { MainTable } from '@/components/ui/main-table';
 import { useAuth } from '@/context/AuthContext';
 import { type DrawerProps, useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
+import { FONT_MONO } from '@/theme';
 
 interface ApiKey {
   id: DbId<'ApiKey'>;
@@ -74,8 +75,8 @@ function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () =
       <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Alert severity="warning">Copy this key now. You will not be able to see it again.</Alert>
         <Box
-          className="font-mono"
           sx={{
+            fontFamily: FONT_MONO,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
@@ -237,7 +238,7 @@ function ApiKeysPage() {
             </Typography>
           ),
           prefix: (k) => (
-            <Typography variant="body2" color="text.secondary" className="font-mono">
+            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: FONT_MONO }}>
               {k.keyPrefix}...
             </Typography>
           ),
@@ -310,7 +311,7 @@ function ApiKeysPage() {
                 </Box>
               ),
               prefix: (k) => (
-                <Typography variant="body2" color="text.secondary" className="font-mono">
+                <Typography variant="body2" color="text.secondary" sx={{ fontFamily: FONT_MONO }}>
                   {k.keyPrefix}...
                 </Typography>
               ),

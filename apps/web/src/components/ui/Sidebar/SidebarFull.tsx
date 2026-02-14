@@ -4,6 +4,7 @@ import { ChartBar, BookOpen, CaretRight, CaretDoubleLeft, Eye, Folder, Key, Squa
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
+import { FONT_MONO } from '@/theme';
 
 import { useSidebarCollections } from './useSidebarCollections';
 
@@ -135,8 +136,8 @@ function CountBadge({ count }: { count: number }) {
   return (
     <Typography
       component="span"
-      className="font-mono"
       sx={{
+        fontFamily: FONT_MONO,
         fontSize: 11,
         fontWeight: 500,
         color: alpha(ct, 0.35),
