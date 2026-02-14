@@ -9,12 +9,20 @@ export class AgentStorageProvider implements OnModuleInit {
   private readonly logger = new Logger(AgentStorageProvider.name);
   private store: PostgresStore | null = null;
 
-  constructor(@InjectEnv('databaseUrl') private readonly databaseUrl: string) {}
+  constructor(
+    @InjectEnv('databaseUrl') private readonly databaseUrl: string,
+    @InjectEnv('nodeEnv') private readonly nodeEnv: string,
+  ) {}
 
   async onModuleInit() {
+    const connectionString =
+      this.nodeEnv === 'production' && !this.databaseUrl.includes('sslmode=')
+        ? `${this.databaseUrl}${this.databaseUrl.includes('?') ? '&' : '?'}sslmode=require&uselibpqcompat=true`
+        : this.databaseUrl;
+
     this.store = new PostgresStore({
       id: 'grabdy-agent-store',
-      connectionString: this.databaseUrl,
+      connectionString,
       schemaName: 'agent',
     });
     await this.store.init();

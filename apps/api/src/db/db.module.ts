@@ -25,10 +25,14 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   private readonly pool: Pool;
   private readonly logger = new Logger(DbService.name);
 
-  constructor(@InjectEnv('databaseUrl') databaseUrl: string) {
+  constructor(
+    @InjectEnv('databaseUrl') databaseUrl: string,
+    @InjectEnv('nodeEnv') nodeEnv: string,
+  ) {
     this.pool = new Pool({
       connectionString: databaseUrl,
       options: '-c search_path=auth,org,data,api,public',
+      ...(nodeEnv === 'production' && { ssl: { rejectUnauthorized: false } }),
     });
     this.kysely = new Kysely<DB>({
       dialect: new PostgresDialect({ pool: this.pool }),

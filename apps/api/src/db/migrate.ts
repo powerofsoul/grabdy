@@ -11,7 +11,11 @@ async function createDb() {
     throw new Error('DATABASE_URL environment variable is required');
   }
 
-  const pool = new Pool({ connectionString: databaseUrl });
+  const isProduction = process.env.NODE_ENV === 'production';
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ...(isProduction && { ssl: { rejectUnauthorized: false } }),
+  });
   return { pool, db: new Kysely<unknown>({ dialect: new PostgresDialect({ pool }) }) };
 }
 
