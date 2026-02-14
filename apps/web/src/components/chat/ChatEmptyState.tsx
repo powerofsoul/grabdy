@@ -1,11 +1,11 @@
 import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { BookOpen, Question, Sparkle } from '@phosphor-icons/react';
+import { BookOpenIcon, QuestionIcon, SparkleIcon } from '@phosphor-icons/react';
 
 import svg3 from '@/assets/watermarks/svg-3.svg';
 const STARTER_PROMPTS = [
-  { label: 'What do I have in my library?', icon: <BookOpen size={14} weight="light" color="currentColor" /> },
-  { label: 'Summarize my latest uploads', icon: <Sparkle size={14} weight="light" color="currentColor" /> },
-  { label: 'Help me find a needle in the haystack', icon: <Question size={14} weight="light" color="currentColor" /> },
+  { label: 'What do I have in my library?', icon: <BookOpenIcon size={14} weight="light" color="currentColor" /> },
+  { label: 'Summarize my latest uploads', icon: <SparkleIcon size={14} weight="light" color="currentColor" /> },
+  { label: 'Help me find a needle in the haystack', icon: <QuestionIcon size={14} weight="light" color="currentColor" /> },
 ];
 
 interface ChatEmptyStateProps {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { alpha, Box, IconButton, useTheme } from '@mui/material';
-import { ArrowUp } from '@phosphor-icons/react';
+import { ArrowUpIcon } from '@phosphor-icons/react';
 
 interface ChatInputProps {
   onSend: (message: string) => void | Promise<void>;
@@ -140,7 +140,7 @@ export function ChatInput({
               },
             }}
           >
-            <ArrowUp size={16} weight="bold" color="currentColor" />
+            <ArrowUpIcon size={16} weight="bold" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import type { CanvasState } from '@grabdy/contracts';
-
-import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 import type { ChatMessage } from './ChatMessages';
+import { getToolDisplay } from './tool-display';
+
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 
 export interface Thread {
   id: DbId<'ChatThread'>;
@@ -92,9 +93,16 @@ export function useThreadManager({
               role: m.role,
               content: m.content,
               sources: m.sources?.map((s) => ({
-                content: s.content,
-                score: s.score,
+                dataSourceId: s.dataSourceId,
                 dataSourceName: s.dataSourceName,
+                score: s.score,
+                pages: s.pages,
+              })),
+              thinkingSteps: m.thinkingSteps?.map((s) => ({
+                toolName: s.toolName,
+                label: getToolDisplay(s.toolName).activeLabel,
+                summary: s.summary,
+                status: 'done' satisfies 'done',
               })),
             })),
           );

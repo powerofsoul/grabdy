@@ -1,12 +1,14 @@
 import { type Dispatch, type SetStateAction, useCallback, useState } from 'react';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
-
-import { useAuth } from '@/context/AuthContext';
-import { type CanvasUpdate, streamChat } from '@/lib/api';
 import { toast } from 'sonner';
 
 import type { ChatMessage } from './ChatMessages';
+import type { ThinkingStep } from './MessageRow';
+import { getToolDisplay } from './tool-display';
+
+import { useAuth } from '@/context/AuthContext';
+import { type CanvasUpdate, streamChat } from '@/lib/api';
 
 interface UseChatStreamParams {
   ensureThread: () => Promise<DbId<'ChatThread'>>;
@@ -26,14 +28,14 @@ export function useChatStream({
   const { selectedOrgId } = useAuth();
 
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
+  const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
 
   const handleSend = useCallback(
     async (userMessage: string) => {
       if (!selectedOrgId || isStreaming) return;
 
       setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
-      setIsThinking(true);
+      setThinkingSteps([]);
       setIsStreaming(true);
 
       try {
@@ -47,10 +49,25 @@ export function useChatStream({
             threadId,
           },
           {
+            onToolStart: (toolName, label) => {
+              const display = getToolDisplay(toolName);
+              setThinkingSteps((prev) => [
+                ...prev,
+                { toolName, label: label ?? display.activeLabel, status: 'active' },
+              ]);
+            },
+            onToolEnd: (toolName, summary) => {
+              setThinkingSteps((prev) =>
+                prev.map((step) =>
+                  step.toolName === toolName && step.status === 'active'
+                    ? { ...step, summary, status: 'done' }
+                    : step
+                )
+              );
+            },
             onText: (text) => {
               if (!receivedFirstChunk) {
                 receivedFirstChunk = true;
-                setIsThinking(false);
                 setMessages((prev) => [...prev, { role: 'assistant', content: text }]);
               } else {
                 setMessages((prev) => {
@@ -74,23 +91,32 @@ export function useChatStream({
                   setActiveThreadId(parsed.data);
                 }
               }
-              if (metadata.sources) {
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  const last = updated[updated.length - 1];
-                  if (last.role === 'assistant') {
-                    updated[updated.length - 1] = {
-                      ...last,
-                      sources: metadata.sources?.map((s) => ({
-                        content: s.content,
-                        score: s.score,
-                        dataSourceName: s.dataSourceName,
-                      })),
-                    };
-                  }
-                  return updated;
-                });
-              }
+
+              // Persist thinking steps and sources into the assistant message
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last.role === 'assistant') {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    sources: metadata.sources?.map((s) => ({
+                      dataSourceId: s.dataSourceId,
+                      dataSourceName: s.dataSourceName,
+                      score: s.score,
+                      pages: s.pages,
+                    })),
+                    thinkingSteps: metadata.thinkingSteps?.map((s) => ({
+                      toolName: s.toolName,
+                      label: getToolDisplay(s.toolName).activeLabel,
+                      summary: s.summary,
+                      status: 'done' satisfies ThinkingStep['status'],
+                    })),
+                  };
+                }
+                return updated;
+              });
+
+              setThinkingSteps([]);
               fetchThreads();
             },
             onError: (error) => {
@@ -105,7 +131,7 @@ export function useChatStream({
         toast.error(err instanceof Error ? err.message : 'Failed to send message');
       } finally {
         setIsStreaming(false);
-        setIsThinking(false);
+        setThinkingSteps([]);
       }
     },
     [selectedOrgId, isStreaming, fetchThreads, onCanvasUpdate, setActiveThreadId, setMessages, ensureThread],
@@ -113,7 +139,8 @@ export function useChatStream({
 
   return {
     isStreaming,
-    isThinking,
+    isThinking: thinkingSteps.length > 0,
+    thinkingSteps,
     handleSend,
   };
 }

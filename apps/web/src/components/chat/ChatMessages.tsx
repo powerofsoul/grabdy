@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react';
 
 import { Box, CircularProgress } from '@mui/material';
 
+import type { ThinkingStep } from './MessageRow';
 import { ChatMessage, MessageRow } from './MessageRow';
-import { ThinkingIndicator } from './ThinkingIndicator';
+import { ThinkingSteps } from './ThinkingSteps';
 
 import 'katex/dist/katex.min.css';
 
@@ -12,13 +13,15 @@ export type { ChatMessage };
 interface ChatMessagesProps {
   messages: ChatMessage[];
   isLoading: boolean;
-  isThinking: boolean;
+  isStreaming: boolean;
+  thinkingSteps: ThinkingStep[];
 }
 
 export function ChatMessages({
   messages,
   isLoading,
-  isThinking,
+  isStreaming,
+  thinkingSteps,
 }: ChatMessagesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -46,7 +49,7 @@ export function ChatMessages({
   useEffect(() => {
     const timer = setTimeout(() => scrollToBottom(false), 50);
     return () => clearTimeout(timer);
-  }, [messages.length, isThinking]);
+  }, [messages.length, thinkingSteps.length]);
 
   // ResizeObserver for async content (images, code blocks expanding)
   useEffect(() => {
@@ -99,13 +102,25 @@ export function ChatMessages({
     >
       <Box sx={{ maxWidth: 768, mx: 'auto', width: '100%' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {messages.map((message, index) => (
-            <MessageRow
-              key={message.id ?? index}
-              message={message}
-            />
-          ))}
-          {isThinking && <ThinkingIndicator />}
+          {messages.map((message, index) => {
+            const isLastAssistant =
+              message.role === 'assistant' && index === messages.length - 1;
+            const showLiveThinking = isStreaming && isLastAssistant;
+
+            return (
+              <Box key={message.id ?? index}>
+                {showLiveThinking && (
+                  <Box sx={{ mb: 0.75 }}>
+                    <ThinkingSteps steps={thinkingSteps} live />
+                  </Box>
+                )}
+                <MessageRow message={message} />
+              </Box>
+            );
+          })}
+          {isStreaming && messages.length > 0 && messages[messages.length - 1].role !== 'assistant' && (
+            <ThinkingSteps steps={thinkingSteps} live />
+          )}
         </Box>
       </Box>
     </Box>

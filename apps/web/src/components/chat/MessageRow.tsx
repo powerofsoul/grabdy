@@ -1,17 +1,30 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 
+import { dbIdSchema } from '@grabdy/common';
 import { alpha, Box, Typography } from '@mui/material';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 
+import { DocumentPreviewDrawer } from './DocumentPreviewDrawer';
 import { SourcesRow } from './SourcesRow';
 import { markdownStyles } from './styles';
+import { ThinkingSteps } from './ThinkingSteps';
+
+import { useDrawer } from '@/context/DrawerContext';
 
 export interface Source {
-  content: string;
-  score: number;
+  dataSourceId: string;
   dataSourceName: string;
+  score: number;
+  pages?: number[];
+}
+
+export interface ThinkingStep {
+  toolName: string;
+  label: string;
+  summary?: string;
+  status: 'active' | 'done';
 }
 
 export interface ChatMessage {
@@ -19,6 +32,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   sources?: Source[];
+  thinkingSteps?: ThinkingStep[];
 }
 
 interface MessageRowProps {
@@ -28,9 +42,29 @@ interface MessageRowProps {
 export const MessageRow = memo(
   function MessageRow({ message }: MessageRowProps) {
     const isUser = message.role === 'user';
+    const { pushDrawer } = useDrawer();
+
+    const handleSourceClick = useCallback(
+      (source: Source, page?: number) => {
+        const parsed = dbIdSchema('DataSource').safeParse(source.dataSourceId);
+        if (!parsed.success) return;
+        pushDrawer(
+          (onClose) => <DocumentPreviewDrawer onClose={onClose} dataSourceId={parsed.data} page={page} />,
+          { title: source.dataSourceName, mode: 'dialog', maxWidth: 'lg' },
+        );
+      },
+      [pushDrawer],
+    );
 
     return (
       <Box>
+        {/* Persisted thinking steps */}
+        {!isUser && message.thinkingSteps && message.thinkingSteps.length > 0 && (
+          <Box sx={{ mb: 0.75 }}>
+            <ThinkingSteps steps={message.thinkingSteps} />
+          </Box>
+        )}
+
         {/* Message bubble */}
         <Box
           sx={{
@@ -77,7 +111,7 @@ export const MessageRow = memo(
 
         {/* Sources */}
         {message.sources && message.sources.length > 0 && (
-          <SourcesRow sources={message.sources} />
+          <SourcesRow sources={message.sources} onSourceClick={handleSourceClick} />
         )}
       </Box>
     );
@@ -86,6 +120,7 @@ export const MessageRow = memo(
     if (prev.message.id !== next.message.id) return false;
     if (prev.message.content !== next.message.content) return false;
     if (prev.message.sources !== next.message.sources) return false;
+    if (prev.message.thinkingSteps !== next.message.thinkingSteps) return false;
     return true;
   }
 );

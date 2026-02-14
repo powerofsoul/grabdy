@@ -1,8 +1,8 @@
-import { ApiFetcherArgs, initClient } from '@ts-rest/core';
-
 import { nonDbIdSchema } from '@grabdy/common';
 import type { CanvasEdge, Card } from '@grabdy/contracts';
 import { contract } from '@grabdy/contracts';
+import { ApiFetcherArgs, initClient } from '@ts-rest/core';
+import { z } from 'zod';
 
 const cardIdSchema = nonDbIdSchema('CanvasCard');
 const edgeIdSchema = nonDbIdSchema('CanvasEdge');
@@ -67,21 +67,48 @@ export type CanvasUpdate =
   | { tool: 'canvas_add_edge'; args: { edge: CanvasEdge }; result: unknown }
   | { tool: 'canvas_remove_edge'; args: { edgeId: string }; result: unknown };
 
+export interface StreamThinkingStep {
+  toolName: string;
+  summary: string;
+}
+
 interface StreamCallbacks {
   onText: (text: string) => void;
-  onDone: (metadata: { threadId?: string; sources?: StreamSource[] }) => void;
+  onDone: (metadata: { threadId?: string; sources?: StreamSource[]; thinkingSteps?: StreamThinkingStep[] }) => void;
   onCanvasUpdate?: (update: CanvasUpdate) => void;
+  onToolStart?: (toolName: string, label?: string) => void;
+  onToolEnd?: (toolName: string, summary: string) => void;
   onError?: (error: Error) => void;
 }
 
 interface StreamSource {
-  chunkId: string;
-  content: string;
-  score: number;
-  metadata: Record<string, unknown>;
-  dataSourceName: string;
   dataSourceId: string;
+  dataSourceName: string;
+  score: number;
+  pages?: number[];
 }
+
+const textDeltaSchema = z.string();
+const metadataEventSchema = z.object({
+  type: z.string(),
+  threadId: z.string().optional(),
+  sources: z.array(z.object({
+    dataSourceId: z.string(),
+    dataSourceName: z.string(),
+    score: z.number(),
+    pages: z.array(z.number()).optional(),
+  })).optional(),
+  thinkingSteps: z.array(z.object({
+    toolName: z.string(),
+    summary: z.string(),
+  })).optional(),
+  tool: z.string().optional(),
+  toolName: z.string().optional(),
+  label: z.string().optional(),
+  summary: z.string().optional(),
+  args: z.unknown().optional(),
+  result: z.unknown().optional(),
+});
 
 const CANVAS_TOOL_NAMES = new Set([
   'canvas_add_card',
@@ -214,23 +241,24 @@ export async function streamChat(
         try {
           if (typeCode === '0') {
             // Text delta
-            const text = JSON.parse(jsonStr) as string;
-            callbacks.onText(text);
+            const parsed = textDeltaSchema.safeParse(JSON.parse(jsonStr));
+            if (parsed.success) callbacks.onText(parsed.data);
           } else if (typeCode === '8') {
             // Metadata event
-            const metadata = JSON.parse(jsonStr) as {
-              type: string;
-              threadId?: string;
-              sources?: StreamSource[];
-              tool?: string;
-              args?: unknown;
-              result?: unknown;
-            };
+            const parsed = metadataEventSchema.safeParse(JSON.parse(jsonStr));
+            if (!parsed.success) continue;
+            const metadata = parsed.data;
             if (metadata.type === 'done') {
               callbacks.onDone({
                 threadId: metadata.threadId,
                 sources: metadata.sources,
+                thinkingSteps: metadata.thinkingSteps,
               });
+            } else if (metadata.type === 'tool_start' && callbacks.onToolStart && typeof metadata.toolName === 'string') {
+              const label = typeof metadata.label === 'string' ? metadata.label : undefined;
+              callbacks.onToolStart(metadata.toolName, label);
+            } else if (metadata.type === 'tool_end' && callbacks.onToolEnd && typeof metadata.toolName === 'string') {
+              callbacks.onToolEnd(metadata.toolName, typeof metadata.summary === 'string' ? metadata.summary : 'Done');
             } else if (metadata.type === 'canvas_update' && callbacks.onCanvasUpdate && metadata.tool) {
               const update = toCanvasUpdate(metadata.tool, metadata.args, metadata.result);
               if (update) {

@@ -2,12 +2,11 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { type DbId, type NonDbId, packNonDbId } from '@grabdy/common';
 import type { CanvasEdge, CanvasState, Card } from '@grabdy/contracts';
-
-import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 import type { useCanvasState } from '@/components/canvas/useCanvasState';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 
 type CanvasActions = ReturnType<typeof useCanvasState>;
 

@@ -1,203 +1,160 @@
-import { useState } from 'react';
+import type { ComponentType } from 'react';
 
-import { alpha, Box, Collapse, Typography, useTheme } from '@mui/material';
-import { FileText, ImageSquare, VideoCamera } from '@phosphor-icons/react';
+import { alpha, Box, Typography } from '@mui/material';
+import type { IconProps } from '@phosphor-icons/react';
+import {
+  FileCsvIcon,
+  FileDocIcon,
+  FilePdfIcon,
+  FileTextIcon,
+  FileTsIcon,
+  FileXlsIcon,
+  ImageIcon,
+} from '@phosphor-icons/react';
 
 import type { Source } from './MessageRow';
 
-type SourceCategory = 'document' | 'image' | 'video';
+const ICON_BY_EXT: Record<string, ComponentType<IconProps>> = {
+  pdf: FilePdfIcon,
+  csv: FileCsvIcon,
+  json: FileTextIcon,
+  txt: FileTextIcon,
+  docx: FileDocIcon,
+  doc: FileDocIcon,
+  xlsx: FileXlsIcon,
+  xls: FileXlsIcon,
+  ts: FileTsIcon,
+  tsx: FileTsIcon,
+  png: ImageIcon,
+  jpg: ImageIcon,
+  jpeg: ImageIcon,
+  webp: ImageIcon,
+  gif: ImageIcon,
+};
 
-interface SourceGroup {
-  category: SourceCategory;
-  label: string;
-  icon: React.ReactNode;
-  sources: Source[];
+function getIcon(filename: string): ComponentType<IconProps> {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  return ICON_BY_EXT[ext] ?? FileTextIcon;
 }
 
-const DOC_EXTENSIONS = new Set([
-  'pdf', 'csv', 'docx', 'doc', 'txt', 'xlsx', 'xls', 'pptx', 'ppt', 'rtf', 'md', 'json',
-]);
+/** File types that have meaningful page numbers */
+const PAGE_EXTENSIONS = new Set(['pdf', 'docx', 'doc']);
 
-const IMAGE_EXTENSIONS = new Set([
-  'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico',
-]);
-
-const VIDEO_EXTENSIONS = new Set([
-  'mp4', 'mov', 'avi', 'mkv', 'webm',
-]);
-
-function getCategory(name: string): SourceCategory {
-  const ext = name.split('.').pop()?.toLowerCase() ?? '';
-  if (IMAGE_EXTENSIONS.has(ext)) return 'image';
-  if (VIDEO_EXTENSIONS.has(ext)) return 'video';
-  if (DOC_EXTENSIONS.has(ext)) return 'document';
-  return 'document'; // default
-}
-
-function pluralize(count: number, singular: string): string {
-  return count === 1 ? `${count} ${singular}` : `${count} ${singular}s`;
-}
-
-function groupSources(sources: Source[], ct: string): SourceGroup[] {
-  const groups = new Map<SourceCategory, Source[]>();
-
-  for (const source of sources) {
-    const cat = getCategory(source.dataSourceName);
-    const existing = groups.get(cat);
-    if (existing) {
-      // Deduplicate by name
-      if (!existing.some((s) => s.dataSourceName === source.dataSourceName)) {
-        existing.push(source);
-      }
-    } else {
-      groups.set(cat, [source]);
-    }
-  }
-
-  const iconColor = alpha(ct, 0.35);
-  const result: SourceGroup[] = [];
-
-  if (groups.has('document')) {
-    result.push({
-      category: 'document',
-      label: `Documents (${pluralize(groups.get('document')?.length ?? 0, 'file')})`,
-      icon: <FileText size={11} weight="light" color={iconColor} />,
-      sources: groups.get('document') ?? [],
-    });
-  }
-
-  if (groups.has('image')) {
-    result.push({
-      category: 'image',
-      label: `Images (${pluralize(groups.get('image')?.length ?? 0, 'file')})`,
-      icon: <ImageSquare size={11} weight="light" color={iconColor} />,
-      sources: groups.get('image') ?? [],
-    });
-  }
-
-  if (groups.has('video')) {
-    result.push({
-      category: 'video',
-      label: `Videos (${pluralize(groups.get('video')?.length ?? 0, 'file')})`,
-      icon: <VideoCamera size={11} weight="light" color={iconColor} />,
-      sources: groups.get('video') ?? [],
-    });
-  }
-
-  return result;
+function hasPages(filename: string): boolean {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  return PAGE_EXTENSIONS.has(ext);
 }
 
 interface SourcesRowProps {
   sources: Source[];
+  onSourceClick?: (source: Source, page?: number) => void;
 }
 
-export function SourcesRow({ sources }: SourcesRowProps) {
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
-  const [expandedCategory, setExpandedCategory] = useState<SourceCategory | null>(null);
+function deduplicateSources(sources: Source[]): Source[] {
+  const seen = new Map<string, Source>();
+  for (const source of sources) {
+    const existing = seen.get(source.dataSourceId);
+    if (existing) {
+      if (source.score > existing.score) existing.score = source.score;
+      if (source.pages) {
+        const merged = new Set(existing.pages ?? []);
+        for (const p of source.pages) merged.add(p);
+        existing.pages = [...merged].sort((a, b) => a - b);
+      }
+    } else {
+      seen.set(source.dataSourceId, { ...source });
+    }
+  }
+  return [...seen.values()];
+}
 
-  const groups = groupSources(sources, ct);
-
-  const handleToggle = (category: SourceCategory) => {
-    setExpandedCategory((prev) => (prev === category ? null : category));
-  };
+export function SourcesRow({ sources, onSourceClick }: SourcesRowProps) {
+  const unique = deduplicateSources(sources);
 
   return (
-    <Box sx={{ mt: 0.75, px: 0.5 }}>
-      {/* Group labels */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: 1,
-        }}
-      >
-        {groups.map((group) => (
+    <Box
+      sx={{
+        mt: 0.75,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 0.75,
+      }}
+    >
+      {unique.map((source) => {
+        const Icon = getIcon(source.dataSourceName);
+        const showPages = hasPages(source.dataSourceName) && source.pages && source.pages.length > 0;
+        return (
           <Box
-            key={group.category}
-            onClick={() => handleToggle(group.category)}
+            key={source.dataSourceId}
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer',
-              borderRadius: 0.5,
-              px: 0.5,
-              py: 0.25,
-              mx: -0.5,
-              transition: 'background-color 0.15s ease',
-              '&:hover': {
-                bgcolor: alpha(ct, 0.04),
-              },
+              gap: '5px',
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+              border: '1px solid',
+              borderColor: (t) => alpha(t.palette.primary.main, 0.12),
+              maxWidth: 360,
             }}
           >
-            {group.icon}
+            <Icon size={13} weight="light" style={{ flexShrink: 0 }} />
             <Typography
+              noWrap
+              onClick={() => onSourceClick?.(source)}
               sx={{
-                fontSize: '0.65rem',
-                color: alpha(ct, 0.4),
-                userSelect: 'none',
+                fontSize: '0.7rem',
+                color: 'text.secondary',
+                lineHeight: 1.3,
+                cursor: onSourceClick ? 'pointer' : 'default',
+                '&:hover': onSourceClick ? { textDecoration: 'underline' } : {},
               }}
             >
-              {group.label}
+              {source.dataSourceName}
             </Typography>
-          </Box>
-        ))}
-      </Box>
-
-      {/* Expanded source details */}
-      {groups.map((group) => (
-        <Collapse key={group.category} in={expandedCategory === group.category}>
-          <Box
-            sx={{
-              mt: 0.75,
-              pl: 1,
-              borderLeft: '2px solid',
-              borderColor: 'primary.main',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0.5,
-            }}
-          >
-            {group.sources.map((source, i) => (
+            {showPages && (
               <Box
-                key={i}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                  px: 1,
-                  py: 0.5,
-                  borderRadius: 1,
-                  bgcolor: alpha(ct, 0.02),
+                  gap: '3px',
+                  flexShrink: 0,
+                  ml: '2px',
                 }}
               >
-                <Typography
-                  sx={{
-                    fontSize: '0.68rem',
-                    color: alpha(ct, 0.6),
-                    fontWeight: 500,
-                  }}
-                  noWrap
-                >
-                  {source.dataSourceName}
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: '0.6rem',
-                    color: alpha(ct, 0.3),
-                    flexShrink: 0,
-                  }}
-                >
-                  {(source.score * 100).toFixed(0)}% match
-                </Typography>
+                {source.pages?.map((p) => (
+                  <Typography
+                    key={p}
+                    component="span"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSourceClick?.(source, p);
+                    }}
+                    sx={{
+                      fontSize: '0.6rem',
+                      color: 'text.disabled',
+                      cursor: onSourceClick ? 'pointer' : 'default',
+                      px: '3px',
+                      py: '1px',
+                      borderRadius: 0.5,
+                      transition: 'all 0.12s ease',
+                      '&:hover': onSourceClick
+                        ? {
+                            color: 'text.secondary',
+                            bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                          }
+                        : {},
+                    }}
+                  >
+                    p.{p}
+                  </Typography>
+                ))}
               </Box>
-            ))}
+            )}
           </Box>
-        </Collapse>
-      ))}
+        );
+      })}
     </Box>
   );
 }

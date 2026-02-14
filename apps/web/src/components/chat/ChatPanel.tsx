@@ -15,13 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { ChatCircle, ClockCounterClockwise, List, PencilSimple, Plus, SidebarSimple, Trash, X } from '@phosphor-icons/react';
-
-import { Canvas, useCanvasState } from '@/components/canvas';
-import { useMobileSidebar } from '@/components/ui/Sidebar';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ResizablePanel } from '@/components/ui/ResizablePanel';
-import { STORAGE_KEYS } from '@/lib/storage-keys';
+import { ChatCircleIcon, ClockCounterClockwiseIcon, ListIcon, PencilSimpleIcon, PlusIcon, SidebarSimpleIcon, TrashIcon, XIcon } from '@phosphor-icons/react';
 
 import { ChatEmptyState } from './ChatEmptyState';
 import { ChatInput } from './ChatInput';
@@ -30,6 +24,12 @@ import { ChatMessages } from './ChatMessages';
 import { useCanvasOps } from './useCanvasOps';
 import { useChatStream } from './useChatStream';
 import { useThreadManager } from './useThreadManager';
+
+import { Canvas, useCanvasState } from '@/components/canvas';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ResizablePanel } from '@/components/ui/ResizablePanel';
+import { useMobileSidebar } from '@/components/ui/Sidebar';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 interface ChatPanelProps {
   headerSlot?: ReactNode;
@@ -105,7 +105,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
     });
   }, []);
 
-  const isEmpty = messages.length === 0 && !chatStream.isThinking;
+  const isEmpty = messages.length === 0 && chatStream.thinkingSteps.length === 0;
   const activeThread = threadManager.threads.find((t) => t.id === threadManager.activeThreadId);
 
   const chatContent = isEmpty && !threadManager.isLoadingMessages ? (
@@ -126,7 +126,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
     </Stack>
   ) : (
     <Stack sx={{ flex: 1, minHeight: 0 }}>
-      <ChatMessages messages={messages} isLoading={threadManager.isLoadingMessages} isThinking={chatStream.isThinking} />
+      <ChatMessages messages={messages} isLoading={threadManager.isLoadingMessages} isStreaming={chatStream.isStreaming} thinkingSteps={chatStream.thinkingSteps} />
       <ChatInput onSend={chatStream.handleSend} isStreaming={chatStream.isStreaming} />
     </Stack>
   );
@@ -187,7 +187,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
               onClick={threadManager.handleNewThread}
               sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
             >
-              <Plus size={16} weight="light" color="currentColor" />
+              <PlusIcon size={16} weight="light" color="currentColor" />
             </IconButton>
           </Tooltip>
           <IconButton
@@ -195,7 +195,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
             onClick={() => setThreadPanelOpen(false)}
             sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
           >
-            <X size={16} weight="light" color="currentColor" />
+            <XIcon size={16} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>
@@ -233,7 +233,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                   },
                 }}
               >
-                <ChatCircle size={15} weight="light" color="currentColor" style={{ flexShrink: 0, opacity: 0.35 }} />
+                <ChatCircleIcon size={15} weight="light" color="currentColor" style={{ flexShrink: 0, opacity: 0.35 }} />
                 {threadManager.renamingThreadId === thread.id ? (
                   <TextField
                     size="small"
@@ -284,7 +284,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                     }}
                     sx={{ color: alpha(ct, 0.35), p: 0.5, '&:hover': { color: 'text.primary' } }}
                   >
-                    <PencilSimple size={13} weight="light" color="currentColor" />
+                    <PencilSimpleIcon size={13} weight="light" color="currentColor" />
                   </IconButton>
                   <IconButton
                     size="small"
@@ -294,7 +294,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                     }}
                     sx={{ color: alpha(ct, 0.35), p: 0.5, '&:hover': { color: 'error.main' } }}
                   >
-                    <Trash size={13} weight="light" color="currentColor" />
+                    <TrashIcon size={13} weight="light" color="currentColor" />
                   </IconButton>
                 </Box>
               </Box>
@@ -350,14 +350,14 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
             onClick={threadManager.handleNewThread}
             sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
           >
-            <Plus size={18} weight="light" color="currentColor" />
+            <PlusIcon size={18} weight="light" color="currentColor" />
           </IconButton>
           <IconButton
             size="small"
             onClick={() => setThreadPanelOpen(true)}
             sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
           >
-            <ClockCounterClockwise size={18} weight="light" color="currentColor" />
+            <ClockCounterClockwiseIcon size={18} weight="light" color="currentColor" />
           </IconButton>
           <Box sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.08) }} />
           <IconButton
@@ -365,7 +365,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
             onClick={toggleMobileSidebar}
             sx={{ color: 'text.primary' }}
           >
-            <List size={20} weight="regular" />
+            <ListIcon size={20} weight="regular" />
           </IconButton>
         </Box>
       ) : (
@@ -402,7 +402,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                 onClick={threadManager.handleNewThread}
                 sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
               >
-                <Plus size={18} weight="light" color="currentColor" />
+                <PlusIcon size={18} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
             <Tooltip title="History">
@@ -411,7 +411,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                 onClick={() => setThreadPanelOpen(true)}
                 sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
               >
-                <ClockCounterClockwise size={18} weight="light" color="currentColor" />
+                <ClockCounterClockwiseIcon size={18} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
             <Tooltip title={{ 'chat-left': 'Chat left', 'chat-right': 'Chat right', 'chat-top': 'Chat top', 'chat-bottom': 'Chat bottom' }[layoutMode]}>
@@ -420,7 +420,7 @@ export function ChatPanel({ headerSlot, trailingSlot, headerHeight = 48, initial
                 onClick={handleToggleLayout}
                 sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
               >
-                {{ 'chat-left': <SidebarSimple size={18} weight="light" color="currentColor" />, 'chat-right': <SidebarSimple size={18} weight="light" color="currentColor" style={{ transform: 'scaleX(-1)' }} />, 'chat-top': <SidebarSimple size={18} weight="light" color="currentColor" style={{ transform: 'rotate(90deg)' }} />, 'chat-bottom': <SidebarSimple size={18} weight="light" color="currentColor" style={{ transform: 'rotate(-90deg)' }} /> }[layoutMode]}
+                {{ 'chat-left': <SidebarSimpleIcon size={18} weight="light" color="currentColor" />, 'chat-right': <SidebarSimpleIcon size={18} weight="light" color="currentColor" style={{ transform: 'scaleX(-1)' }} />, 'chat-top': <SidebarSimpleIcon size={18} weight="light" color="currentColor" style={{ transform: 'rotate(90deg)' }} />, 'chat-bottom': <SidebarSimpleIcon size={18} weight="light" color="currentColor" style={{ transform: 'rotate(-90deg)' }} /> }[layoutMode]}
               </IconButton>
             </Tooltip>
             {trailingSlot}
