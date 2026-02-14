@@ -1,17 +1,34 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { openai } from '@ai-sdk/openai';
+import type { DbId } from '@grabdy/common';
+import { extractOrgNumericId, packId } from '@grabdy/common';
+import { EMBEDDING_MODEL } from '@grabdy/contracts';
 import { embedMany } from 'ai';
 import { Job } from 'bullmq';
 
-import type { DbId } from '@grabdy/common';
-import { packId } from '@grabdy/common';
-
-import { CHUNK_OVERLAP, CHUNK_SIZE, EMBEDDING_BATCH_SIZE, SUMMARY_MAX_LENGTH } from '../../../config/constants';
-import { env } from '../../../config/env.config';
+import {
+  CHUNK_OVERLAP,
+  CHUNK_SIZE,
+  EMBEDDING_BATCH_SIZE,
+  SUMMARY_MAX_LENGTH,
+} from '../../../config/constants';
 import { DbService } from '../../../db/db.module';
+import { AiCallerType, AiRequestType } from '../../../db/enums';
+import { AiUsageService } from '../../ai/ai-usage.service';
+import { DocxExtractor } from '../../extractors/docx.extractor';
+import type {
+  ExtractedImage,
+  ExtractionResult,
+  PageText,
+} from '../../extractors/extractor.interface';
+import { ImageExtractor } from '../../extractors/image.extractor';
+import { PdfExtractor } from '../../extractors/pdf.extractor';
+import { TextExtractor } from '../../extractors/text.extractor';
+import { XlsxExtractor } from '../../extractors/xlsx.extractor';
+import type { FileStorage } from '../../storage/file-storage.interface';
+import { FILE_STORAGE } from '../../storage/file-storage.interface';
 import { DATA_SOURCE_QUEUE } from '../queue.constants';
 
 export interface DataSourceJobData {
@@ -24,23 +41,75 @@ export interface DataSourceJobData {
   content?: string;
 }
 
-function chunkText(text: string): string[] {
-  const chunks: string[] = [];
+interface ChunkWithMeta {
+  content: string;
+  metadata: { pages?: number[] } | null;
+}
+
+function chunkText(text: string): ChunkWithMeta[] {
+  const chunks: ChunkWithMeta[] = [];
   let start = 0;
   while (start < text.length) {
     const end = Math.min(start + CHUNK_SIZE, text.length);
-    chunks.push(text.slice(start, end));
+    chunks.push({ content: text.slice(start, end), metadata: null });
     start += CHUNK_SIZE - CHUNK_OVERLAP;
   }
+  return chunks;
+}
+
+function chunkPagesText(pages: PageText[]): ChunkWithMeta[] {
+  // Build a flat string with page boundary tracking
+  const boundaries: Array<{ offset: number; page: number }> = [];
+  let fullText = '';
+
+  for (const p of pages) {
+    boundaries.push({ offset: fullText.length, page: p.page });
+    fullText += p.text;
+  }
+
+  const chunks: ChunkWithMeta[] = [];
+  let start = 0;
+  while (start < fullText.length) {
+    const end = Math.min(start + CHUNK_SIZE, fullText.length);
+
+    // Find which pages this chunk spans
+    const pageSet = new Set<number>();
+    for (const b of boundaries) {
+      const pageIdx = b.page - 1;
+      const pageLen = pages[pageIdx]?.text.length ?? 0;
+      const pageStart = b.offset;
+      const pageEnd = pageStart + pageLen;
+      // Overlap check: chunk [start, end) overlaps page [pageStart, pageEnd)
+      if (pageStart < end && pageEnd > start) {
+        pageSet.add(b.page);
+      }
+    }
+
+    const pageNums = [...pageSet].sort((a, b) => a - b);
+    chunks.push({
+      content: fullText.slice(start, end),
+      metadata: pageNums.length > 0 ? { pages: pageNums } : null,
+    });
+    start += CHUNK_SIZE - CHUNK_OVERLAP;
+  }
+
   return chunks;
 }
 
 @Processor(DATA_SOURCE_QUEUE, { concurrency: 25 })
 export class DataSourceProcessor extends WorkerHost {
   private readonly logger = new Logger(DataSourceProcessor.name);
-  private readonly s3 = new S3Client({ region: env.awsRegion });
 
-  constructor(private db: DbService) {
+  constructor(
+    private db: DbService,
+    @Inject(FILE_STORAGE) private storage: FileStorage,
+    private pdfExtractor: PdfExtractor,
+    private docxExtractor: DocxExtractor,
+    private textExtractor: TextExtractor,
+    private xlsxExtractor: XlsxExtractor,
+    private imageExtractor: ImageExtractor,
+    private aiUsageService: AiUsageService,
+  ) {
     super();
   }
 
@@ -56,14 +125,48 @@ export class DataSourceProcessor extends WorkerHost {
         .where('id', '=', dataSourceId)
         .execute();
 
-      // Extract text: use pre-extracted content for integration sources, otherwise read from S3
-      const text = job.data.content ?? await this.extractText(storagePath, mimeType);
-      if (!text.trim()) {
+      // Extract content: use pre-extracted for integration sources, otherwise read from storage
+      let chunks: ChunkWithMeta[];
+      let fullText: string;
+      let pageCount: number | null = null;
+
+      if (job.data.content) {
+        fullText = job.data.content;
+        chunks = chunkText(fullText);
+      } else if (mimeType.startsWith('image/')) {
+        // Image files get special handling: AI vision extracts description + tags
+        const meta = await this.imageExtractor.extractWithMetadata(storagePath, orgId);
+        fullText = meta.text;
+        chunks = chunkText(fullText);
+
+        // Store AI metadata on the data source
+        await this.db.kysely
+          .updateTable('data.data_sources')
+          .set({
+            ai_tags: meta.aiTags,
+            ai_description: meta.aiDescription,
+          })
+          .where('id', '=', dataSourceId)
+          .execute();
+      } else {
+        const result = await this.extractContent(storagePath, mimeType);
+        fullText = result.text;
+        pageCount = result.pages?.length ?? null;
+        chunks =
+          result.pages && result.pages.length > 0
+            ? chunkPagesText(result.pages)
+            : chunkText(fullText);
+
+        // Store extracted images from documents (PDF, DOCX)
+        if (result.images && result.images.length > 0) {
+          await this.storeExtractedImages(result.images, dataSourceId, orgId);
+        }
+      }
+
+      if (!fullText.trim()) {
         throw new Error('No text content extracted from file');
       }
 
-      // Chunk the text
-      const chunks = chunkText(text);
       this.logger.log(`Split into ${chunks.length} chunks`);
 
       // Generate embeddings in batches
@@ -72,27 +175,34 @@ export class DataSourceProcessor extends WorkerHost {
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
 
-        const { embeddings } = await embedMany({
+        const { embeddings, usage: embeddingUsage } = await embedMany({
           model: openai.embedding('text-embedding-3-small'),
-          values: batch,
+          values: batch.map((c) => c.content),
         });
 
+        // Log embedding usage
+        this.aiUsageService.logUsage(
+          EMBEDDING_MODEL,
+          embeddingUsage.tokens,
+          0,
+          AiCallerType.SYSTEM,
+          AiRequestType.EMBEDDING,
+          { orgId },
+        ).catch((err) => this.logger.error(`Embedding usage logging failed: ${err}`));
+
         // Store chunks with embeddings
-        const values = batch.map((content, idx) => ({
+        const values = batch.map((chunk, idx) => ({
           id: packId('Chunk', orgId),
-          content,
+          content: chunk.content,
           chunk_index: i + idx,
-          metadata: null,
+          metadata: chunk.metadata,
           embedding: `[${embeddings[idx].join(',')}]`,
           data_source_id: dataSourceId,
           collection_id: collectionId,
           org_id: orgId,
         }));
 
-        await this.db.kysely
-          .insertInto('data.chunks')
-          .values(values)
-          .execute();
+        await this.db.kysely.insertInto('data.chunks').values(values).execute();
 
         await job.updateProgress(Math.min(((i + batchSize) / chunks.length) * 100, 100));
       }
@@ -102,8 +212,8 @@ export class DataSourceProcessor extends WorkerHost {
         .updateTable('data.data_sources')
         .set({
           status: 'READY',
-          page_count: chunks.length,
-          summary: text.slice(0, SUMMARY_MAX_LENGTH),
+          page_count: pageCount ?? chunks.length,
+          summary: fullText.slice(0, SUMMARY_MAX_LENGTH),
           updated_at: new Date(),
         })
         .where('id', '=', dataSourceId)
@@ -124,41 +234,55 @@ export class DataSourceProcessor extends WorkerHost {
     }
   }
 
-  private async extractText(s3Key: string, mimeType: string): Promise<string> {
-    const response = await this.s3.send(
-      new GetObjectCommand({
-        Bucket: env.s3UploadsBucket,
-        Key: s3Key,
-      })
-    );
+  private async storeExtractedImages(
+    images: ExtractedImage[],
+    dataSourceId: DbId<'DataSource'>,
+    orgId: DbId<'Org'>
+  ): Promise<void> {
+    const orgNum = extractOrgNumericId(orgId).toString();
 
-    const stream = response.Body;
-    if (!stream) {
-      throw new Error('Empty S3 response body');
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      const ext = img.mimeType.split('/')[1] ?? 'png';
+      const storagePath = `${orgNum}/extracted/${dataSourceId}/${i}.${ext}`;
+
+      await this.storage.put(storagePath, img.buffer, img.mimeType);
+
+      await this.db.kysely
+        .insertInto('data.extracted_images')
+        .values({
+          id: packId('ExtractedImage', orgId),
+          data_source_id: dataSourceId,
+          storage_path: storagePath,
+          mime_type: img.mimeType,
+          page_number: img.pageNumber ?? null,
+          org_id: orgId,
+        })
+        .execute();
     }
 
-    const byteArray = await stream.transformToByteArray();
-    const buffer = Buffer.from(byteArray);
+    this.logger.log(`Stored ${images.length} extracted images for ${dataSourceId}`);
+  }
 
+  private async extractContent(storagePath: string, mimeType: string): Promise<ExtractionResult> {
     if (mimeType === 'application/pdf') {
-      const pdfParse = require('pdf-parse');
-      const data = await pdfParse(buffer);
-      return data.text;
+      return this.pdfExtractor.extract(storagePath);
     }
-
-    if (
-      mimeType ===
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ) {
-      const mammoth = require('mammoth');
-      const result = await mammoth.extractRawText({ buffer });
-      return result.value;
+    if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      return this.docxExtractor.extract(storagePath);
     }
-
     if (mimeType === 'text/csv' || mimeType === 'text/plain' || mimeType === 'application/json') {
-      return buffer.toString('utf-8');
+      return this.textExtractor.extract(storagePath);
     }
-
+    if (
+      mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      mimeType === 'application/vnd.ms-excel'
+    ) {
+      return this.xlsxExtractor.extract(storagePath);
+    }
+    if (mimeType.startsWith('image/')) {
+      return this.imageExtractor.extract(storagePath);
+    }
     throw new Error(`Unsupported mime type: ${mimeType}`);
   }
 }

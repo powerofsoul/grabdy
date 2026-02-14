@@ -32,6 +32,8 @@ export const DataSourceType = {
   DOCX: 'DOCX',
   TXT: 'TXT',
   JSON: 'JSON',
+  XLSX: 'XLSX',
+  IMAGE: 'IMAGE',
   INTEGRATION: 'INTEGRATION',
 } as const;
 export type DataSourceType = (typeof DataSourceType)[keyof typeof DataSourceType];

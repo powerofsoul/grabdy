@@ -1,3 +1,5 @@
+import type { SupportedMime } from '@grabdy/contracts';
+
 // ── Auth ────────────────────────────────────────────────────────────
 export const BCRYPT_SALT_ROUNDS = 10;
 export const OTP_MIN = 100000;
@@ -29,7 +31,28 @@ export const EMBEDDING_BATCH_SIZE = 100;
 export const SUMMARY_MAX_LENGTH = 500;
 
 // ── File Upload ─────────────────────────────────────────────────────
-export const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+export const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB — multer ceiling
+
+export const FILE_SIZE_LIMITS: Partial<Record<SupportedMime, number>> = {
+  'application/pdf': 200 * 1024 * 1024,
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 200 * 1024 * 1024,
+  'text/csv': 50 * 1024 * 1024,
+  'text/plain': 50 * 1024 * 1024,
+  'application/json': 50 * 1024 * 1024,
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 50 * 1024 * 1024,
+  'application/vnd.ms-excel': 50 * 1024 * 1024,
+  'image/png': 20 * 1024 * 1024,
+  'image/jpeg': 20 * 1024 * 1024,
+  'image/webp': 20 * 1024 * 1024,
+  'image/gif': 20 * 1024 * 1024,
+};
+
+const DEFAULT_FILE_SIZE_LIMIT = 50 * 1024 * 1024; // 50 MB
+
+export function getMaxFileSizeForMime(mime: string): number {
+  const limits: Partial<Record<string, number>> = FILE_SIZE_LIMITS;
+  return limits[mime] ?? DEFAULT_FILE_SIZE_LIMIT;
+}
 
 // ── Retrieval ───────────────────────────────────────────────────────
 export const DEFAULT_SEARCH_LIMIT = 10;

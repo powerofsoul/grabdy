@@ -104,6 +104,8 @@ export interface DataSource {
   collection_id: DbId<'Collection'> | null;
   connection_id: DbId<'Connection'> | null;
   external_id: string | null;
+  ai_tags: string[] | null;
+  ai_description: string | null;
   org_id: DbId<'Org'>;
   uploaded_by_id: DbId<'User'> | null;
   created_at: Generated<Timestamp>;
@@ -118,6 +120,17 @@ export interface Chunk {
   embedding: string; // vector(1536) stored as string
   data_source_id: DbId<'DataSource'>;
   collection_id: DbId<'Collection'> | null;
+  org_id: DbId<'Org'>;
+  created_at: Generated<Timestamp>;
+}
+
+export interface ExtractedImage {
+  id: Generated<DbId<'ExtractedImage'>>;
+  data_source_id: DbId<'DataSource'>;
+  storage_path: string;
+  mime_type: string;
+  page_number: number | null;
+  ai_description: string | null;
   org_id: DbId<'Org'>;
   created_at: Generated<Timestamp>;
 }
@@ -211,6 +224,19 @@ export interface UsageLog {
 }
 
 // ---------------------------------------------------------------------------
+// External tables (managed by Mastra, not our migrations)
+// ---------------------------------------------------------------------------
+
+export interface MastraMessage {
+  id: string;
+  thread_id: string;
+  content: string;
+  role: string;
+  type: string;
+  createdAt: Timestamp;
+}
+
+// ---------------------------------------------------------------------------
 // Database interface -- maps table names to their row types
 // ---------------------------------------------------------------------------
 
@@ -226,6 +252,7 @@ export interface DB {
   'data.collections': Collection;
   'data.data_sources': DataSource;
   'data.chunks': Chunk;
+  'data.extracted_images': ExtractedImage;
   'data.connections': Connection;
   'data.sync_logs': SyncLog;
   'data.chat_threads': ChatThread;
@@ -234,4 +261,6 @@ export interface DB {
   // api
   'api.api_keys': ApiKey;
   'api.usage_logs': UsageLog;
+  // agent (managed by Mastra)
+  'agent.mastra_messages': MastraMessage;
 }

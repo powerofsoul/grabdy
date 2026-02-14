@@ -1,12 +1,12 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { Job, Queue } from 'bullmq';
 
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
+import { Job, Queue } from 'bullmq';
 
-import type { SyncTrigger } from '../../../db/enums';
 import { DbService } from '../../../db/db.module';
+import type { SyncTrigger } from '../../../db/enums';
 import type { SyncedItem } from '../../integrations/connector.interface';
 import { IntegrationsService } from '../../integrations/integrations.service';
 import { ProviderRegistry } from '../../integrations/providers/provider-registry';

@@ -10,6 +10,8 @@ import {
   JOB_REMOVE_ON_FAIL_COUNT,
 } from '../../config/constants';
 import { env } from '../../config/env.config';
+import { ExtractorsModule } from '../extractors/extractors.module';
+import { StorageModule } from '../storage/storage.module';
 
 import { CanvasOpsProcessor } from './processors/canvas-ops.processor';
 import { DataSourceProcessor } from './processors/data-source.processor';
@@ -19,6 +21,8 @@ import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE } from './q
 @Global()
 @Module({
   imports: [
+    StorageModule,
+    ExtractorsModule,
     BullModule.forRoot({
       connection: {
         host: env.redisHost,
