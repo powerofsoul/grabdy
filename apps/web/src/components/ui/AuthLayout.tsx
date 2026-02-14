@@ -1,8 +1,8 @@
 import { type ReactNode } from 'react';
 
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
+import { ArrowLeftIcon } from '@phosphor-icons/react';
 import { useRouter } from '@tanstack/react-router';
-import { ArrowLeft } from '@phosphor-icons/react';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -48,7 +48,7 @@ export function AuthLayout({
               onClick={() => router.history.back()}
               sx={{ color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
             >
-              <ArrowLeft size={22} weight="light" color="currentColor" />
+              <ArrowLeftIcon size={22} weight="light" color="currentColor" />
             </IconButton>
           </Tooltip>
         </Box>

@@ -1,4 +1,4 @@
-import { ComponentType, createContext, ReactNode, useCallback, useContext, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useState } from 'react';
 
 import {
   Box,
@@ -10,7 +10,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { X } from '@phosphor-icons/react';
+import { XIcon } from '@phosphor-icons/react';
 
 export interface DrawerProps {
   onClose: () => void;
@@ -20,15 +20,14 @@ type DrawerMode = 'drawer' | 'dialog';
 
 interface DrawerStackItem {
   id: string;
-  Component: ComponentType<DrawerProps & Record<string, unknown>>;
-  props: Record<string, unknown>;
+  render: (onClose: () => void) => ReactNode;
   title?: string;
   mode: DrawerMode;
   width?: number | string;
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
 }
 
-interface DrawerOptions {
+export interface DrawerOptions {
   title?: string;
   mode?: DrawerMode;
   width?: number | string;
@@ -36,9 +35,9 @@ interface DrawerOptions {
 }
 
 interface DrawerContextValue {
-  pushDrawer: <P extends DrawerProps>(
-    Component: ComponentType<P>,
-    props?: Omit<P, 'onClose'> & DrawerOptions
+  pushDrawer: (
+    render: (onClose: () => void) => ReactNode,
+    options?: DrawerOptions,
   ) => void;
   popDrawer: () => void;
   closeAllDrawers: () => void;
@@ -68,22 +67,20 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
   const [drawerStack, setDrawerStack] = useState<DrawerStackItem[]>([]);
 
   const pushDrawer = useCallback(
-    <P extends DrawerProps>(
-      Component: ComponentType<P>,
-      props?: Omit<P, 'onClose'> & DrawerOptions
+    (
+      render: (onClose: () => void) => ReactNode,
+      options?: DrawerOptions,
     ) => {
-      const { title, mode = 'drawer', width, maxWidth, ...restProps } = props || {};
       const id = `drawer-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       setDrawerStack((prev) => [
         ...prev,
         {
           id,
-          Component: Component as ComponentType<DrawerProps & Record<string, unknown>>,
-          props: restProps,
-          title,
-          mode,
-          width,
-          maxWidth,
+          render,
+          title: options?.title,
+          mode: options?.mode ?? 'drawer',
+          width: options?.width,
+          maxWidth: options?.maxWidth,
         },
       ]);
     },
@@ -129,7 +126,7 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
             </Typography>
             <Tooltip title="Close">
               <IconButton onClick={popDrawer} size="small" sx={{ color: 'grey.500' }}>
-                <X size={20} weight="light" color="currentColor" />
+                <XIcon size={20} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
           </Box>
@@ -137,7 +134,7 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
 
         const bodyContent = (
           <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <item.Component onClose={popDrawer} {...item.props} />
+            {item.render(popDrawer)}
           </Box>
         );
 
@@ -154,7 +151,13 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
               fullWidth
               sx={{
                 zIndex: drawerZ,
-                ...(!isMobile && { '& .MuiDialog-paper': { maxHeight: '90vh' } }),
+                ...(!isMobile && {
+                  '& .MuiDialog-paper': {
+                    maxHeight: '90vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  },
+                }),
               }}
             >
               {headerContent}

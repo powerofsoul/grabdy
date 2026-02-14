@@ -99,8 +99,10 @@ export function useMainTableState<TItem, K extends Record<string, string>>(
   const queryParamsKey = endpointModeActive ? JSON.stringify(props.queryParams) : '';
   useEffect(() => {
     if (endpointModeActive && queryParamsKey !== prevQueryParamsRef.current) {
-      setPage(0);
-      setAccumulatedItems([]);
+      queueMicrotask(() => {
+        setPage(0);
+        setAccumulatedItems([]);
+      });
       prevQueryParamsRef.current = queryParamsKey;
     }
   }, [queryParamsKey, endpointModeActive]);
@@ -158,13 +160,16 @@ export function useMainTableState<TItem, K extends Record<string, string>>(
   // Accumulate items for mobile infinite scroll
   useEffect(() => {
     if (isMobile && endpointModeActive && serverQuery.data?.items) {
-      if (page === 0) {
-        // First page - replace
-        setAccumulatedItems(serverQuery.data.items);
-      } else {
-        // Subsequent pages - append
-        setAccumulatedItems((prev) => [...prev, ...serverQuery.data.items]);
-      }
+      const items = serverQuery.data.items;
+      queueMicrotask(() => {
+        if (page === 0) {
+          // First page - replace
+          setAccumulatedItems(items);
+        } else {
+          // Subsequent pages - append
+          setAccumulatedItems((prev) => [...prev, ...items]);
+        }
+      });
     }
   }, [isMobile, endpointModeActive, serverQuery.data?.items, page]);
 

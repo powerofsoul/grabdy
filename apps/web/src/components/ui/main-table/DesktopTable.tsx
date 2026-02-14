@@ -15,7 +15,7 @@ import {
   TableSortLabel,
   Tooltip,
 } from '@mui/material';
-import { CaretDown, CaretUp } from '@phosphor-icons/react';
+import { CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react';
 
 import type {
   ColumnConfig,
@@ -156,7 +156,7 @@ export function DesktopTable<T>({
                       <TableCell sx={{ py: 1, px: 1, width: 48 }}>
                         <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
                           <IconButton size="small" sx={{ p: 0.5 }}>
-                            {isExpanded ? <CaretUp size={16} weight="light" color="currentColor" /> : <CaretDown size={16} weight="light" color="currentColor" />}
+                            {isExpanded ? <CaretUpIcon size={16} weight="light" color="currentColor" /> : <CaretDownIcon size={16} weight="light" color="currentColor" />}
                           </IconButton>
                         </Tooltip>
                       </TableCell>

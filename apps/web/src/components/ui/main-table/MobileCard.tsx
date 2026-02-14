@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 
 import { Box, Card, CardContent, Collapse, IconButton, Tooltip, Typography } from '@mui/material';
-import { CaretDown, CaretUp } from '@phosphor-icons/react';
+import { CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react';
 
 import type { ColumnConfig, HeaderConfig, InteractionConfig, RenderConfig } from './types';
 
@@ -72,7 +72,7 @@ export function MobileCard<T>({
           {interaction.expandable && (
             <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
               <IconButton size="small" sx={{ p: 0.5, flexShrink: 0 }}>
-                {isExpanded ? <CaretUp size={18} weight="light" color="currentColor" /> : <CaretDown size={18} weight="light" color="currentColor" />}
+                {isExpanded ? <CaretUpIcon size={18} weight="light" color="currentColor" /> : <CaretDownIcon size={18} weight="light" color="currentColor" />}
               </IconButton>
             </Tooltip>
           )}

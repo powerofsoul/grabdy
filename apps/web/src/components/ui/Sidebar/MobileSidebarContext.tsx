@@ -20,7 +20,7 @@ export function MobileSidebarProvider({ children }: { children: React.ReactNode 
 
   // Close on route change
   useEffect(() => {
-    setOpen(false);
+    queueMicrotask(() => setOpen(false));
   }, [location.pathname]);
 
   const toggle = useCallback(() => setOpen((prev) => !prev), []);

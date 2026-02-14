@@ -2,11 +2,11 @@ import { useCallback, useState } from 'react';
 
 import { Box, Drawer, useMediaQuery } from '@mui/material';
 
-import { STORAGE_KEYS } from '@/lib/storage-keys';
-
 import { useMobileSidebar } from './MobileSidebarContext';
 import { SidebarFull } from './SidebarFull';
 import { SidebarStrip } from './SidebarStrip';
+
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 function getInitialCollapsed(): boolean {
   try {

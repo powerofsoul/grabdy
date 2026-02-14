@@ -1,8 +1,8 @@
 import { type ReactNode } from 'react';
 
 import { alpha, Box, IconButton, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { ArrowLeftIcon, ListIcon } from '@phosphor-icons/react';
 import { useRouter } from '@tanstack/react-router';
-import { ArrowLeft, List } from '@phosphor-icons/react';
 
 import { useMobileSidebar } from '@/components/ui/Sidebar';
 
@@ -77,7 +77,7 @@ export function DashboardPage({
                         '&:hover': { color: 'text.primary' },
                       }}
                     >
-                      <ArrowLeft size={20} weight="light" color="currentColor" />
+                      <ArrowLeftIcon size={20} weight="light" color="currentColor" />
                     </IconButton>
                   </Tooltip>
                 )}
@@ -114,7 +114,7 @@ export function DashboardPage({
                   size="small"
                   sx={{ flexShrink: 0, color: 'text.primary' }}
                 >
-                  <List size={22} weight="regular" />
+                  <ListIcon size={22} weight="regular" />
                 </IconButton>
               ) : (
                 actions && (

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import { BookOpenIcon, CaretDoubleRightIcon, ChartBarIcon, ChatCircleIcon, EyeIcon, FolderIcon, GearIcon, GitForkIcon,KeyIcon, MoonIcon, PlugIcon, SignOutIcon, SquaresFourIcon, SunIcon, UsersIcon } from '@phosphor-icons/react';
 import { Link, useLocation } from '@tanstack/react-router';
-import { ChartBar, BookOpen, CaretDoubleRight, Eye, Folder, Key, SquaresFour, SignOut, ChatCircle, Moon, Plug, Gear, Sun, Users, GitFork } from '@phosphor-icons/react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
@@ -104,20 +104,20 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
               '&:hover': { color: 'text.primary' },
             }}
           >
-            <CaretDoubleRight size={14} weight="light" color="currentColor" />
+            <CaretDoubleRightIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Tooltip>
       )}
 
       {/* Nav icons */}
-      <StripIcon to="/dashboard" label="Dashboard" icon={<SquaresFour size={18} weight="light" color="currentColor" />} exact />
-      <StripIcon to="/dashboard/chat" label="Chat" icon={<ChatCircle size={18} weight="light" color="currentColor" />} />
-      <StripIcon to="/dashboard/sources" label="Sources" icon={<Folder size={18} weight="light" color="currentColor" />} />
-      <StripIcon to="/dashboard/integrations" label="Integrations" icon={<Plug size={18} weight="light" color="currentColor" />} />
-      <StripIcon to="/dashboard/api/keys" label="Keys" icon={<Key size={18} weight="light" color="currentColor" />} />
-      <StripIcon to="/dashboard/api/docs" label="Docs" icon={<BookOpen size={18} weight="light" color="currentColor" />} />
-      <StripIcon to="/dashboard/api/mcp" label="MCP" icon={<GitFork size={18} weight="light" color="currentColor" />} />
-      <StripIcon to="/dashboard/members" label="Members" icon={<Users size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard" label="Dashboard" icon={<SquaresFourIcon size={18} weight="light" color="currentColor" />} exact />
+      <StripIcon to="/dashboard/chat" label="Chat" icon={<ChatCircleIcon size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/sources" label="Sources" icon={<FolderIcon size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/integrations" label="Integrations" icon={<PlugIcon size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/api/keys" label="Keys" icon={<KeyIcon size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/api/docs" label="Docs" icon={<BookOpenIcon size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/api/mcp" label="MCP" icon={<GitForkIcon size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/members" label="Members" icon={<UsersIcon size={18} weight="light" color="currentColor" />} />
 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
@@ -143,15 +143,15 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
                 },
               }}
             >
-              <Eye size={16} weight="light" color="currentColor" />
+              <EyeIcon size={16} weight="light" color="currentColor" />
             </Box>
           </Link>
         </Tooltip>
       )}
 
       {/* Settings */}
-      <StripIcon to="/dashboard/usage" label="AI Usage" icon={<ChartBar size={18} weight="light" color="currentColor" />} />
-      <StripIcon to="/dashboard/settings" label="Settings" icon={<Gear size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/usage" label="AI Usage" icon={<ChartBarIcon size={18} weight="light" color="currentColor" />} />
+      <StripIcon to="/dashboard/settings" label="Settings" icon={<GearIcon size={18} weight="light" color="currentColor" />} />
 
       {/* Theme toggle */}
       <Tooltip title={isDark ? 'Light mode' : 'Dark mode'} placement="right">
@@ -164,7 +164,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
             '&:hover': { color: 'text.primary' },
           }}
         >
-          {isDark ? <Sun size={16} weight="light" color="currentColor" /> : <Moon size={16} weight="light" color="currentColor" />}
+          {isDark ? <SunIcon size={16} weight="light" color="currentColor" /> : <MoonIcon size={16} weight="light" color="currentColor" />}
         </IconButton>
       </Tooltip>
 
@@ -201,7 +201,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
             '&:hover': { color: 'error.main' },
           }}
         >
-          <SignOut size={14} weight="light" color="currentColor" />
+          <SignOutIcon size={14} weight="light" color="currentColor" />
         </IconButton>
       </Tooltip>
     </Box>

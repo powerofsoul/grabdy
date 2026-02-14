@@ -1,7 +1,6 @@
+import { type DataSourceStatus } from '@grabdy/contracts';
 import { Chip } from '@mui/material';
 import { green, grey, red } from '@mui/material/colors';
-
-import { type DataSourceStatus } from '@grabdy/contracts';
 
 const STATUS_CONFIG: Record<DataSourceStatus, { label: string; color: string; bgColor: string }> = {
   UPLOADED: { label: 'Uploaded', color: grey[600], bgColor: grey[100] },

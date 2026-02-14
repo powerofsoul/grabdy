@@ -5,19 +5,21 @@ import { CssBaseline } from '@mui/material';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 
-import { App } from './App';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AuthProvider } from './context/AuthContext';
 import { DrawerProvider } from './context/DrawerContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { setupAppHeight } from './lib/mobile';
 import { queryClient } from './lib/query-client';
+import { App } from './App';
 
 import './index.css';
 
 setupAppHeight();
 
-createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById('root');
+if (!rootEl) throw new Error('Root element not found');
+createRoot(rootEl).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

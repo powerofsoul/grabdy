@@ -1,12 +1,12 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import { BookOpenIcon, CaretDoubleLeftIcon, CaretRightIcon, ChartBarIcon, ChatCircleIcon, EyeIcon, FolderIcon, GearIcon, GitForkIcon,KeyIcon, MoonIcon, PlugIcon, SignOutIcon, SquaresFourIcon, SunIcon, UsersIcon } from '@phosphor-icons/react';
 import { Link, useLocation } from '@tanstack/react-router';
-import { ChartBar, BookOpen, CaretRight, CaretDoubleLeft, Eye, Folder, Key, SquaresFour, SignOut, ChatCircle, Moon, Plug, Gear, Sun, Users, GitFork } from '@phosphor-icons/react';
+
+import { useSidebarCollections } from './useSidebarCollections';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
 import { FONT_MONO } from '@/theme';
-
-import { useSidebarCollections } from './useSidebarCollections';
 
 function NavItem({ to, label, exact, icon, trailing, activePrefix }: {
   to: string;
@@ -111,7 +111,7 @@ function SectionHeader({ label, to }: { label: string; to?: string }) {
             transition: 'opacity 120ms ease',
           }}
         >
-          <CaretRight size={12} weight="light" color="currentColor" />
+          <CaretRightIcon size={12} weight="light" color="currentColor" />
         </Box>
       )}
     </Box>
@@ -198,7 +198,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                   '&:hover': { color: 'text.primary' },
                 }}
               >
-                <CaretDoubleLeft size={16} weight="light" color="currentColor" />
+                <CaretDoubleLeftIcon size={16} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
           )}
@@ -213,12 +213,12 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           to="/dashboard"
           label="Dashboard"
           exact
-          icon={<SquaresFour size={16} weight="light" color="currentColor" />}
+          icon={<SquaresFourIcon size={16} weight="light" color="currentColor" />}
         />
         <NavItem
           to="/dashboard/chat"
           label="Chat"
-          icon={<ChatCircle size={16} weight="light" color="currentColor" />}
+          icon={<ChatCircleIcon size={16} weight="light" color="currentColor" />}
         />
 
         {/* Sources */}
@@ -232,7 +232,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               key={c.id}
               to={`/dashboard/sources/${c.id}`}
               label={c.name}
-              icon={<Folder size={15} weight="light" color="currentColor" />}
+              icon={<FolderIcon size={15} weight="light" color="currentColor" />}
               trailing={<CountBadge count={c.sourceCount} />}
             />
           ))}
@@ -244,7 +244,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           <NavItem
             to="/dashboard/integrations"
             label="Integrations"
-            icon={<Plug size={16} weight="light" color="currentColor" />}
+            icon={<PlugIcon size={16} weight="light" color="currentColor" />}
           />
         </Box>
 
@@ -254,17 +254,17 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           <NavItem
             to="/dashboard/api/keys"
             label="Keys"
-            icon={<Key size={16} weight="light" color="currentColor" />}
+            icon={<KeyIcon size={16} weight="light" color="currentColor" />}
           />
           <NavItem
             to="/dashboard/api/docs"
             label="Docs"
-            icon={<BookOpen size={16} weight="light" color="currentColor" />}
+            icon={<BookOpenIcon size={16} weight="light" color="currentColor" />}
           />
           <NavItem
             to="/dashboard/api/mcp"
             label="MCP"
-            icon={<GitFork size={16} weight="light" color="currentColor" />}
+            icon={<GitForkIcon size={16} weight="light" color="currentColor" />}
           />
         </Box>
 
@@ -274,7 +274,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           <NavItem
             to="/dashboard/members"
             label="Members"
-            icon={<Users size={16} weight="light" color="currentColor" />}
+            icon={<UsersIcon size={16} weight="light" color="currentColor" />}
           />
         </Box>
       </Box>
@@ -304,7 +304,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', color: alpha(ct, 0.4) }}>
-                <Eye size={14} weight="light" color="currentColor" />
+                <EyeIcon size={14} weight="light" color="currentColor" />
               </Box>
               <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
                 View as Member
@@ -319,12 +319,12 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           <NavItem
             to="/dashboard/usage"
             label="AI Usage"
-            icon={<ChartBar size={16} weight="light" color="currentColor" />}
+            icon={<ChartBarIcon size={16} weight="light" color="currentColor" />}
           />
           <NavItem
             to="/dashboard/settings"
             label="Settings"
-            icon={<Gear size={16} weight="light" color="currentColor" />}
+            icon={<GearIcon size={16} weight="light" color="currentColor" />}
           />
         </Box>
 
@@ -380,7 +380,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                     '&:hover': { color: 'text.primary' },
                   }}
                 >
-                  {isDark ? <Sun size={14} weight="light" color="currentColor" /> : <Moon size={14} weight="light" color="currentColor" />}
+                  {isDark ? <SunIcon size={14} weight="light" color="currentColor" /> : <MoonIcon size={14} weight="light" color="currentColor" />}
                 </IconButton>
               </Tooltip>
               <Tooltip title="Sign out">
@@ -393,7 +393,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                     '&:hover': { color: 'error.main' },
                   }}
                 >
-                  <SignOut size={14} weight="light" color="currentColor" />
+                  <SignOutIcon size={14} weight="light" color="currentColor" />
                 </IconButton>
               </Tooltip>
             </Box>

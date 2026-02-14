@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
 import { alpha, Box, Button, Typography, useTheme } from '@mui/material';
+import { HouseIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { useRouter } from '@tanstack/react-router';
-import { House, MagnifyingGlass } from '@phosphor-icons/react';
 
 const PHRASES = [
   'We searched every chunk. Nothing.',
@@ -59,7 +59,7 @@ export function NotFound() {
           mb: 4,
         }}
       >
-        <MagnifyingGlass size={36} weight="light" color={alpha(ct, 0.2)} />
+        <MagnifyingGlassIcon size={36} weight="light" color={alpha(ct, 0.2)} />
       </Box>
 
       {/* 404 */}
@@ -104,7 +104,7 @@ export function NotFound() {
       {/* CTA */}
       <Button
         variant="contained"
-        startIcon={<House size={16} weight="light" color="currentColor" />}
+        startIcon={<HouseIcon size={16} weight="light" color="currentColor" />}
         onClick={() => router.navigate({ to: '/dashboard' })}
         sx={{
           fontWeight: 600,

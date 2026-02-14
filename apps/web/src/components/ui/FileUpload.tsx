@@ -1,17 +1,8 @@
 import { useCallback, useState } from 'react';
 
+import { SUPPORTED_EXTENSIONS, SUPPORTED_LABELS, SUPPORTED_MIMES } from '@grabdy/contracts';
 import { Box, Typography } from '@mui/material';
-import { UploadSimple } from '@phosphor-icons/react';
-
-const ACCEPTED_TYPES = [
-  'application/pdf',
-  'text/csv',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'text/plain',
-  'application/json',
-];
-
-const ACCEPTED_EXTENSIONS = '.pdf,.csv,.docx,.txt,.json';
+import { UploadSimpleIcon } from '@phosphor-icons/react';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -28,7 +19,7 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
       if (disabled) return;
 
       const file = e.dataTransfer.files[0];
-      if (file && ACCEPTED_TYPES.includes(file.type)) {
+      if (file && SUPPORTED_MIMES.has(file.type)) {
         onFileSelect(file);
       }
     },
@@ -78,19 +69,19 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
     >
       <input
         type="file"
-        accept={ACCEPTED_EXTENSIONS}
+        accept={SUPPORTED_EXTENSIONS}
         onChange={handleFileInput}
         disabled={disabled}
         style={{ display: 'none' }}
       />
       <Box sx={{ color: 'grey.400', mb: 1 }}>
-        <UploadSimple size={32} weight="light" color="currentColor" />
+        <UploadSimpleIcon size={32} weight="light" color="currentColor" />
       </Box>
       <Typography variant="body1" fontWeight={500}>
         Drop a file here or click to browse
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-        PDF, CSV, DOCX, TXT, JSON
+        {SUPPORTED_LABELS}
       </Typography>
     </Box>
   );

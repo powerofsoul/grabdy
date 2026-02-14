@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
-import { type DbId } from '@grabdy/common';
+import { type DbId,dbIdSchema } from '@grabdy/common';
 
 import { api } from '../lib/api';
 import { STORAGE_KEYS } from '../lib/storage-keys';
@@ -42,7 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrgId, setSelectedOrgId] = useState<DbId<'Org'> | undefined>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.SELECTED_ORG_ID);
-    return stored ? (stored as DbId<'Org'>) : undefined;
+    if (!stored) return undefined;
+    const parsed = dbIdSchema('Org').safeParse(stored);
+    return parsed.success ? parsed.data : undefined;
   });
 
   const fetchUserProfile = useCallback(async () => {
@@ -73,7 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (memberships.length === 0) return;
     const isValid = selectedOrgId && memberships.some((m) => m.orgId === selectedOrgId);
     if (!isValid) {
-      setSelectedOrgId(memberships[0].orgId);
+      const firstOrgId = memberships[0].orgId;
+      queueMicrotask(() => setSelectedOrgId(firstOrgId));
     }
   }, [user, selectedOrgId]);
 

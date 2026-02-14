@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Box, CircularProgress, Fab, Stack } from '@mui/material';
-import { CaretUp } from '@phosphor-icons/react';
+import { CaretUpIcon } from '@phosphor-icons/react';
 
 import { MobileCard } from './MobileCard';
 import type {
@@ -129,7 +129,7 @@ export function MobileLayout<T>({
             borderColor: 'grey.900',
           }}
         >
-          <CaretUp size={24} weight="light" color="currentColor" />
+          <CaretUpIcon size={24} weight="light" color="currentColor" />
         </Fab>
       )}
     </Box>
