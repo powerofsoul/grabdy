@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, Button, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -31,15 +31,11 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftTopic(data.centralTopic);
     setDraftBranches(data.branches.map((b) => ({ ...b, children: b.children ? [...b.children] : [] })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleBranchLabelChange = (index: number, label: string) => {
     setDraftBranches((prev) => {
@@ -136,7 +132,7 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
                   onClick={() => handleDeleteBranch(i)}
                   sx={{ width: 28, height: 28, color: alpha(theme.palette.error.main, 0.5), '&:hover': { color: 'error.main' } }}
                 >
-                  <Trash size={15} weight="light" color="currentColor" />
+                  <TrashIcon size={15} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               {/* Children tags */}
@@ -169,14 +165,14 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
                       onClick={() => handleDeleteChild(i, j)}
                       sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3), '&:hover': { color: 'error.main' } }}
                     >
-                      <Trash size={12} weight="light" color="currentColor" />
+                      <TrashIcon size={12} weight="light" color="currentColor" />
                     </IconButton>
                   </Box>
                 ))}
                 <Button
                   size="small"
                   variant="text"
-                  startIcon={<Plus size={14} weight="light" color="currentColor" />}
+                  startIcon={<PlusIcon size={14} weight="light" color="currentColor" />}
                   onClick={() => handleAddChild(i)}
                   sx={{
                     fontSize: 11,
@@ -196,7 +192,7 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
         <Button
           size="small"
           variant="outlined"
-          startIcon={<Plus size={16} weight="light" color="currentColor" />}
+          startIcon={<PlusIcon size={16} weight="light" color="currentColor" />}
           onClick={handleAddBranch}
           fullWidth
           sx={{

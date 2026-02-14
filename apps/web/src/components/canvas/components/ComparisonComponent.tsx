@@ -13,7 +13,7 @@ import {
   TextField,
   useTheme,
 } from '@mui/material';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -44,15 +44,11 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftItems([...data.items]);
     setDraftAttrs(data.attributes.map((a) => ({ ...a, values: [...a.values] })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleAddColumn = () => {
     setDraftItems((prev) => [...prev, `Option ${prev.length + 1}`]);
@@ -106,14 +102,14 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                         onClick={() => handleDeleteColumn(i)}
                         sx={{ width: 16, height: 16, color: alpha(theme.palette.text.primary, 0.25) }}
                       >
-                        <Trash size={10} weight="light" color="currentColor" />
+                        <TrashIcon size={10} weight="light" color="currentColor" />
                       </IconButton>
                     </Box>
                   </TableCell>
                 ))}
                 <TableCell sx={{ p: 0.5, width: 30 }}>
                   <IconButton size="small" onClick={handleAddColumn} sx={{ width: 20, height: 20, color: 'primary.main' }}>
-                    <Plus size={12} weight="light" color="currentColor" />
+                    <PlusIcon size={12} weight="light" color="currentColor" />
                   </IconButton>
                 </TableCell>
               </TableRow>
@@ -138,7 +134,7 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                         onClick={() => handleDeleteRow(ai)}
                         sx={{ width: 16, height: 16, color: alpha(theme.palette.text.primary, 0.25) }}
                       >
-                        <Trash size={10} weight="light" color="currentColor" />
+                        <TrashIcon size={10} weight="light" color="currentColor" />
                       </IconButton>
                     </Box>
                   </TableCell>
@@ -168,7 +164,7 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
         </TableContainer>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, py: 0.5 }}>
           <IconButton size="small" onClick={handleAddRow} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

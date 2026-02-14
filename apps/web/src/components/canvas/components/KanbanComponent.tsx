@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -26,14 +26,10 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftColumns(data.columns.map((c) => ({ ...c, items: [...c.items] })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleColumnTitleChange = (colIndex: number, title: string) => {
     setDraftColumns((prev) =>
@@ -103,7 +99,7 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
                   onClick={() => handleDeleteColumn(ci)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash size={12} weight="light" color="currentColor" />
+                  <TrashIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <Box sx={{ pl: 2, mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -122,7 +118,7 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
                       onClick={() => handleDeleteItem(ci, ii)}
                       sx={{ width: 16, height: 16, color: alpha(theme.palette.text.primary, 0.25) }}
                     >
-                      <Trash size={10} weight="light" color="currentColor" />
+                      <TrashIcon size={10} weight="light" color="currentColor" />
                     </IconButton>
                   </Box>
                 ))}
@@ -131,7 +127,7 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
                   onClick={() => handleAddItem(ci)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.primary.main, 0.6), alignSelf: 'flex-start' }}
                 >
-                  <Plus size={12} weight="light" color="currentColor" />
+                  <PlusIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
             </Box>
@@ -139,7 +135,7 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddColumn} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

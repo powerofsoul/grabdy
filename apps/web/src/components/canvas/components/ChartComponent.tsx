@@ -11,8 +11,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { ChartBar, ChartLine, ChartPie, Plus, Trash, X } from '@phosphor-icons/react';
-
+import { ChartBarIcon, ChartLineIcon, ChartPieIcon, PlusIcon, TrashIcon, XIcon } from '@phosphor-icons/react';
 import {
   Bar,
   BarChart,
@@ -66,16 +65,12 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftChartType(data.chartType);
     setDraftLabels([...data.labels]);
     setDraftDatasets(data.datasets.map((ds) => ({ ...ds, data: [...ds.data] })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleAddLabel = () => {
     setDraftLabels((prev) => [...prev, `Label ${prev.length + 1}`]);
@@ -148,18 +143,18 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
             size="small"
             sx={{ '& .MuiToggleButton-root': { px: 1, py: 0.25 } }}
           >
-            <ToggleButton value="bar"><Tooltip title="Bar"><ChartBar size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
-            <ToggleButton value="line"><Tooltip title="Line"><ChartLine size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
-            <ToggleButton value="pie"><Tooltip title="Pie"><ChartPie size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
+            <ToggleButton value="bar"><Tooltip title="Bar"><ChartBarIcon size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
+            <ToggleButton value="line"><Tooltip title="Line"><ChartLineIcon size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
+            <ToggleButton value="pie"><Tooltip title="Pie"><ChartPieIcon size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
-        {/* Labels (X-axis categories) */}
+        {/* Labels (XIcon-axis categories) */}
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>Labels</Typography>
             <IconButton size="small" onClick={handleAddLabel} sx={{ width: 20, height: 20, color: 'primary.main' }}>
-              <Plus size={12} weight="light" color="currentColor" />
+              <PlusIcon size={12} weight="light" color="currentColor" />
             </IconButton>
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -177,7 +172,7 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
                     onClick={() => handleRemoveLabel(i)}
                     sx={{ width: 16, height: 16, p: 0, color: alpha(theme.palette.text.primary, 0.3) }}
                   >
-                    <X size={10} weight="light" color="currentColor" />
+                    <XIcon size={10} weight="light" color="currentColor" />
                   </IconButton>
                 )}
               </Box>
@@ -190,7 +185,7 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>Series</Typography>
             <IconButton size="small" onClick={handleAddDataset} sx={{ width: 20, height: 20, color: 'primary.main' }}>
-              <Plus size={12} weight="light" color="currentColor" />
+              <PlusIcon size={12} weight="light" color="currentColor" />
             </IconButton>
           </Box>
           {draftDatasets.map((ds, di) => (
@@ -216,7 +211,7 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
                     onClick={() => handleRemoveDataset(di)}
                     sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                   >
-                    <Trash size={11} weight="light" color="currentColor" />
+                    <TrashIcon size={11} weight="light" color="currentColor" />
                   </IconButton>
                 )}
               </Box>

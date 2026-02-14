@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, Checkbox, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { resolveColor } from '../hooks/resolveColor';
 import { useEditMode } from '../hooks/useEditMode';
@@ -46,14 +46,10 @@ export function ChecklistComponent({ data, onSave }: ChecklistComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  useEditMode(handleSave, handleCancel, () => {
     setDraftItems(data.items.map((i) => ({ ...i })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleItemChange = (index: number, label: string) => {
     setDraftItems((prev) => prev.map((item, i) => (i === index ? { ...item, label } : item)));
@@ -89,14 +85,14 @@ export function ChecklistComponent({ data, onSave }: ChecklistComponentProps) {
                 onClick={() => handleDeleteItem(i)}
                 sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
               >
-                <Trash size={12} weight="light" color="currentColor" />
+                <TrashIcon size={12} weight="light" color="currentColor" />
               </IconButton>
             </Box>
           ))}
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddItem} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

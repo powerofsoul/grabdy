@@ -4,7 +4,15 @@
  * which MUI's color utilities don't support — they require #hex, rgb(), etc.
  */
 
-const CSS_COLOR_TO_HEX: Record<string, string> = {
+const CSS_COLOR_NAMES = [
+  'red', 'pink', 'purple', 'blue', 'lightblue', 'cyan', 'teal',
+  'green', 'lightgreen', 'lime', 'yellow', 'amber', 'orange',
+  'brown', 'grey', 'gray', 'black', 'white', 'indigo',
+] as const;
+
+type CssColorName = (typeof CSS_COLOR_NAMES)[number];
+
+const CSS_COLOR_TO_HEX: Record<CssColorName, string> = {
   red: '#f44336',
   pink: '#e91e63',
   purple: '#9c27b0',
@@ -33,7 +41,8 @@ export function resolveColor(color: string | undefined, fallback: string): strin
   if (!color) return fallback;
   // Already a valid MUI-compatible format
   if (HEX_RE.test(color) || FUNC_RE.test(color)) return color;
-  // CSS named color
-  const hex = CSS_COLOR_TO_HEX[color.toLowerCase()];
-  return hex ?? fallback;
+  // CSS named color — .find() narrows from string to CssColorName
+  const lower = color.toLowerCase();
+  const matched = CSS_COLOR_NAMES.find((n) => n === lower);
+  return matched ? CSS_COLOR_TO_HEX[matched] : fallback;
 }

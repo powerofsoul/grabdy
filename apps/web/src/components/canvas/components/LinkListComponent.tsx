@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, Link, TextField, Typography, useTheme } from '@mui/material';
-import { ArrowSquareOut, Plus, Trash } from '@phosphor-icons/react';
+import { ArrowSquareOutIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -30,14 +30,10 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftLinks(data.links.map((l) => ({ ...l })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleLinkChange = (index: number, field: string, value: string) => {
     setDraftLinks((prev) =>
@@ -81,7 +77,7 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
                   onClick={() => handleDeleteLink(i)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash size={12} weight="light" color="currentColor" />
+                  <TrashIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <TextField
@@ -105,7 +101,7 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddLink} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>
@@ -118,7 +114,7 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
         {data.links.map((link, i) => (
           <Box key={i} sx={{ py: 0.25 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <ArrowSquareOut size={12} weight="light" color={theme.palette.primary.main} style={{ flexShrink: 0 }} />
+              <ArrowSquareOutIcon size={12} weight="light" color={theme.palette.primary.main} style={{ flexShrink: 0 }} />
               <Link
                 href={link.url}
                 target="_blank"

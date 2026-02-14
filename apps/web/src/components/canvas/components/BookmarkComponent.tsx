@@ -27,17 +27,12 @@ export function BookmarkComponent({ data, onSave }: BookmarkComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     if (!onSave) return;
     setDraftLabel(data.label);
     setDraftNote(data.note ?? '');
     setIsEditing(true);
-    startEdit();
-  };
-
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') { handleCancel(); endEdit(); }

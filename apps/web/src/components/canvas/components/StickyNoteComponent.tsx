@@ -7,16 +7,18 @@ import { useEditMode } from '../hooks/useEditMode';
 import { CanvasEditor } from './CanvasEditor';
 import { MarkdownContent } from './MarkdownContent';
 
+type StickyNoteColor = 'yellow' | 'pink' | 'blue' | 'green' | 'purple' | 'orange';
+
 interface StickyNoteComponentProps {
   data: {
     content: string;
-    color: 'yellow' | 'pink' | 'blue' | 'green' | 'purple' | 'orange';
+    color: StickyNoteColor;
   };
   onSave?: (data: Record<string, unknown>) => void;
 }
 
 // Sticky note background palette — intentionally hardcoded (not UI chrome)
-const COLOR_MAP: Record<string, string> = {
+const COLOR_MAP: Record<StickyNoteColor, string> = {
   yellow: '#ffecb3',
   pink: '#fce4ec',
   blue: '#e3f2fd',
@@ -25,9 +27,9 @@ const COLOR_MAP: Record<string, string> = {
   orange: '#fff3e0',
 };
 
-const COLOR_OPTIONS: ReadonlyArray<'yellow' | 'pink' | 'blue' | 'green' | 'purple' | 'orange'> = [
+const COLOR_OPTIONS = [
   'yellow', 'pink', 'blue', 'green', 'purple', 'orange',
-];
+] as const satisfies readonly StickyNoteColor[];
 
 export function StickyNoteComponent({ data, onSave }: StickyNoteComponentProps) {
   const theme = useTheme();
@@ -47,16 +49,12 @@ export function StickyNoteComponent({ data, onSave }: StickyNoteComponentProps) 
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleClick = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     if (!onSave) return;
     setDraftColor(data.color);
     contentRef.current = data.content;
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleClick;
+  });
 
   const handleEditorCancel = () => {
     handleCancel();

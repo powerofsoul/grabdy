@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import type { Edge, Node } from '@xyflow/react';
-
 import type { NonDbId } from '@grabdy/common';
 import type { CanvasEdge, CanvasState, Card } from '@grabdy/contracts';
+import type { Edge, Node } from '@xyflow/react';
+
 import type { CanvasUpdate } from '@/lib/api';
 
 /** Merge partial data into a component while preserving its discriminated union type. */

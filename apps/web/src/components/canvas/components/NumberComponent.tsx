@@ -55,17 +55,13 @@ export function NumberComponent({ data, onSave }: NumberComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  useEditMode(handleSave, handleCancel, () => {
     setDraftValue(String(data.value));
     setDraftPrefix(data.prefix ?? '');
     setDraftSuffix(data.suffix ?? '');
     setDraftSize(data.size ?? 'md');
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   if (isEditing) {
     return (

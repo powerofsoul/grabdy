@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -38,9 +38,7 @@ export function SwotComponent({ data, onSave }: SwotComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraft({
       strengths: [...data.strengths],
       weaknesses: [...data.weaknesses],
@@ -48,9 +46,7 @@ export function SwotComponent({ data, onSave }: SwotComponentProps) {
       threats: [...data.threats],
     });
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleItemChange = (quad: QuadrantKey, index: number, value: string) => {
     setDraft((prev) => ({
@@ -99,12 +95,12 @@ export function SwotComponent({ data, onSave }: SwotComponentProps) {
                       onClick={() => handleDeleteItem(key, i)}
                       sx={{ width: 16, height: 16, p: 0 }}
                     >
-                      <Trash size={10} weight="light" color="currentColor" />
+                      <TrashIcon size={10} weight="light" color="currentColor" />
                     </IconButton>
                   </Box>
                 ))}
                 <IconButton size="small" onClick={() => handleAddItem(key)} sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}>
-                  <Plus size={12} weight="light" color="currentColor" />
+                  <PlusIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
             </Box>

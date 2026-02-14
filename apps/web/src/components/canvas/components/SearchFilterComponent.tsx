@@ -1,5 +1,5 @@
 import { alpha, Box, Chip, Typography, useTheme } from '@mui/material';
-import { MagnifyingGlass } from '@phosphor-icons/react';
+import { MagnifyingGlassIcon } from '@phosphor-icons/react';
 
 interface SearchFilterComponentProps {
   data: {
@@ -24,7 +24,7 @@ export function SearchFilterComponent({ data }: SearchFilterComponentProps) {
           mb: 1,
         }}
       >
-        <MagnifyingGlass size={14} weight="light" color="currentColor" style={{ opacity: 0.5 }} />
+        <MagnifyingGlassIcon size={14} weight="light" color="currentColor" style={{ opacity: 0.5 }} />
         <Typography sx={{ fontSize: 12 }}>{data.query}</Typography>
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>

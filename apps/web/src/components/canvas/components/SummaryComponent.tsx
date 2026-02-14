@@ -28,15 +28,11 @@ export function SummaryComponent({ data, onSave }: SummaryComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleClick = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     if (!onSave) return;
     contentRef.current = data.content;
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleClick;
+  });
 
   const handleEditorCancel = () => {
     handleCancel();

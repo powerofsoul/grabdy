@@ -1,8 +1,8 @@
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { alpha, Box, IconButton, MenuItem, Select, useTheme } from '@mui/material';
+import { CheckIcon, CopyIcon } from '@phosphor-icons/react';
 import { common, createLowlight } from 'lowlight';
-import { Check, Copy } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -112,10 +112,13 @@ export function CodeComponent({ data, onSave }: CodeComponentProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Sync when data changes from outside
-  if (data.code !== lastSavedRef.current) {
-    lastSavedRef.current = data.code;
-    setCode(data.code);
-  }
+  useEffect(() => {
+    if (data.code !== lastSavedRef.current) {
+      lastSavedRef.current = data.code;
+      const newCode = data.code;
+      queueMicrotask(() => setCode(newCode));
+    }
+  }, [data.code]);
 
   const highlightedContent = useMemo((): ReactNode | null => {
     try {
@@ -150,16 +153,12 @@ export function CodeComponent({ data, onSave }: CodeComponentProps) {
     setIsEditing(false);
   }, [data]);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setCode(data.code);
     setTitle(data.title ?? '');
     setLanguage(data.language ?? '');
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setCode(e.target.value);
@@ -378,7 +377,7 @@ export function CodeComponent({ data, onSave }: CodeComponentProps) {
           color: copied ? 'success.main' : alpha(theme.palette.text.primary, 0.5),
         }}
       >
-        {copied ? <Check size={12} weight="light" color="currentColor" /> : <Copy size={12} weight="light" color="currentColor" />}
+        {copied ? <CheckIcon size={12} weight="light" color="currentColor" /> : <CopyIcon size={12} weight="light" color="currentColor" />}
       </IconButton>
     </Box>
   );

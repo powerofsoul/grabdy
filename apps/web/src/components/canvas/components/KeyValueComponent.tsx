@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -26,14 +26,10 @@ export function KeyValueComponent({ data, onSave }: KeyValueComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftPairs(data.pairs.map((p) => ({ ...p })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleKeyChange = (index: number, key: string) => {
     setDraftPairs((prev) => prev.map((pair, i) => (i === index ? { ...pair, key } : pair)));
@@ -69,7 +65,7 @@ export function KeyValueComponent({ data, onSave }: KeyValueComponentProps) {
                 size="small"
                 value={pair.key}
                 onChange={(e) => handleKeyChange(i, e.target.value)}
-                placeholder="Key"
+                placeholder="KeyIcon"
                 autoFocus={i === 0}
                 sx={{
                   flex: 1,
@@ -88,14 +84,14 @@ export function KeyValueComponent({ data, onSave }: KeyValueComponentProps) {
                 onClick={() => handleDeletePair(i)}
                 sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
               >
-                <Trash size={12} weight="light" color="currentColor" />
+                <TrashIcon size={12} weight="light" color="currentColor" />
               </IconButton>
             </Box>
           ))}
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddPair} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

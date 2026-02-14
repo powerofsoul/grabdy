@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Plus, ThumbsDown, ThumbsUp, Trash } from '@phosphor-icons/react';
+import { PlusIcon, ThumbsDownIcon, ThumbsUpIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -28,15 +28,11 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftPros([...data.pros]);
     setDraftCons([...data.cons]);
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleProChange = (index: number, value: string) => {
     setDraftPros((prev) => prev.map((item, i) => (i === index ? value : item)));
@@ -95,12 +91,12 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
                     onClick={() => handleDeletePro(i)}
                     sx={{ width: 16, height: 16, p: 0 }}
                   >
-                    <Trash size={10} weight="light" color="currentColor" />
+                    <TrashIcon size={10} weight="light" color="currentColor" />
                   </IconButton>
                 </Box>
               ))}
               <IconButton size="small" onClick={handleAddPro} sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}>
-                <Plus size={12} weight="light" color="currentColor" />
+                <PlusIcon size={12} weight="light" color="currentColor" />
               </IconButton>
             </Box>
           </Box>
@@ -124,12 +120,12 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
                     onClick={() => handleDeleteCon(i)}
                     sx={{ width: 16, height: 16, p: 0 }}
                   >
-                    <Trash size={10} weight="light" color="currentColor" />
+                    <TrashIcon size={10} weight="light" color="currentColor" />
                   </IconButton>
                 </Box>
               ))}
               <IconButton size="small" onClick={handleAddCon} sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}>
-                <Plus size={12} weight="light" color="currentColor" />
+                <PlusIcon size={12} weight="light" color="currentColor" />
               </IconButton>
             </Box>
           </Box>
@@ -150,7 +146,7 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
-            <ThumbsUp size={12} weight="light" color={theme.palette.success.main} />
+            <ThumbsUpIcon size={12} weight="light" color={theme.palette.success.main} />
             <Typography
               sx={{
                 fontSize: 10,
@@ -184,7 +180,7 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
         {/* Cons column */}
         <Box sx={{ p: 1.25 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
-            <ThumbsDown size={12} weight="light" color={theme.palette.error.main} />
+            <ThumbsDownIcon size={12} weight="light" color={theme.palette.error.main} />
             <Typography
               sx={{
                 fontSize: 10,

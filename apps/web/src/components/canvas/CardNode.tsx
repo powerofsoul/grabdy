@@ -1,18 +1,17 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
-import { DotsSixVertical, PencilSimple, Sparkle, Trash } from '@phosphor-icons/react';
-
 import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
+import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import { DotsSixVerticalIcon, PencilSimpleIcon, SparkleIcon, TrashIcon } from '@phosphor-icons/react';
+import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
 
 const parseCardId = nonDbIdSchema('CanvasCard').parse;
 import type { Card, CardMetadata, CardSource } from '@grabdy/contracts';
 
 import { EditActions } from './components/EditActions';
 import { SourceLinkComponent } from './components/SourceLinkComponent';
-import { renderComponent } from './componentRegistry';
 import { EditModeContext } from './hooks/useEditMode';
+import { renderComponent } from './componentRegistry';
 
 interface CardNodeData extends Record<string, unknown> {
   id: string;
@@ -37,8 +36,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
   const theme = useTheme();
   // Select only zoom — avoids re-rendering all cards on every pan
   const zoom = useStore((s) => s.transform[2]);
-  const { onDelete: _d, onComponentEdit, onTitleEdit: _t, onResize: _r, ...cardData } = data;
-  const card = cardData;
+  const { onComponentEdit } = data;
 
   const contentRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -48,6 +46,10 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
   const activeSaveRef = useRef<React.RefObject<() => void> | null>(null);
   const activeDiscardRef = useRef<React.RefObject<() => void> | null>(null);
   const editTriggerRef = useRef<(() => void) | null>(null);
+
+  const setEditTrigger = useCallback((trigger: (() => void) | null) => {
+    editTriggerRef.current = trigger;
+  }, []);
 
   const enterEdit = useCallback((saveRef: React.RefObject<() => void>, discardRef: React.RefObject<() => void>) => {
     activeSaveRef.current = saveRef;
@@ -62,8 +64,8 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
   }, []);
 
   const editContextValue = useMemo(
-    () => ({ isEditing, enterEdit, exitEdit, editTriggerRef }),
-    [isEditing, enterEdit, exitEdit],
+    () => ({ isEditing, enterEdit, exitEdit, setEditTrigger }),
+    [isEditing, enterEdit, exitEdit, setEditTrigger],
   );
 
   // Bump z-index of the ReactFlow node wrapper when editing so card appears above others
@@ -202,7 +204,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
             '&:active': { cursor: 'grabbing' },
           }}
         >
-          <DotsSixVertical size={14} weight="light" color="currentColor" />
+          <DotsSixVerticalIcon size={14} weight="light" color="currentColor" />
         </Box>
 
         {/* Content */}
@@ -213,9 +215,9 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
           onPointerLeave={handlePointerUp}
           sx={{ overflow: 'visible', borderRadius: 'inherit' }}
         >
-          {renderComponent(card.component, parseCardId(card.id), onComponentEdit)}
-          {card.sources && card.sources.length > 0 && (
-            <SourceLinkComponent data={{ sources: card.sources }} />
+          {renderComponent(data.component, parseCardId(data.id), onComponentEdit)}
+          {data.sources && data.sources.length > 0 && (
+            <SourceLinkComponent data={{ sources: data.sources }} />
           )}
         </Box>
 
@@ -230,7 +232,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
           minWidth={200}
           position="bottom-right"
           onResize={() => {
-            // Lock height during resize by resetting it to auto
+            // LockIcon height during resize by resetting it to auto
             const nodeEl = cardRef.current?.closest('.react-flow__node');
             if (nodeEl instanceof HTMLElement) {
               nodeEl.style.height = 'auto';
@@ -238,7 +240,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
           }}
           onResizeEnd={(_event, params) => {
             if (data.onResize) {
-              data.onResize(card.id, params.width);
+              data.onResize(data.id, params.width);
             }
           }}
           style={{
@@ -288,7 +290,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
           onMouseDown={(e) => e.stopPropagation()}
         >
           {/* Creator badge */}
-          {card.metadata?.createdBy === 'ai' && (
+          {data.metadata?.createdBy === 'ai' && (
             <>
               <Box
                 sx={{
@@ -299,7 +301,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                   color: 'primary.main',
                 }}
               >
-                <Sparkle size={14} weight="light" color="currentColor" />
+                <SparkleIcon size={14} weight="light" color="currentColor" />
                 <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1 }}>
                   AI
                 </Typography>
@@ -325,7 +327,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                       '&:hover': { color: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.08) },
                     }}
                   >
-                    <PencilSimple size={15} weight="light" color="currentColor" />
+                    <PencilSimpleIcon size={15} weight="light" color="currentColor" />
                   </IconButton>
                 </Tooltip>
               )}
@@ -341,7 +343,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                       '&:hover': { color: 'error.main', bgcolor: alpha(theme.palette.error.main, 0.08) },
                     }}
                   >
-                    <Trash size={15} weight="light" color="currentColor" />
+                    <TrashIcon size={15} weight="light" color="currentColor" />
                   </IconButton>
                 </Tooltip>
               )}

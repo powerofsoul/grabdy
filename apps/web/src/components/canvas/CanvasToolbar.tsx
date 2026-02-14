@@ -1,40 +1,40 @@
 import { useCallback, useState } from 'react';
 
+import { packNonDbId } from '@grabdy/common';
+import type { Card } from '@grabdy/contracts';
 import { alpha, Box, IconButton, Popover, Tooltip, Typography, useTheme } from '@mui/material';
-import { useAuth } from '../../context/AuthContext';
 import {
-  ChartBar,
-  BookmarkSimple,
-  CheckSquare,
-  ArrowsInSimple,
-  Clock,
-  CodeSimple,
-  Columns,
-  FileJs,
-  Funnel,
-  Gauge,
-  GridNine,
-  Hash,
-  TextHOne,
-  ImageSquare,
-  SquaresFour,
-  LinkSimple,
-  ListChecks,
-  Quotes,
-  Warning,
-  Palette,
-  Star,
-  Note,
-  Table,
-  Tag,
-  Crosshair,
-  ThumbsUp,
-  TextT,
+  ArrowsInSimpleIcon,
+  BookmarkSimpleIcon,
+  ChartBarIcon,
+  CheckSquareIcon,
+  ClockIcon,
+  CodeSimpleIcon,
+  ColumnsIcon,
+  CrosshairIcon,
+  FileJsIcon,
+  FunnelIcon,
+  GaugeIcon,
+  GridNineIcon,
+  HashIcon,
+  ImageSquareIcon,
+  LinkSimpleIcon,
+  ListChecksIcon,
+  NoteIcon,
+  PaletteIcon,
+  QuotesIcon,
+  SquaresFourIcon,
+  StarIcon,
+  TableIcon,
+  TagIcon,
+  TextHOneIcon,
+  TextTIcon,
+  ThumbsUpIcon,
+  WarningIcon,
 } from '@phosphor-icons/react';
 import { Panel } from '@xyflow/react';
 
-import { packNonDbId } from '@grabdy/common';
-import type { Card } from '@grabdy/contracts';
+import { useAuth } from '../../context/AuthContext';
 
 const COMPONENT_TEMPLATES = {
   table: {
@@ -188,8 +188,8 @@ const COMPONENT_TEMPLATES = {
     type: 'key_value' as const,
     data: {
       pairs: [
-        { key: 'Key 1', value: 'Value 1' },
-        { key: 'Key 2', value: 'Value 2' },
+        { key: 'KeyIcon 1', value: 'Value 1' },
+        { key: 'KeyIcon 2', value: 'Value 2' },
       ],
     },
   },
@@ -204,9 +204,9 @@ const COMPONENT_TEMPLATES = {
     type: 'tag_cloud' as const,
     data: {
       tags: [
-        { label: 'Tag 1' },
-        { label: 'Tag 2' },
-        { label: 'Tag 3' },
+        { label: 'TagIcon 1' },
+        { label: 'TagIcon 2' },
+        { label: 'TagIcon 3' },
       ],
     },
   },
@@ -282,45 +282,46 @@ const COMPONENT_TEMPLATES = {
 
 type ComponentType = keyof typeof COMPONENT_TEMPLATES;
 
-type ToolbarItem = { type: ComponentType; icon: typeof Table; label: string };
+type ToolbarItem = { type: ComponentType; icon: typeof TableIcon; label: string };
 
 const PRIMARY_ITEMS: ToolbarItem[] = [
-  { type: 'text', icon: TextT, label: 'Text' },
-  { type: 'sticky_note', icon: Note, label: 'Sticky Note' },
-  { type: 'table', icon: Table, label: 'Table' },
-  { type: 'chart', icon: ChartBar, label: 'Chart' },
-  { type: 'checklist', icon: CheckSquare, label: 'Checklist' },
-  { type: 'code', icon: CodeSimple, label: 'Code' },
-  { type: 'alert', icon: Warning, label: 'Alert' },
+  { type: 'text', icon: TextTIcon, label: 'Text' },
+  { type: 'sticky_note', icon: NoteIcon, label: 'Sticky Note' },
+  { type: 'table', icon: TableIcon, label: 'Table' },
+  { type: 'chart', icon: ChartBarIcon, label: 'Chart' },
+  { type: 'checklist', icon: CheckSquareIcon, label: 'Checklist' },
+  { type: 'code', icon: CodeSimpleIcon, label: 'Code' },
+  { type: 'alert', icon: WarningIcon, label: 'Alert' },
 ];
 
 const SECONDARY_ITEMS: ToolbarItem[] = [
   // Row 1: Numbers & metrics
-  { type: 'kpi_row', icon: Columns, label: 'KPI Row' },
-  { type: 'number', icon: Hash, label: 'Number' },
-  { type: 'progress', icon: Gauge, label: 'Progress' },
-  { type: 'funnel', icon: Funnel, label: 'Funnel' },
+  { type: 'kpi_row', icon: ColumnsIcon, label: 'KPI Row' },
+  { type: 'number', icon: HashIcon, label: 'Number' },
+  { type: 'progress', icon: GaugeIcon, label: 'Progress' },
+  { type: 'funnel', icon: FunnelIcon, label: 'Funnel' },
   // Row 2: Lists & data
-  { type: 'key_value', icon: ListChecks, label: 'Key-Value' },
-  { type: 'status_list', icon: Palette, label: 'Status List' },
-  { type: 'link_list', icon: LinkSimple, label: 'Links' },
-  { type: 'tag_cloud', icon: Tag, label: 'Tags' },
+  { type: 'summary', icon: ListChecksIcon, label: 'Summary' },
+  { type: 'key_value', icon: ListChecksIcon, label: 'Key-Value' },
+  { type: 'status_list', icon: PaletteIcon, label: 'Status List' },
+  { type: 'link_list', icon: LinkSimpleIcon, label: 'Links' },
+  { type: 'tag_cloud', icon: TagIcon, label: 'Tags' },
   // Row 3: Boards & comparisons
-  { type: 'timeline', icon: Clock, label: 'Timeline' },
-  { type: 'kanban', icon: SquaresFour, label: 'Kanban' },
-  { type: 'comparison', icon: Columns, label: 'Compare' },
-  { type: 'matrix', icon: GridNine, label: 'Matrix' },
-  { type: 'swot', icon: Crosshair, label: 'SWOT' },
+  { type: 'timeline', icon: ClockIcon, label: 'Timeline' },
+  { type: 'kanban', icon: SquaresFourIcon, label: 'Kanban' },
+  { type: 'comparison', icon: ColumnsIcon, label: 'Compare' },
+  { type: 'matrix', icon: GridNineIcon, label: 'Matrix' },
+  { type: 'swot', icon: CrosshairIcon, label: 'SWOT' },
   // Row 4: Content blocks
-  { type: 'header', icon: TextHOne, label: 'Header' },
-  { type: 'accordion', icon: ArrowsInSimple, label: 'Accordion' },
-  { type: 'pros_cons', icon: ThumbsUp, label: 'Pros/Cons' },
-  { type: 'json', icon: FileJs, label: 'JSON' },
+  { type: 'header', icon: TextHOneIcon, label: 'Header' },
+  { type: 'accordion', icon: ArrowsInSimpleIcon, label: 'Accordion' },
+  { type: 'pros_cons', icon: ThumbsUpIcon, label: 'Pros/Cons' },
+  { type: 'json', icon: FileJsIcon, label: 'JSON' },
   // Row 5: Misc
-  { type: 'quote', icon: Quotes, label: 'Quote' },
-  { type: 'rating', icon: Star, label: 'Rating' },
-  { type: 'image', icon: ImageSquare, label: 'Image' },
-  { type: 'bookmark', icon: BookmarkSimple, label: 'Bookmark' },
+  { type: 'quote', icon: QuotesIcon, label: 'Quote' },
+  { type: 'rating', icon: StarIcon, label: 'Rating' },
+  { type: 'image', icon: ImageSquareIcon, label: 'Image' },
+  { type: 'bookmark', icon: BookmarkSimpleIcon, label: 'Bookmark' },
 ];
 
 const SMALL_TYPES = new Set<string>(['progress', 'number', 'header']);
@@ -438,7 +439,7 @@ export function CanvasToolbar({ onStartPlacement }: CanvasToolbarProps) {
               },
             }}
           >
-            <GridNine size={15} weight="light" />
+            <GridNineIcon size={15} weight="light" />
           </IconButton>
         </Tooltip>
       </Box>

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { type NonDbId, nonDbIdSchema, packNonDbId } from '@grabdy/common';
+import type { CanvasEdge, Card } from '@grabdy/contracts';
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { Brain, ArrowsOut, ArrowsIn } from '@phosphor-icons/react';
+import { ArrowsInIcon,ArrowsOutIcon, BrainIcon } from '@phosphor-icons/react';
 import {
   Background,
   BackgroundVariant,
@@ -20,12 +22,9 @@ import {
   useNodesState,
 } from '@xyflow/react';
 
-import '@xyflow/react/dist/style.css';
-
-import { type NonDbId, nonDbIdSchema, packNonDbId } from '@grabdy/common';
-import type { CanvasEdge, Card } from '@grabdy/contracts';
-
 import { useAuth } from '../../context/AuthContext';
+
+import '@xyflow/react/dist/style.css';
 
 const parseCardId = nonDbIdSchema('CanvasCard').parse;
 const parseEdgeId = nonDbIdSchema('CanvasEdge').parse;
@@ -33,8 +32,8 @@ const parseEdgeId = nonDbIdSchema('CanvasEdge').parse;
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CardNode } from './CardNode';
-import { CustomEdge } from './CustomEdge';
 import { renderComponent } from './componentRegistry';
+import { CustomEdge } from './CustomEdge';
 
 /**
  * Given two nodes, compute the best side (handle) for source and target
@@ -183,7 +182,7 @@ export function Canvas({
       if (connection.source === connection.target) return;
 
       setLocalEdges((prev) => {
-        // Check for existing edge between same nodes (either direction)
+        // CheckIcon for existing edge between same nodes (either direction)
         const exists = prev.some(
           (e) =>
             (e.source === connection.source && e.target === connection.target) ||
@@ -357,14 +356,14 @@ export function Canvas({
 
   // --- Placement mode handlers ---
 
-  const ghostZoomRef = useRef(1);
+  const [ghostZoom, setGhostZoom] = useState(1);
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent) => {
       if (!pendingCard) return;
       setMouseScreenPos({ x: event.clientX, y: event.clientY });
       if (reactFlowRef.current) {
-        ghostZoomRef.current = reactFlowRef.current.getZoom();
+        setGhostZoom(reactFlowRef.current.getZoom());
       }
     },
     [pendingCard],
@@ -467,7 +466,7 @@ export function Canvas({
                 textAlign: 'center',
               }}
             >
-              <Brain size={48} weight="light" color={alpha(theme.palette.text.primary, 0.12)} />
+              <BrainIcon size={48} weight="light" color={alpha(theme.palette.text.primary, 0.12)} />
               <Typography sx={{ fontSize: 16, fontWeight: 500, color: alpha(theme.palette.text.primary, 0.22), mt: 1 }}>
                 Nothing here yet
               </Typography>
@@ -496,7 +495,7 @@ export function Canvas({
                   height: 32,
                 }}
               >
-                {isMaximized ? <ArrowsIn size={16} weight="light" color="currentColor" /> : <ArrowsOut size={16} weight="light" color="currentColor" />}
+                {isMaximized ? <ArrowsInIcon size={16} weight="light" color="currentColor" /> : <ArrowsOutIcon size={16} weight="light" color="currentColor" />}
               </IconButton>
             </Tooltip>
           </Panel>
@@ -519,7 +518,7 @@ export function Canvas({
             borderRadius: 2,
             p: 1,
             boxShadow: `0 4px 20px ${alpha(theme.palette.text.primary, 0.15)}`,
-            transform: `translate(-50%, 0) scale(${ghostZoomRef.current})`,
+            transform: `translate(-50%, 0) scale(${ghostZoom})`,
             transformOrigin: 'top center',
           }}
         >

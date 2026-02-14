@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { Minus, Plus, Trash, TrendDown, TrendUp } from '@phosphor-icons/react';
+import { MinusIcon, PlusIcon, TrashIcon, TrendDownIcon, TrendUpIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -35,14 +35,10 @@ export function KpiRowComponent({ data, onSave }: KpiRowComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  useEditMode(handleSave, handleCancel, () => {
     setDraftMetrics(data.metrics.map((m) => ({ ...m })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleMetricChange = (index: number, field: 'value' | 'label', val: string) => {
     setDraftMetrics((prev) =>
@@ -86,14 +82,14 @@ export function KpiRowComponent({ data, onSave }: KpiRowComponentProps) {
                 onClick={() => handleDeleteMetric(i)}
                 sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
               >
-                <Trash size={12} weight="light" color="currentColor" />
+                <TrashIcon size={12} weight="light" color="currentColor" />
               </IconButton>
             </Box>
           ))}
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddMetric} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>
@@ -118,10 +114,10 @@ export function KpiRowComponent({ data, onSave }: KpiRowComponentProps) {
 
         const TrendIcon =
           metric.trend?.direction === 'up'
-            ? TrendUp
+            ? TrendUpIcon
             : metric.trend?.direction === 'down'
-              ? TrendDown
-              : Minus;
+              ? TrendDownIcon
+              : MinusIcon;
 
         return (
           <Box

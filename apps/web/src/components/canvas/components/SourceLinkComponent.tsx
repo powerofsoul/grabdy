@@ -1,6 +1,12 @@
+import { useCallback } from 'react';
+
+import { dbIdSchema } from '@grabdy/common';
 import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { useNavigate } from '@tanstack/react-router';
-import { FileText } from '@phosphor-icons/react';
+import { FileTextIcon } from '@phosphor-icons/react';
+
+import { DocumentPreviewDrawer } from '../../chat/DocumentPreviewDrawer';
+
+import { useDrawer } from '@/context/DrawerContext';
 
 interface SourceLinkComponentProps {
   data: {
@@ -16,13 +22,20 @@ interface SourceLinkComponentProps {
 
 export function SourceLinkComponent({ data }: SourceLinkComponentProps) {
   const theme = useTheme();
-  const navigate = useNavigate();
+  const { pushDrawer } = useDrawer();
 
-  const handleClick = (source: SourceLinkComponentProps['data']['sources'][number]) => {
-    if (source.collectionId) {
-      navigate({ to: '/dashboard/sources/$collectionId', params: { collectionId: source.collectionId } });
-    }
-  };
+  const handleClick = useCallback(
+    (source: SourceLinkComponentProps['data']['sources'][number]) => {
+      if (!source.dataSourceId) return;
+      const parsed = dbIdSchema('DataSource').safeParse(source.dataSourceId);
+      if (!parsed.success) return;
+      pushDrawer(
+        (onClose) => <DocumentPreviewDrawer onClose={onClose} dataSourceId={parsed.data} />,
+        { title: source.name, mode: 'dialog', maxWidth: 'lg' },
+      );
+    },
+    [pushDrawer],
+  );
 
   return (
     <Box
@@ -40,7 +53,7 @@ export function SourceLinkComponent({ data }: SourceLinkComponentProps) {
       }}
     >
       {data.sources.map((source, i) => {
-        const clickable = Boolean(source.collectionId);
+        const clickable = Boolean(source.dataSourceId);
         return (
           <Box
             key={i}
@@ -63,7 +76,7 @@ export function SourceLinkComponent({ data }: SourceLinkComponentProps) {
                 : { bgcolor: alpha(theme.palette.text.primary, 0.08) },
             }}
           >
-            <FileText size={10} weight="light" color={alpha(theme.palette.text.primary, 0.35)} style={{ flexShrink: 0 }} />
+            <FileTextIcon size={10} weight="light" color={alpha(theme.palette.text.primary, 0.35)} style={{ flexShrink: 0 }} />
             <Typography
               className="source-name"
               sx={{

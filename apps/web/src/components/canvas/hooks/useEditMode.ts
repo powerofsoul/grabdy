@@ -7,15 +7,15 @@ interface EditModeContextValue {
   enterEdit: (saveRef: React.RefObject<() => void>, discardRef: React.RefObject<() => void>) => void;
   /** Unregister the active editor */
   exitEdit: () => void;
-  /** Ref that the card toolbar calls to trigger edit mode */
-  editTriggerRef: React.MutableRefObject<(() => void) | null>;
+  /** Set the edit trigger callback that the card toolbar invokes */
+  setEditTrigger: (trigger: (() => void) | null) => void;
 }
 
 export const EditModeContext = createContext<EditModeContextValue>({
   isEditing: false,
   enterEdit: () => {},
   exitEdit: () => {},
-  editTriggerRef: { current: null },
+  setEditTrigger: () => {},
 });
 
 /**
@@ -24,21 +24,19 @@ export const EditModeContext = createContext<EditModeContextValue>({
  * Components call `startEdit` when entering edit mode and `endEdit` when done.
  * The CardNode renders Save/Discard buttons below the card and handles click-outside.
  *
- * Use `editHandlerRef` to register the component's edit handler
- * so the card toolbar can trigger edit mode:
- *
- *   const { startEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
- *   const handleStartEdit = () => { ... startEdit(); };
- *   editHandlerRef.current = handleStartEdit;
+ * Pass `onEdit` to register the component's edit handler so the card toolbar
+ * can trigger edit mode. The hook calls `onEdit()` then enters edit mode automatically.
  */
-export function useEditMode(onSave: () => void, onDiscard: () => void) {
+export function useEditMode(onSave: () => void, onDiscard: () => void, onEdit?: () => void) {
   const ctx = useContext(EditModeContext);
 
   // Keep refs that always point to the latest callbacks (avoids stale closures)
   const saveRef = useRef(onSave);
   const discardRef = useRef(onDiscard);
-  useEffect(() => { saveRef.current = onSave; });
-  useEffect(() => { discardRef.current = onDiscard; });
+  const editRef = useRef(onEdit);
+  useEffect(() => { saveRef.current = onSave; }, [onSave]);
+  useEffect(() => { discardRef.current = onDiscard; }, [onDiscard]);
+  useEffect(() => { editRef.current = onEdit; }, [onEdit]);
 
   // Stable wrappers that read from refs
   const stableSaveRef = useRef(() => { saveRef.current(); });
@@ -52,13 +50,14 @@ export function useEditMode(onSave: () => void, onDiscard: () => void) {
     ctx.exitEdit();
   }, [ctx]);
 
-  // Edit trigger bridge — components assign to editHandlerRef, card toolbar invokes via context
-  const editHandlerRef = useRef<(() => void) | null>(null);
-
+  // Wire toolbar trigger: call onEdit (component setup) then enter edit mode
   useEffect(() => {
-    ctx.editTriggerRef.current = () => editHandlerRef.current?.();
-    return () => { ctx.editTriggerRef.current = null; };
-  }, [ctx.editTriggerRef]);
+    ctx.setEditTrigger(() => {
+      editRef.current?.();
+      ctx.enterEdit(stableSaveRef, stableDiscardRef);
+    });
+    return () => { ctx.setEditTrigger(null); };
+  }, [ctx]);
 
-  return useMemo(() => ({ startEdit, endEdit, editHandlerRef }), [startEdit, endEdit]);
+  return useMemo(() => ({ startEdit, endEdit }), [startEdit, endEdit]);
 }

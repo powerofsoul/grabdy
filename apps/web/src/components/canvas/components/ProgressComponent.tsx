@@ -40,16 +40,12 @@ export function ProgressComponent({ data, onSave }: ProgressComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftValue(String(data.value));
     setDraftMax(String(data.max));
     setDraftLabel(data.label);
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { handleSave(); endEdit(); }

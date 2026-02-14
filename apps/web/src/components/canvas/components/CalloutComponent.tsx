@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
 import { alpha, Box, TextField, Typography, useTheme } from '@mui/material';
-import { CheckCircle, Info, Warning, WarningCircle } from '@phosphor-icons/react';
+import { CheckCircleIcon, InfoIcon, WarningCircleIcon, WarningIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -19,10 +19,10 @@ interface CalloutComponentProps {
 }
 
 const VARIANT_CONFIG = {
-  info: { Icon: Info, paletteKey: 'info' as const },
-  success: { Icon: CheckCircle, paletteKey: 'success' as const },
-  warning: { Icon: Warning, paletteKey: 'warning' as const },
-  error: { Icon: WarningCircle, paletteKey: 'error' as const },
+  info: { Icon: InfoIcon, paletteKey: 'info' as const },
+  success: { Icon: CheckCircleIcon, paletteKey: 'success' as const },
+  warning: { Icon: WarningIcon, paletteKey: 'warning' as const },
+  error: { Icon: WarningCircleIcon, paletteKey: 'error' as const },
 };
 
 export function CalloutComponent({ data, onSave }: CalloutComponentProps) {
@@ -44,19 +44,18 @@ export function CalloutComponent({ data, onSave }: CalloutComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     if (!onSave) return;
     setDraftTitle(data.title ?? '');
     contentRef.current = data.message;
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   return (
@@ -69,7 +68,15 @@ export function CalloutComponent({ data, onSave }: CalloutComponentProps) {
         borderRadius: 'inherit',
       }}
     >
-      <Box sx={{ width: 3, alignSelf: 'stretch', flexShrink: 0, bgcolor: variantColor, borderRadius: 1 }} />
+      <Box
+        sx={{
+          width: 3,
+          alignSelf: 'stretch',
+          flexShrink: 0,
+          bgcolor: variantColor,
+          borderRadius: 1,
+        }}
+      />
       <Box sx={{ flexShrink: 0, mt: 0.25 }}>
         {data.icon ? (
           <Typography sx={{ fontSize: 16 }}>{data.icon}</Typography>
@@ -89,7 +96,10 @@ export function CalloutComponent({ data, onSave }: CalloutComponentProps) {
             autoFocus
             placeholder="Title (optional)"
             onClick={(e) => e.stopPropagation()}
-            sx={{ mb: 0.5, '& .MuiInputBase-input': { fontSize: 12, fontWeight: 600, py: 0.25, px: 0.5 } }}
+            sx={{
+              mb: 0.5,
+              '& .MuiInputBase-input': { fontSize: 12, fontWeight: 600, py: 0.25, px: 0.5 },
+            }}
           />
         ) : (
           <Typography
@@ -101,7 +111,12 @@ export function CalloutComponent({ data, onSave }: CalloutComponentProps) {
               borderRadius: 0.5,
             }}
           >
-            {data.title ?? (onSave ? <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Add title...</span> : '')}
+            {data.title ??
+              (onSave ? (
+                <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Add title...</span>
+              ) : (
+                ''
+              ))}
           </Typography>
         )}
 
@@ -109,7 +124,10 @@ export function CalloutComponent({ data, onSave }: CalloutComponentProps) {
           <CanvasEditor
             content={data.message}
             contentRef={contentRef}
-            onCancel={() => { handleCancel(); endEdit(); }}
+            onCancel={() => {
+              handleCancel();
+              endEdit();
+            }}
             fontSize={12}
             placeholder="Message..."
           />

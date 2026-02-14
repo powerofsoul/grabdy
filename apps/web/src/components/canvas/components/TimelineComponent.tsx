@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, MenuItem, Select, TextField, Typography, useTheme } from '@mui/material';
-import { CheckCircle, Circle, Plus, RadioButton, Trash } from '@phosphor-icons/react';
+import { CheckCircleIcon, CircleIcon, PlusIcon, RadioButtonIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -19,9 +19,9 @@ interface TimelineComponentProps {
 }
 
 const STATUS_ICONS = {
-  completed: CheckCircle,
-  in_progress: RadioButton,
-  pending: Circle,
+  completed: CheckCircleIcon,
+  in_progress: RadioButtonIcon,
+  pending: CircleIcon,
 } as const;
 
 const STATUS_OPTIONS = [
@@ -44,14 +44,10 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  useEditMode(handleSave, handleCancel, () => {
     setDraftEvents(data.events.map((e) => ({ ...e })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleEventChange = (index: number, field: string, value: string) => {
     setDraftEvents((prev) =>
@@ -109,7 +105,7 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
                   onClick={() => handleDeleteEvent(i)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash size={12} weight="light" color="currentColor" />
+                  <TrashIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <TextField
@@ -125,7 +121,7 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddEvent} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

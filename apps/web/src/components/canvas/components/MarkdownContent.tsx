@@ -1,5 +1,6 @@
-import { alpha, Box, useTheme } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
+
+import { alpha, Box, useTheme } from '@mui/material';
 import remarkGfm from 'remark-gfm';
 
 interface MarkdownContentProps {

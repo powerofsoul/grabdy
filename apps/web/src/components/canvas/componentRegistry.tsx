@@ -1,3 +1,4 @@
+import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
 import { Box } from '@mui/material';
 
 import { AccordionComponent } from './components/AccordionComponent';
@@ -34,8 +35,6 @@ import { TagCloudComponent } from './components/TagCloudComponent';
 import { TextComponent } from './components/TextComponent';
 import { TimelineComponent } from './components/TimelineComponent';
 import { TopicMapComponent } from './components/TopicMapComponent';
-
-import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
 
 const parseComponentId = nonDbIdSchema('CanvasComponent').parse;
 import type { ComponentNode } from '@grabdy/contracts';

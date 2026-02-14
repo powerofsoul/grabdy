@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
-import { CaretDown, CaretRight, Plus, Trash } from '@phosphor-icons/react';
+import { CaretDownIcon, CaretRightIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -39,14 +39,10 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftSections(data.sections.map((s) => ({ ...s })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleTitleChange = (index: number, title: string) => {
     setDraftSections((prev) => prev.map((s, i) => (i === index ? { ...s, title } : s)));
@@ -93,7 +89,7 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
                   onClick={() => handleDeleteSection(i)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash size={12} weight="light" color="currentColor" />
+                  <TrashIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <TextField
@@ -111,7 +107,7 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddSection} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>
@@ -147,9 +143,9 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
                 }}
               >
                 {isOpen ? (
-                  <CaretDown size={14} weight="light" color={theme.palette.text.secondary} />
+                  <CaretDownIcon size={14} weight="light" color={theme.palette.text.secondary} />
                 ) : (
-                  <CaretRight size={14} weight="light" color={theme.palette.text.secondary} />
+                  <CaretRightIcon size={14} weight="light" color={theme.palette.text.secondary} />
                 )}
                 <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.4 }}>
                   {section.title}

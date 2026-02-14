@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, TextField, Typography, useTheme } from '@mui/material';
-import { ImageBroken } from '@phosphor-icons/react';
+import { ImageBrokenIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -34,15 +34,11 @@ export function ImageComponent({ data, onSave }: ImageComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftSrc(data.src);
     setDraftCaption(data.caption ?? '');
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { handleSave(); endEdit(); }
@@ -95,7 +91,7 @@ export function ImageComponent({ data, onSave }: ImageComponentProps) {
             borderRadius: `${data.borderRadius ?? 0}px`,
           }}
         >
-          <ImageBroken size={24} weight="light" color={alpha(theme.palette.text.primary, 0.2)} />
+          <ImageBrokenIcon size={24} weight="light" color={alpha(theme.palette.text.primary, 0.2)} />
           <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>Image failed to load</Typography>
         </Box>
       ) : (

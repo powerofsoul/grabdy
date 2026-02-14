@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, MenuItem, Select, TextField, Typography, useTheme } from '@mui/material';
-import { CheckCircle, Circle, Plus, RadioButton, Trash } from '@phosphor-icons/react';
+import { CheckCircleIcon, CircleIcon, PlusIcon, RadioButtonIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -24,18 +24,18 @@ interface StatusListComponentProps {
 
 const STATUS_OPTIONS = [
   { value: 'success', label: 'Success' },
-  { value: 'warning', label: 'Warning' },
+  { value: 'warning', label: 'WarningIcon' },
   { value: 'error', label: 'Error' },
-  { value: 'info', label: 'Info' },
+  { value: 'info', label: 'InfoIcon' },
   { value: 'neutral', label: 'Neutral' },
 ] as const;
 
 const TIMELINE_ICONS = {
-  success: CheckCircle,
-  info: RadioButton,
-  warning: RadioButton,
-  neutral: Circle,
-  error: Circle,
+  success: CheckCircleIcon,
+  info: RadioButtonIcon,
+  warning: RadioButtonIcon,
+  neutral: CircleIcon,
+  error: CircleIcon,
 } as const;
 
 export function StatusListComponent({ data, variant = 'list', onSave }: StatusListComponentProps) {
@@ -68,14 +68,10 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftItems(data.items.map((item) => ({ ...item })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleItemChange = (index: number, field: string, value: string) => {
     setDraftItems((prev) =>
@@ -141,7 +137,7 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
                   onClick={() => handleDeleteItem(i)}
                   sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3) }}
                 >
-                  <Trash size={12} weight="light" color="currentColor" />
+                  <TrashIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
               <TextField
@@ -157,7 +153,7 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
           <IconButton size="small" onClick={handleAddItem} sx={{ color: 'primary.main' }}>
-            <Plus size={14} weight="light" color="currentColor" />
+            <PlusIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Box>
       </Box>

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { alpha, Box, TextField, Typography, useTheme } from '@mui/material';
-import { Star } from '@phosphor-icons/react';
+import { StarIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -32,14 +32,10 @@ export function RatingComponent({ data, onSave }: RatingComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftItems(data.items.map((i) => ({ ...i })));
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { handleSave(); endEdit(); }
@@ -106,7 +102,7 @@ export function RatingComponent({ data, onSave }: RatingComponentProps) {
               onClick={onSave ? () => handleClickRating(itemIndex, i + 1) : undefined}
               sx={{ cursor: onSave ? 'pointer' : 'default', display: 'flex' }}
             >
-              <Star
+              <StarIcon
                 size={14}
                 weight="light"
                 fill={i < item.value ? color : 'transparent'}

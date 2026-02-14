@@ -34,16 +34,12 @@ export function QuoteComponent({ data, onSave }: QuoteComponentProps) {
     setIsEditing(false);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     if (!onSave) return;
     contentRef.current = data.text;
     setDraftSource(data.source ?? '');
     setIsEditing(true);
-    startEdit();
-  };
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') { handleCancel(); endEdit(); }

@@ -33,16 +33,11 @@ export function HeaderComponent({ data, onSave }: HeaderComponentProps) {
     setEditingField(null);
   }, []);
 
-  const { startEdit, endEdit, editHandlerRef } = useEditMode(handleSave, handleCancel);
-
-  const handleStartEdit = () => {
+  const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     if (!onSave) return;
     setDraftTitle(data.title);
     setEditingField('title');
-    startEdit();
-  };
-
-  editHandlerRef.current = handleStartEdit;
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { handleSave(); endEdit(); }

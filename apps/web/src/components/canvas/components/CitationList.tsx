@@ -1,7 +1,6 @@
-import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { ArrowSquareOut, FileText } from '@phosphor-icons/react';
-
 import type { Citation } from '@grabdy/contracts';
+import { alpha, Box, Typography, useTheme } from '@mui/material';
+import { ArrowSquareOutIcon, FileTextIcon } from '@phosphor-icons/react';
 
 interface CitationListProps {
   citations: Citation[];
@@ -50,7 +49,7 @@ export function CitationList({ citations }: CitationListProps) {
                 : {},
             }}
           >
-            {isClickable ? <ArrowSquareOut size={9} weight="light" color="currentColor" /> : <FileText size={9} weight="light" color="currentColor" />}
+            {isClickable ? <ArrowSquareOutIcon size={9} weight="light" color="currentColor" /> : <FileTextIcon size={9} weight="light" color="currentColor" />}
             <Typography component="span" sx={{ fontSize: 10, fontWeight: 500, color: 'inherit' }}>
               {citation.label}
             </Typography>
