@@ -661,7 +661,11 @@ export function createAppTheme(mode: PaletteMode) {
       MuiIconButton: {
         styleOverrides: {
           root: {
+            color: t.textSecondary,
             transition: 'all 0.12s ease',
+            '&:hover': {
+              color: t.text,
+            },
           },
         },
       },

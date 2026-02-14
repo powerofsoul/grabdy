@@ -41,6 +41,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - **NEVER re-export types in application code.** Import directly from the source package.
 - Use `satisfies` for type checking without casting.
 - **Use `satisfies T[] as const` for typed constant arrays.**
+- **NEVER use `string` or `number` as `Record` key type.** Always use a typed union (e.g., `Record<ToolName, Display>` not `Record<string, Display>`).
 
 ### ID System — Packed UUIDs
 
@@ -60,7 +61,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 #### Entity Type Codes
 
 - Org=0x01, User=0x02, OrgMembership=0x03, AuthToken=0x04
-- Collection=0x10, DataSource=0x11, Chunk=0x12
+- Collection=0x10, DataSource=0x11, Chunk=0x12, ExtractedImage=0x13
 - ApiKey=0x20, ChatThread=0x30, CanvasCard=0x31, CanvasEdge=0x32, CanvasComponent=0x33
 
 ### Database
@@ -73,6 +74,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - **NEVER make injected services optional.**
 - Never use `forwardRef()`. Fix circular dependencies properly.
 - **Use `@nestjs/bullmq` for job queues.**
+- **NEVER call AI SDK functions (`generateText`, `streamText`, `embed`, `embedMany`) directly.** Always use an injectable service that tracks usage via `AiUsageService`. The only exceptions are inside dedicated service classes (e.g., `ImageExtractor`, `RagSearchTool`) that inject `AiUsageService` and log usage themselves.
 
 ### API Calls (ts-rest) - CRITICAL
 
@@ -96,6 +98,12 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 ### Data Fetching - CRITICAL
 
 - **ALWAYS do filtering, sorting, and pagination on the server.**
+
+### Single Source of Truth - CRITICAL
+
+- **Shared constants (file types, enums, schemas) MUST be defined once in `@grabdy/contracts` or `@grabdy/common`.**
+- Both frontend and backend import from the shared package. **NEVER duplicate lists of supported file types, MIME types, or enum values** across apps.
+- Supported file types are defined in `SUPPORTED_FILE_TYPES` in `packages/contracts/src/enums.ts`. Derived helpers: `SUPPORTED_MIMES`, `SUPPORTED_EXTENSIONS`, `SUPPORTED_LABELS`, `MIME_TO_DATA_SOURCE_TYPE`.
 
 ### Simplicity - CRITICAL
 
@@ -131,5 +139,5 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - Do not reinvent the wheel. Use existing libraries.
 - **ALWAYS check if a library is already installed before adding a new one.**
-- Use icon libraries (@phosphor-icons/react with weight="light") instead of inline SVGs.
+- Use icon libraries (@phosphor-icons/react with weight="light") instead of inline SVGs. **ALWAYS use the `Icon` suffix** (e.g., `TrashIcon` not `Trash`). The non-suffixed names are deprecated.
 - **NEVER use browser prompts: `window.alert()`, `window.confirm()`, `window.prompt()`.**

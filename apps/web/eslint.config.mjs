@@ -1,6 +1,5 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import prettier from 'eslint-config-prettier';
@@ -29,7 +28,6 @@ export default tseslint.config(
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {
-      react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       'simple-import-sort': simpleImportSort,
       'react-refresh': reactRefresh,
@@ -41,15 +39,8 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    settings: {
-      react: { version: 'detect' },
-    },
     rules: {
-      ...reactPlugin.configs.recommended.rules,
       ...reactHooksPlugin.configs.recommended.rules,
-
-      'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'off',
 
       'react-refresh/only-export-components': 'off',
 
@@ -87,6 +78,7 @@ export default tseslint.config(
       'sonarjs/no-nested-functions': 'off',
       'sonarjs/single-character-alternation': 'warn',
       'sonarjs/no-small-switch': 'off',
+      'sonarjs/max-switch-cases': ['warn', 35],
 
       'jsx-a11y/click-events-have-key-events': 'warn',
       'jsx-a11y/no-static-element-interactions': 'warn',

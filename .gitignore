@@ -34,6 +34,7 @@ coverage/
 
 # Uploads (file storage directories, not source code)
 uploads/
+.uploads/
 /storage/
 apps/api/storage/
 
