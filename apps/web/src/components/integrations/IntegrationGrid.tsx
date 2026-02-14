@@ -1,6 +1,5 @@
-import { alpha, Box, Typography, useTheme } from '@mui/material';
-
 import type { IntegrationProvider } from '@grabdy/contracts';
+import { alpha, Box, Typography, useTheme } from '@mui/material';
 
 import { IntegrationCard } from './IntegrationCard';
 

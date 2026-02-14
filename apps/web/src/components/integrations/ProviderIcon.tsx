@@ -1,11 +1,11 @@
 import { Box } from '@mui/material';
 
 import {
-  SlackLogo,
+  ConfluenceLogo,
   GoogleDriveLogo,
   LinearLogo,
   NotionLogo,
-  ConfluenceLogo,
+  SlackLogo,
 } from '../landing/IntegrationLogos';
 
 /* ── Brand SVGs not on the landing page ─────────────────────────── */

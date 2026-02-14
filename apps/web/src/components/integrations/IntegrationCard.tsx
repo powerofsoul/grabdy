@@ -1,7 +1,6 @@
-import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { Check, CaretRight, WarningCircle, Pause } from '@phosphor-icons/react';
-
 import type { IntegrationProvider } from '@grabdy/contracts';
+import { alpha, Box, Typography, useTheme } from '@mui/material';
+import { CaretRightIcon, CheckIcon, PauseIcon,WarningCircleIcon } from '@phosphor-icons/react';
 
 import type { ConnectionSummary } from './IntegrationGrid';
 import { getProviderDescription, getProviderDetails, getProviderLabel, ProviderIcon } from './ProviderIcon';
@@ -77,9 +76,9 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
               gap: 0.5,
             }}
           >
-            {isActive && <Check size={12} weight="light" color={theme.palette.success.main} />}
-            {isError && <WarningCircle size={12} weight="light" color={theme.palette.error.main} />}
-            {connection.status === 'PAUSED' && <Pause size={12} weight="light" color={theme.palette.warning.main} />}
+            {isActive && <CheckIcon size={12} weight="light" color={theme.palette.success.main} />}
+            {isError && <WarningCircleIcon size={12} weight="light" color={theme.palette.error.main} />}
+            {connection.status === 'PAUSED' && <PauseIcon size={12} weight="light" color={theme.palette.warning.main} />}
             <Typography
               variant="caption"
               sx={{
@@ -115,7 +114,7 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
               ? `Synced ${relativeTime(connection.lastSyncedAt)}`
               : 'Not synced yet'}
           </Typography>
-          <CaretRight size={16} weight="light" color={theme.palette.text.disabled} />
+          <CaretRightIcon size={16} weight="light" color={theme.palette.text.disabled} />
         </Box>
       </Box>
     );

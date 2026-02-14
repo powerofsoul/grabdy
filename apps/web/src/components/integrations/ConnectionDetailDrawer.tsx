@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import type { ConnectionStatus, IntegrationProvider } from '@grabdy/contracts';
 import {
   alpha,
   Box,
@@ -13,17 +14,15 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Check, WarningCircle, Pause, ArrowsClockwise, PlugsConnected } from '@phosphor-icons/react';
+import { ArrowsClockwiseIcon, CheckIcon, PauseIcon, PlugsConnectedIcon,WarningCircleIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-
-import type { IntegrationProvider } from '@grabdy/contracts';
-
-import type { DrawerProps } from '@/context/DrawerContext';
-import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
 
 import { getProviderLabel, ProviderIcon } from './ProviderIcon';
 import { SyncLogList } from './SyncLogList';
+
+import { useAuth } from '@/context/AuthContext';
+import type { DrawerProps } from '@/context/DrawerContext';
+import { api } from '@/lib/api';
 
 interface SyncLog {
   id: string;
@@ -58,12 +57,13 @@ const INTERVAL_OPTIONS = [
 
 function StatusIndicator({ status }: { status: string }) {
   const theme = useTheme();
-  const map: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
-    ACTIVE: { icon: <Check size={14} weight="light" color={theme.palette.success.main} />, label: 'Connected', color: 'success.main' },
-    ERROR: { icon: <WarningCircle size={14} weight="light" color={theme.palette.error.main} />, label: 'Error', color: 'error.main' },
-    PAUSED: { icon: <Pause size={14} weight="light" color={theme.palette.warning.main} />, label: 'Paused', color: 'warning.main' },
+  const map: Partial<Record<ConnectionStatus, { icon: React.ReactNode; label: string; color: string }>> = {
+    ACTIVE: { icon: <CheckIcon size={14} weight="light" color={theme.palette.success.main} />, label: 'Connected', color: 'success.main' },
+    ERROR: { icon: <WarningCircleIcon size={14} weight="light" color={theme.palette.error.main} />, label: 'Error', color: 'error.main' },
+    PAUSED: { icon: <PauseIcon size={14} weight="light" color={theme.palette.warning.main} />, label: 'Paused', color: 'warning.main' },
   };
-  const info = map[status];
+  const statusMap: Partial<Record<string, { icon: React.ReactNode; label: string; color: string }>> = map;
+  const info = statusMap[status];
   if (!info) return <Typography variant="body2" color="text.secondary">{status}</Typography>;
 
   return (
@@ -283,7 +283,7 @@ export function ConnectionDetailDrawer({
         <Box sx={{ display: 'flex', gap: 1.5 }}>
           <Button
             variant="outlined"
-            startIcon={syncing ? <CircularProgress size={14} thickness={5} /> : <ArrowsClockwise size={15} weight="light" color="currentColor" />}
+            startIcon={syncing ? <CircularProgress size={14} thickness={5} /> : <ArrowsClockwiseIcon size={15} weight="light" color="currentColor" />}
             onClick={handleSync}
             disabled={syncing}
             size="small"
@@ -295,7 +295,7 @@ export function ConnectionDetailDrawer({
             <Button
               variant="outlined"
               color="error"
-              startIcon={<PlugsConnected size={15} weight="light" color="currentColor" />}
+              startIcon={<PlugsConnectedIcon size={15} weight="light" color="currentColor" />}
               onClick={() => setConfirmDisconnect(true)}
               size="small"
               sx={{ borderRadius: 1.5 }}
