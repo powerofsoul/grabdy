@@ -12,9 +12,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { KeyIcon, PlusIcon } from '@phosphor-icons/react';
 import { createFileRoute } from '@tanstack/react-router';
 import { formatDistanceToNow } from 'date-fns';
-import { Key, Plus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -73,7 +73,7 @@ function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () =
   if (newKeyValue) {
     return (
       <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Alert severity="warning">Copy this key now. You will not be able to see it again.</Alert>
+        <Alert severity="warning">CopyIcon this key now. You will not be able to see it again.</Alert>
         <Box
           sx={{
             fontFamily: FONT_MONO,
@@ -100,7 +100,7 @@ function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () =
   return (
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
       <TextField
-        label="Key Name"
+        label="KeyIcon Name"
         fullWidth
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -150,14 +150,10 @@ function ApiKeysPage() {
   }, [selectedOrgId, showRevoked]);
 
   const openCreateDrawer = () => {
-    pushDrawer(CreateKeyDrawer, {
-      title: 'Create API Key',
-      mode: 'dialog',
-      maxWidth: 'sm',
-      onCreated: () => {
-        fetchKeys();
-      },
-    });
+    pushDrawer(
+      (onClose) => <CreateKeyDrawer onClose={onClose} onCreated={() => { fetchKeys(); }} />,
+      { title: 'Create API KeyIcon', mode: 'dialog', maxWidth: 'sm' },
+    );
   };
 
   const handleRevoke = async () => {
@@ -213,8 +209,8 @@ function ApiKeysPage() {
             }
             sx={{ mr: 1 }}
           />
-          <Button variant="contained" startIcon={<Plus size={18} weight="light" color="currentColor" />} onClick={openCreateDrawer}>
-            Create Key
+          <Button variant="contained" startIcon={<PlusIcon size={18} weight="light" color="currentColor" />} onClick={openCreateDrawer}>
+            Create KeyIcon
           </Button>
         </Box>
       }
@@ -223,7 +219,7 @@ function ApiKeysPage() {
         data={activeKeys}
         headerNames={{
           name: 'Name',
-          prefix: 'Key',
+          prefix: 'KeyIcon',
           lastUsed: 'Last Used',
           created: 'Created',
           actions: '',
@@ -272,10 +268,10 @@ function ApiKeysPage() {
         }}
         emptyState={
           <EmptyState
-            icon={<Key size={48} weight="light" color="currentColor" />}
+            icon={<KeyIcon size={48} weight="light" color="currentColor" />}
             message="No API keys"
             description="Create an API key to authenticate your requests."
-            actionLabel="Create Key"
+            actionLabel="Create KeyIcon"
             onAction={openCreateDrawer}
           />
         }
@@ -290,7 +286,7 @@ function ApiKeysPage() {
             data={revokedKeys}
             headerNames={{
               name: 'Name',
-              prefix: 'Key',
+              prefix: 'KeyIcon',
               lastUsed: 'Last Used',
               revokedAt: 'Revoked',
               created: 'Created',
@@ -337,7 +333,7 @@ function ApiKeysPage() {
 
       <ConfirmDialog
         open={!!revokeTarget}
-        title="Revoke API Key"
+        title="Revoke API KeyIcon"
         message={`Are you sure you want to revoke "${revokeTarget?.name}"? Any requests using this key will stop working.`}
         confirmLabel="Revoke"
         onConfirm={handleRevoke}

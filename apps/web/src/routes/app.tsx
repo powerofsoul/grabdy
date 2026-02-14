@@ -1,6 +1,6 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import { ArrowLeftIcon, MoonIcon, SignOutIcon, SunIcon } from '@phosphor-icons/react';
 import { createFileRoute, Navigate, useNavigate, useSearch } from '@tanstack/react-router';
-import { ArrowLeft, SignOut, Moon, Sun } from '@phosphor-icons/react';
 import { z } from 'zod';
 
 import { ChatPanel } from '@/components/chat';
@@ -64,7 +64,7 @@ function AppPage() {
                   onClick={() => navigate({ to: '/dashboard' })}
                   sx={{ color: alpha(ct, 0.5), mr: 0.5, '&:hover': { color: 'text.primary' } }}
                 >
-                  <ArrowLeft size={18} weight="light" color="currentColor" />
+                  <ArrowLeftIcon size={18} weight="light" color="currentColor" />
                 </IconButton>
               </Tooltip>
             )}
@@ -93,7 +93,7 @@ function AppPage() {
                 onClick={() => setPreference(isDark ? 'light' : 'dark')}
                 sx={{ color: alpha(ct, 0.35), '&:hover': { color: 'text.primary' } }}
               >
-                {isDark ? <Sun size={16} weight="light" color="currentColor" /> : <Moon size={16} weight="light" color="currentColor" />}
+                {isDark ? <SunIcon size={16} weight="light" color="currentColor" /> : <MoonIcon size={16} weight="light" color="currentColor" />}
               </IconButton>
             </Tooltip>
             <Tooltip title="Sign out">
@@ -102,7 +102,7 @@ function AppPage() {
                 onClick={logout}
                 sx={{ color: alpha(ct, 0.35), '&:hover': { color: 'error.main' } }}
               >
-                <SignOut size={16} weight="light" color="currentColor" />
+                <SignOutIcon size={16} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
             <Avatar

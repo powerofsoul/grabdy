@@ -10,8 +10,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Envelope, Eye, EyeSlash, Lock } from '@phosphor-icons/react';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -89,7 +89,7 @@ function LoginPage() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                <Envelope size={20} weight="light" color="currentColor" />
+                <EnvelopeIcon size={20} weight="light" color="currentColor" />
               </InputAdornment>
             ),
           }}
@@ -108,7 +108,7 @@ function LoginPage() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                <Lock size={20} weight="light" color="currentColor" />
+                <LockIcon size={20} weight="light" color="currentColor" />
               </InputAdornment>
             ),
             endAdornment: (
@@ -120,7 +120,7 @@ function LoginPage() {
                   tabIndex={-1}
                   sx={{ color: 'text.disabled' }}
                 >
-                  {showPassword ? <EyeSlash size={20} weight="light" color="currentColor" /> : <Eye size={20} weight="light" color="currentColor" />}
+                  {showPassword ? <EyeSlashIcon size={20} weight="light" color="currentColor" /> : <EyeIcon size={20} weight="light" color="currentColor" />}
                 </IconButton>
               </InputAdornment>
             ),

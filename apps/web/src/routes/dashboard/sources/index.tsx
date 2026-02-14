@@ -13,8 +13,8 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { FolderOpenIcon, PlusIcon } from '@phosphor-icons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { FolderOpen, Plus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
@@ -103,7 +103,7 @@ function CollectionsPage() {
       actions={
         <Button
           variant="contained"
-          startIcon={<Plus size={18} weight="light" color="currentColor" />}
+          startIcon={<PlusIcon size={18} weight="light" color="currentColor" />}
           onClick={() => setDialogOpen(true)}
         >
           New Source
@@ -113,7 +113,7 @@ function CollectionsPage() {
 
       {collections.length === 0 ? (
         <EmptyState
-          icon={<FolderOpen size={48} weight="light" color="currentColor" />}
+          icon={<FolderOpenIcon size={48} weight="light" color="currentColor" />}
           message="No sources yet"
           description="Create a source to organize your data."
           actionLabel="Create Source"

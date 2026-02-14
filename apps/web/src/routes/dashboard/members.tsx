@@ -12,10 +12,11 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { CopyIcon, PlusIcon, UsersIcon } from '@phosphor-icons/react';
 import { createFileRoute } from '@tanstack/react-router';
-import { Copy, Plus, Users } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
+import { InviteMemberDrawer } from '@/components/drawers/InviteMemberDrawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -23,8 +24,6 @@ import { MainTable } from '@/components/ui/main-table';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
-
-import { InviteMemberDrawer } from '@/components/drawers/InviteMemberDrawer';
 
 interface Member {
   id: string;
@@ -152,10 +151,10 @@ function MembersPage() {
   };
 
   const openInviteDrawer = () => {
-    pushDrawer(InviteMemberDrawer, {
-      title: 'Invite Member',
-      onInvited: fetchData,
-    });
+    pushDrawer(
+      (onClose) => <InviteMemberDrawer onClose={onClose} onInvited={fetchData} />,
+      { title: 'Invite Member' },
+    );
   };
 
   if (isLoading) {
@@ -173,7 +172,7 @@ function MembersPage() {
       title="Members"
       actions={
         isOwner ? (
-          <Button variant="contained" startIcon={<Plus size={18} weight="light" color="currentColor" />} onClick={openInviteDrawer}>
+          <Button variant="contained" startIcon={<PlusIcon size={18} weight="light" color="currentColor" />} onClick={openInviteDrawer}>
             Invite Member
           </Button>
         ) : undefined
@@ -264,7 +263,7 @@ function MembersPage() {
         }}
         emptyState={
           <EmptyState
-            icon={<Users size={48} weight="light" color="currentColor" />}
+            icon={<UsersIcon size={48} weight="light" color="currentColor" />}
             message="No members"
             description="Invite team members to collaborate."
             actionLabel={isOwner ? 'Invite Member' : undefined}
@@ -316,7 +315,7 @@ function MembersPage() {
               ),
               actions: (inv) => (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Tooltip title="Copy invite link">
+                  <Tooltip title="CopyIcon invite link">
                     <IconButton
                       size="small"
                       onClick={(e) => {
@@ -326,7 +325,7 @@ function MembersPage() {
                       }}
                       sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
                     >
-                      <Copy size={15} weight="light" color="currentColor" />
+                      <CopyIcon size={15} weight="light" color="currentColor" />
                     </IconButton>
                   </Tooltip>
                   <Typography

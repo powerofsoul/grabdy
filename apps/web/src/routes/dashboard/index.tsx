@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 
 import { alpha, Box, Typography, useTheme } from '@mui/material';
+import { ArrowRightIcon, ChatCircleIcon, KeyIcon, PlusIcon } from '@phosphor-icons/react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowRight, Key, ChatCircle, Plus } from '@phosphor-icons/react';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { useAuth } from '@/context/AuthContext';
@@ -48,7 +48,7 @@ function QuickAction({
         <Typography sx={{ fontSize: '0.875rem', color: 'text.primary' }}>
           {label}
         </Typography>
-        <ArrowRight size={14} weight="light" color="currentColor" />
+        <ArrowRightIcon size={14} weight="light" color="currentColor" />
       </Box>
     </Link>
   );
@@ -137,19 +137,19 @@ function DashboardIndex() {
       </Typography>
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
         <QuickAction
-          icon={<Plus size={14} weight="light" color="currentColor" />}
+          icon={<PlusIcon size={14} weight="light" color="currentColor" />}
           label="Create a source"
           description=""
           to="/dashboard/sources"
         />
         <QuickAction
-          icon={<Key size={14} weight="light" color="currentColor" />}
+          icon={<KeyIcon size={14} weight="light" color="currentColor" />}
           label="Generate an API key"
           description=""
           to="/dashboard/api/keys"
         />
         <QuickAction
-          icon={<ChatCircle size={14} weight="light" color="currentColor" />}
+          icon={<ChatCircleIcon size={14} weight="light" color="currentColor" />}
           label="Ask a question"
           description=""
           to="/dashboard/chat"

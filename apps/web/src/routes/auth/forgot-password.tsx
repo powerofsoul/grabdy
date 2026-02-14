@@ -8,8 +8,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { EnvelopeIcon, KeyIcon, ShieldCheckIcon } from '@phosphor-icons/react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Envelope, Key, ShieldCheck } from '@phosphor-icons/react';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -85,7 +85,7 @@ function ForgotPasswordPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                  <Envelope size={20} weight="light" color="currentColor" />
+                  <EnvelopeIcon size={20} weight="light" color="currentColor" />
                 </InputAdornment>
               ),
             }}
@@ -114,7 +114,7 @@ function ForgotPasswordPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                  <ShieldCheck size={20} weight="light" color="currentColor" />
+                  <ShieldCheckIcon size={20} weight="light" color="currentColor" />
                 </InputAdornment>
               ),
             }}
@@ -132,7 +132,7 @@ function ForgotPasswordPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                  <Key size={20} weight="light" color="currentColor" />
+                  <KeyIcon size={20} weight="light" color="currentColor" />
                 </InputAdornment>
               ),
             }}

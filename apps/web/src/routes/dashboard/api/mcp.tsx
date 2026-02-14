@@ -1,8 +1,8 @@
 import { alpha, Box, Card, CardContent, Typography, useTheme } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { DashboardPage } from '@/components/ui/DashboardPage';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { DashboardPage } from '@/components/ui/DashboardPage';
 import { FONT_MONO } from '@/theme';
 
 export const Route = createFileRoute('/dashboard/api/mcp')({

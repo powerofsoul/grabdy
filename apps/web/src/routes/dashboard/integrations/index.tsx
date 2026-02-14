@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { CircularProgress, Box } from '@mui/material';
-import { createFileRoute } from '@tanstack/react-router';
-import { Plug } from '@phosphor-icons/react';
-import { toast } from 'sonner';
-
 import type { IntegrationProvider } from '@grabdy/contracts';
+import { Box,CircularProgress } from '@mui/material';
+import { PlugIcon } from '@phosphor-icons/react';
+import { createFileRoute } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 import { ConnectionDetailDrawer, IntegrationGrid } from '@/components/integrations';
 import type { ConnectionSummary } from '@/components/integrations/IntegrationGrid';
@@ -59,25 +58,28 @@ function IntegrationsPage() {
   };
 
   const handleManage = (_provider: IntegrationProvider, connection: ConnectionSummary) => {
-    pushDrawer(ConnectionDetailDrawer, {
-      title: 'Connection Details',
-      mode: 'drawer',
-      width: 480,
-      provider: connection.provider,
-      status: connection.status,
-      lastSyncedAt: connection.lastSyncedAt,
-      syncEnabled: connection.syncEnabled,
-      syncIntervalMinutes: connection.syncIntervalMinutes,
-      externalAccountName: connection.externalAccountName,
-      onRefresh: fetchConnections,
-    });
+    pushDrawer(
+      (onClose) => (
+        <ConnectionDetailDrawer
+          onClose={onClose}
+          provider={connection.provider}
+          status={connection.status}
+          lastSyncedAt={connection.lastSyncedAt}
+          syncEnabled={connection.syncEnabled}
+          syncIntervalMinutes={connection.syncIntervalMinutes}
+          externalAccountName={connection.externalAccountName}
+          onRefresh={fetchConnections}
+        />
+      ),
+      { title: 'Connection Details', mode: 'drawer', width: 480 },
+    );
   };
 
   return (
     <DashboardPage
       title="Integrations"
       subtitle="Connect your tools to search across all your data"
-      icon={<Plug size={22} weight="light" color="currentColor" />}
+      icon={<PlugIcon size={22} weight="light" color="currentColor" />}
     >
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
