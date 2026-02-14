@@ -127,7 +127,7 @@ export const orgsContract = c.router(
       path: '/orgs/:orgId/invitations/:invitationId',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
-        invitationId: z.string().uuid(),
+        invitationId: dbIdSchema('OrgInvitation'),
       }),
       body: z.object({}),
       responses: {
