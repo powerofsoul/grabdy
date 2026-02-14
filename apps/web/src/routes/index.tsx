@@ -5,6 +5,7 @@ import { CTASection } from '@/components/landing/CTASection';
 import { DevTeaserSection } from '@/components/landing/DevTeaserSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { McpSection } from '@/components/landing/McpSection';
+import { PricingSection } from '@/components/landing/PricingSection';
 import { Footer } from '@/components/landing/Footer';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { LandingNav } from '@/components/landing/LandingNav';
@@ -25,6 +26,7 @@ function LandingPage() {
         <ProofStripSection />
         <WhatYouCanAskSection />
         <FeaturesSection />
+        <PricingSection />
         <DevTeaserSection />
         <McpSection />
         <CTASection />
