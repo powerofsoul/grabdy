@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
+
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -32,13 +34,6 @@ interface FigmaTokenResponse {
   error?: boolean;
   status?: number;
   message?: string;
-}
-
-interface FigmaUser {
-  id: string;
-  handle: string;
-  email: string;
-  img_url: string;
 }
 
 interface FigmaMeResponse {
@@ -159,7 +154,7 @@ export class FigmaConnector extends IntegrationConnector {
   private readonly logger = new Logger(FigmaConnector.name);
 
   constructor(
-    @InjectEnv('figmaClientId') private readonly clientId: string,
+    @InjectEnv('figmaClientId') private readonly oauthClient: string,
     @InjectEnv('figmaClientSecret') private readonly clientSecret: string,
   ) {
     super();
@@ -167,9 +162,9 @@ export class FigmaConnector extends IntegrationConnector {
 
   // ── OAuth ──────────────────────────────────────────────────────────
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: this.oauthClient,
       redirect_uri: redirectUri,
       scope: 'files:read',
       state,
@@ -183,7 +178,7 @@ export class FigmaConnector extends IntegrationConnector {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
         redirect_uri: redirectUri,
         code,
@@ -210,7 +205,7 @@ export class FigmaConnector extends IntegrationConnector {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
         refresh_token: refreshToken,
       }),
@@ -286,13 +281,13 @@ export class FigmaConnector extends IntegrationConnector {
 
     const hook: FigmaWebhookCreateResponse = await response.json();
     return {
-      webhookId: hook.id,
+      webhookRef: hook.id,
       secret: hook.passcode,
     };
   }
 
-  async deregisterWebhook(accessToken: string, webhookId: string): Promise<void> {
-    const response = await fetch(`${FIGMA_API_URL}/v2/webhooks/${webhookId}`, {
+  async deregisterWebhook(accessToken: string, webhookRef: string): Promise<void> {
+    const response = await fetch(`${FIGMA_API_URL}/v2/webhooks/${webhookRef}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -406,9 +401,9 @@ export class FigmaConnector extends IntegrationConnector {
 
   private async fetchTeamProjects(
     accessToken: string,
-    teamId: string,
+    team: string,
   ): Promise<FigmaProject[]> {
-    const response = await fetch(`${FIGMA_API_URL}/v1/teams/${teamId}/projects`, {
+    const response = await fetch(`${FIGMA_API_URL}/v1/teams/${team}/projects`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -425,9 +420,9 @@ export class FigmaConnector extends IntegrationConnector {
 
   private async fetchProjectFiles(
     accessToken: string,
-    projectId: string,
+    project: string,
   ): Promise<FigmaProjectFile[]> {
-    const response = await fetch(`${FIGMA_API_URL}/v1/projects/${projectId}/files`, {
+    const response = await fetch(`${FIGMA_API_URL}/v1/projects/${project}/files`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

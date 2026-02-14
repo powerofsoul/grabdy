@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
+
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -78,7 +80,7 @@ export class TrelloConnector extends IntegrationConnector {
     super();
   }
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     // Trello uses a redirect-based auth flow with response_type=token
     // The token is appended as a hash fragment, so we use a server-side redirect
     const params = new URLSearchParams({
@@ -155,12 +157,12 @@ export class TrelloConnector extends IntegrationConnector {
       return null;
     }
 
-    return { webhookId: webhook.id, secret: null };
+    return { webhookRef: webhook.id, secret: null };
   }
 
-  async deregisterWebhook(accessToken: string, webhookId: string): Promise<void> {
+  async deregisterWebhook(accessToken: string, webhookRef: string): Promise<void> {
     const params = new URLSearchParams({ key: this.apiKey, token: accessToken });
-    await fetch(`${TRELLO_API_BASE}/webhooks/${webhookId}?${params.toString()}`, {
+    await fetch(`${TRELLO_API_BASE}/webhooks/${webhookRef}?${params.toString()}`, {
       method: 'DELETE',
     });
   }

@@ -1,12 +1,13 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
-
 import { Injectable, Logger } from '@nestjs/common';
+
+import type { DbId } from '@grabdy/common';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -123,7 +124,7 @@ export class GitHubConnector extends IntegrationConnector {
   private readonly logger = new Logger(GitHubConnector.name);
 
   constructor(
-    @InjectEnv('githubClientId') private readonly clientId: string,
+    @InjectEnv('githubClientId') private readonly oauthClient: string,
     @InjectEnv('githubClientSecret') private readonly clientSecret: string,
     @InjectEnv('githubWebhookSecret') private readonly webhookSecret: string,
   ) {
@@ -132,9 +133,9 @@ export class GitHubConnector extends IntegrationConnector {
 
   // ── OAuth ──────────────────────────────────────────────────────────
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: this.oauthClient,
       redirect_uri: redirectUri,
       scope: 'repo,read:org',
       state,
@@ -150,7 +151,7 @@ export class GitHubConnector extends IntegrationConnector {
         Accept: 'application/json',
       },
       body: JSON.stringify({
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
         code,
         redirect_uri: redirectUri,
@@ -241,16 +242,16 @@ export class GitHubConnector extends IntegrationConnector {
 
     const hook: GitHubWebhookCreateResponse = await response.json();
     return {
-      webhookId: String(hook.id),
+      webhookRef: String(hook.id),
       secret: this.webhookSecret,
     };
   }
 
-  async deregisterWebhook(accessToken: string, webhookId: string): Promise<void> {
-    // webhookId format: owner/repo/hookId
-    const parts = webhookId.split('/');
+  async deregisterWebhook(accessToken: string, webhookRef: string): Promise<void> {
+    // webhookRef format: owner/repo/hookId
+    const parts = webhookRef.split('/');
     if (parts.length < 3) {
-      this.logger.warn(`Invalid webhook ID format: ${webhookId}`);
+      this.logger.warn(`Invalid webhook ref format: ${webhookRef}`);
       return;
     }
     const owner = parts[0];

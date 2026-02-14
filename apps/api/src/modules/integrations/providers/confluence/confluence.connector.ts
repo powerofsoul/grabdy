@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
+
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -18,8 +20,8 @@ const ATLASSIAN_AUTH_URL = 'https://auth.atlassian.com/authorize';
 const ATLASSIAN_TOKEN_URL = 'https://auth.atlassian.com/oauth/token';
 const ATLASSIAN_RESOURCES_URL = 'https://api.atlassian.com/oauth/token/accessible-resources';
 
-function confluenceApiBase(cloudId: string): string {
-  return `https://api.atlassian.com/ex/confluence/${cloudId}/wiki/api/v2`;
+function confluenceApiBase(cloud: string): string {
+  return `https://api.atlassian.com/ex/confluence/${cloud}/wiki/api/v2`;
 }
 
 // --- Atlassian API response interfaces ---
@@ -44,19 +46,13 @@ interface ConfluencePage {
   id: string;
   title: string;
   status: string;
-  spaceId: string;
+  spaceKey: string;
   body?: {
     storage?: { value: string };
   };
   _links?: {
     webui?: string;
   };
-}
-
-interface ConfluenceSpace {
-  id: string;
-  key: string;
-  name: string;
 }
 
 interface ConfluencePagesResponse {
@@ -103,16 +99,16 @@ export class ConfluenceConnector extends IntegrationConnector {
   private readonly logger = new Logger(ConfluenceConnector.name);
 
   constructor(
-    @InjectEnv('atlassianClientId') private readonly clientId: string,
+    @InjectEnv('atlassianClientId') private readonly oauthClient: string,
     @InjectEnv('atlassianClientSecret') private readonly clientSecret: string,
   ) {
     super();
   }
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     const params = new URLSearchParams({
       audience: 'api.atlassian.com',
-      client_id: this.clientId,
+      client_id: this.oauthClient,
       scope: 'read:confluence-content.all read:confluence-space.summary offline_access',
       redirect_uri: redirectUri,
       state,
@@ -128,7 +124,7 @@ export class ConfluenceConnector extends IntegrationConnector {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grant_type: 'authorization_code',
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
         code,
         redirect_uri: redirectUri,
@@ -157,7 +153,7 @@ export class ConfluenceConnector extends IntegrationConnector {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grant_type: 'refresh_token',
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
         refresh_token: refreshToken,
       }),
@@ -205,7 +201,7 @@ export class ConfluenceConnector extends IntegrationConnector {
     return null;
   }
 
-  async deregisterWebhook(_accessToken: string, _webhookId: string): Promise<void> {
+  async deregisterWebhook(_accessToken: string, _webhookRef: string): Promise<void> {
     // No-op
   }
 
@@ -222,17 +218,17 @@ export class ConfluenceConnector extends IntegrationConnector {
     config: Record<string, unknown>,
     cursor: SyncCursor | null,
   ): Promise<SyncResult> {
-    const cloudId = typeof config['cloudId'] === 'string' ? config['cloudId'] : null;
+    const cloud = typeof config['cloudId'] === 'string' ? config['cloudId'] : null;
     const siteUrl = typeof config['siteUrl'] === 'string' ? config['siteUrl'] : null;
 
-    if (!cloudId) {
+    if (!cloud) {
       throw new Error('Confluence sync requires cloudId in config');
     }
 
     const paginationCursor =
       cursor !== null && typeof cursor['cursor'] === 'string' ? cursor['cursor'] : null;
 
-    const apiBase = confluenceApiBase(cloudId);
+    const apiBase = confluenceApiBase(cloud);
 
     // Build the request URL
     let url: string;
@@ -254,20 +250,20 @@ export class ConfluenceConnector extends IntegrationConnector {
     const pages = data.results ?? [];
 
     // Build a space cache to resolve space keys for URLs
-    const spaceIds = [...new Set(pages.map((p) => p.spaceId))];
+    const spaceRefs = [...new Set(pages.map((p) => p.spaceKey))];
     const spaceKeyMap = new Map<string, string>();
 
-    for (const spaceId of spaceIds) {
-      const spaceKey = await this.fetchSpaceKey(accessToken, cloudId, spaceId);
+    for (const spaceRef of spaceRefs) {
+      const spaceKey = await this.fetchSpaceKey(accessToken, cloud, spaceRef);
       if (spaceKey) {
-        spaceKeyMap.set(spaceId, spaceKey);
+        spaceKeyMap.set(spaceRef, spaceKey);
       }
     }
 
     const items: SyncedItem[] = pages.map((page) => {
       const bodyHtml = page.body?.storage?.value ?? '';
       const bodyText = stripHtmlTags(bodyHtml);
-      const spaceKey = spaceKeyMap.get(page.spaceId) ?? '';
+      const spaceKey = spaceKeyMap.get(page.spaceKey) ?? '';
 
       let sourceUrl: string | null = null;
       if (siteUrl && spaceKey) {
@@ -287,7 +283,7 @@ export class ConfluenceConnector extends IntegrationConnector {
         content: contentParts.join('\n'),
         sourceUrl,
         metadata: {
-          spaceId: page.spaceId,
+          spaceRef: page.spaceKey,
           spaceKey,
           status: page.status,
         },
@@ -297,7 +293,7 @@ export class ConfluenceConnector extends IntegrationConnector {
     // Extract next cursor from _links.next if present
     let nextCursor: string | null = null;
     if (data._links?.next) {
-      const nextUrl = new URL(data._links.next, confluenceApiBase(cloudId));
+      const nextUrl = new URL(data._links.next, confluenceApiBase(cloud));
       nextCursor = nextUrl.searchParams.get('cursor');
     }
 
@@ -311,9 +307,9 @@ export class ConfluenceConnector extends IntegrationConnector {
     };
   }
 
-  private async fetchSpaceKey(accessToken: string, cloudId: string, spaceId: string): Promise<string | null> {
+  private async fetchSpaceKey(accessToken: string, cloud: string, spaceRef: string): Promise<string | null> {
     try {
-      const response = await fetch(`${confluenceApiBase(cloudId)}/spaces/${spaceId}`, {
+      const response = await fetch(`${confluenceApiBase(cloud)}/spaces/${spaceRef}`, {
         headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
       });
 

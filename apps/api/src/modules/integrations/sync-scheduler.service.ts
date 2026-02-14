@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+
 import { sql } from 'kysely';
 
 import { DbService } from '../../db/db.module';

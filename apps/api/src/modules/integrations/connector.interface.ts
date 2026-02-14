@@ -1,3 +1,5 @@
+import type { DbId } from '@grabdy/common';
+
 import type { IntegrationProvider } from '../../db/enums';
 
 export interface RateLimitConfig {
@@ -37,7 +39,7 @@ export interface SyncResult {
 }
 
 export interface WebhookInfo {
-  webhookId: string;
+  webhookRef: string;
   secret: string | null;
 }
 
@@ -52,7 +54,7 @@ export abstract class IntegrationConnector {
   abstract readonly rateLimits: RateLimitConfig;
   abstract readonly supportsWebhooks: boolean;
 
-  abstract getAuthUrl(orgId: string, state: string, redirectUri: string): string;
+  abstract getAuthUrl(orgId: DbId<'Org'>, state: string, redirectUri: string): string;
   abstract exchangeCode(code: string, redirectUri: string): Promise<OAuthTokens>;
   abstract refreshTokens(refreshToken: string): Promise<OAuthTokens>;
 
@@ -63,7 +65,7 @@ export abstract class IntegrationConnector {
     accessToken: string,
     config: Record<string, unknown>,
   ): Promise<WebhookInfo | null>;
-  abstract deregisterWebhook(accessToken: string, webhookId: string): Promise<void>;
+  abstract deregisterWebhook(accessToken: string, webhookRef: string): Promise<void>;
   abstract parseWebhook(
     headers: Record<string, string>,
     body: unknown,

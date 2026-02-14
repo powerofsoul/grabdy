@@ -1,15 +1,14 @@
-import { Controller, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Logger, Param, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
-
-import { type DbId } from '@grabdy/common';
+import { dbIdSchema } from '@grabdy/common';
 import { dataSourcesContract } from '@grabdy/contracts';
-
-import { MAX_FILE_SIZE_BYTES } from '../../config/constants';
+import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
+import { Response } from 'express';
 
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
+import { MAX_FILE_SIZE_BYTES } from '../../config/constants';
 
 import { DataSourcesService } from './data-sources.service';
 
@@ -19,6 +18,8 @@ function toISOString(date: Date): string {
 
 @Controller()
 export class DataSourcesController {
+  private readonly logger = new Logger(DataSourcesController.name);
+
   constructor(private dataSourcesService: DataSourcesService) {}
 
   @OrgAccess(dataSourcesContract.upload, { params: ['orgId'] })
@@ -49,7 +50,7 @@ export class DataSourcesController {
           file,
           {
             name: body.name ? body.name.replace(/^"|"$/g, '') : undefined,
-            collectionId: (rawCollectionId || undefined) as DbId<'Collection'> | undefined,
+            collectionId: rawCollectionId ? dbIdSchema('Collection').parse(rawCollectionId) : undefined,
           }
         );
 
@@ -65,11 +66,17 @@ export class DataSourcesController {
           },
         };
       } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Upload failed';
+        // Improve raw Postgres enum errors
+        const userMsg = msg.includes('invalid input value for enum')
+          ? 'This file type is not yet supported. Please run database migrations.'
+          : msg;
+        this.logger.error(`Upload failed: ${msg}`);
         return {
           status: 400 as const,
           body: {
             success: false as const,
-            error: error instanceof Error ? error.message : 'Upload failed',
+            error: userMsg,
           },
         };
       }
@@ -167,5 +174,104 @@ export class DataSourcesController {
         };
       }
     });
+  }
+
+  @OrgAccess(dataSourcesContract.rename, { params: ['orgId', 'id'] })
+  @TsRestHandler(dataSourcesContract.rename)
+  async rename() {
+    return tsRestHandler(dataSourcesContract.rename, async ({ params, body }) => {
+      try {
+        const dataSource = await this.dataSourcesService.rename(params.orgId, params.id, body.name);
+        return {
+          status: 200 as const,
+          body: {
+            success: true as const,
+            data: {
+              ...dataSource,
+              createdAt: toISOString(dataSource.createdAt),
+              updatedAt: toISOString(dataSource.updatedAt),
+            },
+          },
+        };
+      } catch {
+        return {
+          status: 404 as const,
+          body: { success: false as const, error: 'Data source not found' },
+        };
+      }
+    });
+  }
+
+  @OrgAccess(dataSourcesContract.previewUrl, { params: ['orgId', 'id'] })
+  @TsRestHandler(dataSourcesContract.previewUrl)
+  async previewUrl() {
+    return tsRestHandler(dataSourcesContract.previewUrl, async ({ params }) => {
+      try {
+        const data = await this.dataSourcesService.getPreviewUrl(params.orgId, params.id);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data },
+        };
+      } catch {
+        return {
+          status: 404 as const,
+          body: { success: false as const, error: 'Data source not found' },
+        };
+      }
+    });
+  }
+
+  @OrgAccess(dataSourcesContract.listExtractedImages, { params: ['orgId', 'id'] })
+  @TsRestHandler(dataSourcesContract.listExtractedImages)
+  async listExtractedImages() {
+    return tsRestHandler(dataSourcesContract.listExtractedImages, async ({ params }) => {
+      try {
+        const images = await this.dataSourcesService.listExtractedImages(params.orgId, params.id);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data: images },
+        };
+      } catch {
+        return {
+          status: 404 as const,
+          body: { success: false as const, error: 'Data source not found' },
+        };
+      }
+    });
+  }
+
+  @Get('/api/files/:orgNum/:filename')
+  async serveFile(
+    @Param('orgNum') orgNum: string,
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const key = `${orgNum}/${filename}`;
+      const buffer = await this.dataSourcesService.getFileBuffer(key);
+      const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+      type ServableExt = 'pdf' | 'csv' | 'txt' | 'json' | 'docx' | 'xlsx' | 'xls' | 'png' | 'jpg' | 'jpeg' | 'webp' | 'gif';
+      const mimeMap: Record<ServableExt, string> = {
+        pdf: 'application/pdf',
+        csv: 'text/csv',
+        txt: 'text/plain',
+        json: 'application/json',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        xls: 'application/vnd.ms-excel',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        webp: 'image/webp',
+        gif: 'image/gif',
+      };
+      const isServableExt = (e: string): e is ServableExt => e in mimeMap;
+      res.setHeader('Content-Type', isServableExt(ext) ? mimeMap[ext] : 'application/octet-stream');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.send(buffer);
+    } catch (error) {
+      this.logger.warn(`File serve failed: ${error instanceof Error ? error.message : error}`);
+      res.status(404).json({ error: 'File not found' });
+    }
   }
 }

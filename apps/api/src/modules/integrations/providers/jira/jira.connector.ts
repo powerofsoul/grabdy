@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
+
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -98,16 +100,16 @@ export class JiraConnector extends IntegrationConnector {
   private readonly logger = new Logger(JiraConnector.name);
 
   constructor(
-    @InjectEnv('atlassianClientId') private readonly clientId: string,
+    @InjectEnv('atlassianClientId') private readonly oauthClient: string,
     @InjectEnv('atlassianClientSecret') private readonly clientSecret: string,
   ) {
     super();
   }
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     const params = new URLSearchParams({
       audience: 'api.atlassian.com',
-      client_id: this.clientId,
+      client_id: this.oauthClient,
       scope: 'read:jira-work read:jira-user offline_access',
       redirect_uri: redirectUri,
       state,
@@ -123,7 +125,7 @@ export class JiraConnector extends IntegrationConnector {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grant_type: 'authorization_code',
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
         code,
         redirect_uri: redirectUri,
@@ -152,7 +154,7 @@ export class JiraConnector extends IntegrationConnector {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grant_type: 'refresh_token',
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
         refresh_token: refreshToken,
       }),
@@ -201,7 +203,7 @@ export class JiraConnector extends IntegrationConnector {
     return null;
   }
 
-  async deregisterWebhook(_accessToken: string, _webhookId: string): Promise<void> {
+  async deregisterWebhook(_accessToken: string, _webhookRef: string): Promise<void> {
     // No-op: webhooks not used
   }
 

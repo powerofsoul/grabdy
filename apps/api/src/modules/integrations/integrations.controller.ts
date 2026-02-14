@@ -1,25 +1,24 @@
-import { Controller, Get, Inject, Logger, Post, Query, Param, Req, Res } from '@nestjs/common';
-import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
-import type { Request, Response } from 'express';
-import { randomBytes } from 'crypto';
-import type Redis from 'ioredis';
+import { Controller, Get, Inject, Logger, Param, Post, Query, Req, Res } from '@nestjs/common';
 
 import { dbIdSchema } from '@grabdy/common';
-import { integrationsContract, integrationProviderEnum } from '@grabdy/contracts';
+import { integrationProviderEnum,integrationsContract } from '@grabdy/contracts';
+import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
+import { randomBytes } from 'crypto';
+import type { Request, Response } from 'express';
+import type Redis from 'ioredis';
 
-import { InjectEnv } from '../../config/env.config';
-import type { IntegrationProvider } from '../../db/enums';
-import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { CurrentUser, type JwtPayload } from '../../common/decorators/current-user.decorator';
+import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { InjectEnv } from '../../config/env.config';
 
-import { IntegrationsService } from './integrations.service';
 import { ProviderRegistry } from './providers/provider-registry';
 import { INTEGRATIONS_REDIS } from './integrations.constants';
+import { IntegrationsService } from './integrations.service';
 
 interface OAuthState {
-  orgId: string;
-  userId: string;
+  org: string;
+  user: string;
   provider: string;
 }
 
@@ -84,8 +83,8 @@ export class IntegrationsController {
       // Generate OAuth state token and store in Redis with TTL
       const state = randomBytes(32).toString('hex');
       const stateData: OAuthState = {
-        orgId: params.orgId,
-        userId: user.sub,
+        org: params.orgId,
+        user: user.sub,
         provider,
       };
       await this.redis.set(
@@ -270,7 +269,7 @@ export class IntegrationsController {
       await this.redis.del(stateKey);
       const stateData: OAuthState = JSON.parse(stateJson);
 
-      const { orgId: orgIdStr, userId: userIdStr, provider } = stateData;
+      const { org: orgIdStr, user: userIdStr, provider } = stateData;
 
       // Validate IDs through Zod schemas (trust boundary)
       const orgId = dbIdSchema('Org').parse(orgIdStr);
@@ -283,14 +282,14 @@ export class IntegrationsController {
 
       // Get external account info from the connector
       const accountInfo = await connector.getAccountInfo(tokens.accessToken);
-      const externalAccountId = accountInfo.id;
+      const externalAccountRef = accountInfo.id;
       const externalAccountName = accountInfo.name;
 
       await this.integrationsService.createConnection({
         orgId,
         provider: validatedProvider,
         tokens,
-        externalAccountId,
+        externalAccountRef,
         externalAccountName,
         createdById: userId,
       });

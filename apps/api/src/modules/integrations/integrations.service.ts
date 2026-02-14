@@ -1,12 +1,12 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { Queue } from 'bullmq';
 
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
+import { Queue } from 'bullmq';
 
-import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '../../db/enums';
 import { DbService } from '../../db/db.module';
+import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '../../db/enums';
 import { INTEGRATION_SYNC_QUEUE } from '../queue/queue.constants';
 
 import type { OAuthTokens } from './connector.interface';
@@ -16,7 +16,7 @@ interface CreateConnectionParams {
   orgId: DbId<'Org'>;
   provider: IntegrationProvider;
   tokens: OAuthTokens;
-  externalAccountId: string | null;
+  externalAccountRef: string | null;
   externalAccountName: string | null;
   createdById: DbId<'User'>;
 }
@@ -32,7 +32,7 @@ interface ConnectionUpdateFields {
   syncEnabled?: boolean;
   syncIntervalMinutes?: number;
   config?: Record<string, unknown>;
-  webhookId?: string | null;
+  webhookRef?: string | null;
   webhookSecret?: string | null;
 }
 
@@ -128,7 +128,7 @@ export class IntegrationsService {
           : null,
         token_expires_at: params.tokens.expiresAt,
         scopes: params.tokens.scopes,
-        external_account_id: params.externalAccountId,
+        external_account_id: params.externalAccountRef,
         external_account_name: params.externalAccountName,
         org_id: params.orgId,
         created_by_id: params.createdById,
@@ -173,7 +173,7 @@ export class IntegrationsService {
     if (updates.syncEnabled !== undefined) dbUpdates.sync_enabled = updates.syncEnabled;
     if (updates.syncIntervalMinutes !== undefined) dbUpdates.sync_interval_minutes = updates.syncIntervalMinutes;
     if (updates.config !== undefined) dbUpdates.config = updates.config;
-    if (updates.webhookId !== undefined) dbUpdates.webhook_id = updates.webhookId;
+    if (updates.webhookRef !== undefined) dbUpdates.webhook_id = updates.webhookRef;
     if (updates.webhookSecret !== undefined) dbUpdates.webhook_secret = updates.webhookSecret;
 
     await this.db.kysely

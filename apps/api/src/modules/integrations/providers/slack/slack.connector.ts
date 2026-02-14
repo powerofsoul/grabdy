@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+
+import type { DbId } from '@grabdy/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -76,7 +78,7 @@ interface SlackConversationsHistoryResponse {
 }
 
 interface SlackChannelCursors {
-  [channelId: string]: string;
+  [channel: string]: string;
 }
 
 interface SlackSyncCursor {
@@ -109,16 +111,16 @@ export class SlackConnector extends IntegrationConnector {
   private readonly logger = new Logger(SlackConnector.name);
 
   constructor(
-    @InjectEnv('slackClientId') private readonly clientId: string,
+    @InjectEnv('slackClientId') private readonly oauthClient: string,
     @InjectEnv('slackClientSecret') private readonly clientSecret: string,
     @InjectEnv('slackSigningSecret') private readonly signingSecret: string,
   ) {
     super();
   }
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: this.oauthClient,
       redirect_uri: redirectUri,
       scope: SLACK_SCOPES,
       state,
@@ -132,7 +134,7 @@ export class SlackConnector extends IntegrationConnector {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
         redirect_uri: redirectUri,
       }),
@@ -193,7 +195,7 @@ export class SlackConnector extends IntegrationConnector {
     return null;
   }
 
-  async deregisterWebhook(_accessToken: string, _webhookId: string): Promise<void> {
+  async deregisterWebhook(_accessToken: string, _webhookRef: string): Promise<void> {
     // No-op: Slack Events API webhooks are managed in the app dashboard
   }
 
@@ -359,11 +361,11 @@ export class SlackConnector extends IntegrationConnector {
 
   private async fetchChannelMessages(
     accessToken: string,
-    channelId: string,
+    channel: string,
     oldestTs: string,
   ): Promise<{ messages: SlackMessage[]; latestTs: string | undefined }> {
     const params = new URLSearchParams({
-      channel: channelId,
+      channel,
       limit: '200',
     });
     if (oldestTs !== '0') {
@@ -380,7 +382,7 @@ export class SlackConnector extends IntegrationConnector {
     const data: SlackConversationsHistoryResponse = await response.json();
 
     if (!data.ok) {
-      this.logger.warn(`Slack conversations.history error for ${channelId}: ${data.error ?? 'Unknown'}`);
+      this.logger.warn(`Slack conversations.history error for ${channel}: ${data.error ?? 'Unknown'}`);
       return { messages: [], latestTs: undefined };
     }
 

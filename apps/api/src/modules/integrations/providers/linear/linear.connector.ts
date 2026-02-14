@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
+
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -79,15 +81,15 @@ export class LinearConnector extends IntegrationConnector {
   private readonly logger = new Logger(LinearConnector.name);
 
   constructor(
-    @InjectEnv('linearClientId') private readonly clientId: string,
+    @InjectEnv('linearClientId') private readonly oauthClient: string,
     @InjectEnv('linearClientSecret') private readonly clientSecret: string,
   ) {
     super();
   }
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: this.oauthClient,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'read',
@@ -105,7 +107,7 @@ export class LinearConnector extends IntegrationConnector {
         grant_type: 'authorization_code',
         code,
         redirect_uri: redirectUri,
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
       }),
     });
@@ -131,7 +133,7 @@ export class LinearConnector extends IntegrationConnector {
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
       }),
     });
@@ -181,7 +183,7 @@ export class LinearConnector extends IntegrationConnector {
     return null;
   }
 
-  async deregisterWebhook(_accessToken: string, _webhookId: string): Promise<void> {
+  async deregisterWebhook(_accessToken: string, _webhookRef: string): Promise<void> {
     // No-op: Linear manages webhooks for OAuth apps
   }
 

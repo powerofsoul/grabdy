@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
+
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -124,7 +126,7 @@ export class NotionConnector extends IntegrationConnector {
   private readonly logger = new Logger(NotionConnector.name);
 
   constructor(
-    @InjectEnv('notionClientId') private readonly clientId: string,
+    @InjectEnv('notionClientId') private readonly oauthClient: string,
     @InjectEnv('notionClientSecret') private readonly clientSecret: string,
   ) {
     super();
@@ -132,9 +134,9 @@ export class NotionConnector extends IntegrationConnector {
 
   // ── OAuth ──────────────────────────────────────────────────────────
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: this.oauthClient,
       redirect_uri: redirectUri,
       response_type: 'code',
       owner: 'user',
@@ -144,7 +146,7 @@ export class NotionConnector extends IntegrationConnector {
   }
 
   async exchangeCode(code: string, redirectUri: string): Promise<OAuthTokens> {
-    const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+    const credentials = Buffer.from(`${this.oauthClient}:${this.clientSecret}`).toString('base64');
 
     const response = await fetch(NOTION_TOKEN_URL, {
       method: 'POST',
@@ -214,7 +216,7 @@ export class NotionConnector extends IntegrationConnector {
     return null;
   }
 
-  async deregisterWebhook(_accessToken: string, _webhookId: string): Promise<void> {
+  async deregisterWebhook(_accessToken: string, _webhookRef: string): Promise<void> {
     // No-op: Notion doesn't support webhooks in this implementation
   }
 
@@ -319,7 +321,7 @@ export class NotionConnector extends IntegrationConnector {
 
   private async fetchAllBlocks(
     accessToken: string,
-    blockId: string,
+    blockRef: string,
     depth = 0,
   ): Promise<NotionBlock[]> {
     if (depth > 3) return []; // Limit recursion depth
@@ -337,7 +339,7 @@ export class NotionConnector extends IntegrationConnector {
       }
 
       const response = await fetch(
-        `${NOTION_API_URL}/blocks/${blockId}/children?${params.toString()}`,
+        `${NOTION_API_URL}/blocks/${blockRef}/children?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -347,7 +349,7 @@ export class NotionConnector extends IntegrationConnector {
       );
 
       if (!response.ok) {
-        this.logger.warn(`Failed to fetch blocks for ${blockId}: ${response.status}`);
+        this.logger.warn(`Failed to fetch blocks for ${blockRef}: ${response.status}`);
         break;
       }
 

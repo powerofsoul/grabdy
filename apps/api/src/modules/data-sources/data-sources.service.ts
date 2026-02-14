@@ -1,36 +1,25 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import { MIME_TO_DATA_SOURCE_TYPE } from '@grabdy/contracts';
 import { Queue } from 'bullmq';
 
-import { InjectEnv } from '../../config/env.config';
+import { getMaxFileSizeForMime } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import type { DataSourceStatus, DataSourceType } from '../../db/enums';
 import type { DataSourceJobData } from '../queue/processors/data-source.processor';
 import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
-
-const MIME_TO_TYPE: Record<string, DataSourceType> = {
-  'application/pdf': 'PDF',
-  'text/csv': 'CSV',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
-  'text/plain': 'TXT',
-  'application/json': 'JSON',
-};
+import type { FileStorage } from '../storage/file-storage.interface';
+import { FILE_STORAGE } from '../storage/file-storage.interface';
 
 @Injectable()
 export class DataSourcesService {
-  private readonly s3: S3Client;
-
   constructor(
     private db: DbService,
     @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue,
-    @InjectEnv('s3UploadsBucket') private readonly bucket: string,
-    @InjectEnv('awsRegion') awsRegion: string
-  ) {
-    this.s3 = new S3Client({ region: awsRegion });
-  }
+    @Inject(FILE_STORAGE) private storage: FileStorage
+  ) {}
 
   async upload(
     orgId: DbId<'Org'>,
@@ -38,25 +27,24 @@ export class DataSourcesService {
     file: Express.Multer.File,
     options: { name?: string; collectionId?: DbId<'Collection'> }
   ) {
-    const type = MIME_TO_TYPE[file.mimetype];
+    const mimeMap: Partial<Record<string, DataSourceType>> = MIME_TO_DATA_SOURCE_TYPE;
+    const type = mimeMap[file.mimetype];
     if (!type) {
       throw new Error(`Unsupported file type: ${file.mimetype}`);
     }
 
-    // S3 key: {orgNumericId}/{timestamp}-{originalname}
+    const maxSize = getMaxFileSizeForMime(file.mimetype);
+    if (file.size > maxSize) {
+      const limitMB = Math.round(maxSize / (1024 * 1024));
+      throw new Error(`File too large. Maximum size for ${type} files is ${limitMB} MB`);
+    }
+
+    // Storage key: {orgNumericId}/{timestamp}-{originalname}
     const orgNum = extractOrgNumericId(orgId).toString();
     const filename = `${Date.now()}-${file.originalname}`;
-    const s3Key = `${orgNum}/${filename}`;
+    const storageKey = `${orgNum}/${filename}`;
 
-    await this.s3.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: s3Key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        ServerSideEncryption: 'AES256',
-      })
-    );
+    await this.storage.put(storageKey, file.buffer, file.mimetype);
 
     const collectionId = options.collectionId ?? null;
 
@@ -68,7 +56,7 @@ export class DataSourcesService {
         filename: file.originalname,
         mime_type: file.mimetype,
         file_size: file.size,
-        storage_path: s3Key,
+        storage_path: storageKey,
         type,
         collection_id: collectionId,
         org_id: orgId,
@@ -82,7 +70,7 @@ export class DataSourcesService {
     const jobData: DataSourceJobData = {
       dataSourceId: dataSource.id,
       orgId,
-      storagePath: s3Key,
+      storagePath: storageKey,
       mimeType: file.mimetype,
       collectionId,
     };
@@ -133,19 +121,101 @@ export class DataSourcesService {
       throw new NotFoundException('Data source not found');
     }
 
+    // Delete extracted images from storage
+    const extractedImages = await this.db.kysely
+      .selectFrom('data.extracted_images')
+      .select('storage_path')
+      .where('data_source_id', '=', id)
+      .execute();
+
+    for (const img of extractedImages) {
+      await this.storage.delete(img.storage_path);
+    }
+
     // Delete chunks first
     await this.db.kysely.deleteFrom('data.chunks').where('data_source_id', '=', id).execute();
 
-    // Delete the record
+    // Delete the record (extracted_images cascade via FK)
     await this.db.kysely.deleteFrom('data.data_sources').where('id', '=', id).execute();
 
-    // Delete file from S3
-    await this.s3.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: dataSource.storage_path,
-      })
+    // Delete file from storage
+    await this.storage.delete(dataSource.storage_path);
+  }
+
+  async rename(orgId: DbId<'Org'>, id: DbId<'DataSource'>, name: string) {
+    const dataSource = await this.db.kysely
+      .updateTable('data.data_sources')
+      .set({ name, updated_at: new Date() })
+      .where('id', '=', id)
+      .where('org_id', '=', orgId)
+      .returningAll()
+      .executeTakeFirst();
+
+    if (!dataSource) {
+      throw new NotFoundException('Data source not found');
+    }
+
+    return this.toResponse(dataSource);
+  }
+
+  async getFileBuffer(key: string): Promise<Buffer> {
+    return this.storage.get(key);
+  }
+
+  async getPreviewUrl(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
+    const dataSource = await this.db.kysely
+      .selectFrom('data.data_sources')
+      .select(['storage_path', 'mime_type', 'filename', 'ai_tags', 'ai_description'])
+      .where('id', '=', id)
+      .where('org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (!dataSource) {
+      throw new NotFoundException('Data source not found');
+    }
+
+    const url = await this.storage.getUrl(dataSource.storage_path);
+
+    return {
+      url,
+      mimeType: dataSource.mime_type,
+      filename: dataSource.filename,
+      ...(dataSource.ai_tags ? { aiTags: dataSource.ai_tags } : {}),
+      ...(dataSource.ai_description ? { aiDescription: dataSource.ai_description } : {}),
+    };
+  }
+
+  async listExtractedImages(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
+    // Verify data source exists and belongs to org
+    const dataSource = await this.db.kysely
+      .selectFrom('data.data_sources')
+      .select('id')
+      .where('id', '=', id)
+      .where('org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (!dataSource) {
+      throw new NotFoundException('Data source not found');
+    }
+
+    const images = await this.db.kysely
+      .selectFrom('data.extracted_images')
+      .select(['id', 'storage_path', 'mime_type', 'page_number', 'ai_description'])
+      .where('data_source_id', '=', id)
+      .orderBy('page_number', 'asc')
+      .execute();
+
+    const results = await Promise.all(
+      images.map(async (img) => ({
+        id: img.id,
+        mimeType: img.mime_type,
+        pageNumber: img.page_number,
+        url: await this.storage.getUrl(img.storage_path),
+        aiDescription: img.ai_description,
+      }))
     );
+
+    return results;
   }
 
   async reprocess(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
@@ -162,6 +232,19 @@ export class DataSourcesService {
 
     // Delete existing chunks
     await this.db.kysely.deleteFrom('data.chunks').where('data_source_id', '=', id).execute();
+
+    // Delete extracted images from storage and DB
+    const extractedImages = await this.db.kysely
+      .selectFrom('data.extracted_images')
+      .select('storage_path')
+      .where('data_source_id', '=', id)
+      .execute();
+
+    for (const img of extractedImages) {
+      await this.storage.delete(img.storage_path);
+    }
+
+    await this.db.kysely.deleteFrom('data.extracted_images').where('data_source_id', '=', id).execute();
 
     // Reset status
     await this.db.kysely

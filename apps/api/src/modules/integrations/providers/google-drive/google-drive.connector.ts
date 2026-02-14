@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
+
 import { InjectEnv } from '../../../../config/env.config';
 import { IntegrationProvider } from '../../../../db/enums';
 import {
-  IntegrationConnector,
   type AccountInfo,
+  IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
   type SyncCursor,
@@ -68,7 +70,7 @@ interface GoogleStartPageTokenResponse {
 interface GoogleChangeItem {
   file?: GoogleDriveFile;
   removed?: boolean;
-  fileId?: string;
+  fileRef?: string;
 }
 
 interface GoogleChangesListResponse {
@@ -90,15 +92,15 @@ export class GoogleDriveConnector extends IntegrationConnector {
   private readonly logger = new Logger(GoogleDriveConnector.name);
 
   constructor(
-    @InjectEnv('googleClientId') private readonly clientId: string,
+    @InjectEnv('googleClientId') private readonly oauthClient: string,
     @InjectEnv('googleClientSecret') private readonly clientSecret: string,
   ) {
     super();
   }
 
-  getAuthUrl(_orgId: string, state: string, redirectUri: string): string {
+  getAuthUrl(_orgId: DbId<'Org'>, state: string, redirectUri: string): string {
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: this.oauthClient,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'https://www.googleapis.com/auth/drive.readonly',
@@ -117,7 +119,7 @@ export class GoogleDriveConnector extends IntegrationConnector {
         grant_type: 'authorization_code',
         code,
         redirect_uri: redirectUri,
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
       }),
     });
@@ -145,7 +147,7 @@ export class GoogleDriveConnector extends IntegrationConnector {
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
-        client_id: this.clientId,
+        client_id: this.oauthClient,
         client_secret: this.clientSecret,
       }),
     });
@@ -197,7 +199,7 @@ export class GoogleDriveConnector extends IntegrationConnector {
     return null;
   }
 
-  async deregisterWebhook(_accessToken: string, _webhookId: string): Promise<void> {
+  async deregisterWebhook(_accessToken: string, _webhookRef: string): Promise<void> {
     // No-op: webhooks not implemented
   }
 
@@ -339,7 +341,7 @@ export class GoogleDriveConnector extends IntegrationConnector {
 
     for (const change of changes) {
       if (change.removed) {
-        const removedId = change.fileId ?? change.file?.id;
+        const removedId = change.fileRef ?? change.file?.id;
         if (removedId) {
           deletedExternalIds.push(removedId);
         }
@@ -432,18 +434,18 @@ export class GoogleDriveConnector extends IntegrationConnector {
 
   private async exportFileContent(
     accessToken: string,
-    fileId: string,
+    fileRef: string,
     exportMimeType: string,
   ): Promise<string | null> {
     try {
       const response = await fetch(
-        `${GOOGLE_DRIVE_API}/files/${encodeURIComponent(fileId)}/export?mimeType=${encodeURIComponent(exportMimeType)}`,
+        `${GOOGLE_DRIVE_API}/files/${encodeURIComponent(fileRef)}/export?mimeType=${encodeURIComponent(exportMimeType)}`,
         { headers: { Authorization: `Bearer ${accessToken}` } },
       );
 
       if (!response.ok) {
         this.logger.warn(
-          `Export failed for file ${fileId}: ${response.status} ${response.statusText}`,
+          `Export failed for file ${fileRef}: ${response.status} ${response.statusText}`,
         );
         return null;
       }
@@ -451,7 +453,7 @@ export class GoogleDriveConnector extends IntegrationConnector {
       return await response.text();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.warn(`Export error for file ${fileId}: ${message}`);
+      this.logger.warn(`Export error for file ${fileRef}: ${message}`);
       return null;
     }
   }
