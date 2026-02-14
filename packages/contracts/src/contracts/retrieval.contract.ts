@@ -15,11 +15,26 @@ const searchResultSchema = z.object({
   dataSourceId: dbIdSchema('DataSource'),
 });
 
+const chatSourceSchema = z.object({
+  dataSourceId: dbIdSchema('DataSource'),
+  dataSourceName: z.string(),
+  score: z.number(),
+  pages: z.array(z.number()).optional(),
+});
+
 const chatMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant']),
   content: z.string(),
-  sources: z.array(searchResultSchema).nullable(),
+  sources: z.array(chatSourceSchema).nullable(),
+  thinkingSteps: z
+    .array(
+      z.object({
+        toolName: z.string(),
+        summary: z.string(),
+      })
+    )
+    .nullable(),
   createdAt: z.string(),
 });
 

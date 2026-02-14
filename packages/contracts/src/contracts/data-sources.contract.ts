@@ -89,6 +89,61 @@ export const dataSourcesContract = c.router(
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
+    rename: {
+      method: 'PATCH',
+      path: '/orgs/:orgId/data-sources/:id',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        id: dbIdSchema('DataSource'),
+      }),
+      body: z.object({ name: z.string().min(1).max(255) }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: dataSourceSchema }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    previewUrl: {
+      method: 'GET',
+      path: '/orgs/:orgId/data-sources/:id/preview-url',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        id: dbIdSchema('DataSource'),
+      }),
+      responses: {
+        200: z.object({
+          success: z.literal(true),
+          data: z.object({
+            url: z.string(),
+            mimeType: z.string(),
+            filename: z.string(),
+            aiTags: z.array(z.string()).optional(),
+            aiDescription: z.string().optional(),
+          }),
+        }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    listExtractedImages: {
+      method: 'GET',
+      path: '/orgs/:orgId/data-sources/:id/images',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        id: dbIdSchema('DataSource'),
+      }),
+      responses: {
+        200: z.object({
+          success: z.literal(true),
+          data: z.array(z.object({
+            id: z.string(),
+            mimeType: z.string(),
+            pageNumber: z.number().nullable(),
+            url: z.string(),
+            aiDescription: z.string().nullable(),
+          })),
+        }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
   },
   { pathPrefix: '/api' }
 );
