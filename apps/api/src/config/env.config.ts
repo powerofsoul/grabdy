@@ -40,13 +40,10 @@ export const env = {
   redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
   redisPassword: process.env.REDIS_PASSWORD,
 
-  storageDir: process.env.STORAGE_DIR || './uploads',
+  s3UploadsBucket: requiredInProd('S3_UPLOADS_BUCKET', 'grabdy-uploads-dev'),
+  awsRegion: process.env.AWS_REGION || 'eu-central-1',
 
-  smtpHost: process.env.SMTP_HOST || 'smtp.zeptomail.com',
-  smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
-  smtpUser: requiredInProd('SMTP_USER', ''),
-  smtpPass: requiredInProd('SMTP_PASS', ''),
-  emailFrom: process.env.EMAIL_FROM || 'Grabdy <noreply@grabdy.com>',
+  sesFromEmail: process.env.SES_FROM_EMAIL || 'Grabdy <noreply@grabdy.com>',
 
   adminApiKey: required('ADMIN_API_KEY'),
 
@@ -98,7 +95,7 @@ export const env = {
   figmaClientSecret: requiredInProd('FIGMA_CLIENT_SECRET', ''),
 
   // Waitlist Slack webhook
-  slackWaitlistWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
+  slackWebhookUrl: requiredInProd('SLACK_WEBHOOK_URL', ''),
 } as const;
 
 type EnvKey = keyof typeof env;

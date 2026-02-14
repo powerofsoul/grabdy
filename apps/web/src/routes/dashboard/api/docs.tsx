@@ -1,7 +1,7 @@
 import { Box, useTheme } from '@mui/material';
+import { ApiReferenceReact } from '@scalar/api-reference-react';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ApiReferenceReact } from '@scalar/api-reference-react';
 import '@scalar/api-reference-react/style.css';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
@@ -15,8 +15,6 @@ function ApiDocsPage() {
   const isDark = theme.palette.mode === 'dark';
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
   const darkModeState = isDark ? 'dark' : 'light';
-
-  const t = theme.palette;
 
   return (
     <DashboardPage title="API Docs" noPadding maxWidth={false}>
@@ -62,15 +60,17 @@ function ApiDocsPage() {
             letterSpacing: '-0.02em',
             fontSize: '1.5rem !important',
           },
-          '& .scalar-app.scalar-app h3, & .scalar-app.scalar-app h4, & .scalar-app.scalar-app h5, & .scalar-app.scalar-app h6': {
-            fontFamily: '"Instrument Serif", "Source Serif 4", Georgia, serif !important',
-            fontWeight: '400 !important',
-            letterSpacing: '-0.01em',
-          },
+          '& .scalar-app.scalar-app h3, & .scalar-app.scalar-app h4, & .scalar-app.scalar-app h5, & .scalar-app.scalar-app h6':
+            {
+              fontFamily: '"Instrument Serif", "Source Serif 4", Georgia, serif !important',
+              fontWeight: '400 !important',
+              letterSpacing: '-0.01em',
+            },
           // Code gets Geist Mono
-          '& .scalar-app.scalar-app code, & .scalar-app.scalar-app pre, & .scalar-app.scalar-app .font-code, & .scalar-app.scalar-app code *, & .scalar-app.scalar-app pre *, & .scalar-app.scalar-app .font-code *': {
-            fontFamily: '"Geist Mono", "JetBrains Mono", monospace !important',
-          },
+          '& .scalar-app.scalar-app code, & .scalar-app.scalar-app pre, & .scalar-app.scalar-app .font-code, & .scalar-app.scalar-app code *, & .scalar-app.scalar-app pre *, & .scalar-app.scalar-app .font-code *':
+            {
+              fontFamily: '"Geist Mono", "JetBrains Mono", monospace !important',
+            },
         }}
       >
         <ApiReferenceReact

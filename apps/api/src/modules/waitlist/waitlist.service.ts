@@ -6,7 +6,7 @@ import { InjectEnv } from '../../config/env.config';
 export class WaitlistService {
   private readonly logger = new Logger(WaitlistService.name);
 
-  constructor(@InjectEnv('slackWaitlistWebhookUrl') private readonly webhookUrl: string) {}
+  constructor(@InjectEnv('slackWebhookUrl') private readonly webhookUrl: string) {}
 
   async notifySlack(name: string, email: string): Promise<void> {
     if (!this.webhookUrl) {

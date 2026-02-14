@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { render } from '@react-email/components';
-import * as nodemailer from 'nodemailer';
 
 import { authLinks } from '../../common/auth-links';
 import { InjectEnv } from '../../config/env.config';
@@ -13,28 +13,16 @@ import { WelcomeEmail } from './templates/welcome';
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly transporter: nodemailer.Transporter;
+  private readonly ses: SESClient;
   private readonly isDev: boolean;
 
   constructor(
     @InjectEnv('nodeEnv') nodeEnv: string,
-    @InjectEnv('smtpHost') smtpHost: string,
-    @InjectEnv('smtpPort') smtpPort: number,
-    @InjectEnv('smtpUser') smtpUser: string,
-    @InjectEnv('smtpPass') smtpPass: string,
-    @InjectEnv('emailFrom') private readonly emailFrom: string
+    @InjectEnv('awsRegion') awsRegion: string,
+    @InjectEnv('sesFromEmail') private readonly fromEmail: string
   ) {
     this.isDev = nodeEnv === 'development';
-
-    this.transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
+    this.ses = new SESClient({ region: awsRegion });
   }
 
   private async sendEmail(
@@ -52,12 +40,16 @@ export class EmailService {
     }
 
     try {
-      await this.transporter.sendMail({
-        from: this.emailFrom,
-        to,
-        subject,
-        html,
-      });
+      await this.ses.send(
+        new SendEmailCommand({
+          Source: this.fromEmail,
+          Destination: { ToAddresses: [to] },
+          Message: {
+            Subject: { Data: subject, Charset: 'UTF-8' },
+            Body: { Html: { Data: html, Charset: 'UTF-8' } },
+          },
+        })
+      );
 
       this.logger.log(`Email sent to ${to}: ${subject}`);
     } catch (error) {

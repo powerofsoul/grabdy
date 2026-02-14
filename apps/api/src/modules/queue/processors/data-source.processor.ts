@@ -1,15 +1,16 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { openai } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
 import { Job } from 'bullmq';
-import * as fs from 'fs';
 
 import type { DbId } from '@grabdy/common';
 import { packId } from '@grabdy/common';
 
 import { CHUNK_OVERLAP, CHUNK_SIZE, EMBEDDING_BATCH_SIZE, SUMMARY_MAX_LENGTH } from '../../../config/constants';
+import { env } from '../../../config/env.config';
 import { DbService } from '../../../db/db.module';
 import { DATA_SOURCE_QUEUE } from '../queue.constants';
 
@@ -37,6 +38,7 @@ function chunkText(text: string): string[] {
 @Processor(DATA_SOURCE_QUEUE)
 export class DataSourceProcessor extends WorkerHost {
   private readonly logger = new Logger(DataSourceProcessor.name);
+  private readonly s3 = new S3Client({ region: env.awsRegion });
 
   constructor(private db: DbService) {
     super();
@@ -54,7 +56,7 @@ export class DataSourceProcessor extends WorkerHost {
         .where('id', '=', dataSourceId)
         .execute();
 
-      // Extract text: use pre-extracted content for integration sources, otherwise read from file
+      // Extract text: use pre-extracted content for integration sources, otherwise read from S3
       const text = job.data.content ?? await this.extractText(storagePath, mimeType);
       if (!text.trim()) {
         throw new Error('No text content extracted from file');
@@ -122,8 +124,21 @@ export class DataSourceProcessor extends WorkerHost {
     }
   }
 
-  private async extractText(storagePath: string, mimeType: string): Promise<string> {
-    const buffer = fs.readFileSync(storagePath);
+  private async extractText(s3Key: string, mimeType: string): Promise<string> {
+    const response = await this.s3.send(
+      new GetObjectCommand({
+        Bucket: env.s3UploadsBucket,
+        Key: s3Key,
+      })
+    );
+
+    const stream = response.Body;
+    if (!stream) {
+      throw new Error('Empty S3 response body');
+    }
+
+    const byteArray = await stream.transformToByteArray();
+    const buffer = Buffer.from(byteArray);
 
     if (mimeType === 'application/pdf') {
       const pdfParse = require('pdf-parse');

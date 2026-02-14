@@ -1,11 +1,9 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { Queue } from 'bullmq';
-import * as fs from 'fs';
-import * as path from 'path';
-
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import { Queue } from 'bullmq';
 
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
@@ -23,11 +21,16 @@ const MIME_TO_TYPE: Record<string, DataSourceType> = {
 
 @Injectable()
 export class DataSourcesService {
+  private readonly s3: S3Client;
+
   constructor(
     private db: DbService,
     @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue,
-    @InjectEnv('storageDir') private readonly storageDir: string
-  ) {}
+    @InjectEnv('s3UploadsBucket') private readonly bucket: string,
+    @InjectEnv('awsRegion') awsRegion: string
+  ) {
+    this.s3 = new S3Client({ region: awsRegion });
+  }
 
   async upload(
     orgId: DbId<'Org'>,
@@ -40,16 +43,20 @@ export class DataSourcesService {
       throw new Error(`Unsupported file type: ${file.mimetype}`);
     }
 
-    // Ensure storage directory exists
-    const orgDir = path.join(this.storageDir, extractOrgNumericId(orgId).toString());
-    if (!fs.existsSync(orgDir)) {
-      fs.mkdirSync(orgDir, { recursive: true });
-    }
-
-    // Save file to disk
+    // S3 key: {orgNumericId}/{timestamp}-{originalname}
+    const orgNum = extractOrgNumericId(orgId).toString();
     const filename = `${Date.now()}-${file.originalname}`;
-    const storagePath = path.join(orgDir, filename);
-    fs.writeFileSync(storagePath, file.buffer);
+    const s3Key = `${orgNum}/${filename}`;
+
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: s3Key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ServerSideEncryption: 'AES256',
+      })
+    );
 
     const collectionId = options.collectionId ?? null;
 
@@ -61,7 +68,7 @@ export class DataSourcesService {
         filename: file.originalname,
         mime_type: file.mimetype,
         file_size: file.size,
-        storage_path: storagePath,
+        storage_path: s3Key,
         type,
         collection_id: collectionId,
         org_id: orgId,
@@ -75,7 +82,7 @@ export class DataSourcesService {
     const jobData: DataSourceJobData = {
       dataSourceId: dataSource.id,
       orgId,
-      storagePath,
+      storagePath: s3Key,
       mimeType: file.mimetype,
       collectionId,
     };
@@ -127,21 +134,18 @@ export class DataSourcesService {
     }
 
     // Delete chunks first
-    await this.db.kysely
-      .deleteFrom('data.chunks')
-      .where('data_source_id', '=', id)
-      .execute();
+    await this.db.kysely.deleteFrom('data.chunks').where('data_source_id', '=', id).execute();
 
     // Delete the record
-    await this.db.kysely
-      .deleteFrom('data.data_sources')
-      .where('id', '=', id)
-      .execute();
+    await this.db.kysely.deleteFrom('data.data_sources').where('id', '=', id).execute();
 
-    // Delete file from disk
-    if (fs.existsSync(dataSource.storage_path)) {
-      fs.unlinkSync(dataSource.storage_path);
-    }
+    // Delete file from S3
+    await this.s3.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: dataSource.storage_path,
+      })
+    );
   }
 
   async reprocess(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
@@ -157,10 +161,7 @@ export class DataSourcesService {
     }
 
     // Delete existing chunks
-    await this.db.kysely
-      .deleteFrom('data.chunks')
-      .where('data_source_id', '=', id)
-      .execute();
+    await this.db.kysely.deleteFrom('data.chunks').where('data_source_id', '=', id).execute();
 
     // Reset status
     await this.db.kysely

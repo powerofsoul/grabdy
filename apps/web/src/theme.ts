@@ -45,7 +45,7 @@ const dark = {
   text: '#EEEEEC',
   textSecondary: '#A3A3A3',
   textTertiary: '#737373',
-  textDisabled: '#525252',
+  textDisabled: '#6B6B6B',
   border: '#404040',
   borderSubtle: '#262626',
   surface: '#171717',
