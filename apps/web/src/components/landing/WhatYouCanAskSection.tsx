@@ -4,9 +4,9 @@ import { Box, Container, Typography } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import { FONT_SERIF } from '@/theme';
-
 import { BRAND_LOGOS, GmailLogo, GoogleDriveLogo, LinearLogo, NotionLogo, SlackLogo } from './IntegrationLogos';
+
+import { FONT_SERIF } from '@/theme';
 
 gsap.registerPlugin(ScrollTrigger);
 

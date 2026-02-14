@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 
 import { Box, Button, Container, Typography } from '@mui/material';
+import { ArrowRightIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight } from '@phosphor-icons/react';
 
 import { useWaitlist } from './WaitlistModal';
 
@@ -72,7 +72,7 @@ export function CTASection() {
           <Button
             variant="contained"
             size="large"
-            endIcon={<ArrowRight size={18} weight="light" color="currentColor" />}
+            endIcon={<ArrowRightIcon size={18} weight="light" color="currentColor" />}
             onClick={openWaitlist}
             sx={{
               px: 6,

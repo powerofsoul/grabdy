@@ -11,7 +11,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { CheckCircle, Sparkle, X } from '@phosphor-icons/react';
+import { CheckCircleIcon, SparkleIcon, XIcon } from '@phosphor-icons/react';
 
 import { api } from '../../lib/api';
 
@@ -106,7 +106,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
           zIndex: 1,
         }}
       >
-        <X size={18} weight="light" color="currentColor" />
+        <XIcon size={18} weight="light" color="currentColor" />
       </IconButton>
 
       {submitted ? (
@@ -125,7 +125,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
               mb: 2.5,
             }}
           >
-            <CheckCircle size={28} color={primary} weight="light" />
+            <CheckCircleIcon size={28} color={primary} weight="light" />
           </Box>
           <Typography variant="h4" sx={{ mb: 1 }}>
             You&apos;re on the list
@@ -155,7 +155,7 @@ function WaitlistDialog({ open, onClose }: { open: boolean; onClose: () => void 
                 mb: 2,
               }}
             >
-              <Sparkle size={24} color={primary} weight="light" />
+              <SparkleIcon size={24} color={primary} weight="light" />
             </Box>
             <Typography variant="h4" sx={{ mb: 0.75 }}>
               Join the Waitlist

@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
 
 import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
+import { FileTextIcon, LightningIcon, PuzzlePieceIcon, SparkleIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { FileText, Lightning, PuzzlePiece, Sparkle } from '@phosphor-icons/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface Feature {
-  icon: typeof Lightning;
+  icon: typeof LightningIcon;
   title: string;
   description: string;
   proof: string;
@@ -17,14 +17,14 @@ interface Feature {
 
 const HERO_FEATURES = [
   {
-    icon: FileText,
+    icon: FileTextIcon,
     title: 'Cites real sources',
     description: 'Every response links back to the exact file, page, and passage. No hallucinated answers.',
     proof: 'Searching manually: hope for the best. Grabdy: direct link to file, page, and paragraph.',
     colorKey: 'primary',
   },
   {
-    icon: Lightning,
+    icon: LightningIcon,
     title: 'Sub-second answers',
     description: 'Fast enough that people use it instead of asking a teammate.',
     proof: 'Asking a teammate: 4 hours. Grabdy: 23ms.',
@@ -34,14 +34,14 @@ const HERO_FEATURES = [
 
 const SECONDARY_FEATURES = [
   {
-    icon: PuzzlePiece,
+    icon: PuzzlePieceIcon,
     title: 'Works across your whole stack',
     description: 'Searches Slack, Drive, Linear, Notion at once.',
     proof: 'One query searches Slack, Drive, Linear, Notion, Confluence, and Gmail at once.',
     colorKey: 'info',
   },
   {
-    icon: Sparkle,
+    icon: SparkleIcon,
     title: 'Remembers context',
     description: 'Follow-up questions build on previous answers.',
     proof: 'Ask follow-ups like you would a colleague — no re-explaining.',

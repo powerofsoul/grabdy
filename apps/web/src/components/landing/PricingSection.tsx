@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 
 import { Box, Button, Container, Typography } from '@mui/material';
+import { ArrowRightIcon, CheckIcon, ClockIcon, MinusIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight, Check, Clock, Minus } from '@phosphor-icons/react';
 
 import { useWaitlist } from './WaitlistModal';
 
@@ -142,7 +142,7 @@ function PricingCard({ tier }: { tier: Tier }) {
             gap: 0.5,
           }}
         >
-          {tier.comingSoon && <Clock size={11} weight="bold" color="currentColor" />}
+          {tier.comingSoon && <ClockIcon size={11} weight="bold" color="currentColor" />}
           {tier.badge}
         </Box>
       )}
@@ -189,7 +189,7 @@ function PricingCard({ tier }: { tier: Tier }) {
         variant={tier.ctaVariant}
         size="large"
         fullWidth
-        endIcon={<ArrowRight size={16} weight="light" color="currentColor" />}
+        endIcon={<ArrowRightIcon size={16} weight="light" color="currentColor" />}
         onClick={openWaitlist}
         disabled={tier.comingSoon}
         sx={{ mb: 3, py: 1.25 }}
@@ -201,9 +201,9 @@ function PricingCard({ tier }: { tier: Tier }) {
         {tier.features.map((feature) => (
           <Box key={feature.label} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {feature.value === false ? (
-              <Minus size={16} weight="light" color="currentColor" style={{ opacity: 0.3 }} />
+              <MinusIcon size={16} weight="light" color="currentColor" style={{ opacity: 0.3 }} />
             ) : (
-              <Check size={16} weight="light" color="currentColor" style={{ opacity: 0.6 }} />
+              <CheckIcon size={16} weight="light" color="currentColor" style={{ opacity: 0.6 }} />
             )}
             <Typography
               variant="body2"

@@ -1,30 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { alpha, Box, Button, Container, IconButton, Typography, useTheme } from '@mui/material';
-import gsap from 'gsap';
 import {
-  WarningDiamond,
-  ArrowRight,
-  ChartBar,
-  Brain,
-  CaretRight,
-  Clock,
-  FileText,
-  Lightbulb,
-  Minus,
-  Plus,
-  Rocket,
-  PaperPlaneTilt,
-  ShareNetwork,
-  Shield,
-  Crosshair,
-  TrendUp,
-  Lightning,
+  ArrowRightIcon,
+  BrainIcon,
+  CaretRightIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CrosshairIcon,
+  FileTextIcon,
+  LightbulbIcon,
+  LightningIcon,
+  MinusIcon,
+  PaperPlaneTiltIcon,
+  PlusIcon,
+  RocketIcon,
+  ShareNetworkIcon,
+  ShieldIcon,
+  TrendUpIcon,
+  WarningDiamondIcon,
 } from '@phosphor-icons/react';
-
-import heroClouds from '@/assets/hero-clouds-light.svg';
+import gsap from 'gsap';
 
 import { useWaitlist } from './WaitlistModal';
+
+import heroClouds from '@/assets/hero-clouds-light.svg';
 
 // ── Brand icons (SVG paths from simple-icons) ──
 
@@ -81,6 +81,8 @@ function LinearIcon({ size = 10 }: { size?: number }) {
   );
 }
 
+type HeroCardId = 'hub' | 'market' | 'competitors' | 'swot' | 'metrics' | 'channels' | 'risks' | 'recommendations' | 'roadmap' | 'summary';
+
 type SourceType = 'slack' | 'gdrive' | 'linear' | 'file';
 
 interface CardSource {
@@ -132,7 +134,7 @@ const TURNS = [
 
 // ── Canvas nodes ──
 
-const INIT_POS: Record<string, { x: number; y: number }> = {
+const INIT_POS: Record<HeroCardId, { x: number; y: number }> = {
   hub: { x: 500, y: 15 },
   market: { x: 20, y: 120 },
   competitors: { x: 420, y: 120 },
@@ -145,7 +147,7 @@ const INIT_POS: Record<string, { x: number; y: number }> = {
   summary: { x: 410, y: 930 },
 };
 
-const NODE_W: Record<string, number> = {
+const NODE_W: Record<HeroCardId, number> = {
   hub: 280,
   market: 250,
   competitors: 270,
@@ -158,7 +160,7 @@ const NODE_W: Record<string, number> = {
   summary: 330,
 };
 
-const NODE_H: Record<string, number> = {
+const NODE_H: Record<HeroCardId, number> = {
   hub: 44,
   market: 210,
   competitors: 200,
@@ -171,7 +173,7 @@ const NODE_H: Record<string, number> = {
   summary: 65,
 };
 
-const EDGES: ReadonlyArray<readonly [string, string]> = [
+const EDGES: ReadonlyArray<readonly [HeroCardId, HeroCardId]> = [
   ['hub', 'market'],
   ['hub', 'competitors'],
   ['hub', 'swot'],
@@ -184,9 +186,9 @@ const EDGES: ReadonlyArray<readonly [string, string]> = [
   ['recommendations', 'roadmap'],
   ['recommendations', 'summary'],
   ['roadmap', 'summary'],
-] satisfies ReadonlyArray<readonly [string, string]>;
+] satisfies ReadonlyArray<readonly [HeroCardId, HeroCardId]>;
 
-const CURSOR_TARGETS: Record<string, { x: number; y: number }> = {
+const CURSOR_TARGETS: Record<HeroCardId, { x: number; y: number }> = {
   hub: { x: 630, y: 30 },
   market: { x: 145, y: 200 },
   competitors: { x: 545, y: 200 },
@@ -253,7 +255,7 @@ const SUMMARY_STATS = [
 ];
 
 // Source integrations shown on each card
-const CARD_SOURCES: Record<string, CardSource[]> = {
+const CARD_SOURCES: Partial<Record<HeroCardId, CardSource[]>> = {
   market: [
     { type: 'gdrive', label: 'Market Analysis 2024.pdf' },
     { type: 'slack', label: '#market-research' },
@@ -302,7 +304,7 @@ interface ChatMsg {
 }
 
 // ── Smart bezier: picks exit/entry side based on node centers ──
-function edgePath(pos: Record<string, { x: number; y: number }>, from: string, to: string, heights?: Record<string, number>): string {
+function edgePath(pos: Record<HeroCardId, { x: number; y: number }>, from: HeroCardId, to: HeroCardId, heights?: Partial<Record<HeroCardId, number>>): string {
   const f = pos[from];
   const t = pos[to];
   if (!f || !t) return '';
@@ -361,10 +363,10 @@ function edgePath(pos: Record<string, { x: number; y: number }>, from: string, t
 
 // Get connection endpoint for SVG dots
 function edgeEndpoints(
-  pos: Record<string, { x: number; y: number }>,
-  from: string,
-  to: string,
-  heights?: Record<string, number>
+  pos: Record<HeroCardId, { x: number; y: number }>,
+  from: HeroCardId,
+  to: HeroCardId,
+  heights?: Partial<Record<HeroCardId, number>>
 ): { x0: number; y0: number; x1: number; y1: number } | null {
   const f = pos[from];
   const t = pos[to];
@@ -419,10 +421,11 @@ export function HeroSection() {
   const [inView, setInView] = useState(false);
 
   // Canvas
-  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>(() => {
-    const p: Record<string, { x: number; y: number }> = {};
-    for (const k of Object.keys(INIT_POS)) p[k] = { ...INIT_POS[k] };
-    return p;
+  const [positions, setPositions] = useState<Record<HeroCardId, { x: number; y: number }>>(() => {
+    // Deep copy so state mutations don't affect the constant
+    return Object.fromEntries(
+      Object.entries(INIT_POS).map(([k, v]) => [k, { ...v }]),
+    ) as Record<HeroCardId, { x: number; y: number }>;
   });
   const [visibleNodes, setVisibleNodes] = useState<Set<string>>(new Set());
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
@@ -433,7 +436,7 @@ export function HeroSection() {
   const [flashNode, setFlashNode] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState(false);
   const [smoothTx, setSmoothTx] = useState(true);
-  const [measuredH, setMeasuredH] = useState<Record<string, number>>({});
+  const [measuredH, setMeasuredH] = useState<Partial<Record<HeroCardId, number>>>({});
   const [isPanning, setIsPanning] = useState(false);
   const [draggingCard, setDraggingCard] = useState<string | null>(null);
 
@@ -441,7 +444,7 @@ export function HeroSection() {
   const panRef = useRef({ x: 0, y: 0 });
   const panStartRef = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const isPanningRef = useRef(false);
-  const dragRef = useRef<{ id: string; sx: number; sy: number; ox: number; oy: number } | null>(
+  const dragRef = useRef<{ id: HeroCardId; sx: number; sy: number; ox: number; oy: number } | null>(
     null
   );
   const zoomRef = useRef(1);
@@ -465,14 +468,18 @@ export function HeroSection() {
     const container = canvasRef.current;
     if (!container) return;
     const cards = container.querySelectorAll<HTMLElement>('[data-card]');
-    const next: Record<string, number> = {};
+    const next: Partial<Record<HeroCardId, number>> = {};
     cards.forEach((el) => {
       const id = el.dataset.card;
-      if (id) next[id] = el.offsetHeight;
+      if (id && id in INIT_POS) next[id as HeroCardId] = el.offsetHeight;
     });
-    setMeasuredH((prev) => {
-      const changed = Object.keys(next).some((k) => prev[k] !== next[k]);
-      return changed ? { ...prev, ...next } : prev;
+    queueMicrotask(() => {
+      setMeasuredH((prev) => {
+        const prevLookup: Partial<Record<string, number>> = prev;
+        const nextLookup: Partial<Record<string, number>> = next;
+        const changed = Object.keys(next).some((k) => prevLookup[k] !== nextLookup[k]);
+        return changed ? { ...prev, ...next } : prev;
+      });
     });
   }, [visibleNodes]);
 
@@ -509,14 +516,15 @@ export function HeroSection() {
     const target = e.target;
     if (target instanceof HTMLElement && target.closest('[data-toolbar]')) return;
 
-    // Check for card drag
+    // CheckIcon for card drag
     if (target instanceof HTMLElement) {
       const cardEl = target.closest('[data-card]');
       if (cardEl instanceof HTMLElement) {
         const id = cardEl.getAttribute('data-card') ?? '';
-        const p = posRef.current[id];
-        if (id && p) {
-          dragRef.current = { id, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y };
+        if (id && id in INIT_POS) {
+          const cardId = id as HeroCardId;
+          const p = posRef.current[cardId];
+          dragRef.current = { id: cardId, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y };
           setDraggingCard(id);
           setSmoothTx(false);
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -587,10 +595,12 @@ export function HeroSection() {
           responseMs: turn.responseMs,
         });
       }
-      setMessages(allMsgs);
-      setVisibleNodes(new Set(Object.keys(INIT_POS)));
-      setZoom(0.48);
-      setShowEdges(true);
+      queueMicrotask(() => {
+        setMessages(allMsgs);
+        setVisibleNodes(new Set(Object.keys(INIT_POS)));
+        setZoom(0.48);
+        setShowEdges(true);
+      });
       return;
     }
 
@@ -836,7 +846,7 @@ export function HeroSection() {
   const p = theme.palette;
 
   // ── Card style helper ──
-  const cardSx = (color: string, vis: boolean, flash: boolean, nodeId: string) => ({
+  const cardSx = (color: string, vis: boolean, flash: boolean, nodeId: HeroCardId) => ({
     position: 'absolute' as const,
     left: positions[nodeId]?.x ?? 0,
     top: positions[nodeId]?.y ?? 0,
@@ -861,7 +871,7 @@ export function HeroSection() {
       : {},
   });
 
-  const labelRow = (color: string, Icon: typeof Brain, text: string) => (
+  const labelRow = (color: string, Icon: typeof BrainIcon, text: string) => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
       <Box
         sx={{
@@ -897,11 +907,11 @@ export function HeroSection() {
       case 'linear':
         return <LinearIcon size={14} />;
       default:
-        return <FileText size={12} weight="light" color={alpha(ct, 0.3)} />;
+        return <FileTextIcon size={12} weight="light" color={alpha(ct, 0.3)} />;
     }
   };
 
-  const sourceRow = (nodeId: string) => {
+  const sourceRow = (nodeId: HeroCardId) => {
     const srcs = CARD_SOURCES[nodeId];
     if (!srcs) return null;
     return (
@@ -1031,7 +1041,7 @@ export function HeroSection() {
             <Button
               variant="contained"
               size="large"
-              endIcon={<ArrowRight size={18} weight="light" />}
+              endIcon={<ArrowRightIcon size={18} weight="light" />}
               onClick={openWaitlist}
               sx={{
                 px: 4,
@@ -1198,7 +1208,7 @@ export function HeroSection() {
                           ) : s.startsWith('Linear') ? (
                             <LinearIcon size={11} />
                           ) : (
-                            <FileText size={10} weight="light" color={alpha(ct, 0.35)} />
+                            <FileTextIcon size={10} weight="light" color={alpha(ct, 0.35)} />
                           );
                           return (
                             <Box key={s} sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
@@ -1211,7 +1221,7 @@ export function HeroSection() {
                         })}
                         {msg.responseMs && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, ml: 'auto' }}>
-                            <Clock size={9} weight="light" color={alpha(ct, 0.3)} />
+                            <ClockIcon size={9} weight="light" color={alpha(ct, 0.3)} />
                             <Typography sx={{ fontSize: '0.6rem', color: alpha(ct, 0.3) }}>
                               {(msg.responseMs / 1000).toFixed(1)}s
                             </Typography>
@@ -1239,7 +1249,7 @@ export function HeroSection() {
                       borderColor: alpha(p.primary.main, 0.15),
                     }}
                   >
-                    <Brain size={12} weight="light" color={p.primary.main} />
+                    <BrainIcon size={12} weight="light" color={p.primary.main} />
                     <Typography sx={{ color: 'primary.main', fontSize: '0.7rem', fontWeight: 600 }}>
                       Thinking
                     </Typography>
@@ -1469,7 +1479,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('hub') ? 'auto' : 'none',
                   }}
                 >
-                  <Brain size={15} weight="light" color={alpha(p.primary.main, 0.8)} />
+                  <BrainIcon size={15} weight="light" color={alpha(p.primary.main, 0.8)} />
                   <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: alpha(ct, 0.85) }}>
                     Market Research Analysis
                   </Typography>
@@ -1493,7 +1503,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('market') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.info.main, ChartBar, 'Market Size')}
+                  {labelRow(p.info.main, ChartBarIcon, 'Market Size')}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
                     {MARKET_BARS.map((d) => (
                       <Box key={d.label}>
@@ -1543,7 +1553,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('competitors') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.warning.main, Crosshair, 'Competitive Landscape')}
+                  {labelRow(p.warning.main, CrosshairIcon, 'Competitive Landscape')}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
                     {COMPETITORS.map((c) => (
                       <Box
@@ -1613,7 +1623,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('swot') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.secondary.main, Shield, 'SWOT Analysis')}
+                  {labelRow(p.secondary.main, ShieldIcon, 'SWOT Analysis')}
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5 }}>
                     {(
                       [
@@ -1656,7 +1666,7 @@ export function HeroSection() {
                   {sourceRow('swot')}
                 </Box>
 
-                {/* ── Key Metrics ── */}
+                {/* ── KeyIcon Metrics ── */}
                 <Box
                   data-card="metrics"
                   sx={{
@@ -1664,7 +1674,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('metrics') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.success.main, TrendUp, 'Key Metrics')}
+                  {labelRow(p.success.main, TrendUpIcon, 'KeyIcon Metrics')}
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
                     {METRICS_DATA.map((m) => (
                       <Box key={m.label} sx={{ textAlign: 'center', flex: 1 }}>
@@ -1699,7 +1709,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('channels') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.info.main, Lightning, 'Growth Channels')}
+                  {labelRow(p.info.main, LightningIcon, 'Growth Channels')}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
                     {CHANNEL_FLOW.map((step, i) => (
                       <Box key={step} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -1723,7 +1733,7 @@ export function HeroSection() {
                           </Typography>
                         </Box>
                         {i < CHANNEL_FLOW.length - 1 && (
-                          <CaretRight size={10} weight="light" color={alpha(ct, 0.25)} />
+                          <CaretRightIcon size={10} weight="light" color={alpha(ct, 0.25)} />
                         )}
                       </Box>
                     ))}
@@ -1763,7 +1773,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('risks') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.error.main, WarningDiamond, 'Risk Assessment')}
+                  {labelRow(p.error.main, WarningDiamondIcon, 'Risk Assessment')}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
                     {RISKS.map((r) => (
                       <Box
@@ -1814,7 +1824,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('recommendations') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.primary.main, Lightbulb, 'Strategic Priorities')}
+                  {labelRow(p.primary.main, LightbulbIcon, 'Strategic Priorities')}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {PRIORITIES.map((pr, i) => (
                       <Box key={pr.text} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -1883,7 +1893,7 @@ export function HeroSection() {
                     pointerEvents: visibleNodes.has('roadmap') ? 'auto' : 'none',
                   }}
                 >
-                  {labelRow(p.success.main, Rocket, '90-Day Roadmap')}
+                  {labelRow(p.success.main, RocketIcon, '90-Day Roadmap')}
                   <Box
                     sx={{
                       display: 'flex',
@@ -1964,7 +1974,7 @@ export function HeroSection() {
                       flexShrink: 0,
                     }}
                   >
-                    <Brain size={15} weight="light" color={alpha(p.primary.main, 0.85)} />
+                    <BrainIcon size={15} weight="light" color={alpha(p.primary.main, 0.85)} />
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography
@@ -2023,7 +2033,7 @@ export function HeroSection() {
                 }}
               >
                 <IconButton size="small" sx={{ p: 0.4 }} onClick={() => zoomBtn(-0.1)}>
-                  <Minus size={12} weight="light" color={alpha(ct, 0.5)} />
+                  <MinusIcon size={12} weight="light" color={alpha(ct, 0.5)} />
                 </IconButton>
                 <Typography
                   sx={{
@@ -2059,7 +2069,7 @@ export function HeroSection() {
                   }}
                   onClick={() => zoomBtn(0.1)}
                 >
-                  <Plus size={12} weight="light" color={alpha(p.primary.main, 0.7)} />
+                  <PlusIcon size={12} weight="light" color={alpha(p.primary.main, 0.7)} />
                 </IconButton>
                 <Box sx={{ width: '1px', height: 14, bgcolor: alpha(ct, 0.1), mx: 0.25 }} />
                 <Box sx={{ position: 'relative' }}>
@@ -2071,7 +2081,7 @@ export function HeroSection() {
                       setTimeout(() => setShareToast(false), 1500);
                     }}
                   >
-                    <ShareNetwork size={12} weight="light" color={alpha(ct, 0.5)} />
+                    <ShareNetworkIcon size={12} weight="light" color={alpha(ct, 0.5)} />
                   </IconButton>
                   {shareToast && (
                     <Box
@@ -2178,7 +2188,7 @@ export function HeroSection() {
                   Ask anything about your documents...
                 </Typography>
               )}
-              <PaperPlaneTilt size={14} weight="light" color={inputText ? p.primary.main : alpha(ct, 0.15)} />
+              <PaperPlaneTiltIcon size={14} weight="light" color={inputText ? p.primary.main : alpha(ct, 0.15)} />
             </Box>
           </Box>
         </Box>
