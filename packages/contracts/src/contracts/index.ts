@@ -52,5 +52,6 @@ export {
   searchBodySchema,
   searchResponseSchema,
 } from './public-api.contract.js';
+export { type ChatSource, chatSourceSchema } from './retrieval.contract.js';
 
 export type Contract = typeof contract;

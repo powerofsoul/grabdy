@@ -1,6 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 
-import { OrgRole } from '@db/enums';
+import { OrgRole } from '@grabdy/contracts';
 import type { AppRoute, AppRouteMutation } from '@ts-rest/core';
 import type { z } from 'zod';
 

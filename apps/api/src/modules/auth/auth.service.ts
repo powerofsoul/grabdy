@@ -6,9 +6,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
-import type { OrgRole, UserStatus } from '@db/enums';
 import { type DbId, GLOBAL_ORG, packId } from '@grabdy/common';
-import { orgRoleEnum } from '@grabdy/contracts';
+import { type OrgRole, orgRoleEnum, type UserStatus } from '@grabdy/contracts';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import type { CookieOptions } from 'express';

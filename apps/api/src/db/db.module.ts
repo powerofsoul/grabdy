@@ -5,7 +5,7 @@ import { Pool, types } from 'pg';
 
 import { InjectEnv } from '../config/env.config';
 
-import type { DB } from './types';
+import type { DB } from './db';
 
 /** Escape special ILIKE wildcards (%, _) in user-provided search terms */
 export function escapeIlike(term: string): string {

@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import type { OrgRole } from '@db/enums';
 import { extractOrgNumericId, type OrgNumericId, UUID_RE } from '@grabdy/common';
+import type { OrgRole } from '@grabdy/contracts';
 import { Request } from 'express';
 
 import { ORG_ACCESS_KEY, OrgAccessMetadata } from '../decorators/org-roles.decorator';

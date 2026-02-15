@@ -1,9 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { OrgRole } from '@db/enums';
 import type { DbId } from '@grabdy/common';
 import { dbIdSchema } from '@grabdy/common';
+import { OrgRole } from '@grabdy/contracts';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { z } from 'zod';
