@@ -1,14 +1,39 @@
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { BookOpenIcon, CaretDoubleLeftIcon, CaretRightIcon, ChartBarIcon, ChatCircleIcon, EyeIcon, FolderIcon, GearIcon, GitForkIcon,KeyIcon, MoonIcon, PlugIcon, SignOutIcon, SquaresFourIcon, SunIcon, UsersIcon } from '@phosphor-icons/react';
+import {
+  BookOpenIcon,
+  CaretDoubleLeftIcon,
+  CaretRightIcon,
+  ChartBarIcon,
+  ChatCircleIcon,
+  EyeIcon,
+  FolderIcon,
+  GearIcon,
+  GitForkIcon,
+  KeyIcon,
+  MoonIcon,
+  PlugIcon,
+  SignOutIcon,
+  SquaresFourIcon,
+  SunIcon,
+  UsersIcon,
+} from '@phosphor-icons/react';
 import { Link, useLocation } from '@tanstack/react-router';
 
-import { useSidebarCollections } from './useSidebarCollections';
+import { useSidebarSources } from './useSidebarSources';
 
+import { ProviderIcon } from '@/components/integrations/ProviderIcon';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
 import { FONT_MONO } from '@/theme';
 
-function NavItem({ to, label, exact, icon, trailing, activePrefix }: {
+function NavItem({
+  to,
+  label,
+  exact,
+  icon,
+  trailing,
+  activePrefix,
+}: {
   to: string;
   label: string;
   exact?: boolean;
@@ -154,12 +179,17 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
   const { user, logout, isAdmin } = useAuth();
   const { preference, setPreference } = useThemeMode();
-  const collections = useSidebarCollections();
+  const { collections, connections } = useSidebarSources();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
 
   const initials = user?.name
-    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    ? user.name
+        .split(' ')
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
     : '?';
 
   return (
@@ -176,12 +206,17 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
     >
       {/* Logo + collapse */}
       <Box sx={{ px: '20px', pt: '20px', pb: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: '24px', position: 'relative' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: '24px',
+            position: 'relative',
+          }}
+        >
           <Link to="/dashboard/chat" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Typography
-              variant="h5"
-              sx={{ fontSize: 22, color: 'text.primary' }}
-            >
+            <Typography variant="h5" sx={{ fontSize: 22, color: 'text.primary' }}>
               grabdy.
             </Typography>
           </Link>
@@ -223,10 +258,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
 
         {/* Sources */}
         <Box sx={{ mt: 2.5 }}>
-          <SectionHeader
-            label="Sources"
-            to="/dashboard/sources"
-          />
+          <SectionHeader label="Sources" to="/dashboard/sources" />
           {collections.map((c) => (
             <NavItem
               key={c.id}
@@ -234,6 +266,15 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               label={c.name}
               icon={<FolderIcon size={15} weight="light" color="currentColor" />}
               trailing={<CountBadge count={c.sourceCount} />}
+            />
+          ))}
+          {connections.map((conn) => (
+            <NavItem
+              key={conn.id}
+              to="/dashboard/integrations"
+              label={conn.name}
+              icon={<ProviderIcon provider={conn.provider} size={15} />}
+              activePrefix="__never__"
             />
           ))}
         </Box>
@@ -293,7 +334,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 mb: '8px',
                 px: 1.5,
                 py: 0.75,
-      
+
                 cursor: 'pointer',
                 border: '1px solid',
                 borderColor: alpha(ct, 0.1),
@@ -349,7 +390,6 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 bgcolor: 'text.primary',
                 color: 'background.default',
                 flexShrink: 0,
-      
               }}
             >
               {initials}
@@ -361,10 +401,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               >
                 {user.name}
               </Typography>
-              <Typography
-                sx={{ fontSize: 11, color: alpha(ct, 0.4), lineHeight: 1.3 }}
-                noWrap
-              >
+              <Typography sx={{ fontSize: 11, color: alpha(ct, 0.4), lineHeight: 1.3 }} noWrap>
                 {user.email}
               </Typography>
             </Box>
@@ -380,7 +417,11 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                     '&:hover': { color: 'text.primary' },
                   }}
                 >
-                  {isDark ? <SunIcon size={14} weight="light" color="currentColor" /> : <MoonIcon size={14} weight="light" color="currentColor" />}
+                  {isDark ? (
+                    <SunIcon size={14} weight="light" color="currentColor" />
+                  ) : (
+                    <MoonIcon size={14} weight="light" color="currentColor" />
+                  )}
                 </IconButton>
               </Tooltip>
               <Tooltip title="Sign out">
