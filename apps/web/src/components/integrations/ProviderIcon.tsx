@@ -47,9 +47,18 @@ function FigmaLogo({ size = 24 }: { size?: number }) {
   // Official Figma paths scaled to fit 24x24 viewBox (original 100x150 scaled by 0.24/0.16)
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-      <path d="M33.33 100a16.67 16.67 0 0 0 16.67-16.67V66.67H33.33a16.67 16.67 0 0 0 0 33.33z" fill="#0ACF83" />
-      <path d="M16.67 50a16.67 16.67 0 0 1 16.67-16.67H50V66.67H33.33A16.67 16.67 0 0 1 16.67 50z" fill="#A259FF" />
-      <path d="M16.67 16.67A16.67 16.67 0 0 1 33.33 0H50v33.33H33.33A16.67 16.67 0 0 1 16.67 16.67z" fill="#F24E1E" />
+      <path
+        d="M33.33 100a16.67 16.67 0 0 0 16.67-16.67V66.67H33.33a16.67 16.67 0 0 0 0 33.33z"
+        fill="#0ACF83"
+      />
+      <path
+        d="M16.67 50a16.67 16.67 0 0 1 16.67-16.67H50V66.67H33.33A16.67 16.67 0 0 1 16.67 50z"
+        fill="#A259FF"
+      />
+      <path
+        d="M16.67 16.67A16.67 16.67 0 0 1 33.33 0H50v33.33H33.33A16.67 16.67 0 0 1 16.67 16.67z"
+        fill="#F24E1E"
+      />
       <path d="M50 0h16.67a16.67 16.67 0 0 1 0 33.33H50V0z" fill="#FF7262" />
       <path d="M83.33 50A16.67 16.67 0 1 1 50 50a16.67 16.67 0 0 1 33.33 0z" fill="#1ABCFE" />
     </svg>
@@ -68,6 +77,31 @@ function TrelloLogo({ size = 24 }: { size?: number }) {
 
 /* ── Provider config ────────────────────────────────────────────── */
 
+/** Display-only key for all providers (including coming-soon ones). */
+export type ProviderKey =
+  | 'SLACK'
+  | 'JIRA'
+  | 'GITHUB'
+  | 'NOTION'
+  | 'CONFLUENCE'
+  | 'GOOGLE_DRIVE'
+  | 'ASANA'
+  | 'LINEAR'
+  | 'FIGMA'
+  | 'TRELLO';
+
+export const COMING_SOON_PROVIDERS = [
+  'LINEAR',
+  'GITHUB',
+  'NOTION',
+  'JIRA',
+  'CONFLUENCE',
+  'GOOGLE_DRIVE',
+  'ASANA',
+  'FIGMA',
+  'TRELLO',
+] as const satisfies readonly ProviderKey[];
+
 type LogoComponent = ({ size }: { size?: number }) => React.JSX.Element;
 
 interface ProviderConfig {
@@ -78,21 +112,82 @@ interface ProviderConfig {
   details: string;
 }
 
-const PROVIDER_CONFIG: Record<string, ProviderConfig> = {
-  SLACK: { icon: SlackLogo, label: 'Slack', color: '#611f69', description: 'Messages & threads', details: 'Syncs messages, threads & channel history into searchable documents' },
-  JIRA: { icon: JiraLogo, label: 'Jira', color: '#0052CC', description: 'Issues & comments', details: 'Imports issues, comments & epics for contextual project search' },
-  GITHUB: { icon: GitHubLogo, label: 'GitHub', color: '#181717', description: 'Issues, PRs & discussions', details: 'Imports issues, pull requests & discussions for contextual search' },
-  NOTION: { icon: NotionLogo, label: 'Notion', color: '#000000', description: 'Pages & databases', details: 'Indexes pages & databases so your team knowledge is always findable' },
-  CONFLUENCE: { icon: ConfluenceLogo, label: 'Confluence', color: '#1868DB', description: 'Pages & spaces', details: 'Syncs documentation spaces & pages into searchable knowledge' },
-  GOOGLE_DRIVE: { icon: GoogleDriveLogo, label: 'Google Drive', color: '#4285F4', description: 'Docs, Sheets & Slides', details: 'Indexes documents, spreadsheets & presentations for full-text search' },
-  ASANA: { icon: AsanaLogo, label: 'Asana', color: '#F06A6A', description: 'Tasks & projects', details: 'Syncs tasks, projects & comments so work context is searchable' },
-  LINEAR: { icon: LinearLogo, label: 'Linear', color: '#5E6AD2', description: 'Issues & projects', details: 'Imports issues, projects & comments for engineering context search' },
-  FIGMA: { icon: FigmaLogo, label: 'Figma', color: '#F24E1E', description: 'Files & comments', details: 'Indexes design files & comments to bridge design and development' },
-  TRELLO: { icon: TrelloLogo, label: 'Trello', color: '#0079BF', description: 'Cards & boards', details: 'Syncs cards, boards & checklists into searchable project data' },
+const PROVIDER_CONFIG: Record<ProviderKey, ProviderConfig> = {
+  SLACK: {
+    icon: SlackLogo,
+    label: 'Slack',
+    color: '#611f69',
+    description: 'Messages, threads & bot',
+    details:
+      'Syncs channel history into searchable documents. @mention the bot in any channel to get instant answers from your knowledge base.',
+  },
+  JIRA: {
+    icon: JiraLogo,
+    label: 'Jira',
+    color: '#0052CC',
+    description: 'Issues & comments',
+    details: 'Imports issues, comments & epics for contextual project search',
+  },
+  GITHUB: {
+    icon: GitHubLogo,
+    label: 'GitHub',
+    color: '#181717',
+    description: 'Issues, PRs & discussions',
+    details: 'Imports issues, pull requests & discussions for contextual search',
+  },
+  NOTION: {
+    icon: NotionLogo,
+    label: 'Notion',
+    color: '#000000',
+    description: 'Pages & databases',
+    details: 'Indexes pages & databases so your team knowledge is always findable',
+  },
+  CONFLUENCE: {
+    icon: ConfluenceLogo,
+    label: 'Confluence',
+    color: '#1868DB',
+    description: 'Pages & spaces',
+    details: 'Syncs documentation spaces & pages into searchable knowledge',
+  },
+  GOOGLE_DRIVE: {
+    icon: GoogleDriveLogo,
+    label: 'Google Drive',
+    color: '#4285F4',
+    description: 'Docs, Sheets & Slides',
+    details: 'Indexes documents, spreadsheets & presentations for full-text search',
+  },
+  ASANA: {
+    icon: AsanaLogo,
+    label: 'Asana',
+    color: '#F06A6A',
+    description: 'Tasks & projects',
+    details: 'Syncs tasks, projects & comments so work context is searchable',
+  },
+  LINEAR: {
+    icon: LinearLogo,
+    label: 'Linear',
+    color: '#5E6AD2',
+    description: 'Issues & projects',
+    details: 'Imports issues, projects & comments for engineering context search',
+  },
+  FIGMA: {
+    icon: FigmaLogo,
+    label: 'Figma',
+    color: '#F24E1E',
+    description: 'Files & comments',
+    details: 'Indexes design files & comments to bridge design and development',
+  },
+  TRELLO: {
+    icon: TrelloLogo,
+    label: 'Trello',
+    color: '#0079BF',
+    description: 'Cards & boards',
+    details: 'Syncs cards, boards & checklists into searchable project data',
+  },
 };
 
 interface ProviderIconProps {
-  provider: string;
+  provider: ProviderKey;
   size?: number;
 }
 
@@ -103,24 +198,26 @@ export function ProviderIcon({ provider, size = 24 }: ProviderIconProps) {
   const Icon = config.icon;
 
   return (
-    <Box sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <Box
+      sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+    >
       <Icon size={size} />
     </Box>
   );
 }
 
-export function getProviderLabel(provider: string): string {
-  return PROVIDER_CONFIG[provider]?.label ?? provider;
+export function getProviderLabel(provider: ProviderKey): string {
+  return PROVIDER_CONFIG[provider].label;
 }
 
-export function getProviderColor(provider: string): string {
-  return PROVIDER_CONFIG[provider]?.color ?? '#666666';
+export function getProviderColor(provider: ProviderKey): string {
+  return PROVIDER_CONFIG[provider].color;
 }
 
-export function getProviderDescription(provider: string): string {
-  return PROVIDER_CONFIG[provider]?.description ?? 'Connect to sync data';
+export function getProviderDescription(provider: ProviderKey): string {
+  return PROVIDER_CONFIG[provider].description;
 }
 
-export function getProviderDetails(provider: string): string {
-  return PROVIDER_CONFIG[provider]?.details ?? 'Connect to sync and search your data';
+export function getProviderDetails(provider: ProviderKey): string {
+  return PROVIDER_CONFIG[provider].details;
 }

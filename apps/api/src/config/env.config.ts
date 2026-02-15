@@ -31,6 +31,7 @@ export const env = {
     return 'development';
   })(),
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  apiUrl: process.env.API_URL || 'http://localhost:4000',
 
   openaiApiKey: required('OPENAI_API_KEY'),
   jwtSecret: required('JWT_SECRET'),
@@ -56,43 +57,10 @@ export const env = {
     'dev-encryption-key-32chars-paddd'
   ),
 
-  // Linear
-  linearClientId: requiredInProd('LINEAR_CLIENT_ID', ''),
-  linearClientSecret: requiredInProd('LINEAR_CLIENT_SECRET', ''),
-
-  // Asana
-  asanaClientId: requiredInProd('ASANA_CLIENT_ID', ''),
-  asanaClientSecret: requiredInProd('ASANA_CLIENT_SECRET', ''),
-
-  // Trello
-  trelloApiKey: requiredInProd('TRELLO_API_KEY', ''),
-  trelloApiSecret: requiredInProd('TRELLO_API_SECRET', ''),
-
-  // Notion
-  notionClientId: requiredInProd('NOTION_CLIENT_ID', ''),
-  notionClientSecret: requiredInProd('NOTION_CLIENT_SECRET', ''),
-
-  // GitHub
-  githubClientId: requiredInProd('GITHUB_CLIENT_ID', ''),
-  githubClientSecret: requiredInProd('GITHUB_CLIENT_SECRET', ''),
-  githubWebhookSecret: requiredInProd('GITHUB_WEBHOOK_SECRET', ''),
-
-  // Atlassian (Jira + Confluence)
-  atlassianClientId: requiredInProd('ATLASSIAN_CLIENT_ID', ''),
-  atlassianClientSecret: requiredInProd('ATLASSIAN_CLIENT_SECRET', ''),
-
   // Slack
   slackClientId: requiredInProd('SLACK_CLIENT_ID', ''),
   slackClientSecret: requiredInProd('SLACK_CLIENT_SECRET', ''),
   slackSigningSecret: requiredInProd('SLACK_SIGNING_SECRET', ''),
-
-  // Google Drive
-  googleClientId: requiredInProd('GOOGLE_CLIENT_ID', ''),
-  googleClientSecret: requiredInProd('GOOGLE_CLIENT_SECRET', ''),
-
-  // Figma
-  figmaClientId: requiredInProd('FIGMA_CLIENT_ID', ''),
-  figmaClientSecret: requiredInProd('FIGMA_CLIENT_SECRET', ''),
 
   // Waitlist Slack webhook
   slackWebhookUrl: requiredInProd('SLACK_WEBHOOK_URL', ''),

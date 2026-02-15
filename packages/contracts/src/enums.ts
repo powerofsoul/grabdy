@@ -44,15 +44,6 @@ const objectValues = <T extends Record<string, string>>(obj: T) =>
 
 export const IntegrationProvider = {
   SLACK: 'SLACK',
-  JIRA: 'JIRA',
-  GITHUB: 'GITHUB',
-  NOTION: 'NOTION',
-  CONFLUENCE: 'CONFLUENCE',
-  GOOGLE_DRIVE: 'GOOGLE_DRIVE',
-  ASANA: 'ASANA',
-  LINEAR: 'LINEAR',
-  FIGMA: 'FIGMA',
-  TRELLO: 'TRELLO',
 } as const;
 export type IntegrationProvider = (typeof IntegrationProvider)[keyof typeof IntegrationProvider];
 
@@ -60,7 +51,7 @@ export const ConnectionStatus = {
   ACTIVE: 'ACTIVE',
   PAUSED: 'PAUSED',
   ERROR: 'ERROR',
-  REVOKED: 'REVOKED',
+  DISCONNECTED: 'DISCONNECTED',
 } as const;
 export type ConnectionStatus = (typeof ConnectionStatus)[keyof typeof ConnectionStatus];
 
@@ -120,6 +111,25 @@ export const MIME_TO_DATA_SOURCE_TYPE: Record<SupportedMime, DataSourceType> = O
   SUPPORTED_FILE_TYPES.map((f) => [f.mime, f.type]),
 ) as Record<SupportedMime, DataSourceType>;
 
+export const ChunkSourceType = {
+  UPLOAD: 'UPLOAD',
+  SLACK: 'SLACK',
+} as const;
+export type ChunkSourceType = (typeof ChunkSourceType)[keyof typeof ChunkSourceType];
+
+export const AiCallerType = {
+  MEMBER: 'MEMBER',
+  SYSTEM: 'SYSTEM',
+  API_KEY: 'API_KEY',
+} as const;
+export type AiCallerType = (typeof AiCallerType)[keyof typeof AiCallerType];
+
+export const AiRequestType = {
+  CHAT: 'CHAT',
+  EMBEDDING: 'EMBEDDING',
+} as const;
+export type AiRequestType = (typeof AiRequestType)[keyof typeof AiRequestType];
+
 export const dataSourceStatusEnum = z.enum(objectValues(DataSourceStatus));
 export const dataSourceTypeEnum = z.enum(objectValues(DataSourceType));
 export const orgRoleEnum = z.enum(objectValues(OrgRole));
@@ -127,3 +137,4 @@ export const integrationProviderEnum = z.enum(objectValues(IntegrationProvider))
 export const connectionStatusEnum = z.enum(objectValues(ConnectionStatus));
 export const syncStatusEnum = z.enum(objectValues(SyncStatus));
 export const syncTriggerEnum = z.enum(objectValues(SyncTrigger));
+export const chunkSourceTypeEnum = z.enum(objectValues(ChunkSourceType));

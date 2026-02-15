@@ -6,19 +6,16 @@ import Redis from 'ioredis';
 
 import { env } from '../../config/env.config';
 import { IntegrationSyncProcessor } from '../queue/processors/integration-sync.processor';
-import { DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE } from '../queue/queue.constants';
+import { SlackBotProcessor } from '../queue/processors/slack-bot.processor';
+import {
+  DATA_SOURCE_QUEUE,
+  INTEGRATION_SYNC_QUEUE,
+  SLACK_BOT_QUEUE,
+} from '../queue/queue.constants';
 
-import { AsanaConnector } from './providers/asana/asana.connector';
-import { ConfluenceConnector } from './providers/confluence/confluence.connector';
-import { FigmaConnector } from './providers/figma/figma.connector';
-import { GitHubConnector } from './providers/github/github.connector';
-import { GoogleDriveConnector } from './providers/google-drive/google-drive.connector';
-import { JiraConnector } from './providers/jira/jira.connector';
-import { LinearConnector } from './providers/linear/linear.connector';
-import { NotionConnector } from './providers/notion/notion.connector';
 import { ProviderRegistry } from './providers/provider-registry';
 import { SlackConnector } from './providers/slack/slack.connector';
-import { TrelloConnector } from './providers/trello/trello.connector';
+import { SlackBotService } from './providers/slack/slack-bot.service';
 import { INTEGRATIONS_REDIS } from './integrations.constants';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
@@ -29,6 +26,7 @@ import { TokenEncryptionService } from './token-encryption.service';
   imports: [
     BullModule.registerQueue({ name: INTEGRATION_SYNC_QUEUE }),
     BullModule.registerQueue({ name: DATA_SOURCE_QUEUE }),
+    BullModule.registerQueue({ name: SLACK_BOT_QUEUE }),
     ScheduleModule.forRoot(),
   ],
   controllers: [IntegrationsController],
@@ -46,18 +44,11 @@ import { TokenEncryptionService } from './token-encryption.service';
     IntegrationsService,
     TokenEncryptionService,
     ProviderRegistry,
-    AsanaConnector,
-    ConfluenceConnector,
-    FigmaConnector,
-    GitHubConnector,
-    GoogleDriveConnector,
-    JiraConnector,
-    LinearConnector,
-    NotionConnector,
+    SlackBotService,
     SlackConnector,
-    TrelloConnector,
     SyncSchedulerService,
     IntegrationSyncProcessor,
+    SlackBotProcessor,
   ],
   exports: [IntegrationsService],
 })

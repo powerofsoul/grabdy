@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { IntegrationProvider } from '@grabdy/contracts';
+import type { ProviderKey } from '@/components/integrations/ProviderIcon';
 import { Box,CircularProgress } from '@mui/material';
 import { PlugIcon } from '@phosphor-icons/react';
 import { createFileRoute } from '@tanstack/react-router';
@@ -43,8 +44,8 @@ function IntegrationsPage() {
     fetchConnections();
   }, [fetchConnections]);
 
-  const handleConnect = async (provider: IntegrationProvider) => {
-    if (!selectedOrgId) return;
+  const handleConnect = async (provider: ProviderKey) => {
+    if (!selectedOrgId || provider !== 'SLACK') return;
     try {
       const res = await api.integrations.connect({
         params: { orgId: selectedOrgId, provider },
@@ -69,6 +70,7 @@ function IntegrationsPage() {
           syncIntervalMinutes={connection.syncIntervalMinutes}
           externalAccountName={connection.externalAccountName}
           onRefresh={fetchConnections}
+          onConnect={handleConnect}
         />
       ),
       { title: 'Connection Details', mode: 'drawer', width: 480 },

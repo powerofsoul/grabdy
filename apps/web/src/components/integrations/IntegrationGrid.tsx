@@ -2,19 +2,8 @@ import type { IntegrationProvider } from '@grabdy/contracts';
 import { alpha, Box, Typography, useTheme } from '@mui/material';
 
 import { IntegrationCard } from './IntegrationCard';
-
-const ALL_PROVIDERS = [
-  'LINEAR',
-  'GITHUB',
-  'NOTION',
-  'SLACK',
-  'JIRA',
-  'CONFLUENCE',
-  'GOOGLE_DRIVE',
-  'ASANA',
-  'FIGMA',
-  'TRELLO',
-] as const satisfies readonly IntegrationProvider[];
+import type { ProviderKey } from './ProviderIcon';
+import { COMING_SOON_PROVIDERS } from './ProviderIcon';
 
 export interface ConnectionSummary {
   provider: IntegrationProvider;
@@ -27,7 +16,7 @@ export interface ConnectionSummary {
 
 interface IntegrationGridProps {
   connections: ConnectionSummary[];
-  onConnect: (provider: IntegrationProvider) => void;
+  onConnect: (provider: ProviderKey) => void;
   onManage: (provider: IntegrationProvider, connection: ConnectionSummary) => void;
 }
 
@@ -55,16 +44,8 @@ export function IntegrationGrid({ connections, onConnect, onManage }: Integratio
   const theme = useTheme();
   const ct = theme.palette.text.primary;
 
-  const connectionsByProvider = new Map<IntegrationProvider, ConnectionSummary>();
-  for (const conn of connections) {
-    if (conn.status !== 'REVOKED') {
-      connectionsByProvider.set(conn.provider, conn);
-    }
-  }
-
-  const connectedProviders = ALL_PROVIDERS.filter((p) => connectionsByProvider.has(p));
-  const availableProviders = ALL_PROVIDERS.filter((p) => !connectionsByProvider.has(p));
   const activeCount = connections.filter((c) => c.status === 'ACTIVE').length;
+  const totalCount = connections.length + COMING_SOON_PROVIDERS.length;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -83,20 +64,20 @@ export function IntegrationGrid({ connections, onConnect, onManage }: Integratio
         <Typography variant="body2" color="text.secondary">
           {activeCount === 0
             ? 'No integrations connected yet'
-            : `${activeCount} of ${ALL_PROVIDERS.length} integrations connected`}
+            : `${activeCount} of ${totalCount} integrations connected`}
         </Typography>
       </Box>
 
       {/* Connected section */}
-      {connectedProviders.length > 0 && (
+      {connections.length > 0 && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <SectionLabel>Connected</SectionLabel>
           <Box sx={{ display: 'grid', gridTemplateColumns: gridColumns, gap: 2 }}>
-            {connectedProviders.map((provider) => (
+            {connections.map((conn) => (
               <IntegrationCard
-                key={provider}
-                provider={provider}
-                connection={connectionsByProvider.get(provider) ?? null}
+                key={conn.provider}
+                provider={conn.provider}
+                connection={conn}
                 onConnect={onConnect}
                 onManage={onManage}
               />
@@ -109,12 +90,21 @@ export function IntegrationGrid({ connections, onConnect, onManage }: Integratio
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         <SectionLabel>Available</SectionLabel>
         <Box sx={{ display: 'grid', gridTemplateColumns: gridColumns, gap: 2 }}>
-          {availableProviders.map((provider) => (
+          {/* Slack card if not already connected */}
+          {!connections.some((c) => c.provider === 'SLACK') && (
+            <IntegrationCard
+              provider="SLACK"
+              connection={null}
+              onConnect={onConnect}
+              onManage={onManage}
+            />
+          )}
+          {/* Coming soon cards */}
+          {COMING_SOON_PROVIDERS.map((provider) => (
             <IntegrationCard
               key={provider}
               provider={provider}
               connection={null}
-              onConnect={onConnect}
               onManage={onManage}
             />
           ))}

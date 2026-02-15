@@ -1,43 +1,83 @@
 import type { IntegrationProvider } from '@grabdy/contracts';
+import { formatDistanceToNow } from 'date-fns';
 import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { CaretRightIcon, CheckIcon, PauseIcon,WarningCircleIcon } from '@phosphor-icons/react';
+import { CaretRightIcon, CheckIcon, PauseIcon, PlugsConnectedIcon, WarningCircleIcon } from '@phosphor-icons/react';
 
 import type { ConnectionSummary } from './IntegrationGrid';
+import type { ProviderKey } from './ProviderIcon';
 import { getProviderDescription, getProviderDetails, getProviderLabel, ProviderIcon } from './ProviderIcon';
 
 interface IntegrationCardProps {
-  provider: IntegrationProvider;
+  provider: ProviderKey;
   connection: ConnectionSummary | null;
-  onConnect?: (provider: IntegrationProvider) => void;
-  onManage: (provider: IntegrationProvider, connection: ConnectionSummary) => void;
+  onConnect?: (provider: ProviderKey) => void;
+  onManage?: (provider: IntegrationProvider, connection: ConnectionSummary) => void;
 }
 
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-export function IntegrationCard({ provider, connection, onManage }: IntegrationCardProps) {
+export function IntegrationCard({ provider, connection, onConnect, onManage }: IntegrationCardProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
-  const hasConnection = connection && connection.status !== 'REVOKED';
+  const isDisconnected = connection?.status === 'DISCONNECTED';
+  const hasConnection = connection && !isDisconnected;
   const isActive = connection?.status === 'ACTIVE';
   const isError = connection?.status === 'ERROR';
+
+  if (isDisconnected && connection) {
+    return (
+      <Box
+        role="button"
+        tabIndex={0}
+        onClick={() => onManage?.(connection.provider, connection)}
+        onKeyDown={(e) => { if (e.key === 'Enter') onManage?.(connection.provider, connection); }}
+        sx={{
+          border: '1px solid',
+          borderColor: alpha(ct, 0.12),
+          borderLeft: `3px solid ${theme.palette.text.disabled}`,
+          p: 2.5,
+          minHeight: 164,
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'border-color 180ms ease',
+          cursor: 'pointer',
+          opacity: 0.75,
+          '&:hover': { borderColor: alpha(ct, 0.3), opacity: 1 },
+          '&:focus-visible': { outline: `2px solid ${ct}`, outlineOffset: 2 },
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+          <ProviderIcon provider={provider} size={24} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <PlugsConnectedIcon size={12} weight="light" color={theme.palette.text.disabled} />
+            <Typography variant="caption" sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1, color: 'text.disabled' }}>
+              Disconnected
+            </Typography>
+          </Box>
+        </Box>
+
+        <Typography variant="subtitle1">{getProviderLabel(provider)}</Typography>
+        {connection.externalAccountName && (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, lineHeight: 1.4 }}>
+            {connection.externalAccountName}
+          </Typography>
+        )}
+
+        <Box sx={{ mt: 'auto', pt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+            Data still available
+          </Typography>
+          <CaretRightIcon size={16} weight="light" color={theme.palette.text.disabled} />
+        </Box>
+      </Box>
+    );
+  }
 
   if (hasConnection) {
     return (
       <Box
         role="button"
         tabIndex={0}
-        onClick={() => onManage(provider, connection)}
-        onKeyDown={(e) => { if (e.key === 'Enter') onManage(provider, connection); }}
+        onClick={() => onManage?.(connection.provider, connection)}
+        onKeyDown={(e) => { if (e.key === 'Enter') onManage?.(connection.provider, connection); }}
         sx={{
           border: '1px solid',
           borderColor: isError
@@ -111,7 +151,7 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
         <Box sx={{ mt: 'auto', pt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
             {connection.lastSyncedAt
-              ? `Synced ${relativeTime(connection.lastSyncedAt)}`
+              ? `Synced ${formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true })}`
               : 'Not synced yet'}
           </Typography>
           <CaretRightIcon size={16} weight="light" color={theme.palette.text.disabled} />
@@ -147,11 +187,31 @@ export function IntegrationCard({ provider, connection, onManage }: IntegrationC
         {getProviderDetails(provider)}
       </Typography>
 
-      {/* Coming soon */}
+      {/* Connect action */}
       <Box sx={{ mt: 'auto', pt: 2 }}>
-        <Typography variant="caption" sx={{ fontSize: 12, fontStyle: 'italic', color: 'text.disabled' }}>
-          Coming soon
-        </Typography>
+        {onConnect ? (
+          <Typography
+            component="span"
+            role="button"
+            tabIndex={0}
+            onClick={() => onConnect(provider)}
+            onKeyDown={(e) => { if (e.key === 'Enter') onConnect(provider); }}
+            variant="caption"
+            sx={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'primary.main',
+              cursor: 'pointer',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            Connect
+          </Typography>
+        ) : (
+          <Typography variant="caption" sx={{ fontSize: 12, fontStyle: 'italic', color: 'text.disabled' }}>
+            Coming soon
+          </Typography>
+        )}
       </Box>
     </Box>
   );
