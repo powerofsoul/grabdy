@@ -73,7 +73,9 @@ function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () =
   if (newKeyValue) {
     return (
       <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Alert severity="warning">CopyIcon this key now. You will not be able to see it again.</Alert>
+        <Alert severity="warning">
+          CopyIcon this key now. You will not be able to see it again.
+        </Alert>
         <Box
           sx={{
             fontFamily: FONT_MONO,
@@ -151,8 +153,15 @@ function ApiKeysPage() {
 
   const openCreateDrawer = () => {
     pushDrawer(
-      (onClose) => <CreateKeyDrawer onClose={onClose} onCreated={() => { fetchKeys(); }} />,
-      { title: 'Create API KeyIcon', mode: 'dialog', maxWidth: 'sm' },
+      (onClose) => (
+        <CreateKeyDrawer
+          onClose={onClose}
+          onCreated={() => {
+            fetchKeys();
+          }}
+        />
+      ),
+      { title: 'Create API KeyIcon', mode: 'dialog', maxWidth: 'sm' }
     );
   };
 
@@ -209,7 +218,11 @@ function ApiKeysPage() {
             }
             sx={{ mr: 1 }}
           />
-          <Button variant="contained" startIcon={<PlusIcon size={18} weight="light" color="currentColor" />} onClick={openCreateDrawer}>
+          <Button
+            variant="contained"
+            startIcon={<PlusIcon size={18} weight="light" color="currentColor" />}
+            onClick={openCreateDrawer}
+          >
             Create KeyIcon
           </Button>
         </Box>
@@ -271,7 +284,7 @@ function ApiKeysPage() {
             icon={<KeyIcon size={48} weight="light" color="currentColor" />}
             message="No API keys"
             description="Create an API key to authenticate your requests."
-            actionLabel="Create KeyIcon"
+            actionLabel="Create Key"
             onAction={openCreateDrawer}
           />
         }
