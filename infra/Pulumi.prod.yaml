@@ -18,7 +18,7 @@ config:
   grabdy:slackWebhookUrl:
     secure: AAABAOsZ1aYUxYHzB8UF+Rbkgd98YDH/ZmZLvvw+aNjm/gvvNd5i/1EauLZfySPw5suCUuWxtXgfbOtLPtyLhJ2acwAn/OOzRXRHo+/2AK4Cwd8DWnuIZCz8u9pX9AVv7DL5jQAGI0WhoRBfMxNJzI0=
   grabdy:smtpHost: smtp.zeptomail.eu
-  grabdy:smtpPort: "587"
+  grabdy:smtpPort: '587'
   grabdy:smtpUser: emailapikey
   grabdy:smtpPass:
     secure: AAABABPnyTxQtCq3cyZ17mUIMxUtOAH3SlJ6lNQT8VPK3NnufXkPofzBVB22akwLNZ13UR5UsCyycQmlQr0FjvgPIEEnm1Ll1xn1cDW7lWRgqgxTqqIP576V51E0H23dny4PwiDNXWYNDpgOiZ3lwlof9V1tgeIwMk+VzIA6vLi+J4EHiq7cnlU0fmCwlpFNekkqXoT332/E8EL4Pw9/rltAGjFqX9oqwZiDRJju4l8=
@@ -31,5 +31,5 @@ config:
     secure: AAABAHiBymrGOnexOC8emkoD9nOnFUUAGt9cm66VUNG2nDIgkO9QLUtAkHzo7Alm+g0U2RxB5f0iNogV4SEbIA==
   grabdy:linearClientId:
     secure: AAABAKhk2bmDnqrxQvTTYmQD1/VL6mjc6Kbbtza6GhKwK3lwKGvA1teCiVHP2aaDKDnf8s1bONYKqmxzS2/uYQ==
-  grabdy:linearSecretId:
+  grabdy:linearClientSecret:
     secure: AAABAOKw2YLhK7Cw4dTNj8VYshtVdk5/cUUidQwDonAhvJwaE6kAwB1Y9LkxD97lDi2RuQMZ8HEcXSuDn4bE9w==
