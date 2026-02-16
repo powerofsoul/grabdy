@@ -98,7 +98,15 @@ function NavItem({
   );
 }
 
-function SectionHeader({ label, to }: { label: string; to?: string }) {
+function SectionHeader({
+  label,
+  to,
+  action,
+}: {
+  label: string;
+  to?: string;
+  action?: React.ReactNode;
+}) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
 
@@ -151,6 +159,7 @@ function SectionHeader({ label, to }: { label: string; to?: string }) {
       ) : (
         content
       )}
+      {action && <Box sx={{ ml: 'auto' }}>{action}</Box>}
     </Box>
   );
 }
@@ -258,7 +267,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
 
         {/* Sources */}
         <Box sx={{ mt: 2.5 }}>
-          <SectionHeader label="Sources" to="/dashboard/sources" />
+          <SectionHeader label="Sources" />
           {collections.map((c) => (
             <NavItem
               key={c.id}
@@ -277,6 +286,12 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               activePrefix="__never__"
             />
           ))}
+          <NavItem
+            to="/dashboard/sources"
+            label="View all"
+            exact
+            icon={<FolderIcon size={15} weight="light" color="currentColor" />}
+          />
         </Box>
 
         {/* Integrate */}
