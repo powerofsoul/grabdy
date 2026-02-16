@@ -1,7 +1,12 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
-import { OrgRole } from '@db/enums';
 import { type DbId, packId } from '@grabdy/common';
+import { OrgRole } from '@grabdy/contracts';
 import { randomBytes } from 'crypto';
 
 import { authLinks } from '../../common/auth-links';
@@ -215,7 +220,6 @@ export class OrgsService {
   }
 
   async revokeInvitation(orgId: DbId<'Org'>, invitationId: DbId<'OrgInvitation'>) {
-
     const result = await this.db.kysely
       .deleteFrom('org.org_invitations')
       .where('id', '=', invitationId)
@@ -294,7 +298,11 @@ export class OrgsService {
     };
   }
 
-  async removeMember(orgId: DbId<'Org'>, memberId: DbId<'OrgMembership'>, requestingUserId: DbId<'User'>) {
+  async removeMember(
+    orgId: DbId<'Org'>,
+    memberId: DbId<'OrgMembership'>,
+    requestingUserId: DbId<'User'>
+  ) {
     const membership = await this.db.kysely
       .selectFrom('org.org_memberships')
       .selectAll()
@@ -323,9 +331,6 @@ export class OrgsService {
       }
     }
 
-    await this.db.kysely
-      .deleteFrom('org.org_memberships')
-      .where('id', '=', memberId)
-      .execute();
+    await this.db.kysely.deleteFrom('org.org_memberships').where('id', '=', memberId).execute();
   }
 }

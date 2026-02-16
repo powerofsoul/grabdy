@@ -5,14 +5,15 @@ import { ScheduleModule } from '@nestjs/schedule';
 import Redis from 'ioredis';
 
 import { env } from '../../config/env.config';
-import { IntegrationSyncProcessor } from '../queue/processors/integration-sync.processor';
-import { SlackBotProcessor } from '../queue/processors/slack-bot.processor';
 import {
   DATA_SOURCE_QUEUE,
   INTEGRATION_SYNC_QUEUE,
   SLACK_BOT_QUEUE,
 } from '../queue/queue.constants';
 
+import { IntegrationSyncProcessor } from './processors/integration-sync.processor';
+
+import { SlackBotProcessor } from './processors/slack-bot.processor';
 import { ProviderRegistry } from './providers/provider-registry';
 import { SlackConnector } from './providers/slack/slack.connector';
 import { SlackBotService } from './providers/slack/slack-bot.service';

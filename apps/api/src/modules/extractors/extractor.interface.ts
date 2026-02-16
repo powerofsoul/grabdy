@@ -9,8 +9,19 @@ export interface ExtractedImage {
   pageNumber?: number;
 }
 
-export interface ExtractionResult {
+export interface SheetRow {
+  row: number;
   text: string;
-  pages?: PageText[];
-  images?: ExtractedImage[];
 }
+
+export interface SheetData {
+  sheet: string;
+  columns: string[];
+  rows: SheetRow[];
+}
+
+export type ExtractionResult =
+  | { type: 'pages'; text: string; pages: PageText[]; images?: ExtractedImage[] }
+  | { type: 'sheets'; text: string; sheets: SheetData[] }
+  | { type: 'rows'; text: string; columns: string[]; rows: SheetRow[] }
+  | { type: 'text'; text: string; images?: ExtractedImage[] };

@@ -8,7 +8,7 @@ import { Request } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { CollectionsService } from '../collections/collections.service';
-import { RetrievalService } from '../retrieval/retrieval.service';
+import { RetrievalService } from './retrieval.service';
 
 function apiError(code: string, message: string) {
   return { success: false as const, error: { code, message } };

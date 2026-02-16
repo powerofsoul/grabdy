@@ -1,14 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import { calculateCost, MODEL_INFO, type ModelId } from '@grabdy/contracts';
+import {
+  type AiCallerType,
+  type AiRequestSource,
+  type AiRequestType,
+  calculateCost,
+  MODEL_INFO,
+  type ModelId,
+} from '@grabdy/contracts';
 
 import { DbService } from '../../db/db.module';
-import type { AiCallerType, AiRequestType } from '../../db/enums';
 
 export interface UsageContext {
   orgId: DbId<'Org'>;
   userId?: DbId<'User'> | null;
+  source: AiRequestSource;
 }
 
 interface UsageExtras {
@@ -30,7 +37,7 @@ export class AiUsageService {
     callerType: AiCallerType,
     requestType: AiRequestType,
     context: UsageContext,
-    extras?: UsageExtras,
+    extras?: UsageExtras
   ): Promise<void> {
     try {
       const modelInfo = MODEL_INFO[model];
@@ -43,6 +50,7 @@ export class AiUsageService {
           provider: modelInfo.provider,
           caller_type: callerType,
           request_type: requestType,
+          source: context.source,
           input_tokens: inputTokens,
           output_tokens: outputTokens,
           total_tokens: inputTokens + outputTokens,

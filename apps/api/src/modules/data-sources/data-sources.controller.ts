@@ -181,7 +181,7 @@ export class DataSourcesController {
   async rename() {
     return tsRestHandler(dataSourcesContract.rename, async ({ params, body }) => {
       try {
-        const dataSource = await this.dataSourcesService.rename(params.orgId, params.id, body.name);
+        const dataSource = await this.dataSourcesService.rename(params.orgId, params.id, body.title);
         return {
           status: 200 as const,
           body: {

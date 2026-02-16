@@ -2,16 +2,18 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
 import { MIME_TO_DATA_SOURCE_TYPE } from '@grabdy/contracts';
 import { Queue } from 'bullmq';
 
 import { getMaxFileSizeForMime } from '../../config/constants';
+import { env } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
-import type { DataSourceStatus, DataSourceType } from '../../db/enums';
-import type { DataSourceJobData } from '../queue/processors/data-source.processor';
 import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
+
+import type { DataSourceJobData } from './data-source.processor';
 
 @Injectable()
 export class DataSourcesService {
@@ -47,17 +49,18 @@ export class DataSourcesService {
     await this.storage.put(storageKey, file.buffer, file.mimetype);
 
     const collectionId = options.collectionId ?? null;
+    const dataSourceId = packId('DataSource', orgId);
 
     const dataSource = await this.db.kysely
       .insertInto('data.data_sources')
       .values({
-        id: packId('DataSource', orgId),
-        name: options.name ?? file.originalname,
-        filename: file.originalname,
+        id: dataSourceId,
+        title: options.name ?? file.originalname,
         mime_type: file.mimetype,
         file_size: file.size,
         storage_path: storageKey,
         type,
+        source_url: `${env.frontendUrl}/dashboard/sources?preview=${dataSourceId}&org=${orgId}`,
         collection_id: collectionId,
         org_id: orgId,
         uploaded_by_id: userId,
@@ -142,10 +145,10 @@ export class DataSourcesService {
     await this.storage.delete(dataSource.storage_path);
   }
 
-  async rename(orgId: DbId<'Org'>, id: DbId<'DataSource'>, name: string) {
+  async rename(orgId: DbId<'Org'>, id: DbId<'DataSource'>, title: string) {
     const dataSource = await this.db.kysely
       .updateTable('data.data_sources')
-      .set({ name, updated_at: new Date() })
+      .set({ title, updated_at: new Date() })
       .where('id', '=', id)
       .where('org_id', '=', orgId)
       .returningAll()
@@ -165,7 +168,7 @@ export class DataSourcesService {
   async getPreviewUrl(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
     const dataSource = await this.db.kysely
       .selectFrom('data.data_sources')
-      .select(['storage_path', 'mime_type', 'filename', 'ai_tags', 'ai_description'])
+      .select(['storage_path', 'mime_type', 'title'])
       .where('id', '=', id)
       .where('org_id', '=', orgId)
       .executeTakeFirst();
@@ -179,9 +182,7 @@ export class DataSourcesService {
     return {
       url,
       mimeType: dataSource.mime_type,
-      filename: dataSource.filename,
-      ...(dataSource.ai_tags ? { aiTags: dataSource.ai_tags } : {}),
-      ...(dataSource.ai_description ? { aiDescription: dataSource.ai_description } : {}),
+      title: dataSource.title,
     };
   }
 
@@ -244,7 +245,10 @@ export class DataSourcesService {
       await this.storage.delete(img.storage_path);
     }
 
-    await this.db.kysely.deleteFrom('data.extracted_images').where('data_source_id', '=', id).execute();
+    await this.db.kysely
+      .deleteFrom('data.extracted_images')
+      .where('data_source_id', '=', id)
+      .execute();
 
     // Reset status
     await this.db.kysely
@@ -269,8 +273,7 @@ export class DataSourcesService {
 
   private toResponse(ds: {
     id: DbId<'DataSource'>;
-    name: string;
-    filename: string;
+    title: string;
     mime_type: string;
     file_size: number;
     type: DataSourceType;
@@ -285,8 +288,7 @@ export class DataSourcesService {
   }) {
     return {
       id: ds.id,
-      name: ds.name,
-      filename: ds.filename,
+      title: ds.title,
       mimeType: ds.mime_type,
       fileSize: ds.file_size,
       type: ds.type,

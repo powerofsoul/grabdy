@@ -13,14 +13,15 @@ export class AnalyticsService {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    const [summary, daily, byModel, byRequestType] = await Promise.all([
+    const [summary, daily, byModel, byRequestType, bySource] = await Promise.all([
       this.getSummary(orgId, since),
       this.getDailyUsage(orgId, since),
       this.getModelBreakdown(orgId, since),
       this.getRequestTypeBreakdown(orgId, since),
+      this.getSourceBreakdown(orgId, since),
     ]);
 
-    return { summary, daily, byModel, byRequestType };
+    return { summary, daily, byModel, byRequestType, bySource };
   }
 
   private async getSummary(orgId: DbId<'Org'>, since: Date) {
@@ -113,6 +114,31 @@ export class AnalyticsService {
     return results.map((r) => ({
       requestType: r.request_type,
       requests: Number(r.requests),
+      totalTokens: Number(r.total_tokens),
+    }));
+  }
+
+  private async getSourceBreakdown(orgId: DbId<'Org'>, since: Date) {
+    const results = await this.db.kysely
+      .selectFrom('analytics.ai_usage_logs')
+      .select([
+        'source',
+        sql<number>`count(*)::int`.as('requests'),
+        sql<number>`coalesce(sum(input_tokens), 0)::int`.as('input_tokens'),
+        sql<number>`coalesce(sum(output_tokens), 0)::int`.as('output_tokens'),
+        sql<number>`coalesce(sum(total_tokens), 0)::int`.as('total_tokens'),
+      ])
+      .where('org_id', '=', orgId)
+      .where('created_at', '>=', since)
+      .groupBy('source')
+      .orderBy(sql`sum(total_tokens)`, 'desc')
+      .execute();
+
+    return results.map((r) => ({
+      source: r.source,
+      requests: Number(r.requests),
+      inputTokens: Number(r.input_tokens),
+      outputTokens: Number(r.output_tokens),
       totalTokens: Number(r.total_tokens),
     }));
   }

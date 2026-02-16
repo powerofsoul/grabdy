@@ -1,15 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
+import { IntegrationProvider } from '@grabdy/contracts';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 import { InjectEnv } from '../../../../config/env.config';
-import { IntegrationProvider } from '../../../../db/enums';
 import {
   type AccountInfo,
   IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
+  type SlackConnectionConfig,
   type SyncCursor,
   type SyncedItem,
   type SyncResult,
@@ -20,7 +21,8 @@ import {
 const SLACK_AUTH_URL = 'https://slack.com/oauth/v2/authorize';
 const SLACK_TOKEN_URL = 'https://slack.com/api/oauth.v2.access';
 const SLACK_API_URL = 'https://slack.com/api';
-const SLACK_SCOPES = 'channels:history,channels:read,users:read,team:read';
+const SLACK_SCOPES =
+  'channels:history,channels:read,users:read,team:read,app_mentions:read,chat:write,im:history,im:read';
 
 // --- Slack API response types ---
 
@@ -28,6 +30,7 @@ interface SlackTokenResponse {
   ok: boolean;
   error?: string;
   access_token?: string;
+  bot_user_id?: string;
   team?: {
     id?: string;
     name?: string;
@@ -41,6 +44,7 @@ interface SlackTeamInfoResponse {
   team?: {
     id?: string;
     name?: string;
+    domain?: string;
   };
 }
 
@@ -65,6 +69,7 @@ interface SlackMessage {
   user?: string;
   text?: string;
   ts?: string;
+  bot_id?: string;
 }
 
 interface SlackConversationsHistoryResponse {
@@ -85,6 +90,22 @@ interface SlackSyncCursor {
   channelCursors: SlackChannelCursors;
 }
 
+function formatSlackTs(ts: string | undefined): string {
+  if (!ts) return '';
+  const date = new Date(parseFloat(ts) * 1000);
+  return date
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d+Z$/, ' UTC');
+}
+
+function formatSlackMessage(msg: SlackMessage): string {
+  const time = formatSlackTs(msg.ts);
+  const user = msg.user ?? 'unknown';
+  const text = msg.text ?? '';
+  return `[${time}] ${user}: ${text}`;
+}
+
 function isSlackSyncCursor(value: unknown): value is SlackSyncCursor {
   if (!value || typeof value !== 'object') return false;
   if (!('channelCursors' in value)) return false;
@@ -100,20 +121,29 @@ function isSlackSyncCursor(value: unknown): value is SlackSyncCursor {
 }
 
 @Injectable()
-export class SlackConnector extends IntegrationConnector {
+export class SlackConnector extends IntegrationConnector<'SLACK'> {
   readonly provider = IntegrationProvider.SLACK;
   readonly rateLimits: RateLimitConfig = {
     maxRequestsPerMinute: 50,
     maxRequestsPerHour: 3000,
   };
   readonly supportsWebhooks = true;
+  readonly botInstructions = `You are a Slack bot. Answer concisely. Do a single search and stop.
+
+Use Slack mrkdwn only: *bold*, _italic_, \`code\`, > quotes. Do NOT use markdown **bold**, # headings, or [links](url).
+
+MANDATORY source citation rules:
+- For Slack sources: quote the relevant text with > and link to the original message using <sourceUrl|text>. Attribute the author using <@slackAuthor> (the user ID from chunk metadata).
+  Example: > <https://team.slack.com/archives/C123/p456|we shipped v2 on Monday> — <@U0ABC123>
+- For file sources: include a clickable link using <sourceUrl|dataSourceName> plus metadata details (page number, sheet name, row, etc).
+  Example: — <https://app.grabdy.com/preview/abc|Report.pdf> p.3`;
 
   private readonly logger = new Logger(SlackConnector.name);
 
   constructor(
     @InjectEnv('slackClientId') private readonly oauthClient: string,
     @InjectEnv('slackClientSecret') private readonly clientSecret: string,
-    @InjectEnv('slackSigningSecret') private readonly signingSecret: string,
+    @InjectEnv('slackSigningSecret') private readonly signingSecret: string
   ) {
     super();
   }
@@ -128,7 +158,7 @@ export class SlackConnector extends IntegrationConnector {
     return `${SLACK_AUTH_URL}?${params.toString()}`;
   }
 
-  async exchangeCode(code: string, redirectUri: string): Promise<OAuthTokens> {
+  async exchangeCode(code: string, redirectUri: string): Promise<OAuthTokens<'SLACK'>> {
     const response = await fetch(SLACK_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -151,15 +181,16 @@ export class SlackConnector extends IntegrationConnector {
       refreshToken: null, // Slack bot tokens don't expire
       expiresAt: null,
       scopes: data.scope ? data.scope.split(',') : SLACK_SCOPES.split(','),
+      metadata: data.bot_user_id ? { slackBotUserId: data.bot_user_id } : undefined,
     };
   }
 
-  async refreshTokens(_refreshToken: string): Promise<OAuthTokens> {
+  async refreshTokens(_refreshToken: string): Promise<OAuthTokens<'SLACK'>> {
     // Slack bot tokens don't expire and cannot be refreshed
     throw new Error('Slack bot tokens do not expire and cannot be refreshed');
   }
 
-  async getAccountInfo(accessToken: string): Promise<AccountInfo> {
+  async getAccountInfo(accessToken: string): Promise<AccountInfo<'SLACK'>> {
     const response = await fetch(`${SLACK_API_URL}/team.info`, {
       method: 'GET',
       headers: {
@@ -183,12 +214,13 @@ export class SlackConnector extends IntegrationConnector {
     return {
       id: teamId,
       name: teamName,
+      metadata: data.team.domain ? { teamDomain: data.team.domain } : undefined,
     };
   }
 
   async registerWebhook(
     _accessToken: string,
-    _config: Record<string, unknown>,
+    _config: SlackConnectionConfig
   ): Promise<WebhookInfo | null> {
     // Slack uses Events API - webhooks are configured in the Slack app dashboard
     // The endpoint URL is set there, not via API
@@ -203,6 +235,7 @@ export class SlackConnector extends IntegrationConnector {
     headers: Record<string, string>,
     body: unknown,
     _secret: string | null,
+    rawBody?: string
   ): WebhookEvent | null {
     if (!body || typeof body !== 'object') return null;
 
@@ -217,7 +250,7 @@ export class SlackConnector extends IntegrationConnector {
     const ts = parseInt(timestamp, 10);
     if (isNaN(ts) || Math.abs(now - ts) > 300) return null;
 
-    const bodyString = typeof body === 'string' ? body : JSON.stringify(body);
+    const bodyString = rawBody ?? (typeof body === 'string' ? body : JSON.stringify(body));
     const sigBasestring = `v0:${timestamp}:${bodyString}`;
     const expectedSignature = `v0=${createHmac('sha256', this.signingSecret).update(sigBasestring).digest('hex')}`;
 
@@ -235,7 +268,8 @@ export class SlackConnector extends IntegrationConnector {
     if (!event || typeof event !== 'object') return null;
 
     const eventType = 'type' in event ? event.type : undefined;
-    const channelId = 'channel' in event && typeof event.channel === 'string' ? event.channel : undefined;
+    const channelId =
+      'channel' in event && typeof event.channel === 'string' ? event.channel : undefined;
 
     if (!channelId) return null;
 
@@ -262,12 +296,14 @@ export class SlackConnector extends IntegrationConnector {
 
   async sync(
     accessToken: string,
-    _config: Record<string, unknown>,
-    cursor: SyncCursor | null,
+    config: SlackConnectionConfig,
+    cursor: SyncCursor | null
   ): Promise<SyncResult> {
     const existingCursors: SlackChannelCursors = isSlackSyncCursor(cursor)
       ? cursor.channelCursors
       : {};
+
+    const teamDomain = config.teamDomain;
 
     // Fetch all non-archived channels the bot is a member of
     const channels = await this.fetchChannels(accessToken);
@@ -275,42 +311,62 @@ export class SlackConnector extends IntegrationConnector {
     const newCursors: SlackChannelCursors = {};
 
     for (const channel of channels) {
-      const oldestTs = existingCursors[channel.id] ?? '0';
-      const { messages, latestTs } = await this.fetchChannelMessages(
+      const cursorTs = existingCursors[channel.id] ?? '0';
+
+      // Quick check: are there new messages since last sync?
+      const { messages: newMessages, latestTs } = await this.fetchChannelMessages(
         accessToken,
         channel.id,
-        oldestTs,
+        cursorTs
       );
 
-      if (messages.length === 0) {
-        // Preserve existing cursor even if no new messages
+      if (newMessages.length === 0) {
+        // No changes — preserve existing cursor
         if (existingCursors[channel.id]) {
           newCursors[channel.id] = existingCursors[channel.id];
         }
         continue;
       }
 
-      const content = messages
-        .map((msg) => {
-          const user = msg.user ?? 'unknown';
-          const text = msg.text ?? '';
-          return `${user}: ${text}`;
-        })
-        .join('\n');
+      // Fetch full history so the data source contains all messages
+      const { messages: allMessages } =
+        cursorTs === '0'
+          ? { messages: newMessages }
+          : await this.fetchChannelMessages(accessToken, channel.id, '0');
+
+      const messages = allMessages.map((msg) => {
+        const ts = msg.ts ?? '';
+        return {
+          content: formatSlackMessage(msg),
+          metadata: {
+            type: 'SLACK' as const,
+            slackChannelId: channel.id,
+            slackMessageTs: ts,
+            slackAuthor: msg.user ?? 'unknown',
+          },
+          sourceUrl: teamDomain && ts
+              ? `https://${teamDomain}.slack.com/archives/${channel.id}/p${ts.replace('.', '')}`
+              : `https://slack.com/app_redirect?channel=${channel.id}`,
+        };
+      });
+      const content = messages.map((m) => m.content).join('\n');
 
       items.push({
         externalId: channel.id,
         title: `#${channel.name}`,
         content,
-        sourceUrl: null,
+        messages,
+        sourceUrl: teamDomain
+          ? `https://${teamDomain}.slack.com/archives/${channel.id}`
+          : `https://slack.com/app_redirect?channel=${channel.id}`,
         metadata: {
           channelId: channel.id,
           channelName: channel.name,
-          messageCount: messages.length,
+          messageCount: allMessages.length,
         },
       });
 
-      newCursors[channel.id] = latestTs || oldestTs;
+      newCursors[channel.id] = latestTs || cursorTs;
     }
 
     return {
@@ -359,43 +415,54 @@ export class SlackConnector extends IntegrationConnector {
     return channels;
   }
 
-  private async fetchChannelMessages(
+  async fetchChannelMessages(
     accessToken: string,
     channel: string,
-    oldestTs: string,
+    oldestTs: string
   ): Promise<{ messages: SlackMessage[]; latestTs: string | undefined }> {
-    const params = new URLSearchParams({
-      channel,
-      limit: '200',
-    });
-    if (oldestTs !== '0') {
-      params.set('oldest', oldestTs);
-    }
+    const allMessages: SlackMessage[] = [];
+    let cursor: string | undefined;
 
-    const response = await fetch(
-      `${SLACK_API_URL}/conversations.history?${params.toString()}`,
-      {
+    do {
+      const params = new URLSearchParams({
+        channel,
+        limit: '200',
+      });
+      if (oldestTs !== '0') {
+        params.set('oldest', oldestTs);
+      }
+      if (cursor) {
+        params.set('cursor', cursor);
+      }
+
+      const response = await fetch(`${SLACK_API_URL}/conversations.history?${params.toString()}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
-      },
-    );
+      });
 
-    const data: SlackConversationsHistoryResponse = await response.json();
+      const data: SlackConversationsHistoryResponse = await response.json();
 
-    if (!data.ok) {
-      this.logger.warn(`Slack conversations.history error for ${channel}: ${data.error ?? 'Unknown'}`);
-      return { messages: [], latestTs: undefined };
-    }
+      if (!data.ok) {
+        this.logger.warn(
+          `Slack conversations.history error for ${channel}: ${data.error ?? 'Unknown'}`
+        );
+        break;
+      }
 
-    const messages = data.messages ?? [];
+      const messages = data.messages ?? [];
+      // Skip bot messages (including our own replies) to avoid indexing generated content
+      allMessages.push(...messages.filter((m) => !m.bot_id));
+
+      cursor = data.has_more ? data.response_metadata?.next_cursor || undefined : undefined;
+    } while (cursor);
 
     // Find the latest timestamp among fetched messages
     let latestTs: string | undefined;
-    for (const msg of messages) {
+    for (const msg of allMessages) {
       if (msg.ts && (!latestTs || msg.ts > latestTs)) {
         latestTs = msg.ts;
       }
     }
 
-    return { messages, latestTs };
+    return { messages: allMessages, latestTs };
   }
 }

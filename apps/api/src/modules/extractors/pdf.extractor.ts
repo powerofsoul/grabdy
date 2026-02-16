@@ -20,6 +20,7 @@ export class PdfExtractor {
     const pdfParse = require('pdf-parse');
 
     const pages: PageText[] = [];
+    let pageNum = 0;
 
     const options = {
       pagerender: (pageData: {
@@ -27,40 +28,29 @@ export class PdfExtractor {
           items: Array<{ str: string; transform?: number[] }>;
         }>;
       }) => {
+        pageNum++;
+        const currentPage = pageNum;
         return pageData
           .getTextContent()
           .then(
             (textContent: {
               items: Array<{ str: string; transform?: number[] }>;
             }) => {
-              return textContent.items
+              const text = textContent.items
                 .map((item: { str: string }) => item.str)
-                .join(' ');
+                .join(' ')
+                .trim();
+              if (text.length > 0) {
+                pages.push({ page: currentPage, text: text + '\n' });
+              }
+              return text;
             }
           );
       },
     };
 
-    const data = await pdfParse(buffer, options);
-    const fullText: string = data.text;
-
-    const rawPages = fullText.split('\f');
-    if (rawPages.length > 1) {
-      for (let i = 0; i < rawPages.length; i++) {
-        const text = rawPages[i].trim();
-        if (text.length > 0) {
-          pages.push({ page: i + 1, text: text + '\n' });
-        }
-      }
-    } else {
-      const numPages = data.numpages ?? 1;
-      if (numPages <= 1) {
-        pages.push({ page: 1, text: fullText });
-      } else {
-        // Can't split reliably — return as single block, no page info
-        return { text: fullText, pages: [] };
-      }
-    }
+    await pdfParse(buffer, options);
+    const fullText = pages.map((p) => p.text).join('');
 
     // Extract images from PDF using pdfjs-dist
     let images: ExtractedImage[] = [];
@@ -70,7 +60,7 @@ export class PdfExtractor {
       this.logger.warn(`PDF image extraction failed: ${err instanceof Error ? err.message : err}`);
     }
 
-    return { text: fullText, pages, images: images.length > 0 ? images : undefined };
+    return { type: 'pages', text: fullText, pages, images: images.length > 0 ? images : undefined };
   }
 
   private async extractImages(buffer: Buffer): Promise<ExtractedImage[]> {

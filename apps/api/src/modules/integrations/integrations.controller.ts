@@ -1,7 +1,7 @@
 import { Controller, Get, Inject, Logger, Param, Post, Query, Req, Res } from '@nestjs/common';
 
 import { dbIdSchema } from '@grabdy/common';
-import { integrationProviderEnum,integrationsContract } from '@grabdy/contracts';
+import { IntegrationProvider, integrationProviderEnum, integrationsContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { randomBytes } from 'crypto';
 import type { Request, Response } from 'express';
@@ -13,6 +13,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { InjectEnv } from '../../config/env.config';
 
 import { ProviderRegistry } from './providers/provider-registry';
+import { SlackBotService } from './providers/slack/slack-bot.service';
 import { INTEGRATIONS_REDIS } from './integrations.constants';
 import { IntegrationsService } from './integrations.service';
 
@@ -41,8 +42,10 @@ export class IntegrationsController {
   constructor(
     private integrationsService: IntegrationsService,
     private providerRegistry: ProviderRegistry,
+    private slackBotService: SlackBotService,
     @Inject(INTEGRATIONS_REDIS) private readonly redis: Redis,
     @InjectEnv('frontendUrl') private readonly frontendUrl: string,
+    @InjectEnv('apiUrl') private readonly apiUrl: string,
   ) {}
 
   @OrgAccess(integrationsContract.listConnections, { params: ['orgId'] })
@@ -91,10 +94,10 @@ export class IntegrationsController {
         `${OAUTH_STATE_PREFIX}${state}`,
         JSON.stringify(stateData),
         'EX',
-        OAUTH_STATE_TTL_SECONDS,
+        OAUTH_STATE_TTL_SECONDS
       );
 
-      const redirectUri = `${this.frontendUrl}/api/integrations/callback`;
+      const redirectUri = `${this.apiUrl}/api/integrations/callback`;
       const redirectUrl = connector.getAuthUrl(params.orgId, state, redirectUri);
 
       return {
@@ -127,11 +130,34 @@ export class IntegrationsController {
     });
   }
 
+  @OrgAccess(integrationsContract.deleteConnection, { params: ['orgId'] })
+  @TsRestHandler(integrationsContract.deleteConnection)
+  async deleteConnection() {
+    return tsRestHandler(integrationsContract.deleteConnection, async ({ params }) => {
+      const success = await this.integrationsService.deleteConnection(params.orgId, params.provider);
+
+      if (!success) {
+        return {
+          status: 404 as const,
+          body: { success: false as const, error: 'Connection not found' },
+        };
+      }
+
+      return {
+        status: 200 as const,
+        body: { success: true as const },
+      };
+    });
+  }
+
   @OrgAccess(integrationsContract.updateConfig, { params: ['orgId'] })
   @TsRestHandler(integrationsContract.updateConfig)
   async updateConfig() {
     return tsRestHandler(integrationsContract.updateConfig, async ({ params, body }) => {
-      const connection = await this.integrationsService.getConnectionMeta(params.orgId, params.provider);
+      const connection = await this.integrationsService.getConnectionMeta(
+        params.orgId,
+        params.provider
+      );
       if (!connection) {
         return {
           status: 404 as const,
@@ -145,7 +171,10 @@ export class IntegrationsController {
         config: body.config,
       });
 
-      const updated = await this.integrationsService.getConnectionMeta(params.orgId, params.provider);
+      const updated = await this.integrationsService.getConnectionMeta(
+        params.orgId,
+        params.provider
+      );
       if (!updated) {
         return {
           status: 404 as const,
@@ -180,7 +209,10 @@ export class IntegrationsController {
   @TsRestHandler(integrationsContract.triggerSync)
   async triggerSync() {
     return tsRestHandler(integrationsContract.triggerSync, async ({ params }) => {
-      const connection = await this.integrationsService.getConnectionMeta(params.orgId, params.provider);
+      const connection = await this.integrationsService.getConnectionMeta(
+        params.orgId,
+        params.provider
+      );
       if (!connection) {
         return {
           status: 404 as const,
@@ -191,7 +223,7 @@ export class IntegrationsController {
       const syncLog = await this.integrationsService.triggerSync(
         connection.id,
         params.orgId,
-        'MANUAL',
+        'MANUAL'
       );
 
       return {
@@ -206,6 +238,7 @@ export class IntegrationsController {
             itemsSynced: syncLog.items_synced,
             itemsFailed: syncLog.items_failed,
             errorMessage: syncLog.error_message,
+            details: syncLog.details ?? null,
             startedAt: toISOStringOrNull(syncLog.started_at),
             completedAt: toISOStringOrNull(syncLog.completed_at),
             createdAt: toISOString(syncLog.created_at),
@@ -219,7 +252,10 @@ export class IntegrationsController {
   @TsRestHandler(integrationsContract.listSyncLogs)
   async listSyncLogs() {
     return tsRestHandler(integrationsContract.listSyncLogs, async ({ params }) => {
-      const connection = await this.integrationsService.getConnectionMeta(params.orgId, params.provider);
+      const connection = await this.integrationsService.getConnectionMeta(
+        params.orgId,
+        params.provider
+      );
       if (!connection) {
         return {
           status: 404 as const,
@@ -241,6 +277,7 @@ export class IntegrationsController {
             itemsSynced: log.items_synced,
             itemsFailed: log.items_failed,
             errorMessage: log.error_message,
+            details: log.details ?? null,
             startedAt: toISOStringOrNull(log.started_at),
             completedAt: toISOStringOrNull(log.completed_at),
             createdAt: toISOString(log.created_at),
@@ -255,7 +292,7 @@ export class IntegrationsController {
   async oauthCallback(
     @Query('code') code: string,
     @Query('state') state: string,
-    @Res() res: Response,
+    @Res() res: Response
   ): Promise<void> {
     try {
       // Validate state from Redis (auto-expires via TTL)
@@ -277,7 +314,7 @@ export class IntegrationsController {
       const validatedProvider = integrationProviderEnum.parse(provider);
 
       const connector = this.providerRegistry.getConnector(validatedProvider);
-      const redirectUri = `${this.frontendUrl}/api/integrations/callback`;
+      const redirectUri = `${this.apiUrl}/api/integrations/callback`;
       const tokens = await connector.exchangeCode(code, redirectUri);
 
       // Get external account info from the connector
@@ -285,7 +322,10 @@ export class IntegrationsController {
       const externalAccountRef = accountInfo.id;
       const externalAccountName = accountInfo.name;
 
-      await this.integrationsService.createConnection({
+      // Remove any existing connection for this org+provider (e.g. DISCONNECTED) before creating a new one
+      await this.integrationsService.deleteConnection(orgId, validatedProvider);
+
+      const newConnection = await this.integrationsService.createConnection({
         orgId,
         provider: validatedProvider,
         tokens,
@@ -294,11 +334,19 @@ export class IntegrationsController {
         createdById: userId,
       });
 
-      // Trigger initial sync
-      const connection = await this.integrationsService.getConnection(orgId, validatedProvider);
-      if (connection) {
-        await this.integrationsService.triggerSync(connection.id, orgId, 'MANUAL');
+      // Store provider-specific metadata (e.g. Slack bot_user_id, teamDomain) in connection config
+      const configMetadata = {
+        ...tokens.metadata,
+        ...accountInfo.metadata,
+      };
+      if (Object.keys(configMetadata).length > 0) {
+        await this.integrationsService.updateConnection(newConnection.id, {
+          config: configMetadata,
+        });
       }
+
+      // Trigger initial sync
+      await this.integrationsService.triggerSync(newConnection.id, orgId, 'MANUAL');
 
       res.redirect(`${this.frontendUrl}/dashboard/integrations?connected=${validatedProvider}`);
     } catch (error) {
@@ -313,23 +361,80 @@ export class IntegrationsController {
   async webhookReceiver(
     @Param('provider') provider: string,
     @Req() req: Request,
-    @Res() res: Response,
+    @Res() res: Response
   ): Promise<void> {
-    res.status(200).json({ ok: true });
-
     try {
       const providerUpper = provider.toUpperCase();
       const parsed = integrationProviderEnum.safeParse(providerUpper);
-      if (!parsed.success) return;
+      if (!parsed.success) {
+        res.status(200).json({ ok: true });
+        return;
+      }
 
       const validProvider = parsed.data;
-      const rows = await this.integrationsService.listConnectionsByProvider(validProvider);
 
+      // Slack-specific handling: url_verification, app_mention, member_joined_channel
+      if (validProvider === IntegrationProvider.SLACK) {
+        // Handle url_verification before anything else (Slack requires immediate response)
+        if (
+          typeof req.body === 'object' &&
+          req.body !== null &&
+          'type' in req.body &&
+          req.body.type === 'url_verification' &&
+          'challenge' in req.body
+        ) {
+          res.status(200).json({ challenge: req.body.challenge });
+          return;
+        }
+
+        const rows = await this.integrationsService.listConnectionsByProvider(validProvider);
+        if (rows.length === 0) {
+          this.logger.warn('No active Slack connections found for webhook');
+          res.status(200).json({ ok: true });
+          return;
+        }
+
+        // Flatten headers to string record
+        const headers: Record<string, string> = {};
+        for (const [key, value] of Object.entries(req.headers)) {
+          if (typeof value === 'string') {
+            headers[key] = value;
+          }
+        }
+
+        const rawBody = ('rawBody' in req ? req.rawBody : undefined);
+        const result = this.slackBotService.handleWebhook(headers, req.body, rows, typeof rawBody === 'string' ? rawBody : undefined);
+
+        if (result.handled) {
+          this.logger.log('Slack webhook handled by bot service');
+          res.status(200).json({ ok: true });
+          return;
+        }
+
+        this.logger.log('Slack webhook not handled by bot service, falling through to sync');
+
+        // Fall through to normal sync handling for message events
+        res.status(200).json({ ok: true });
+
+        const connector = this.providerRegistry.getConnector(validProvider);
+        for (const conn of rows) {
+          const event = connector.parseWebhook(headers, req.body, conn.webhookSecret, typeof rawBody === 'string' ? rawBody : undefined);
+          if (event) {
+            await this.integrationsService.triggerSync(conn.id, conn.orgId, 'WEBHOOK');
+          }
+        }
+        return;
+      }
+
+      // Generic webhook handling for non-Slack providers
+      res.status(200).json({ ok: true });
+
+      const rows = await this.integrationsService.listConnectionsByProvider(validProvider);
       if (rows.length === 0) return;
 
       const connector = this.providerRegistry.getConnector(validProvider);
+      const rawBody = ('rawBody' in req ? req.rawBody : undefined);
 
-      // Flatten headers to string record for webhook verification
       const headers: Record<string, string> = {};
       for (const [key, value] of Object.entries(req.headers)) {
         if (typeof value === 'string') {
@@ -338,12 +443,7 @@ export class IntegrationsController {
       }
 
       for (const conn of rows) {
-        const event = connector.parseWebhook(
-          headers,
-          req.body,
-          conn.webhookSecret,
-        );
-
+        const event = connector.parseWebhook(headers, req.body, conn.webhookSecret, typeof rawBody === 'string' ? rawBody : undefined);
         if (event) {
           await this.integrationsService.triggerSync(conn.id, conn.orgId, 'WEBHOOK');
         }
@@ -351,6 +451,9 @@ export class IntegrationsController {
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Webhook processing failed for ${provider}: ${msg}`);
+      if (!res.headersSent) {
+        res.status(200).json({ ok: true });
+      }
     }
   }
 }

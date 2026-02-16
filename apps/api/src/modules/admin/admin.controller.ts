@@ -1,13 +1,13 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 
 import { type DbId, dbIdSchema, GLOBAL_ORG, packId } from '@grabdy/common';
+import type { OrgRole } from '@grabdy/contracts';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
 import { Public } from '../../common/decorators/public.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { DbService } from '../../db/db.module';
-import type { OrgRole } from '../../db/enums';
 import { EmailService } from '../email/email.service';
 
 import { AdminApiKeyGuard } from './admin-api-key.guard';
@@ -31,7 +31,7 @@ interface InviteMemberBody {
 export class AdminController {
   constructor(
     private db: DbService,
-    private emailService: EmailService,
+    private emailService: EmailService
   ) {}
 
   /**
@@ -112,7 +112,7 @@ export class AdminController {
   @Post('orgs/:orgId/invite')
   async inviteMember(
     @Param('orgId', new ZodValidationPipe(dbIdSchema('Org'))) orgId: DbId<'Org'>,
-    @Body() body: InviteMemberBody,
+    @Body() body: InviteMemberBody
   ) {
     const { email, name, roles } = body;
     const normalizedEmail = email.toLowerCase();

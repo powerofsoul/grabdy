@@ -6,7 +6,7 @@ import type { Request } from 'express';
 import { z } from 'zod';
 
 import { CollectionsService } from '../collections/collections.service';
-import { RetrievalService } from '../retrieval/retrieval.service';
+import { RetrievalService } from '../public-api/retrieval.service';
 
 // ApiKeyGuard guarantees request.apiKey is set before any tool runs.
 function getApiKeyContext(request: Request) {

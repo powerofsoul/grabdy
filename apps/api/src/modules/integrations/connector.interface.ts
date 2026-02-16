@@ -6,7 +6,7 @@ import type { ChunkMeta, IntegrationProvider } from '@grabdy/contracts';
 // ---------------------------------------------------------------------------
 
 export interface SlackConnectionConfig {
-  botUserId?: string;
+  slackBotUserId?: string;
   teamDomain?: string;
   [key: string]: unknown;
 }
@@ -55,9 +55,9 @@ export interface SyncedItem {
   title: string;
   content: string;
   /** Structured messages with per-message metadata and source URL (one chunk per message). */
-  messages?: Array<{ content: string; metadata: ChunkMeta; sourceUrl: string | null }>;
+  messages?: Array<{ content: string; metadata: ChunkMeta; sourceUrl: string }>;
   /** URL for the data source (e.g., channel URL). Stored on data_sources, not chunks. */
-  sourceUrl: string | null;
+  sourceUrl: string;
   metadata: Record<string, unknown>;
 }
 

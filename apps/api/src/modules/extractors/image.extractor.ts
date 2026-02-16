@@ -2,10 +2,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
-import type { ModelId } from '@grabdy/contracts';
+import { AiCallerType, AiRequestType, type ModelId } from '@grabdy/contracts';
 import { generateText } from 'ai';
 
-import { AiCallerType, AiRequestType } from '../../db/enums';
 import { AiUsageService } from '../ai/ai-usage.service';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
@@ -36,7 +35,10 @@ function parseImageAnalysis(response: string): ImageMetadata {
   const description = descMatch ? descMatch[1].trim() : response.trim();
   const tagsStr = tagsMatch ? tagsMatch[1].trim() : '';
   const tags = tagsStr
-    ? tagsStr.split(',').map((t) => t.trim()).filter((t) => t.length > 0)
+    ? tagsStr
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0)
     : [];
   const visibleText = textMatch ? textMatch[1].trim() : null;
 
@@ -55,17 +57,17 @@ export class ImageExtractor {
 
   constructor(
     @Inject(FILE_STORAGE) private storage: FileStorage,
-    private aiUsageService: AiUsageService,
+    private aiUsageService: AiUsageService
   ) {}
 
   async extract(storagePath: string): Promise<ExtractionResult> {
     const meta = await this.extractWithMetadata(storagePath);
-    return { text: meta.text };
+    return { type: 'text', text: meta.text };
   }
 
   async extractWithMetadata(
     storagePath: string,
-    orgId?: DbId<'Org'>,
+    orgId?: DbId<'Org'>
   ): Promise<{ text: string; aiTags: string[]; aiDescription: string }> {
     const buffer = await this.storage.get(storagePath);
 
@@ -87,18 +89,22 @@ export class ImageExtractor {
 
     // Log AI usage
     if (orgId) {
-      this.aiUsageService.logUsage(
-        VISION_MODEL,
-        usage.inputTokens ?? 0,
-        usage.outputTokens ?? 0,
-        AiCallerType.SYSTEM,
-        AiRequestType.CHAT,
-        { orgId },
-      ).catch((err) => this.logger.error(`Usage logging failed: ${err}`));
+      this.aiUsageService
+        .logUsage(
+          VISION_MODEL,
+          usage.inputTokens ?? 0,
+          usage.outputTokens ?? 0,
+          AiCallerType.SYSTEM,
+          AiRequestType.CHAT,
+          { orgId, source: 'SYSTEM' }
+        )
+        .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
     }
 
     const parsed = parseImageAnalysis(response);
-    this.logger.log(`Image analysis: ${parsed.tags.length} tags, ${parsed.description.length} chars description`);
+    this.logger.log(
+      `Image analysis: ${parsed.tags.length} tags, ${parsed.description.length} chars description`
+    );
 
     // Combine description and visible text for RAG embedding
     const parts = [parsed.description];

@@ -4,7 +4,13 @@ import { Inject, Logger } from '@nestjs/common';
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
-import { EMBEDDING_MODEL } from '@grabdy/contracts';
+import {
+  AiCallerType,
+  AiRequestType,
+  type ChunkMeta,
+  EMBEDDING_MODEL,
+  MIME_TO_DATA_SOURCE_TYPE,
+} from '@grabdy/contracts';
 import { embedMany } from 'ai';
 import { Job } from 'bullmq';
 
@@ -13,23 +19,31 @@ import {
   CHUNK_SIZE,
   EMBEDDING_BATCH_SIZE,
   SUMMARY_MAX_LENGTH,
-} from '../../../config/constants';
-import { DbService } from '../../../db/db.module';
-import { AiCallerType, AiRequestType } from '../../../db/enums';
-import { AiUsageService } from '../../ai/ai-usage.service';
-import { DocxExtractor } from '../../extractors/docx.extractor';
+} from '../../config/constants';
+import { env } from '../../config/env.config';
+import { DbService } from '../../db/db.module';
+import { AiUsageService } from '../ai/ai-usage.service';
+import { DocxExtractor } from '../extractors/docx.extractor';
 import type {
   ExtractedImage,
   ExtractionResult,
   PageText,
-} from '../../extractors/extractor.interface';
-import { ImageExtractor } from '../../extractors/image.extractor';
-import { PdfExtractor } from '../../extractors/pdf.extractor';
-import { TextExtractor } from '../../extractors/text.extractor';
-import { XlsxExtractor } from '../../extractors/xlsx.extractor';
-import type { FileStorage } from '../../storage/file-storage.interface';
-import { FILE_STORAGE } from '../../storage/file-storage.interface';
-import { DATA_SOURCE_QUEUE } from '../queue.constants';
+  SheetData,
+  SheetRow,
+} from '../extractors/extractor.interface';
+import { ImageExtractor } from '../extractors/image.extractor';
+import { PdfExtractor } from '../extractors/pdf.extractor';
+import { TextExtractor } from '../extractors/text.extractor';
+import { XlsxExtractor } from '../extractors/xlsx.extractor';
+import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
+import type { FileStorage } from '../storage/file-storage.interface';
+import { FILE_STORAGE } from '../storage/file-storage.interface';
+
+export interface SyncedMessageData {
+  content: string;
+  metadata: ChunkMeta;
+  sourceUrl: string;
+}
 
 export interface DataSourceJobData {
   dataSourceId: DbId<'DataSource'>;
@@ -39,25 +53,35 @@ export interface DataSourceJobData {
   collectionId: DbId<'Collection'> | null;
   /** Pre-extracted text content (used by integration sources to skip file extraction). */
   content?: string;
+  /** Structured messages with per-message metadata (one chunk per message). Takes precedence over `content`. */
+  messages?: SyncedMessageData[];
+  /** Source URL for all chunks (used when all chunks share the same URL, e.g., a Jira issue). */
+  sourceUrl?: string;
 }
 
 interface ChunkWithMeta {
   content: string;
-  metadata: { pages?: number[] } | null;
+  metadata: ChunkMeta;
+  sourceUrl: string;
 }
 
-function chunkText(text: string): ChunkWithMeta[] {
+/** Build a preview URL for an uploaded data source. */
+function previewUrl(dataSourceId: DbId<'DataSource'>, orgId: DbId<'Org'>): string {
+  return `${env.frontendUrl}/dashboard/sources?preview=${dataSourceId}&org=${orgId}`;
+}
+
+function chunkText(text: string, metadata: ChunkMeta, sourceUrl: string): ChunkWithMeta[] {
   const chunks: ChunkWithMeta[] = [];
   let start = 0;
   while (start < text.length) {
     const end = Math.min(start + CHUNK_SIZE, text.length);
-    chunks.push({ content: text.slice(start, end), metadata: null });
+    chunks.push({ content: text.slice(start, end), metadata, sourceUrl });
     start += CHUNK_SIZE - CHUNK_OVERLAP;
   }
   return chunks;
 }
 
-function chunkPagesText(pages: PageText[]): ChunkWithMeta[] {
+function chunkPagesText(pages: PageText[], metaType: 'PDF' | 'DOCX', sourceUrl: string): ChunkWithMeta[] {
   // Build a flat string with page boundary tracking
   const boundaries: Array<{ offset: number; page: number }> = [];
   let fullText = '';
@@ -88,11 +112,66 @@ function chunkPagesText(pages: PageText[]): ChunkWithMeta[] {
     const pageNums = [...pageSet].sort((a, b) => a - b);
     chunks.push({
       content: fullText.slice(start, end),
-      metadata: pageNums.length > 0 ? { pages: pageNums } : null,
+      metadata: { type: metaType, pages: pageNums },
+      sourceUrl,
     });
     start += CHUNK_SIZE - CHUNK_OVERLAP;
   }
 
+  return chunks;
+}
+
+function chunkSheets(sheets: SheetData[], sourceUrl: string): ChunkWithMeta[] {
+  const chunks: ChunkWithMeta[] = [];
+  for (const sheet of sheets) {
+    let buffer = '';
+    let startRow = sheet.rows[0]?.row ?? 1;
+    for (const row of sheet.rows) {
+      if (buffer.length + row.text.length > CHUNK_SIZE && buffer.length > 0) {
+        chunks.push({
+          content: buffer,
+          metadata: { type: 'XLSX', sheet: sheet.sheet, row: startRow, columns: sheet.columns },
+          sourceUrl,
+        });
+        buffer = '';
+        startRow = row.row;
+      }
+      buffer += (buffer.length > 0 ? '\n' : '') + row.text;
+    }
+    if (buffer.length > 0) {
+      chunks.push({
+        content: buffer,
+        metadata: { type: 'XLSX', sheet: sheet.sheet, row: startRow, columns: sheet.columns },
+        sourceUrl,
+      });
+    }
+  }
+  return chunks;
+}
+
+function chunkCsvRows(rows: SheetRow[], columns: string[], sourceUrl: string): ChunkWithMeta[] {
+  const chunks: ChunkWithMeta[] = [];
+  let buffer = '';
+  let startRow = rows[0]?.row ?? 1;
+  for (const row of rows) {
+    if (buffer.length + row.text.length > CHUNK_SIZE && buffer.length > 0) {
+      chunks.push({
+        content: buffer,
+        metadata: { type: 'CSV', row: startRow, columns },
+        sourceUrl,
+      });
+      buffer = '';
+      startRow = row.row;
+    }
+    buffer += (buffer.length > 0 ? '\n' : '') + row.text;
+  }
+  if (buffer.length > 0) {
+    chunks.push({
+      content: buffer,
+      metadata: { type: 'CSV', row: startRow, columns },
+      sourceUrl,
+    });
+  }
   return chunks;
 }
 
@@ -108,14 +187,22 @@ export class DataSourceProcessor extends WorkerHost {
     private textExtractor: TextExtractor,
     private xlsxExtractor: XlsxExtractor,
     private imageExtractor: ImageExtractor,
-    private aiUsageService: AiUsageService,
+    private aiUsageService: AiUsageService
   ) {
     super();
   }
 
   async process(job: Job<DataSourceJobData>): Promise<void> {
-    const { dataSourceId, orgId, storagePath, mimeType, collectionId } = job.data;
+    const {
+      dataSourceId,
+      orgId,
+      storagePath,
+      mimeType,
+      collectionId,
+    } = job.data;
     this.logger.log(`Processing data source ${dataSourceId}`);
+
+    const defaultSourceUrl = job.data.sourceUrl ?? previewUrl(dataSourceId, orgId);
 
     try {
       // Update status to PROCESSING
@@ -130,35 +217,27 @@ export class DataSourceProcessor extends WorkerHost {
       let fullText: string;
       let pageCount: number | null = null;
 
-      if (job.data.content) {
+      if (job.data.messages) {
+        // Structured messages: one chunk per message with per-message metadata
+        const msgs = job.data.messages.filter((m) => m.content.trim().length > 0);
+        fullText = msgs.map((m) => m.content).join('\n');
+        chunks = msgs.map((m) => ({ content: m.content, metadata: m.metadata, sourceUrl: m.sourceUrl }));
+      } else if (job.data.content) {
         fullText = job.data.content;
-        chunks = chunkText(fullText);
+        chunks = chunkText(fullText, { type: 'TXT' }, defaultSourceUrl);
       } else if (mimeType.startsWith('image/')) {
-        // Image files get special handling: AI vision extracts description + tags
+        // Image files get special handling: AI vision extracts description
         const meta = await this.imageExtractor.extractWithMetadata(storagePath, orgId);
         fullText = meta.text;
-        chunks = chunkText(fullText);
-
-        // Store AI metadata on the data source
-        await this.db.kysely
-          .updateTable('data.data_sources')
-          .set({
-            ai_tags: meta.aiTags,
-            ai_description: meta.aiDescription,
-          })
-          .where('id', '=', dataSourceId)
-          .execute();
+        chunks = chunkText(fullText, { type: 'IMAGE' }, defaultSourceUrl);
       } else {
         const result = await this.extractContent(storagePath, mimeType);
         fullText = result.text;
-        pageCount = result.pages?.length ?? null;
-        chunks =
-          result.pages && result.pages.length > 0
-            ? chunkPagesText(result.pages)
-            : chunkText(fullText);
+        chunks = this.chunksFromResult(result, defaultSourceUrl, mimeType);
+        pageCount = result.type === 'pages' ? result.pages.length : null;
 
         // Store extracted images from documents (PDF, DOCX)
-        if (result.images && result.images.length > 0) {
+        if ((result.type === 'pages' || result.type === 'text') && result.images && result.images.length > 0) {
           await this.storeExtractedImages(result.images, dataSourceId, orgId);
         }
       }
@@ -181,14 +260,16 @@ export class DataSourceProcessor extends WorkerHost {
         });
 
         // Log embedding usage
-        this.aiUsageService.logUsage(
-          EMBEDDING_MODEL,
-          embeddingUsage.tokens,
-          0,
-          AiCallerType.SYSTEM,
-          AiRequestType.EMBEDDING,
-          { orgId },
-        ).catch((err) => this.logger.error(`Embedding usage logging failed: ${err}`));
+        this.aiUsageService
+          .logUsage(
+            EMBEDDING_MODEL,
+            embeddingUsage.tokens,
+            0,
+            AiCallerType.SYSTEM,
+            AiRequestType.EMBEDDING,
+            { orgId, source: 'SYSTEM' }
+          )
+          .catch((err) => this.logger.error(`Embedding usage logging failed: ${err}`));
 
         // Store chunks with embeddings
         const values = batch.map((chunk, idx) => ({
@@ -196,6 +277,7 @@ export class DataSourceProcessor extends WorkerHost {
           content: chunk.content,
           chunk_index: i + idx,
           metadata: chunk.metadata,
+          source_url: chunk.sourceUrl,
           embedding: `[${embeddings[idx].join(',')}]`,
           data_source_id: dataSourceId,
           collection_id: collectionId,
@@ -231,6 +313,26 @@ export class DataSourceProcessor extends WorkerHost {
         .execute();
 
       throw error;
+    }
+  }
+
+  private chunksFromResult(result: ExtractionResult, sourceUrl: string, mimeType: string): ChunkWithMeta[] {
+    const dsType = MIME_TO_DATA_SOURCE_TYPE[mimeType as keyof typeof MIME_TO_DATA_SOURCE_TYPE];
+
+    switch (result.type) {
+      case 'pages':
+        return chunkPagesText(result.pages, dsType === 'DOCX' ? 'DOCX' : 'PDF', sourceUrl);
+      case 'sheets':
+        return chunkSheets(result.sheets, sourceUrl);
+      case 'rows':
+        return chunkCsvRows(result.rows, result.columns, sourceUrl);
+      case 'text': {
+        const meta: ChunkMeta =
+          dsType === 'JSON' ? { type: 'JSON' } :
+          dsType === 'IMAGE' ? { type: 'IMAGE' } :
+          { type: 'TXT' };
+        return chunkText(result.text, meta, sourceUrl);
+      }
     }
   }
 
@@ -271,7 +373,10 @@ export class DataSourceProcessor extends WorkerHost {
     if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       return this.docxExtractor.extract(storagePath);
     }
-    if (mimeType === 'text/csv' || mimeType === 'text/plain' || mimeType === 'application/json') {
+    if (mimeType === 'text/csv') {
+      return this.textExtractor.extractCsv(storagePath);
+    }
+    if (mimeType === 'text/plain' || mimeType === 'application/json') {
       return this.textExtractor.extract(storagePath);
     }
     if (

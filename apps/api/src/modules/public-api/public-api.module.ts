@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 
 import { CollectionsModule } from '../collections/collections.module';
-import { RetrievalModule } from '../retrieval/retrieval.module';
 
 import { PublicApiController } from './public-api.controller';
+import { RetrievalService } from './retrieval.service';
 
 @Module({
-  imports: [RetrievalModule, CollectionsModule],
+  imports: [CollectionsModule],
   controllers: [PublicApiController],
+  providers: [RetrievalService],
+  exports: [RetrievalService],
 })
 export class PublicApiModule {}

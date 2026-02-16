@@ -16,12 +16,18 @@ import basicAuth from 'express-basic-auth';
 
 import { env } from './config/env.config';
 import { buildOpenApiDocument } from './config/openapi';
-import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE } from './modules/queue/queue.constants';
+import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE, SLACK_BOT_QUEUE } from './modules/queue/queue.constants';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const server = express();
-  server.use(express.json({ limit: '5mb' }));
+  server.use(express.json({
+    limit: '5mb',
+    verify: (req, _res, buf) => {
+      // Preserve raw body for webhook signature verification (Slack, etc.)
+      Object.assign(req, { rawBody: buf.toString('utf-8') });
+    },
+  }));
 
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
@@ -33,9 +39,16 @@ async function bootstrap() {
 
   const dataSourceQueue = app.get<Queue>(getQueueToken(DATA_SOURCE_QUEUE));
   const canvasOpsQueue = app.get<Queue>(getQueueToken(CANVAS_OPS_QUEUE));
+  const integrationSyncQueue = app.get<Queue>(getQueueToken(INTEGRATION_SYNC_QUEUE));
+  const slackBotQueue = app.get<Queue>(getQueueToken(SLACK_BOT_QUEUE));
 
   createBullBoard({
-    queues: [new BullMQAdapter(dataSourceQueue), new BullMQAdapter(canvasOpsQueue)],
+    queues: [
+      new BullMQAdapter(dataSourceQueue),
+      new BullMQAdapter(canvasOpsQueue),
+      new BullMQAdapter(integrationSyncQueue),
+      new BullMQAdapter(slackBotQueue),
+    ],
     serverAdapter,
   });
 

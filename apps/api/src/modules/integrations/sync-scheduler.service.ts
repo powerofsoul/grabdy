@@ -13,13 +13,13 @@ export class SyncSchedulerService {
 
   constructor(
     private db: DbService,
-    private integrationsService: IntegrationsService,
+    private integrationsService: IntegrationsService
   ) {}
 
   @Cron('* * * * *')
   async checkDueConnections(): Promise<void> {
     const dueConnections = await this.db.kysely
-      .selectFrom('data.connections')
+      .selectFrom('integration.connections')
       .select(['id', 'org_id'])
       .where('sync_enabled', '=', true)
       .where('status', '=', 'ACTIVE')
@@ -29,9 +29,9 @@ export class SyncSchedulerService {
           eb(
             'last_synced_at',
             '<',
-            sql<Date>`now() - (sync_interval_minutes || ' minutes')::interval`,
+            sql<Date>`now() - (sync_interval_minutes || ' minutes')::interval`
           ),
-        ]),
+        ])
       )
       .limit(10)
       .execute();
@@ -42,11 +42,7 @@ export class SyncSchedulerService {
 
     for (const conn of dueConnections) {
       try {
-        await this.integrationsService.triggerSync(
-          conn.id,
-          conn.org_id,
-          'SCHEDULED',
-        );
+        await this.integrationsService.triggerSync(conn.id, conn.org_id, 'SCHEDULED');
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Unknown error';
         this.logger.error(`Failed to queue sync for connection ${conn.id}: ${msg}`);

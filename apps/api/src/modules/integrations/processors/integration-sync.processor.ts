@@ -3,17 +3,16 @@ import { Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
+import type { SyncTrigger } from '@grabdy/contracts';
 import { Job, Queue } from 'bullmq';
 
 import { DbService } from '../../../db/db.module';
-import type { SyncTrigger } from '../../../db/enums';
-import type { SyncedItem } from '../../integrations/connector.interface';
-import { IntegrationsService } from '../../integrations/integrations.service';
-import { ProviderRegistry } from '../../integrations/providers/provider-registry';
-import { TokenEncryptionService } from '../../integrations/token-encryption.service';
-import { DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE } from '../queue.constants';
-
-import type { DataSourceJobData } from './data-source.processor';
+import type { DataSourceJobData } from '../../data-sources/data-source.processor';
+import { DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE } from '../../queue/queue.constants';
+import type { SyncedItem } from '../connector.interface';
+import { IntegrationsService } from '../integrations.service';
+import { ProviderRegistry } from '../providers/provider-registry';
+import { TokenEncryptionService } from '../token-encryption.service';
 
 export interface IntegrationSyncJobData {
   connectionId: DbId<'Connection'>;
@@ -33,7 +32,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
     private providerRegistry: ProviderRegistry,
     private tokenEncryption: TokenEncryptionService,
     private integrationsService: IntegrationsService,
-    @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue,
+    @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue
   ) {
     super();
   }
@@ -77,6 +76,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
       let cursor = connection.sync_cursor;
       let totalSynced = 0;
       let totalFailed = 0;
+      const syncedNames: string[] = [];
 
       let hasMore = true;
       while (hasMore) {
@@ -85,8 +85,9 @@ export class IntegrationSyncProcessor extends WorkerHost {
         // Process synced items
         for (const item of result.items) {
           try {
-            await this.processItem(item, connectionId, orgId);
+            await this.processItem(item, connectionId, orgId, connection.provider);
             totalSynced++;
+            syncedNames.push(item.title);
           } catch (error) {
             const msg = error instanceof Error ? error.message : 'Unknown error';
             this.logger.warn(`Failed to process item ${item.externalId}: ${msg}`);
@@ -122,10 +123,13 @@ export class IntegrationSyncProcessor extends WorkerHost {
         status: 'COMPLETED',
         itemsSynced: totalSynced,
         itemsFailed: totalFailed,
+        details: syncedNames.length > 0 ? { items: syncedNames } : null,
         completedAt: new Date(),
       });
 
-      this.logger.log(`Sync complete for connection ${connectionId}: ${totalSynced} synced, ${totalFailed} failed`);
+      this.logger.log(
+        `Sync complete for connection ${connectionId}: ${totalSynced} synced, ${totalFailed} failed`
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Sync failed for connection ${connectionId}: ${message}`);
@@ -136,6 +140,12 @@ export class IntegrationSyncProcessor extends WorkerHost {
         completedAt: new Date(),
       });
 
+      // Disconnect the integration on sync failure so the user knows to reconnect
+      await this.integrationsService.updateConnection(connectionId, {
+        status: 'DISCONNECTED',
+        syncEnabled: false,
+      });
+
       throw error;
     }
   }
@@ -144,11 +154,12 @@ export class IntegrationSyncProcessor extends WorkerHost {
     item: SyncedItem,
     connectionId: DbId<'Connection'>,
     orgId: DbId<'Org'>,
+    provider: string
   ): Promise<void> {
     // Check if DataSource already exists for this external ID
     const existing = await this.db.kysely
       .selectFrom('data.data_sources')
-      .select(['id', 'name'])
+      .select(['id', 'title'])
       .where('connection_id', '=', connectionId)
       .where('external_id', '=', item.externalId)
       .executeTakeFirst();
@@ -158,7 +169,8 @@ export class IntegrationSyncProcessor extends WorkerHost {
       await this.db.kysely
         .updateTable('data.data_sources')
         .set({
-          name: item.title,
+          title: item.title,
+          source_url: item.sourceUrl,
           status: 'UPLOADED',
           updated_at: new Date(),
         })
@@ -179,6 +191,8 @@ export class IntegrationSyncProcessor extends WorkerHost {
         mimeType: 'text/plain',
         collectionId: null,
         content: item.content,
+        messages: item.messages,
+        sourceUrl: item.sourceUrl,
       };
       await this.dataSourceQueue.add('process', jobData);
     } else {
@@ -189,15 +203,15 @@ export class IntegrationSyncProcessor extends WorkerHost {
         .insertInto('data.data_sources')
         .values({
           id: dataSourceId,
-          name: item.title,
-          filename: item.externalId,
+          title: item.title,
           mime_type: 'text/plain',
           file_size: Buffer.byteLength(item.content, 'utf-8'),
           storage_path: '',
-          type: 'INTEGRATION',
+          type: 'SLACK',
           status: 'UPLOADED',
           connection_id: connectionId,
           external_id: item.externalId,
+          source_url: item.sourceUrl,
           org_id: orgId,
           uploaded_by_id: null,
           updated_at: new Date(),
@@ -212,15 +226,14 @@ export class IntegrationSyncProcessor extends WorkerHost {
         mimeType: 'text/plain',
         collectionId: null,
         content: item.content,
+        messages: item.messages,
+        sourceUrl: item.sourceUrl,
       };
       await this.dataSourceQueue.add('process', jobData);
     }
   }
 
-  private async deleteItem(
-    externalId: string,
-    connectionId: DbId<'Connection'>,
-  ): Promise<void> {
+  private async deleteItem(externalId: string, connectionId: DbId<'Connection'>): Promise<void> {
     const existing = await this.db.kysely
       .selectFrom('data.data_sources')
       .select('id')
@@ -235,10 +248,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
         .where('data_source_id', '=', existing.id)
         .execute();
 
-      await this.db.kysely
-        .deleteFrom('data.data_sources')
-        .where('id', '=', existing.id)
-        .execute();
+      await this.db.kysely.deleteFrom('data.data_sources').where('id', '=', existing.id).execute();
     }
   }
 }
