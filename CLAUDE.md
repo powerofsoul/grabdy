@@ -42,6 +42,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - Use `satisfies` for type checking without casting.
 - **Use `satisfies T[] as const` for typed constant arrays.**
 - **NEVER use `string` or `number` as `Record` key type.** Always use a typed union (e.g., `Record<ToolName, Display>` not `Record<string, Display>`).
+- **NEVER use interfaces with multiple optional keys where the shape depends on the type.** Use discriminated unions instead.
 
 ### ID System — Packed UUIDs
 
@@ -116,8 +117,61 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 ### File Organization (Frontend)
 
-- **One React component per file.**
+- **One React component per file. No exceptions.** A `.tsx` file contains exactly one component — no helper components, no constants, no utility functions alongside it.
+- **Constants, helper functions, and types go in their own files** (e.g., `constants.ts`, `helpers.ts`, `types.ts`), never inline in a component file.
+- **One hook per file.** Each `use*.ts` file exports a single hook.
 - **Group related components in folders** with an `index.ts` barrel export.
+- **Co-locate hooks, utils, types, and styles next to the components that use them.** Never create top-level `hooks/`, `utils/`, or `types/` directories.
+- **`index.ts` exports only the public API** — the main component and any hooks/types that parent modules need. Internal subcomponents stay unexported.
+
+#### Feature Folder Structure
+
+Every feature folder follows this layout — **main component at root, sub-components in `components/`, hooks in `hooks/`**:
+
+```
+feature/
+├── index.ts              ← barrel export (only public components/hooks)
+├── FeatureMain.tsx        ← main orchestrator component
+├── types.ts              ← shared types for this feature
+├── styles.ts             ← shared styles for this feature
+├── components/            ← subcomponents
+│   ├── SubComponentA.tsx
+│   ├── SubComponentB.tsx
+│   └── sub-feature/      ← complex sub-component gets its own folder
+│       ├── index.ts
+│       ├── SubFeature.tsx
+│       ├── constants.ts
+│       └── helpers.ts
+└── hooks/                 ← hooks used across multiple components
+    ├── useSharedHookA.ts
+    └── useSharedHookB.ts
+```
+
+#### Component Subfolder Rule
+
+**When a component has its own constants, helpers, or types, it MUST live in its own subfolder** with an `index.ts` barrel export:
+
+```
+components/
+├── simple-component/          ← has constants → gets a folder
+│   ├── index.ts
+│   ├── SimpleComponent.tsx
+│   └── constants.ts
+├── PlainComponent.tsx          ← no constants → stays flat
+```
+
+- A component with only a `.tsx` file stays flat in the parent directory.
+- A component with constants/helpers/types gets its own kebab-case folder.
+- The folder's `index.ts` re-exports only the component.
+- Constants file is always named `constants.ts` (not `component-name-constants.ts`).
+- Helpers file is always named `helpers.ts`, types file `types.ts`.
+
+#### Naming Conventions
+
+- **Folders**: kebab-case (`source-chips/`, `sticky-note/`, `main-table/`)
+- **Component files**: PascalCase (`SourceChips.tsx`, `StickyNoteComponent.tsx`)
+- **Non-component files**: kebab-case (`constants.ts`, `helpers.ts`, `types.ts`, `parse-blocks.ts`)
+- **Hook files**: camelCase with `use` prefix (`useChatStream.ts`, `useCanvasState.ts`)
 
 ### Local Storage
 
