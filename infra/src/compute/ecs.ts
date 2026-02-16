@@ -99,27 +99,10 @@ const environment = [
   { name: 'SMTP_PASS', value: Env.smtpPass },
   { name: 'EMAIL_FROM', value: Env.emailFrom },
   { name: 'SLACK_WEBHOOK_URL', value: Env.slackWebhookUrl },
-  // Integrations (set to __TEMP__ until real credentials are configured)
-  { name: 'LINEAR_CLIENT_ID', value: '__TEMP__' },
-  { name: 'LINEAR_CLIENT_SECRET', value: '__TEMP__' },
-  { name: 'ASANA_CLIENT_ID', value: '__TEMP__' },
-  { name: 'ASANA_CLIENT_SECRET', value: '__TEMP__' },
-  { name: 'TRELLO_API_KEY', value: '__TEMP__' },
-  { name: 'TRELLO_API_SECRET', value: '__TEMP__' },
-  { name: 'NOTION_CLIENT_ID', value: '__TEMP__' },
-  { name: 'NOTION_CLIENT_SECRET', value: '__TEMP__' },
-  { name: 'GITHUB_CLIENT_ID', value: '__TEMP__' },
-  { name: 'GITHUB_CLIENT_SECRET', value: '__TEMP__' },
-  { name: 'GITHUB_WEBHOOK_SECRET', value: '__TEMP__' },
-  { name: 'ATLASSIAN_CLIENT_ID', value: '__TEMP__' },
-  { name: 'ATLASSIAN_CLIENT_SECRET', value: '__TEMP__' },
-  { name: 'SLACK_CLIENT_ID', value: '__TEMP__' },
-  { name: 'SLACK_CLIENT_SECRET', value: '__TEMP__' },
-  { name: 'SLACK_SIGNING_SECRET', value: '__TEMP__' },
-  { name: 'GOOGLE_CLIENT_ID', value: '__TEMP__' },
-  { name: 'GOOGLE_CLIENT_SECRET', value: '__TEMP__' },
-  { name: 'FIGMA_CLIENT_ID', value: '__TEMP__' },
-  { name: 'FIGMA_CLIENT_SECRET', value: '__TEMP__' },
+
+  { name: 'SLACK_CLIENT_ID', value: Env.slackClientId },
+  { name: 'SLACK_CLIENT_SECRET', value: Env.slackClientSecret },
+  { name: 'SLACK_SIGNING_SECRET', value: Env.slackSigningSecret },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
 // Task definition

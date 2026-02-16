@@ -23,3 +23,9 @@ config:
   grabdy:smtpPass:
     secure: AAABABPnyTxQtCq3cyZ17mUIMxUtOAH3SlJ6lNQT8VPK3NnufXkPofzBVB22akwLNZ13UR5UsCyycQmlQr0FjvgPIEEnm1Ll1xn1cDW7lWRgqgxTqqIP576V51E0H23dny4PwiDNXWYNDpgOiZ3lwlof9V1tgeIwMk+VzIA6vLi+J4EHiq7cnlU0fmCwlpFNekkqXoT332/E8EL4Pw9/rltAGjFqX9oqwZiDRJju4l8=
   grabdy:emailFrom: Grabdy <noreply@grabdy.com>
+  grabdy:slackClientId:
+    secure: AAABAF1sCJngxVb/cjAUpCYYx6Zl2+9Xinahke8J7ed0xw6kJ5vkjmnY9GleaM1JCb8h205SqzOd1KkVzg==
+  grabdy:slackClientSecret:
+    secure: AAABAPK5lHwurU9+dff+gu5ZdYB91ZZtTHS4e/vHuB71ryeDxhBpn6TgvkvAKOnZK/Dd9sLDNiSDC/QsBCmeaw==
+  grabdy:slackSigningSecret:
+    secure: AAABAHiBymrGOnexOC8emkoD9nOnFUUAGt9cm66VUNG2nDIgkO9QLUtAkHzo7Alm+g0U2RxB5f0iNogV4SEbIA==

@@ -13,7 +13,13 @@ export const Env = {
   bullBoardUsername: config.require('bullBoardUsername'),
   bullBoardPassword: config.requireSecret('bullBoardPassword'),
   integrationEncryptionKey: config.requireSecret('integrationEncryptionKey'),
+
   slackWebhookUrl: config.requireSecret('slackWebhookUrl'),
+
+  slackClientId: config.require('slackClientId'),
+  slackClientSecret: config.requireSecret('slackClientSecret'),
+  slackSigningSecret: config.requireSecret('slackSigningSecret'),
+
   smtpHost: config.require('smtpHost'),
   smtpPort: config.require('smtpPort'),
   smtpUser: config.require('smtpUser'),
