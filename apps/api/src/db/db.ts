@@ -68,34 +68,35 @@ export interface DB {
 
   'org.org_memberships': {
     id: Generated<DbId<'OrgMembership'>>;
+    org_id: DbId<'Org'>;
     roles: ('OWNER' | 'ADMIN' | 'MEMBER')[];
     created_at: Generated<Timestamp>;
     user_id: DbId<'User'>;
-    org_id: DbId<'Org'>;
   };
 
   'org.org_invitations': {
     id: Generated<DbId<'OrgInvitation'>>;
+    org_id: DbId<'Org'>;
     email: string;
     name: string;
     roles: ('OWNER' | 'ADMIN' | 'MEMBER')[];
     token: string;
     expires_at: Timestamp;
     created_at: Generated<Timestamp>;
-    org_id: DbId<'Org'>;
   };
 
   'data.collections': {
     id: Generated<DbId<'Collection'>>;
+    org_id: DbId<'Org'>;
     name: string;
     description: string | null;
-    org_id: DbId<'Org'>;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
   };
 
   'data.data_sources': {
     id: Generated<DbId<'DataSource'>>;
+    org_id: DbId<'Org'>;
     title: string;
     mime_type: string;
     file_size: number;
@@ -108,7 +109,6 @@ export interface DB {
     connection_id: DbId<'Connection'> | null;
     external_id: string | null;
     source_url: string;
-    org_id: DbId<'Org'>;
     uploaded_by_id: DbId<'User'> | null;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
@@ -116,6 +116,7 @@ export interface DB {
 
   'data.chunks': {
     id: Generated<DbId<'Chunk'>>;
+    org_id: DbId<'Org'>;
     content: string;
     chunk_index: number;
     metadata: ChunkMeta;
@@ -123,23 +124,23 @@ export interface DB {
     embedding: string;
     data_source_id: DbId<'DataSource'>;
     collection_id: DbId<'Collection'> | null;
-    org_id: DbId<'Org'>;
     created_at: Generated<Timestamp>;
   };
 
   'data.extracted_images': {
     id: Generated<DbId<'ExtractedImage'>>;
+    org_id: DbId<'Org'>;
     data_source_id: DbId<'DataSource'>;
     storage_path: string;
     mime_type: string;
     page_number: number | null;
     ai_description: string | null;
-    org_id: DbId<'Org'>;
     created_at: Generated<Timestamp>;
   };
 
   'data.chat_threads': {
     id: Generated<DbId<'ChatThread'>>;
+    org_id: DbId<'Org'>;
     title: string | null;
     collection_id: DbId<'Collection'> | null;
     canvas_state: ColumnType<
@@ -147,7 +148,6 @@ export interface DB {
       Record<string, unknown> | null | undefined,
       Record<string, unknown> | null
     >;
-    org_id: DbId<'Org'>;
     membership_id: DbId<'OrgMembership'>;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
@@ -155,6 +155,7 @@ export interface DB {
 
   'integration.connections': {
     id: Generated<DbId<'Connection'>>;
+    org_id: DbId<'Org'>;
     provider: 'SLACK';
     status: Generated<'ACTIVE' | 'PAUSED' | 'ERROR' | 'DISCONNECTED'>;
     access_token: string;
@@ -170,7 +171,6 @@ export interface DB {
     config: Generated<Record<string, unknown>>;
     webhook_id: string | null;
     webhook_secret: string | null;
-    org_id: DbId<'Org'>;
     created_by_id: DbId<'User'>;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
@@ -178,6 +178,7 @@ export interface DB {
 
   'integration.sync_logs': {
     id: Generated<DbId<'SyncLog'>>;
+    org_id: DbId<'Org'>;
     connection_id: DbId<'Connection'>;
     status: Generated<'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'>;
     trigger: 'MANUAL' | 'SCHEDULED' | 'WEBHOOK';
@@ -187,16 +188,15 @@ export interface DB {
     details: { items: string[] } | null;
     started_at: Timestamp | null;
     completed_at: Timestamp | null;
-    org_id: DbId<'Org'>;
     created_at: Generated<Timestamp>;
   };
 
   'api.api_keys': {
     id: Generated<DbId<'ApiKey'>>;
+    org_id: DbId<'Org'>;
     name: string;
     key_hash: string;
     key_prefix: string;
-    org_id: DbId<'Org'>;
     created_by_id: DbId<'User'>;
     last_used_at: Timestamp | null;
     revoked_at: Timestamp | null;
@@ -205,16 +205,17 @@ export interface DB {
 
   'api.usage_logs': {
     id: Generated<DbId<'UsageLog'>>;
+    org_id: DbId<'Org'>;
     api_key_id: DbId<'ApiKey'>;
     endpoint: string;
     input_tokens: Generated<number>;
     output_tokens: Generated<number>;
-    org_id: DbId<'Org'>;
     created_at: Generated<Timestamp>;
   };
 
   'analytics.ai_usage_logs': {
     id: Generated<DbId<'AiUsageLog'>>;
+    org_id: DbId<'Org'>;
     model: string;
     provider: string;
     caller_type: 'MEMBER' | 'SYSTEM' | 'API_KEY';
@@ -227,14 +228,13 @@ export interface DB {
     duration_ms: number | null;
     finish_reason: string | null;
     streaming: Generated<boolean>;
-    org_id: DbId<'Org'>;
     user_id: DbId<'User'> | null;
     created_at: Generated<Timestamp>;
   };
 
   'agent.mastra_messages': {
     id: string;
-    thread_id: string;
+    thread_id: DbId<'ChatThread'>;
     content: string;
     role: string;
     type: string;
