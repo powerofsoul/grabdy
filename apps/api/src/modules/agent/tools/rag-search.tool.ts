@@ -20,10 +20,15 @@ export class RagSearchTool {
   constructor(
     private db: DbService,
     @Inject(FILE_STORAGE) private storage: FileStorage,
-    private aiUsageService: AiUsageService,
+    private aiUsageService: AiUsageService
   ) {}
 
-  create(orgId: DbId<'Org'>, collectionIds?: DbId<'Collection'>[], defaultTopK = 5, userId?: DbId<'User'> | null) {
+  create(
+    orgId: DbId<'Org'>,
+    collectionIds?: DbId<'Collection'>[],
+    defaultTopK = 5,
+    userId?: DbId<'User'> | null
+  ) {
     const db = this.db;
     const storage = this.storage;
     const aiUsageService = this.aiUsageService;
@@ -50,14 +55,16 @@ Use metadata to give context (page numbers, sheet names, Slack authors, etc.) wh
         });
 
         // Log embedding usage
-        aiUsageService.logUsage(
-          EMBEDDING_MODEL,
-          usage.tokens,
-          0,
-          AiCallerType.SYSTEM,
-          AiRequestType.EMBEDDING,
-          { orgId, userId, source: 'SYSTEM' },
-        ).catch((err) => logger.error(`RAG embedding usage logging failed: ${err}`));
+        aiUsageService
+          .logUsage(
+            EMBEDDING_MODEL,
+            usage.tokens,
+            0,
+            AiCallerType.SYSTEM,
+            AiRequestType.EMBEDDING,
+            { orgId, userId, source: 'SYSTEM' }
+          )
+          .catch((err) => logger.error(`RAG embedding usage logging failed: ${err}`));
 
         const embeddingStr = `[${embedding.join(',')}]`;
 
@@ -89,7 +96,13 @@ Use metadata to give context (page numbers, sheet names, Slack authors, etc.) wh
         const dataSourceIds = [...new Set(results.map((r) => r.data_source_id))];
 
         // Query extracted images for matched data sources
-        let extractedImageUrls: Array<{ dataSourceId: DbId<'DataSource'>; url: string; pageNumber: number | null; aiDescription: string | null }> = [];
+        let extractedImageUrls: Array<{
+          dataSourceId: DbId<'DataSource'>;
+          url: string;
+          pageNumber: number | null;
+          aiDescription: string | null;
+        }> = [];
+
         if (dataSourceIds.length > 0) {
           const images = await db.kysely
             .selectFrom('data.extracted_images')

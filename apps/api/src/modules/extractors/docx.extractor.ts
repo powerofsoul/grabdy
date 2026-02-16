@@ -99,17 +99,26 @@ export class DocxExtractor {
   async extract(storagePath: string): Promise<ExtractionResult> {
     const buffer = await this.storage.get(storagePath);
     const JSZip = require('jszip');
-    const zip = await JSZip.loadAsync(buffer);
 
-    // Try to extract per-page text from the document XML
-    let pages: PageText[] = [];
-    const docXml = zip.file('word/document.xml');
-    if (docXml) {
-      const xml: string = await docXml.async('string');
-      pages = extractPagesFromXml(xml);
+    // Try loading as a ZIP (DOCX format). Legacy .doc files are OLE2 binary, not ZIP.
+    let zip: InstanceType<typeof import('jszip')> | null = null;
+    try {
+      zip = await JSZip.loadAsync(buffer);
+    } catch {
+      // Not a ZIP file — likely a legacy .doc binary format
     }
 
-    // Fallback: if XML parsing yielded nothing, use mammoth for plain text
+    // Try to extract per-page text from the document XML (DOCX only)
+    let pages: PageText[] = [];
+    if (zip) {
+      const docXml = zip.file('word/document.xml');
+      if (docXml) {
+        const xml: string = await docXml.async('string');
+        pages = extractPagesFromXml(xml);
+      }
+    }
+
+    // Fallback: if XML parsing yielded nothing (or legacy .doc), use mammoth for plain text
     if (pages.length === 0) {
       const mammoth = require('mammoth');
       const result = await mammoth.extractRawText({ buffer });
@@ -121,12 +130,14 @@ export class DocxExtractor {
 
     const fullText = pages.map((p) => p.text).join('');
 
-    // Extract embedded images from the DOCX zip
+    // Extract embedded images from the DOCX zip (not available for legacy .doc)
     let images: ExtractedImage[] = [];
-    try {
-      images = await this.extractImages(zip);
-    } catch (err) {
-      this.logger.warn(`DOCX image extraction failed: ${err instanceof Error ? err.message : err}`);
+    if (zip) {
+      try {
+        images = await this.extractImages(zip);
+      } catch (err) {
+        this.logger.warn(`DOCX image extraction failed: ${err instanceof Error ? err.message : err}`);
+      }
     }
 
     return {

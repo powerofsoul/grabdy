@@ -9,6 +9,25 @@ const MAX_IMAGES_PER_DOCUMENT = 50;
 const MIN_IMAGE_BYTES = 5 * 1024; // 5 KB
 const MIN_IMAGE_DIMENSION = 32; // px
 
+// pdfjs-dist OPS codes for image rendering
+const OPS_PAINT_IMAGE_MASK = 83;
+const OPS_PAINT_IMAGE_MASK_GROUP = 84;
+const OPS_PAINT_IMAGE = 85;
+const OPS_PAINT_INLINE_IMAGE = 86;
+const OPS_PAINT_INLINE_IMAGE_GROUP = 87;
+const OPS_PAINT_IMAGE_REPEAT = 88;
+const OPS_PAINT_IMAGE_MASK_REPEAT = 89;
+
+const IMAGE_OPS = new Set([
+  OPS_PAINT_IMAGE_MASK,
+  OPS_PAINT_IMAGE_MASK_GROUP,
+  OPS_PAINT_IMAGE,
+  OPS_PAINT_INLINE_IMAGE,
+  OPS_PAINT_INLINE_IMAGE_GROUP,
+  OPS_PAINT_IMAGE_REPEAT,
+  OPS_PAINT_IMAGE_MASK_REPEAT,
+]);
+
 @Injectable()
 export class PdfExtractor {
   private readonly logger = new Logger(PdfExtractor.name);
@@ -70,6 +89,7 @@ export class PdfExtractor {
     const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
     const pdfDoc = await loadingTask.promise;
     const images: ExtractedImage[] = [];
+    const seenNames = new Set<string>();
 
     for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
       if (images.length >= MAX_IMAGES_PER_DOCUMENT) break;
@@ -80,27 +100,15 @@ export class PdfExtractor {
       for (let i = 0; i < operatorList.fnArray.length; i++) {
         if (images.length >= MAX_IMAGES_PER_DOCUMENT) break;
 
-        // OPS.paintImageXObject = 85
-        if (operatorList.fnArray[i] !== 85) continue;
+        const op = operatorList.fnArray[i];
+        if (!IMAGE_OPS.has(op)) continue;
 
-        const imgName = operatorList.argsArray[i][0];
         try {
-          const imgData = await page.objs.get(imgName);
-          if (!imgData || !imgData.data || !imgData.width || !imgData.height) continue;
+          const imgData = await this.getImageData(op, operatorList.argsArray[i], page, seenNames);
+          if (!imgData) continue;
 
-          const width = imgData.width;
-          const height = imgData.height;
-          if (width < MIN_IMAGE_DIMENSION || height < MIN_IMAGE_DIMENSION) continue;
-
-          // Convert raw pixel data to PNG using sharp
-          const channels = imgData.data.length / (width * height);
-          const pngBuffer: Buffer = await sharp(Buffer.from(imgData.data), {
-            raw: { width, height, channels: Math.round(channels) },
-          })
-            .png()
-            .toBuffer();
-
-          if (pngBuffer.length < MIN_IMAGE_BYTES) continue;
+          const pngBuffer = await this.toPng(imgData, sharp);
+          if (!pngBuffer) continue;
 
           images.push({
             buffer: pngBuffer,
@@ -117,5 +125,60 @@ export class PdfExtractor {
 
     pdfDoc.destroy();
     return images;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async getImageData(op: number, args: any[], page: any, seenNames: Set<string>) {
+    if (op === OPS_PAINT_IMAGE || op === OPS_PAINT_IMAGE_REPEAT) {
+      const imgName: string = args[0];
+      if (seenNames.has(imgName)) return null;
+      seenNames.add(imgName);
+      return page.objs.get(imgName);
+    }
+
+    if (op === OPS_PAINT_INLINE_IMAGE || op === OPS_PAINT_INLINE_IMAGE_GROUP) {
+      // Inline images have data directly in the args
+      return args[0];
+    }
+
+    if (op === OPS_PAINT_IMAGE_MASK || op === OPS_PAINT_IMAGE_MASK_REPEAT) {
+      return args[0];
+    }
+
+    if (op === OPS_PAINT_IMAGE_MASK_GROUP) {
+      // Group contains array of images; extract first valid one
+      const group: unknown[] = args[0];
+      if (!Array.isArray(group)) return null;
+      for (const entry of group) {
+        if (entry && typeof entry === 'object' && 'data' in entry && 'width' in entry && 'height' in entry) {
+          return entry;
+        }
+      }
+      return null;
+    }
+
+    return null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async toPng(imgData: any, sharp: any): Promise<Buffer | null> {
+    if (!imgData || !imgData.data || !imgData.width || !imgData.height) return null;
+
+    const width: number = imgData.width;
+    const height: number = imgData.height;
+    if (width < MIN_IMAGE_DIMENSION || height < MIN_IMAGE_DIMENSION) return null;
+
+    const channels = Math.round(imgData.data.length / (width * height));
+    if (channels < 1 || channels > 4) return null;
+
+    const pngBuffer: Buffer = await sharp(Buffer.from(imgData.data), {
+      raw: { width, height, channels },
+    })
+      .png()
+      .toBuffer();
+
+    if (pngBuffer.length < MIN_IMAGE_BYTES) return null;
+
+    return pngBuffer;
   }
 }
