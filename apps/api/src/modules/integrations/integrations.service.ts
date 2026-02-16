@@ -223,6 +223,18 @@ export class IntegrationsService {
   }
 
   async triggerSync(connectionId: DbId<'Connection'>, orgId: DbId<'Org'>, trigger: SyncTrigger) {
+    const activeSyncLog = await this.db.kysely
+      .selectFrom('integration.sync_logs')
+      .select('id')
+      .where('connection_id', '=', connectionId)
+      .where('status', 'in', ['PENDING', 'RUNNING'])
+      .executeTakeFirst();
+
+    if (activeSyncLog) {
+      this.logger.log(`Sync already active for connection ${connectionId}, skipping ${trigger} trigger`);
+      return null;
+    }
+
     const syncLogId = packId('SyncLog', extractOrgNumericId(orgId));
 
     const syncLog = await this.db.kysely

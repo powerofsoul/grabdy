@@ -125,7 +125,8 @@ export const integrationsContract = c.router(
       responses: {
         200: z.object({
           success: z.literal(true),
-          data: syncLogSchema,
+          alreadySyncing: z.boolean(),
+          data: syncLogSchema.nullable(),
         }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },

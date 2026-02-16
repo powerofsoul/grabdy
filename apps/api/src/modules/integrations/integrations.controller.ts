@@ -226,10 +226,22 @@ export class IntegrationsController {
         'MANUAL'
       );
 
+      if (!syncLog) {
+        return {
+          status: 200 as const,
+          body: {
+            success: true as const,
+            alreadySyncing: true,
+            data: null,
+          },
+        };
+      }
+
       return {
         status: 200 as const,
         body: {
           success: true as const,
+          alreadySyncing: false,
           data: {
             id: syncLog.id,
             connectionId: syncLog.connection_id,

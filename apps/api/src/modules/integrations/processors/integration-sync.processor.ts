@@ -23,7 +23,7 @@ export interface IntegrationSyncJobData {
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // Refresh 5 minutes before expiry
 
-@Processor(INTEGRATION_SYNC_QUEUE)
+@Processor(INTEGRATION_SYNC_QUEUE, { concurrency: 50 })
 export class IntegrationSyncProcessor extends WorkerHost {
   private readonly logger = new Logger(IntegrationSyncProcessor.name);
 

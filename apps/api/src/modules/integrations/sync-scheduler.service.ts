@@ -42,7 +42,10 @@ export class SyncSchedulerService {
 
     for (const conn of dueConnections) {
       try {
-        await this.integrationsService.triggerSync(conn.id, conn.org_id, 'SCHEDULED');
+        const result = await this.integrationsService.triggerSync(conn.id, conn.org_id, 'SCHEDULED');
+        if (!result) {
+          this.logger.log(`Skipped scheduled sync for connection ${conn.id} — already active`);
+        }
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Unknown error';
         this.logger.error(`Failed to queue sync for connection ${conn.id}: ${msg}`);

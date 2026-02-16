@@ -124,7 +124,6 @@ export function ConnectionDetailDrawer({
   const ct = theme.palette.text.primary;
   const { selectedOrgId } = useAuth();
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
-  const [syncing, setSyncing] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -134,6 +133,7 @@ export function ConnectionDetailDrawer({
   const [currentStatus, setCurrentStatus] = useState(status);
 
   const isDisconnected = currentStatus === 'DISCONNECTED';
+  const isSyncing = syncLogs.length > 0 && (syncLogs[0].status === 'PENDING' || syncLogs[0].status === 'RUNNING');
 
   const fetchLogs = useCallback(async () => {
     if (!selectedOrgId) return;
@@ -155,27 +155,28 @@ export function ConnectionDetailDrawer({
 
   // Auto-refresh logs while syncing
   useEffect(() => {
-    if (!syncing) return;
+    if (!isSyncing) return;
     const timer = window.setInterval(fetchLogs, 3000);
     return () => window.clearInterval(timer);
-  }, [syncing, fetchLogs]);
+  }, [isSyncing, fetchLogs]);
 
   const handleSync = async () => {
     if (!selectedOrgId) return;
-    setSyncing(true);
     try {
       const res = await api.integrations.triggerSync({
         params: { orgId: selectedOrgId, provider },
         body: {},
       });
       if (res.status === 200) {
-        toast.success('Sync started');
+        if (res.body.alreadySyncing) {
+          toast.info('Sync already in progress');
+        } else {
+          toast.success('Sync started');
+        }
         fetchLogs();
-        window.setTimeout(() => setSyncing(false), 5000);
       }
     } catch {
       toast.error('Failed to trigger sync');
-      setSyncing(false);
     }
   };
 
@@ -413,13 +414,13 @@ export function ConnectionDetailDrawer({
             <Box sx={{ display: 'flex', gap: 1.5 }}>
               <Button
                 variant="outlined"
-                startIcon={syncing ? <CircularProgress size={14} thickness={5} /> : <ArrowsClockwiseIcon size={15} weight="light" color="currentColor" />}
+                startIcon={isSyncing ? <CircularProgress size={14} thickness={5} /> : <ArrowsClockwiseIcon size={15} weight="light" color="currentColor" />}
                 onClick={handleSync}
-                disabled={syncing}
+                disabled={isSyncing}
                 size="small"
                 sx={{ flex: 1, borderRadius: 1.5 }}
               >
-                {syncing ? 'Syncing...' : 'Sync Now'}
+                {isSyncing ? 'Syncing...' : 'Sync Now'}
               </Button>
               {!confirmDisconnect ? (
                 <Button
