@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { SUPPORTED_EXTENSIONS, SUPPORTED_LABELS, SUPPORTED_MIMES } from '@grabdy/contracts';
+import { UPLOADS_EXTENSIONS, UPLOADS_LABELS, UPLOADS_MIMES } from '@grabdy/contracts';
 import { Box, Typography } from '@mui/material';
 import { UploadSimpleIcon } from '@phosphor-icons/react';
 
@@ -19,7 +19,7 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
       if (disabled) return;
 
       const file = e.dataTransfer.files[0];
-      if (file && SUPPORTED_MIMES.has(file.type)) {
+      if (file && UPLOADS_MIMES.has(file.type)) {
         onFileSelect(file);
       }
     },
@@ -69,7 +69,7 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
     >
       <input
         type="file"
-        accept={SUPPORTED_EXTENSIONS}
+        accept={UPLOADS_EXTENSIONS}
         onChange={handleFileInput}
         disabled={disabled}
         style={{ display: 'none' }}
@@ -81,7 +81,7 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
         Drop a file here or click to browse
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-        {SUPPORTED_LABELS}
+        {UPLOADS_LABELS}
       </Typography>
     </Box>
   );

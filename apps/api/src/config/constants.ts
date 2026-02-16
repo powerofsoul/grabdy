@@ -1,4 +1,4 @@
-import type { SupportedMime } from '@grabdy/contracts';
+import type { UploadsMime } from '@grabdy/contracts';
 
 // ── Auth ────────────────────────────────────────────────────────────
 export const BCRYPT_SALT_ROUNDS = 10;
@@ -33,9 +33,10 @@ export const SUMMARY_MAX_LENGTH = 500;
 // ── File Upload ─────────────────────────────────────────────────────
 export const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB — multer ceiling
 
-export const FILE_SIZE_LIMITS: Partial<Record<SupportedMime, number>> = {
+export const FILE_SIZE_LIMITS: Partial<Record<UploadsMime, number>> = {
   'application/pdf': 200 * 1024 * 1024,
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 200 * 1024 * 1024,
+  'application/msword': 200 * 1024 * 1024,
   'text/csv': 50 * 1024 * 1024,
   'text/plain': 50 * 1024 * 1024,
   'application/json': 50 * 1024 * 1024,

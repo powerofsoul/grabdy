@@ -3,7 +3,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
-import { MIME_TO_DATA_SOURCE_TYPE } from '@grabdy/contracts';
+import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
 import { Queue } from 'bullmq';
 
 import { getMaxFileSizeForMime } from '../../config/constants';
@@ -29,11 +29,11 @@ export class DataSourcesService {
     file: Express.Multer.File,
     options: { name?: string; collectionId?: DbId<'Collection'> }
   ) {
-    const mimeMap: Partial<Record<string, DataSourceType>> = MIME_TO_DATA_SOURCE_TYPE;
-    const type = mimeMap[file.mimetype];
-    if (!type) {
+    if (!isUploadsMime(file.mimetype)) {
       throw new Error(`Unsupported file type: ${file.mimetype}`);
     }
+    const mimeType = file.mimetype;
+    const type = UPLOADS_MIME_TO_TYPE[mimeType];
 
     const maxSize = getMaxFileSizeForMime(file.mimetype);
     if (file.size > maxSize) {
@@ -74,7 +74,7 @@ export class DataSourcesService {
       dataSourceId: dataSource.id,
       orgId,
       storagePath: storageKey,
-      mimeType: file.mimetype,
+      mimeType,
       collectionId,
     };
 
@@ -258,6 +258,9 @@ export class DataSourcesService {
       .execute();
 
     // Re-queue
+    if (!isUploadsMime(dataSource.mime_type)) {
+      throw new Error(`Unsupported mime type in database: ${dataSource.mime_type}`);
+    }
     const jobData: DataSourceJobData = {
       dataSourceId: dataSource.id,
       orgId,

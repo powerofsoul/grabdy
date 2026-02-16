@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import type { DataSourceType } from '../enums/data-source.js';
+import { dataSourceTypeEnum } from '../enums/data-source.js';
+
 // Upload types — location within a file
 const pdfChunkMetaSchema = z.object({
   type: z.literal('PDF'),
@@ -43,6 +46,14 @@ export const chunkMetaSchema = z.discriminatedUnion('type', [
 
 export type ChunkMeta = z.infer<typeof chunkMetaSchema>;
 
-/** Enum of all chunk metadata type discriminants. */
-export const chunkMetaTypeEnum = z.enum(['PDF', 'DOCX', 'XLSX', 'CSV', 'TXT', 'JSON', 'IMAGE', 'SLACK']);
+/** Enum of all chunk metadata type discriminants — derived from DataSourceType. */
+export const chunkMetaTypeEnum = dataSourceTypeEnum;
 export type ChunkMetaType = z.infer<typeof chunkMetaTypeEnum>;
+
+// Compile-time: ChunkMeta['type'] must exactly match DataSourceType
+type _AssertChunkMetaExhaustive =
+  [DataSourceType] extends [ChunkMeta['type']]
+    ? [ChunkMeta['type']] extends [DataSourceType] ? true : never
+    : never;
+const _chunkMetaCheck: _AssertChunkMetaExhaustive = true;
+void _chunkMetaCheck;

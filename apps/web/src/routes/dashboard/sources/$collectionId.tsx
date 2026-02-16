@@ -2,7 +2,7 @@ import type { ComponentType } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { dbIdSchema } from '@grabdy/common';
-import type { DataSourceStatus } from '@grabdy/contracts';
+import type { DataSourceStatus, UploadsExt } from '@grabdy/contracts';
 import {
   Box,
   Button,
@@ -23,7 +23,6 @@ import {
   FileImageIcon,
   FilePdfIcon,
   FileTextIcon,
-  FileTsIcon,
   FileXlsIcon,
   PencilSimpleIcon,
   TrashIcon,
@@ -78,9 +77,7 @@ function relativeDate(iso: string): string {
   return formatDistanceToNow(new Date(iso), { addSuffix: true });
 }
 
-type FileExt = 'pdf' | 'csv' | 'docx' | 'doc' | 'xlsx' | 'xls' | 'txt' | 'json' | 'ts' | 'tsx' | 'png' | 'jpg' | 'jpeg' | 'webp' | 'gif';
-
-const ICON_BY_EXT: Record<FileExt, ComponentType<IconProps>> = {
+const ICON_BY_EXT: Record<UploadsExt, ComponentType<IconProps>> = {
   pdf: FilePdfIcon,
   csv: FileCsvIcon,
   docx: FileDocIcon,
@@ -89,16 +86,13 @@ const ICON_BY_EXT: Record<FileExt, ComponentType<IconProps>> = {
   xls: FileXlsIcon,
   txt: FileTextIcon,
   json: FileTextIcon,
-  ts: FileTsIcon,
-  tsx: FileTsIcon,
   png: FileImageIcon,
   jpg: FileImageIcon,
-  jpeg: FileImageIcon,
   webp: FileImageIcon,
   gif: FileImageIcon,
 };
 
-function isFileExt(ext: string): ext is FileExt {
+function isFileExt(ext: string): ext is UploadsExt {
   return ext in ICON_BY_EXT;
 }
 

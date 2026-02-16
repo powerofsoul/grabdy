@@ -1,8 +1,8 @@
-import type { ChatSource, IntegrationProvider } from '@grabdy/contracts';
+import type { ChatSource, IntegrationProvider, UploadsExt } from '@grabdy/contracts';
 import { FileTextIcon } from '@phosphor-icons/react';
 
 import { FILE_EXTS, ICON_BY_EXT, INTEGRATION_SOURCE_TYPES, SOURCE_NOUN } from './constants';
-import type { FileExt, IconComponent, SourceGroup, SourceGroupType } from './types';
+import type { IconComponent, SourceGroup, SourceGroupType } from './types';
 
 import { getProviderLabel, ProviderIcon } from '@/components/integrations/ProviderIcon';
 
@@ -23,7 +23,7 @@ export function isIntegrationProvider(type: string): type is IntegrationProvider
   return INTEGRATION_SOURCE_TYPES.has(type);
 }
 
-export function isFileExt(ext: string): ext is FileExt {
+export function isFileExt(ext: string): ext is UploadsExt {
   return FILE_EXTS.has(ext);
 }
 

@@ -2,7 +2,7 @@ import { dbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
-import { orgRoleEnum } from '../enums.js';
+import { orgRoleEnum } from '../enums/index.js';
 
 const c = initContract();
 

@@ -2,6 +2,7 @@ import { dbIdSchema, nonDbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
+import type { DataSourceType } from '../enums/data-source.js';
 import { canvasEdgeSchema, canvasStateSchema, cardSchema } from '../schemas/canvas.js';
 import { chunkMetaSchema } from '../schemas/chunk-meta.js';
 
@@ -27,8 +28,19 @@ const chatSourceBase = {
 export const chatSourceSchema = z.discriminatedUnion('type', [
   z.object({ ...chatSourceBase, type: z.literal('PDF'), pages: z.array(z.number()) }),
   z.object({ ...chatSourceBase, type: z.literal('DOCX'), pages: z.array(z.number()) }),
-  z.object({ ...chatSourceBase, type: z.literal('XLSX'), sheet: z.string(), rows: z.array(z.number()), columns: z.array(z.string()) }),
-  z.object({ ...chatSourceBase, type: z.literal('CSV'), rows: z.array(z.number()), columns: z.array(z.string()) }),
+  z.object({
+    ...chatSourceBase,
+    type: z.literal('XLSX'),
+    sheet: z.string(),
+    rows: z.array(z.number()),
+    columns: z.array(z.string()),
+  }),
+  z.object({
+    ...chatSourceBase,
+    type: z.literal('CSV'),
+    rows: z.array(z.number()),
+    columns: z.array(z.string()),
+  }),
   z.object({ ...chatSourceBase, type: z.literal('TXT') }),
   z.object({ ...chatSourceBase, type: z.literal('JSON') }),
   z.object({ ...chatSourceBase, type: z.literal('IMAGE') }),
@@ -36,6 +48,15 @@ export const chatSourceSchema = z.discriminatedUnion('type', [
 ]);
 
 export type ChatSource = z.infer<typeof chatSourceSchema>;
+
+// Compile-time: ChatSource['type'] must exactly match DataSourceType
+type _AssertChatSourceExhaustive = [DataSourceType] extends [ChatSource['type']]
+  ? [ChatSource['type']] extends [DataSourceType]
+    ? true
+    : never
+  : never;
+const _chatSourceCheck: _AssertChatSourceExhaustive = true;
+void _chatSourceCheck;
 
 const chatMessageSchema = z.object({
   id: z.string(),

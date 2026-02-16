@@ -7,7 +7,7 @@ import {
   integrationProviderEnum,
   syncStatusEnum,
   syncTriggerEnum,
-} from '../enums.js';
+} from '../enums/index.js';
 
 const c = initContract();
 

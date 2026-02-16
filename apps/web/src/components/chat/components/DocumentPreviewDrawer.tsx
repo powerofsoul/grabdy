@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
+import { UPLOADS_FILE_TYPES } from '@grabdy/contracts';
 import {
   Box,
   CircularProgress,
@@ -18,24 +19,10 @@ import { useAuth } from '@/context/AuthContext';
 import type { DrawerProps } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
 
-const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-const XLS_MIME = 'application/vnd.ms-excel';
-
-/** Mime types that we can preview in-browser */
-const PREVIEWABLE_MIMES = new Set([
-  'application/pdf',
-  DOCX_MIME,
-  XLSX_MIME,
-  XLS_MIME,
-  'text/csv',
-  'text/plain',
-  'application/json',
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-  'image/gif',
-]);
+/** Mime types that we can preview in-browser — derived from contracts */
+const PREVIEWABLE_MIMES: ReadonlySet<string> = new Set(
+  UPLOADS_FILE_TYPES.map((f) => f.mime),
+);
 
 export function canPreview(mimeType: string): boolean {
   return PREVIEWABLE_MIMES.has(mimeType);
@@ -101,8 +88,8 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
           } catch { /* fall through */ }
         }
 
-        // DOCX
-        if (mime === DOCX_MIME) {
+        // DOCX / DOC
+        if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || mime === 'application/msword') {
           try {
             const blobRes = await fetch(url, { credentials: 'include' });
             if (!cancelled && blobRes.ok) {
@@ -113,7 +100,7 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
         }
 
         // XLSX
-        if (mime === XLSX_MIME || mime === XLS_MIME) {
+        if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || mime === 'application/vnd.ms-excel') {
           try {
             const blobRes = await fetch(url, { credentials: 'include' });
             if (!cancelled && blobRes.ok) {
@@ -173,8 +160,8 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
     );
   }
 
-  // DOCX
-  if (data.mimeType === DOCX_MIME && docxBlob) {
+  // DOCX / DOC
+  if ((data.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || data.mimeType === 'application/msword') && docxBlob) {
     return <DocxViewer blob={docxBlob} />;
   }
 
@@ -184,7 +171,7 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
   }
 
   // XLSX
-  if ((data.mimeType === XLSX_MIME || data.mimeType === XLS_MIME) && xlsxSheets) {
+  if ((data.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || data.mimeType === 'application/vnd.ms-excel') && xlsxSheets) {
     return <XlsxViewer sheets={xlsxSheets} />;
   }
 

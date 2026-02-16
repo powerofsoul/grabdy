@@ -9,7 +9,8 @@ import {
   AiRequestType,
   type ChunkMeta,
   EMBEDDING_MODEL,
-  MIME_TO_DATA_SOURCE_TYPE,
+  UPLOADS_MIME_TO_TYPE,
+  type UploadsMime,
 } from '@grabdy/contracts';
 import { embedMany } from 'ai';
 import { Job } from 'bullmq';
@@ -49,7 +50,7 @@ export interface DataSourceJobData {
   dataSourceId: DbId<'DataSource'>;
   orgId: DbId<'Org'>;
   storagePath: string;
-  mimeType: string;
+  mimeType: UploadsMime;
   collectionId: DbId<'Collection'> | null;
   /** Pre-extracted text content (used by integration sources to skip file extraction). */
   content?: string;
@@ -81,7 +82,11 @@ function chunkText(text: string, metadata: ChunkMeta, sourceUrl: string): ChunkW
   return chunks;
 }
 
-function chunkPagesText(pages: PageText[], metaType: 'PDF' | 'DOCX', sourceUrl: string): ChunkWithMeta[] {
+function chunkPagesText(
+  pages: PageText[],
+  metaType: 'PDF' | 'DOCX',
+  sourceUrl: string
+): ChunkWithMeta[] {
   // Build a flat string with page boundary tracking
   const boundaries: Array<{ offset: number; page: number }> = [];
   let fullText = '';
@@ -193,13 +198,7 @@ export class DataSourceProcessor extends WorkerHost {
   }
 
   async process(job: Job<DataSourceJobData>): Promise<void> {
-    const {
-      dataSourceId,
-      orgId,
-      storagePath,
-      mimeType,
-      collectionId,
-    } = job.data;
+    const { dataSourceId, orgId, storagePath, mimeType, collectionId } = job.data;
     this.logger.log(`Processing data source ${dataSourceId}`);
 
     const defaultSourceUrl = job.data.sourceUrl ?? previewUrl(dataSourceId, orgId);
@@ -221,7 +220,11 @@ export class DataSourceProcessor extends WorkerHost {
         // Structured messages: one chunk per message with per-message metadata
         const msgs = job.data.messages.filter((m) => m.content.trim().length > 0);
         fullText = msgs.map((m) => m.content).join('\n');
-        chunks = msgs.map((m) => ({ content: m.content, metadata: m.metadata, sourceUrl: m.sourceUrl }));
+        chunks = msgs.map((m) => ({
+          content: m.content,
+          metadata: m.metadata,
+          sourceUrl: m.sourceUrl,
+        }));
       } else if (job.data.content) {
         fullText = job.data.content;
         chunks = chunkText(fullText, { type: 'TXT' }, defaultSourceUrl);
@@ -237,7 +240,11 @@ export class DataSourceProcessor extends WorkerHost {
         pageCount = result.type === 'pages' ? result.pages.length : null;
 
         // Store extracted images from documents (PDF, DOCX)
-        if ((result.type === 'pages' || result.type === 'text') && result.images && result.images.length > 0) {
+        if (
+          (result.type === 'pages' || result.type === 'text') &&
+          result.images &&
+          result.images.length > 0
+        ) {
           await this.storeExtractedImages(result.images, dataSourceId, orgId);
         }
       }
@@ -316,8 +323,12 @@ export class DataSourceProcessor extends WorkerHost {
     }
   }
 
-  private chunksFromResult(result: ExtractionResult, sourceUrl: string, mimeType: string): ChunkWithMeta[] {
-    const dsType = MIME_TO_DATA_SOURCE_TYPE[mimeType as keyof typeof MIME_TO_DATA_SOURCE_TYPE];
+  private chunksFromResult(
+    result: ExtractionResult,
+    sourceUrl: string,
+    mimeType: UploadsMime
+  ): ChunkWithMeta[] {
+    const dsType = UPLOADS_MIME_TO_TYPE[mimeType];
 
     switch (result.type) {
       case 'pages':
@@ -328,9 +339,11 @@ export class DataSourceProcessor extends WorkerHost {
         return chunkCsvRows(result.rows, result.columns, sourceUrl);
       case 'text': {
         const meta: ChunkMeta =
-          dsType === 'JSON' ? { type: 'JSON' } :
-          dsType === 'IMAGE' ? { type: 'IMAGE' } :
-          { type: 'TXT' };
+          dsType === 'JSON'
+            ? { type: 'JSON' }
+            : dsType === 'IMAGE'
+              ? { type: 'IMAGE' }
+              : { type: 'TXT' };
         return chunkText(result.text, meta, sourceUrl);
       }
     }
@@ -341,12 +354,10 @@ export class DataSourceProcessor extends WorkerHost {
     dataSourceId: DbId<'DataSource'>,
     orgId: DbId<'Org'>
   ): Promise<void> {
-    const orgNum = extractOrgNumericId(orgId).toString();
-
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
       const ext = img.mimeType.split('/')[1] ?? 'png';
-      const storagePath = `${orgNum}/extracted/${dataSourceId}/${i}.${ext}`;
+      const storagePath = `${orgId}/extracted/${dataSourceId}/${i}.${ext}`;
 
       await this.storage.put(storagePath, img.buffer, img.mimeType);
 
@@ -366,28 +377,30 @@ export class DataSourceProcessor extends WorkerHost {
     this.logger.log(`Stored ${images.length} extracted images for ${dataSourceId}`);
   }
 
-  private async extractContent(storagePath: string, mimeType: string): Promise<ExtractionResult> {
-    if (mimeType === 'application/pdf') {
-      return this.pdfExtractor.extract(storagePath);
+  private async extractContent(storagePath: string, mimeType: UploadsMime): Promise<ExtractionResult> {
+    switch (mimeType) {
+      case 'application/pdf':
+        return this.pdfExtractor.extract(storagePath);
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      case 'application/msword':
+        return this.docxExtractor.extract(storagePath);
+      case 'text/csv':
+        return this.textExtractor.extractCsv(storagePath);
+      case 'text/plain':
+      case 'application/json':
+        return this.textExtractor.extract(storagePath);
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+      case 'application/vnd.ms-excel':
+        return this.xlsxExtractor.extract(storagePath);
+      case 'image/png':
+      case 'image/jpeg':
+      case 'image/webp':
+      case 'image/gif':
+        return this.imageExtractor.extract(storagePath);
+      default: {
+        const _exhaustive: never = mimeType;
+        throw new Error(`Unsupported mime type: ${_exhaustive}`);
+      }
     }
-    if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      return this.docxExtractor.extract(storagePath);
-    }
-    if (mimeType === 'text/csv') {
-      return this.textExtractor.extractCsv(storagePath);
-    }
-    if (mimeType === 'text/plain' || mimeType === 'application/json') {
-      return this.textExtractor.extract(storagePath);
-    }
-    if (
-      mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-      mimeType === 'application/vnd.ms-excel'
-    ) {
-      return this.xlsxExtractor.extract(storagePath);
-    }
-    if (mimeType.startsWith('image/')) {
-      return this.imageExtractor.extract(storagePath);
-    }
-    throw new Error(`Unsupported mime type: ${mimeType}`);
   }
 }

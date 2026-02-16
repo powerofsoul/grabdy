@@ -1,16 +1,15 @@
-import type { IntegrationProvider } from '@grabdy/contracts';
-import { IntegrationProvider as IntegrationProviderEnum } from '@grabdy/contracts';
+import type { IntegrationProvider, UploadsExt } from '@grabdy/contracts';
+import { IntegrationProvider as IntegrationProviderEnum, UPLOADS_FILE_TYPES } from '@grabdy/contracts';
 import {
   FileCsvIcon,
   FileDocIcon,
   FilePdfIcon,
   FileTextIcon,
-  FileTsIcon,
   FileXlsIcon,
   ImageIcon,
 } from '@phosphor-icons/react';
 
-import type { FileExt, IconComponent } from './types';
+import type { IconComponent } from './types';
 
 /** Noun used when grouping sources by provider */
 export const SOURCE_NOUN: Record<IntegrationProvider, string> = {
@@ -22,12 +21,11 @@ export const INTEGRATION_SOURCE_TYPES: ReadonlySet<string> = new Set(
   Object.values(IntegrationProviderEnum),
 );
 
-export const FILE_EXTS = new Set<string>([
-  'pdf', 'csv', 'json', 'txt', 'docx', 'doc',
-  'xlsx', 'xls', 'ts', 'tsx', 'png', 'jpg', 'jpeg', 'webp', 'gif',
-]);
+export const FILE_EXTS: ReadonlySet<string> = new Set(
+  UPLOADS_FILE_TYPES.map((f) => f.ext),
+);
 
-export const ICON_BY_EXT: Record<FileExt, IconComponent> = {
+export const ICON_BY_EXT: Record<UploadsExt, IconComponent> = {
   pdf: FilePdfIcon,
   csv: FileCsvIcon,
   json: FileTextIcon,
@@ -36,11 +34,8 @@ export const ICON_BY_EXT: Record<FileExt, IconComponent> = {
   doc: FileDocIcon,
   xlsx: FileXlsIcon,
   xls: FileXlsIcon,
-  ts: FileTsIcon,
-  tsx: FileTsIcon,
   png: ImageIcon,
   jpg: ImageIcon,
-  jpeg: ImageIcon,
   webp: ImageIcon,
   gif: ImageIcon,
 };
