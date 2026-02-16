@@ -11,8 +11,14 @@ export interface SlackConnectionConfig {
   [key: string]: unknown;
 }
 
+export interface LinearConnectionConfig {
+  workspaceSlug?: string;
+  [key: string]: unknown;
+}
+
 export type ConnectionConfigMap = {
   SLACK: SlackConnectionConfig;
+  LINEAR: LinearConnectionConfig;
 };
 
 export type ConnectionConfig = ConnectionConfigMap[IntegrationProvider];

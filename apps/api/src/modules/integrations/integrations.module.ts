@@ -15,6 +15,7 @@ import { IntegrationSyncProcessor } from './processors/integration-sync.processo
 
 import { SlackBotProcessor } from './processors/slack-bot.processor';
 import { ProviderRegistry } from './providers/provider-registry';
+import { LinearConnector } from './providers/linear/linear.connector';
 import { SlackConnector } from './providers/slack/slack.connector';
 import { SlackBotService } from './providers/slack/slack-bot.service';
 import { INTEGRATIONS_REDIS } from './integrations.constants';
@@ -47,6 +48,7 @@ import { TokenEncryptionService } from './token-encryption.service';
     ProviderRegistry,
     SlackBotService,
     SlackConnector,
+    LinearConnector,
     SyncSchedulerService,
     IntegrationSyncProcessor,
     SlackBotProcessor,

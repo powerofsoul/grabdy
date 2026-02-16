@@ -31,7 +31,7 @@ export const env = {
     return 'development';
   })(),
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
-  apiUrl: process.env.API_URL || 'http://localhost:4000',
+  apiUrl: required('API_URL'),
 
   openaiApiKey: required('OPENAI_API_KEY'),
   jwtSecret: required('JWT_SECRET'),
@@ -68,6 +68,10 @@ export const env = {
 
   // Waitlist Slack webhook
   slackWebhookUrl: requiredInProd('SLACK_WEBHOOK_URL', ''),
+
+  // Linear
+  linearClientId: requiredInProd('LINEAR_CLIENT_ID', ''),
+  linearClientSecret: requiredInProd('LINEAR_CLIENT_SECRET', ''),
 } as const;
 
 type EnvKey = keyof typeof env;

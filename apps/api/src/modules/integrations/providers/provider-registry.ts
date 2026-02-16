@@ -4,15 +4,17 @@ import type { IntegrationProvider } from '@grabdy/contracts';
 
 import type { IntegrationConnector } from '../connector.interface';
 
+import { LinearConnector } from './linear/linear.connector';
 import { SlackConnector } from './slack/slack.connector';
 
 @Injectable()
 export class ProviderRegistry {
   private readonly connectors: Map<string, IntegrationConnector>;
 
-  constructor(slackConnector: SlackConnector) {
+  constructor(slackConnector: SlackConnector, linearConnector: LinearConnector) {
     this.connectors = new Map<string, IntegrationConnector>([
       ['SLACK', slackConnector],
+      ['LINEAR', linearConnector],
     ]);
   }
 

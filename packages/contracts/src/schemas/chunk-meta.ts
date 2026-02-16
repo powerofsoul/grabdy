@@ -38,10 +38,18 @@ const slackChunkMetaSchema = z.object({
   slackMessageTs: z.string(),
   slackAuthor: z.string(),
 });
+
+const linearChunkMetaSchema = z.object({
+  type: z.literal('LINEAR'),
+  linearIssueId: z.string(),
+  linearCommentId: z.string().nullable(),
+  linearTimestamp: z.string().nullable().optional(),
+});
+
 export const chunkMetaSchema = z.discriminatedUnion('type', [
   pdfChunkMetaSchema, docxChunkMetaSchema, xlsxChunkMetaSchema,
   csvChunkMetaSchema, txtChunkMetaSchema, jsonChunkMetaSchema, imageChunkMetaSchema,
-  slackChunkMetaSchema,
+  slackChunkMetaSchema, linearChunkMetaSchema,
 ]);
 
 export type ChunkMeta = z.infer<typeof chunkMetaSchema>;

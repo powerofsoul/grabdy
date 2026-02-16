@@ -29,3 +29,7 @@ config:
     secure: AAABAPK5lHwurU9+dff+gu5ZdYB91ZZtTHS4e/vHuB71ryeDxhBpn6TgvkvAKOnZK/Dd9sLDNiSDC/QsBCmeaw==
   grabdy:slackSigningSecret:
     secure: AAABAHiBymrGOnexOC8emkoD9nOnFUUAGt9cm66VUNG2nDIgkO9QLUtAkHzo7Alm+g0U2RxB5f0iNogV4SEbIA==
+  grabdy:linearClientId:
+    secure: AAABAKhk2bmDnqrxQvTTYmQD1/VL6mjc6Kbbtza6GhKwK3lwKGvA1teCiVHP2aaDKDnf8s1bONYKqmxzS2/uYQ==
+  grabdy:linearSecretId:
+    secure: AAABAOKw2YLhK7Cw4dTNj8VYshtVdk5/cUUidQwDonAhvJwaE6kAwB1Y9LkxD97lDi2RuQMZ8HEcXSuDn4bE9w==

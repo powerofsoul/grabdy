@@ -20,6 +20,9 @@ export const Env = {
   slackClientSecret: config.requireSecret('slackClientSecret'),
   slackSigningSecret: config.requireSecret('slackSigningSecret'),
 
+  linearClientId: config.require('linearClientId'),
+  linearClientSecret: config.requireSecret('linearClientSecret'),
+
   smtpHost: config.require('smtpHost'),
   smtpPort: config.require('smtpPort'),
   smtpUser: config.require('smtpUser'),

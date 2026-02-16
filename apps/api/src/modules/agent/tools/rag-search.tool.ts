@@ -40,7 +40,7 @@ export class RagSearchTool {
 - content: the matched text
 - dataSourceName: human-readable source name
 - sourceUrl: direct link to the source (use this to create clickable links when citing)
-- metadata: depends on type — PDF/DOCX: { type, pages[] }, XLSX: { type, sheet?, row? }, CSV: { type, row? }, IMAGE: { type }, SLACK: { type, slackChannelId, slackMessageTs, slackAuthor }
+- metadata: depends on type — PDF/DOCX: { type, pages[] }, XLSX: { type, sheet?, row? }, CSV: { type, row? }, IMAGE: { type }, SLACK: { type, slackChannelId, slackMessageTs, slackAuthor }, LINEAR: { type, linearIssueId, linearCommentId, linearTimestamp }
 - extractedImages: image URLs from documents (if any)
 
 Use metadata to give context (page numbers, sheet names, Slack authors, etc.) when citing sources.`,

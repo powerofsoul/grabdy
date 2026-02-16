@@ -21,7 +21,8 @@
 const EXCEPTIONS = new Set([]);
 
 /** Names containing these substrings before Id/Ids are third-party identifiers, not our packed UUIDs */
-const EXTERNAL_PATTERNS = ['externalId', 'ExternalId', 'externalIds', 'ExternalIds', 'slackChannelId', 'SlackChannelId', 'slackBotUserId', 'SlackBotUserId'];
+const EXTERNAL_PATTERNS = ['externalId', 'ExternalId', 'externalIds', 'ExternalIds', 'slackChannelId', 'SlackChannelId', 'slackBotUserId', 'SlackBotUserId', 'linearIssueId', 'LinearIssueId', 'linearCommentId', 'LinearCommentId', 'linearClientId', 'LinearClientId'];
+
 
 
 /**

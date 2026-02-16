@@ -1,6 +1,6 @@
 import type { IntegrationProvider } from '@grabdy/contracts';
 import { formatDistanceToNow } from 'date-fns';
-import { alpha, Box, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Button, Typography, useTheme } from '@mui/material';
 import { CaretRightIcon, CheckIcon, PauseIcon, PlugsConnectedIcon, WarningCircleIcon } from '@phosphor-icons/react';
 
 import type { ConnectionSummary } from './IntegrationGrid';
@@ -190,23 +190,19 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
       {/* Connect action */}
       <Box sx={{ mt: 'auto', pt: 2 }}>
         {onConnect ? (
-          <Typography
-            component="span"
-            role="button"
-            tabIndex={0}
+          <Button
+            variant="outlined"
+            size="small"
             onClick={() => onConnect(provider)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onConnect(provider); }}
-            variant="caption"
             sx={{
-              fontSize: 12,
+              textTransform: 'none',
               fontWeight: 600,
-              color: 'primary.main',
-              cursor: 'pointer',
-              '&:hover': { textDecoration: 'underline' },
+              fontSize: 13,
+              px: 2,
             }}
           >
             Connect
-          </Typography>
+          </Button>
         ) : (
           <Typography variant="caption" sx={{ fontSize: 12, fontStyle: 'italic', color: 'text.disabled' }}>
             Coming soon

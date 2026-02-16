@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { IntegrationProvider } from '@grabdy/contracts';
-import type { ProviderKey } from '@/components/integrations/ProviderIcon';
-import { Box,CircularProgress } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import { PlugIcon } from '@phosphor-icons/react';
 import { createFileRoute } from '@tanstack/react-router';
 import { toast } from 'sonner';
 
 import { ConnectionDetailDrawer, IntegrationGrid } from '@/components/integrations';
 import type { ConnectionSummary } from '@/components/integrations/IntegrationGrid';
+import type { ProviderKey } from '@/components/integrations/ProviderIcon';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
@@ -17,6 +17,14 @@ import { api } from '@/lib/api';
 export const Route = createFileRoute('/dashboard/integrations/')({
   component: IntegrationsPage,
 });
+
+const ALLOWED_PROVIDERS: readonly string[] = ['SLACK', 'LINEAR'] satisfies readonly IntegrationProvider[];
+
+function isAvailableProvider(
+  provider: ProviderKey
+): provider is IntegrationProvider {
+  return ALLOWED_PROVIDERS.includes(provider);
+}
 
 function IntegrationsPage() {
   const { selectedOrgId } = useAuth();
@@ -45,7 +53,7 @@ function IntegrationsPage() {
   }, [fetchConnections]);
 
   const handleConnect = async (provider: ProviderKey) => {
-    if (!selectedOrgId || provider !== 'SLACK') return;
+    if (!selectedOrgId || !isAvailableProvider(provider)) return;
     try {
       const res = await api.integrations.connect({
         params: { orgId: selectedOrgId, provider },
@@ -73,7 +81,7 @@ function IntegrationsPage() {
           onConnect={handleConnect}
         />
       ),
-      { title: 'Connection Details', mode: 'drawer', width: 480 },
+      { title: 'Connection Details', mode: 'drawer', width: 480 }
     );
   };
 

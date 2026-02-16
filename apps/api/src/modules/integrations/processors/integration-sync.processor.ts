@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
-import type { SyncTrigger } from '@grabdy/contracts';
+import type { IntegrationProvider, SyncTrigger } from '@grabdy/contracts';
 import { Job, Queue } from 'bullmq';
 
 import { DbService } from '../../../db/db.module';
@@ -154,7 +154,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
     item: SyncedItem,
     connectionId: DbId<'Connection'>,
     orgId: DbId<'Org'>,
-    provider: string
+    provider: IntegrationProvider
   ): Promise<void> {
     // Check if DataSource already exists for this external ID
     const existing = await this.db.kysely
@@ -207,7 +207,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
           mime_type: 'text/plain',
           file_size: Buffer.byteLength(item.content, 'utf-8'),
           storage_path: '',
-          type: 'SLACK',
+          type: provider,
           status: 'UPLOADED',
           connection_id: connectionId,
           external_id: item.externalId,

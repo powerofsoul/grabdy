@@ -81,6 +81,7 @@ const logGroup = new aws.cloudwatch.LogGroup('grabdy-api-logs', {
 const environment = [
   { name: 'NODE_ENV', value: 'production' },
   { name: 'API_PORT', value: '4000' },
+  { name: 'API_URL', value: pulumi.interpolate`https://${Env.apiDomain}` },
   { name: 'DATABASE_URL', value: databaseUrl },
   { name: 'REDIS_HOST', value: cacheHost },
   { name: 'REDIS_PORT', value: cachePort },
@@ -103,6 +104,9 @@ const environment = [
   { name: 'SLACK_CLIENT_ID', value: Env.slackClientId },
   { name: 'SLACK_CLIENT_SECRET', value: Env.slackClientSecret },
   { name: 'SLACK_SIGNING_SECRET', value: Env.slackSigningSecret },
+
+  { name: 'LINEAR_CLIENT_ID', value: Env.linearClientId },
+  { name: 'LINEAR_CLIENT_SECRET', value: Env.linearClientSecret },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
 // Task definition

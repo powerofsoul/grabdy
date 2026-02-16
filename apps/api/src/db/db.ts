@@ -30,7 +30,8 @@ type ChunkMeta =
   | { type: 'TXT' }
   | { type: 'JSON' }
   | { type: 'IMAGE' }
-  | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthor: string };
+  | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthor: string }
+  | { type: 'LINEAR'; linearIssueId: string; linearCommentId: string | null };
 
 // ---------------------------------------------------------------------------
 // Database interface — maps schema.table names to their column types
@@ -101,7 +102,7 @@ export interface DB {
     mime_type: string;
     file_size: number;
     storage_path: string;
-    type: 'PDF' | 'CSV' | 'DOCX' | 'TXT' | 'JSON' | 'XLSX' | 'IMAGE' | 'SLACK';
+    type: 'PDF' | 'CSV' | 'DOCX' | 'TXT' | 'JSON' | 'XLSX' | 'IMAGE' | 'SLACK' | 'LINEAR';
     status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED'>;
     summary: string | null;
     page_count: number | null;
@@ -156,7 +157,7 @@ export interface DB {
   'integration.connections': {
     id: Generated<DbId<'Connection'>>;
     org_id: DbId<'Org'>;
-    provider: 'SLACK';
+    provider: 'SLACK' | 'LINEAR';
     status: Generated<'ACTIVE' | 'PAUSED' | 'ERROR' | 'DISCONNECTED'>;
     access_token: string;
     refresh_token: string | null;

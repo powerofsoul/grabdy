@@ -1,6 +1,6 @@
-import { formatDistanceToNow } from 'date-fns';
 import { alpha, Box, Tooltip, Typography, useTheme } from '@mui/material';
 import { ClockIcon } from '@phosphor-icons/react';
+import { formatDistanceToNow } from 'date-fns';
 
 import { duration } from './helpers';
 import { StatusIcon } from './StatusIcon';
@@ -45,7 +45,15 @@ export function SyncLogList({ logs }: SyncLogListProps) {
             }}
           >
             {/* Status */}
-            <Box sx={{ width: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Box
+              sx={{
+                width: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
               <StatusIcon status={log.status} />
             </Box>
 
@@ -58,9 +66,8 @@ export function SyncLogList({ logs }: SyncLogListProps) {
                 <Typography variant="body2" sx={{ fontSize: 13 }} noWrap>
                   {log.status === 'RUNNING' && 'In progress...'}
                   {log.status === 'PENDING' && 'Queued'}
-                  {log.status === 'COMPLETED' && (
-                    log.itemsSynced > 0 ? `${log.itemsSynced} synced` : 'No changes'
-                  )}
+                  {log.status === 'COMPLETED' &&
+                    (log.itemsSynced > 0 ? `${log.itemsSynced} synced` : 'No changes')}
                   {log.status === 'FAILED' && (
                     <Typography component="span" sx={{ fontSize: 13, color: 'error.main' }}>
                       Failed{log.itemsFailed > 0 ? ` (${log.itemsFailed})` : ''}
@@ -68,11 +75,18 @@ export function SyncLogList({ logs }: SyncLogListProps) {
                   )}
                 </Typography>
               </Box>
-              {log.status === 'COMPLETED' && Array.isArray(log.details?.items) && log.details.items.length > 0 && (
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 11 }} noWrap>
-                  {log.details.items.join(', ')}
-                </Typography>
-              )}
+              {log.status === 'COMPLETED' &&
+                Array.isArray(log.details?.items) &&
+                log.details.items.length > 0 && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary', fontSize: 11, lineHeight: 1.4 }}
+                  >
+                    {log.details.items.length <= 3
+                      ? log.details.items.join(', ')
+                      : `${log.details.items.slice(0, 3).join(', ')} +${log.details.items.length - 3} more`}
+                  </Typography>
+                )}
               {log.status === 'FAILED' && log.errorMessage && (
                 <Typography variant="caption" sx={{ color: 'error.main', fontSize: 11 }} noWrap>
                   Unable to sync — please reconnect
@@ -88,7 +102,11 @@ export function SyncLogList({ logs }: SyncLogListProps) {
                 </Typography>
               )}
               <Tooltip title={new Date(log.createdAt).toLocaleString()} placement="left">
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11, cursor: 'default' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontSize: 11, cursor: 'default' }}
+                >
                   {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
                 </Typography>
               </Tooltip>

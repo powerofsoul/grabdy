@@ -90,10 +90,18 @@ export function IntegrationGrid({ connections, onConnect, onManage }: Integratio
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         <SectionLabel>Available</SectionLabel>
         <Box sx={{ display: 'grid', gridTemplateColumns: gridColumns, gap: 2 }}>
-          {/* Slack card if not already connected */}
+          {/* Available provider cards (not yet connected) */}
           {!connections.some((c) => c.provider === 'SLACK') && (
             <IntegrationCard
               provider="SLACK"
+              connection={null}
+              onConnect={onConnect}
+              onManage={onManage}
+            />
+          )}
+          {!connections.some((c) => c.provider === 'LINEAR') && (
+            <IntegrationCard
+              provider="LINEAR"
               connection={null}
               onConnect={onConnect}
               onManage={onManage}

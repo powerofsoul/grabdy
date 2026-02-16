@@ -4,6 +4,7 @@ import { objectValues } from './helpers.js';
 
 export const IntegrationProvider = {
   SLACK: 'SLACK',
+  LINEAR: 'LINEAR',
 } as const;
 export type IntegrationProvider = (typeof IntegrationProvider)[keyof typeof IntegrationProvider];
 
