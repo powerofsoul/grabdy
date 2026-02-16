@@ -1,0 +1,1 @@
+export { NumberComponent } from './NumberComponent';

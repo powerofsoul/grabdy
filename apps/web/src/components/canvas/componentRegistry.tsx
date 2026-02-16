@@ -1,13 +1,14 @@
 import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
-import { Box } from '@mui/material';
+import { type ChatSource, chatSourceSchema } from '@grabdy/contracts';
+
+import { SourceChips } from '../chat/components/source-chips';
 
 import { AccordionComponent } from './components/AccordionComponent';
 import { BookmarkComponent } from './components/BookmarkComponent';
-import { CalloutComponent } from './components/CalloutComponent';
-import { ChartComponent } from './components/ChartComponent';
+import { CalloutComponent } from './components/callout';
+import { ChartComponent } from './components/chart';
 import { ChecklistComponent } from './components/ChecklistComponent';
-import { CitationList } from './components/CitationList';
-import { CodeComponent } from './components/CodeComponent';
+import { CodeComponent } from './components/code';
 import { ComparisonComponent } from './components/ComparisonComponent';
 import { DocumentLinkComponent } from './components/DocumentLinkComponent';
 import { FunnelComponent } from './components/FunnelComponent';
@@ -18,16 +19,15 @@ import { KanbanComponent } from './components/KanbanComponent';
 import { KeyValueComponent } from './components/KeyValueComponent';
 import { KpiRowComponent } from './components/KpiRowComponent';
 import { LinkListComponent } from './components/LinkListComponent';
-import { MatrixComponent } from './components/MatrixComponent';
-import { NumberComponent } from './components/NumberComponent';
+import { MatrixComponent } from './components/matrix';
+import { NumberComponent } from './components/number';
 import { ProgressComponent } from './components/ProgressComponent';
 import { ProsConsComponent } from './components/ProsConsComponent';
 import { QuoteComponent } from './components/QuoteComponent';
 import { RatingComponent } from './components/RatingComponent';
 import { SearchFilterComponent } from './components/SearchFilterComponent';
-import { SourceLinkComponent } from './components/SourceLinkComponent';
-import { StatusListComponent } from './components/StatusListComponent';
-import { StickyNoteComponent } from './components/StickyNoteComponent';
+import { StatusListComponent } from './components/status-list';
+import { StickyNoteComponent } from './components/sticky-note';
 import { SummaryComponent } from './components/SummaryComponent';
 import { SwotComponent } from './components/SwotComponent';
 import { TableComponent } from './components/TableComponent';
@@ -39,12 +39,22 @@ import { TopicMapComponent } from './components/TopicMapComponent';
 const parseComponentId = nonDbIdSchema('CanvasComponent').parse;
 import type { ComponentNode } from '@grabdy/contracts';
 
-type OnComponentSave = (cardId: NonDbId<'CanvasCard'>, componentId: NonDbId<'CanvasComponent'>, data: Record<string, unknown>) => void;
+type OnComponentSave = (
+  cardId: NonDbId<'CanvasCard'>,
+  componentId: NonDbId<'CanvasComponent'>,
+  data: Record<string, unknown>
+) => void;
 
-function renderComponentInner(
+export function renderComponent(
   node: ComponentNode,
-  onSave?: (data: Record<string, unknown>) => void,
+  cardId?: NonDbId<'CanvasCard'>,
+  onComponentEdit?: OnComponentSave
 ) {
+  const onSave =
+    cardId && onComponentEdit
+      ? (data: Record<string, unknown>) => onComponentEdit(cardId, parseComponentId(node.id), data)
+      : undefined;
+
   switch (node.type) {
     case 'table':
       return <TableComponent data={node.data} onSave={onSave} />;
@@ -54,8 +64,31 @@ function renderComponentInner(
       return <SummaryComponent data={node.data} onSave={onSave} />;
     case 'text':
       return <TextComponent data={node.data} onSave={onSave} />;
-    case 'source_link':
-      return <SourceLinkComponent data={node.data} />;
+    case 'source_link': {
+      const chatSources: ChatSource[] = [];
+      for (const s of node.data.sources) {
+        if (!s.dataSourceId) continue;
+        const t = s.type ?? 'TXT';
+        const base = {
+          dataSourceId: s.dataSourceId,
+          dataSourceName: s.name,
+          score: s.score ?? 0,
+          type: t,
+          sourceUrl: s.sourceUrl,
+        };
+        let full: Record<string, unknown> = base;
+        if (t === 'PDF' || t === 'DOCX') {
+          full = { ...base, pages: s.pages ?? [] };
+        } else if (t === 'XLSX') {
+          full = { ...base, sheet: s.sheet ?? '', rows: s.rows ?? [], columns: s.columns ?? [] };
+        } else if (t === 'CSV') {
+          full = { ...base, rows: s.rows ?? [], columns: s.columns ?? [] };
+        }
+        const parsed = chatSourceSchema.safeParse(full);
+        if (parsed.success) chatSources.push(parsed.data);
+      }
+      return chatSources.length > 0 ? <SourceChips sources={chatSources} /> : null;
+    }
     case 'document_link':
       return <DocumentLinkComponent data={node.data} />;
     case 'search_filter':
@@ -115,30 +148,4 @@ function renderComponentInner(
     default:
       return null;
   }
-}
-
-export function renderComponent(
-  node: ComponentNode,
-  cardId?: NonDbId<'CanvasCard'>,
-  onComponentEdit?: OnComponentSave,
-) {
-  const onSave = cardId && onComponentEdit
-    ? (data: Record<string, unknown>) => onComponentEdit(cardId, parseComponentId(node.id), data)
-    : undefined;
-
-  const componentContent = renderComponentInner(node, onSave);
-  const nodeCitations = 'citations' in node ? node.citations : undefined;
-
-  if (nodeCitations && nodeCitations.length > 0) {
-    return (
-      <Box sx={{ px: 0.5, pb: 0.5 }}>
-        {componentContent}
-        <Box sx={{ px: 1 }}>
-          <CitationList citations={nodeCitations} />
-        </Box>
-      </Box>
-    );
-  }
-
-  return componentContent;
 }

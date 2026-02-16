@@ -32,7 +32,7 @@ import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
-import { canPreview, DocumentPreviewDrawer } from '@/components/chat/DocumentPreviewDrawer';
+import { canPreview, DocumentPreviewDrawer } from '@/components/chat/components/DocumentPreviewDrawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -45,8 +45,7 @@ import { api } from '@/lib/api';
 
 interface DataSource {
   id: string;
-  name: string;
-  filename: string;
+  title: string;
   type: string;
   mimeType: string;
   status: DataSourceStatus;
@@ -126,18 +125,18 @@ interface RenameDrawerProps extends DrawerProps {
 
 function RenameDrawer({ onClose, dataSource, onRenamed }: RenameDrawerProps) {
   const { selectedOrgId } = useAuth();
-  const [name, setName] = useState(dataSource.name);
+  const [title, setTitle] = useState(dataSource.title);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!selectedOrgId || !name.trim()) return;
+    if (!selectedOrgId || !title.trim()) return;
     setIsSaving(true);
     try {
       const parsed = dbIdSchema('DataSource').safeParse(dataSource.id);
       if (!parsed.success) return;
       const res = await api.dataSources.rename({
         params: { orgId: selectedOrgId, id: parsed.data },
-        body: { name: name.trim() },
+        body: { title: title.trim() },
       });
       if (res.status === 200) {
         toast.success('File renamed');
@@ -153,13 +152,10 @@ function RenameDrawer({ onClose, dataSource, onRenamed }: RenameDrawerProps) {
 
   return (
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Typography variant="body2" color="text.secondary">
-        Current filename: {dataSource.filename}
-      </Typography>
       <TextField
-        label="Display name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        label="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
         fullWidth
         autoFocus
         size="small"
@@ -174,7 +170,7 @@ function RenameDrawer({ onClose, dataSource, onRenamed }: RenameDrawerProps) {
         <Button
           variant="contained"
           onClick={handleSave}
-          disabled={isSaving || !name.trim() || name.trim() === dataSource.name}
+          disabled={isSaving || !title.trim() || title.trim() === dataSource.title}
         >
           {isSaving ? 'Saving...' : 'Save'}
         </Button>
@@ -319,7 +315,7 @@ function CollectionDetailPage() {
     if (!parsed.success) return;
     pushDrawer(
       (onClose) => <DocumentPreviewDrawer onClose={onClose} dataSourceId={parsed.data} />,
-      { title: ds.name, mode: 'dialog', maxWidth: 'lg' },
+      { title: ds.title, mode: 'dialog', maxWidth: 'lg' },
     );
   };
 
@@ -334,7 +330,7 @@ function CollectionDetailPage() {
       if (res.status === 200) {
         const link = document.createElement('a');
         link.href = res.body.data.url;
-        link.download = res.body.data.filename;
+        link.download = res.body.data.title;
         link.click();
       }
     } catch {
@@ -406,14 +402,14 @@ function CollectionDetailPage() {
           }}
           noWrap={['name', 'uploaded', 'size']}
           keyExtractor={(ds) => ds.id}
-          rowTitle={(ds) => ds.name}
+          rowTitle={(ds) => ds.title}
           sorting={{
             sortableColumns: ['name', 'uploaded', 'size'] as const,
             defaultSort: 'uploaded',
             defaultDirection: 'desc',
             getSortValue: (item, col) => {
               switch (col) {
-                case 'name': return item.name.toLowerCase();
+                case 'name': return item.title.toLowerCase();
                 case 'uploaded': return new Date(item.createdAt).getTime();
                 case 'size': return item.fileSize;
                 default: return '';
@@ -422,19 +418,14 @@ function CollectionDetailPage() {
           }}
           renderItems={{
             name: (ds) => {
-              const Icon = getFileIcon(ds.filename);
+              const Icon = getFileIcon(ds.title);
               return (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                   <Icon size={18} weight="light" style={{ flexShrink: 0 }} />
                   <Box sx={{ minWidth: 0, maxWidth: 300 }}>
                     <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
-                      {ds.name}
+                      {ds.title}
                     </Typography>
-                    {ds.name !== ds.filename && (
-                      <Typography variant="caption" color="text.disabled" noWrap display="block">
-                        {ds.filename}
-                      </Typography>
-                    )}
                   </Box>
                 </Box>
               );
@@ -513,7 +504,7 @@ function CollectionDetailPage() {
       <ConfirmDialog
         open={deleteTarget !== null}
         title="Delete File"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This will remove the file and all its indexed content.`}
+        message={`Are you sure you want to delete "${deleteTarget?.title}"? This will remove the file and all its indexed content.`}
         confirmLabel="Delete"
         onConfirm={handleDeleteSource}
         onCancel={() => setDeleteTarget(null)}

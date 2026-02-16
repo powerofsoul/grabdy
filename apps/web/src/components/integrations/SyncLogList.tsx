@@ -1,66 +1,14 @@
-import { alpha, Box, CircularProgress, Tooltip, Typography, useTheme } from '@mui/material';
-import { CheckIcon, ClockIcon, LightningIcon, PlugsIcon, UserIcon, WarningIcon } from '@phosphor-icons/react';
+import { formatDistanceToNow } from 'date-fns';
+import { alpha, Box, Tooltip, Typography, useTheme } from '@mui/material';
+import { ClockIcon } from '@phosphor-icons/react';
 
-interface SyncLogEntry {
-  id: string;
-  status: string;
-  trigger: string;
-  itemsSynced: number;
-  itemsFailed: number;
-  errorMessage: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  createdAt: string;
-}
+import { duration } from './helpers';
+import { StatusIcon } from './StatusIcon';
+import { TriggerIcon } from './TriggerIcon';
+import type { SyncLogEntry } from './types';
 
 interface SyncLogListProps {
   logs: SyncLogEntry[];
-}
-
-function StatusIcon({ status }: { status: string }) {
-  const theme = useTheme();
-  switch (status) {
-    case 'COMPLETED':
-      return <CheckIcon size={13} color={theme.palette.success.main} weight="light" />;
-    case 'FAILED':
-      return <WarningIcon size={13} color={theme.palette.error.main} weight="light" />;
-    case 'RUNNING':
-      return <CircularProgress size={12} thickness={5} />;
-    case 'PENDING':
-      return <ClockIcon size={13} color={theme.palette.info.main} weight="light" />;
-    default:
-      return null;
-  }
-}
-
-function TriggerIcon({ trigger }: { trigger: string }) {
-  const size = 11;
-  switch (trigger) {
-    case 'MANUAL': return <UserIcon size={size} weight="light" color="currentColor" />;
-    case 'WEBHOOK': return <PlugsIcon size={size} weight="light" color="currentColor" />;
-    default: return <LightningIcon size={size} weight="light" color="currentColor" />;
-  }
-}
-
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-function duration(start: string | null, end: string | null): string | null {
-  if (!start || !end) return null;
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  if (ms < 1000) return '<1s';
-  const secs = Math.floor(ms / 1000);
-  if (secs < 60) return `${secs}s`;
-  return `${Math.floor(secs / 60)}m ${secs % 60}s`;
 }
 
 export function SyncLogList({ logs }: SyncLogListProps) {
@@ -120,9 +68,14 @@ export function SyncLogList({ logs }: SyncLogListProps) {
                   )}
                 </Typography>
               </Box>
-              {log.errorMessage && (
+              {log.status === 'COMPLETED' && Array.isArray(log.details?.items) && log.details.items.length > 0 && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 11 }} noWrap>
+                  {log.details.items.join(', ')}
+                </Typography>
+              )}
+              {log.status === 'FAILED' && log.errorMessage && (
                 <Typography variant="caption" sx={{ color: 'error.main', fontSize: 11 }} noWrap>
-                  {log.errorMessage}
+                  Unable to sync — please reconnect
                 </Typography>
               )}
             </Box>
@@ -136,7 +89,7 @@ export function SyncLogList({ logs }: SyncLogListProps) {
               )}
               <Tooltip title={new Date(log.createdAt).toLocaleString()} placement="left">
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11, cursor: 'default' }}>
-                  {relativeTime(log.createdAt)}
+                  {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
                 </Typography>
               </Tooltip>
             </Box>

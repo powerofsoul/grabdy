@@ -5,7 +5,7 @@ import { CTASection } from '@/components/landing/CTASection';
 import { DevTeaserSection } from '@/components/landing/DevTeaserSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { Footer } from '@/components/landing/Footer';
-import { HeroSection } from '@/components/landing/HeroSection';
+import { HeroSection } from '@/components/landing/hero';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { McpSection } from '@/components/landing/McpSection';
 import { PricingSection } from '@/components/landing/PricingSection';

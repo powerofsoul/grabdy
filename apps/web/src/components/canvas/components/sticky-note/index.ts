@@ -1,0 +1,1 @@
+export { StickyNoteComponent } from './StickyNoteComponent';

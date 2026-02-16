@@ -14,7 +14,14 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { ArrowsClockwiseIcon, CheckIcon, PauseIcon, PlugsConnectedIcon,WarningCircleIcon } from '@phosphor-icons/react';
+import {
+  ArrowsClockwiseIcon,
+  CheckIcon,
+  PauseIcon,
+  PlugsConnectedIcon,
+  TrashIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { getProviderLabel, ProviderIcon } from './ProviderIcon';
@@ -32,6 +39,7 @@ interface SyncLog {
   itemsSynced: number;
   itemsFailed: number;
   errorMessage: string | null;
+  details: { items: string[] } | null;
   startedAt: string | null;
   completedAt: string | null;
   createdAt: string;
@@ -45,6 +53,7 @@ interface ConnectionDetailDrawerProps extends DrawerProps {
   syncIntervalMinutes: number;
   externalAccountName: string | null;
   onRefresh: () => void;
+  onConnect?: (provider: IntegrationProvider) => void;
 }
 
 const INTERVAL_OPTIONS = [
@@ -55,20 +64,46 @@ const INTERVAL_OPTIONS = [
   { value: 1440, label: 'Daily' },
 ] as const satisfies readonly { value: number; label: string }[];
 
-function StatusIndicator({ status }: { status: string }) {
+const STATUS_MAP: Record<ConnectionStatus, { label: string; color: string }> = {
+  ACTIVE: { label: 'Connected', color: 'success.main' },
+  ERROR: { label: 'Error', color: 'error.main' },
+  PAUSED: { label: 'Paused', color: 'warning.main' },
+  DISCONNECTED: { label: 'Disconnected', color: 'text.disabled' },
+};
+
+function isConnectionStatus(value: string): value is ConnectionStatus {
+  return value in STATUS_MAP;
+}
+
+function StatusIcon({ status }: { status: ConnectionStatus }) {
   const theme = useTheme();
-  const map: Partial<Record<ConnectionStatus, { icon: React.ReactNode; label: string; color: string }>> = {
-    ACTIVE: { icon: <CheckIcon size={14} weight="light" color={theme.palette.success.main} />, label: 'Connected', color: 'success.main' },
-    ERROR: { icon: <WarningCircleIcon size={14} weight="light" color={theme.palette.error.main} />, label: 'Error', color: 'error.main' },
-    PAUSED: { icon: <PauseIcon size={14} weight="light" color={theme.palette.warning.main} />, label: 'Paused', color: 'warning.main' },
+  const iconProps = { size: 14, weight: 'light' } as const;
+  const colorMap: Record<ConnectionStatus, string> = {
+    ACTIVE: theme.palette.success.main,
+    ERROR: theme.palette.error.main,
+    PAUSED: theme.palette.warning.main,
+    DISCONNECTED: theme.palette.text.disabled,
   };
-  const statusMap: Partial<Record<string, { icon: React.ReactNode; label: string; color: string }>> = map;
-  const info = statusMap[status];
-  if (!info) return <Typography variant="body2" color="text.secondary">{status}</Typography>;
+  const color = colorMap[status];
+
+  const icons: Record<ConnectionStatus, React.ReactNode> = {
+    ACTIVE: <CheckIcon {...iconProps} color={color} />,
+    ERROR: <WarningCircleIcon {...iconProps} color={color} />,
+    PAUSED: <PauseIcon {...iconProps} color={color} />,
+    DISCONNECTED: <PlugsConnectedIcon {...iconProps} color={color} />,
+  };
+
+  return <>{icons[status]}</>;
+}
+
+function StatusIndicator({ status }: { status: string }) {
+  if (!isConnectionStatus(status)) return <Typography variant="body2" color="text.secondary">{status}</Typography>;
+
+  const info = STATUS_MAP[status];
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-      {info.icon}
+      <StatusIcon status={status} />
       <Typography variant="body2" sx={{ fontWeight: 500, color: info.color }}>{info.label}</Typography>
     </Box>
   );
@@ -83,6 +118,7 @@ export function ConnectionDetailDrawer({
   syncIntervalMinutes: initialInterval,
   externalAccountName,
   onRefresh,
+  onConnect,
 }: ConnectionDetailDrawerProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
@@ -91,8 +127,13 @@ export function ConnectionDetailDrawer({
   const [syncing, setSyncing] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [syncEnabled, setSyncEnabled] = useState(initialSyncEnabled);
   const [interval, setInterval] = useState(initialInterval);
+  const [currentStatus, setCurrentStatus] = useState(status);
+
+  const isDisconnected = currentStatus === 'DISCONNECTED';
 
   const fetchLogs = useCallback(async () => {
     if (!selectedOrgId) return;
@@ -148,14 +189,41 @@ export function ConnectionDetailDrawer({
       });
       if (res.status === 200) {
         toast.success(`${getProviderLabel(provider)} disconnected`);
+        setCurrentStatus('DISCONNECTED');
         onRefresh();
-        onClose();
       }
     } catch {
       toast.error('Failed to disconnect');
     } finally {
       setDisconnecting(false);
       setConfirmDisconnect(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedOrgId) return;
+    setDeleting(true);
+    try {
+      const res = await api.integrations.deleteConnection({
+        params: { orgId: selectedOrgId, provider },
+        body: {},
+      });
+      if (res.status === 200) {
+        toast.success(`${getProviderLabel(provider)} data deleted`);
+        onRefresh();
+        onClose();
+      }
+    } catch {
+      toast.error('Failed to delete data');
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
+
+  const handleReconnect = () => {
+    if (onConnect) {
+      onConnect(provider);
     }
   };
 
@@ -216,7 +284,7 @@ export function ConnectionDetailDrawer({
             <Typography variant="caption" sx={{ ...sectionHeadingSx, mb: 0.5, display: 'block' }}>
               Status
             </Typography>
-            <StatusIndicator status={status} />
+            <StatusIndicator status={currentStatus} />
           </Box>
           <Box>
             <Typography variant="caption" sx={{ ...sectionHeadingSx, mb: 0.5, display: 'block' }}>
@@ -233,103 +301,167 @@ export function ConnectionDetailDrawer({
 
       {/* Scrollable content */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {/* Sync settings */}
-        <Box>
-          <Typography variant="caption" sx={{ ...sectionHeadingSx, mb: 1.5, display: 'block' }}>
-            Sync Settings
-          </Typography>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>Auto-sync</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Keep data up to date automatically
-                </Typography>
+        {isDisconnected ? (
+          <>
+            {/* Disconnected state */}
+            <Box sx={{ py: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                This integration has been disconnected. Your synced data is still available for search.
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {onConnect && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<PlugsConnectedIcon size={15} weight="light" color="currentColor" />}
+                    onClick={handleReconnect}
+                    size="small"
+                    sx={{ borderRadius: 1.5 }}
+                  >
+                    Reconnect
+                  </Button>
+                )}
+                {!confirmDelete ? (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<TrashIcon size={15} weight="light" color="currentColor" />}
+                    onClick={() => setConfirmDelete(true)}
+                    size="small"
+                    sx={{ borderRadius: 1.5 }}
+                  >
+                    Delete Data
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    size="small"
+                    sx={{ borderRadius: 1.5 }}
+                  >
+                    {deleting ? 'Deleting...' : 'Confirm Delete'}
+                  </Button>
+                )}
               </Box>
-              <Switch
-                checked={syncEnabled}
-                onChange={(e) => {
-                  setSyncEnabled(e.target.checked);
-                  handleConfigChange({ syncEnabled: e.target.checked });
-                }}
-                size="small"
-              />
             </Box>
 
-            {syncEnabled && (
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.75 }}>Frequency</Typography>
-                <Select
-                  value={interval}
-                  size="small"
-                  fullWidth
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setInterval(val);
-                    handleConfigChange({ syncIntervalMinutes: val });
-                  }}
-                >
-                  {INTERVAL_OPTIONS.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                  ))}
-                </Select>
+            <Divider />
+
+            {/* Sync history (still visible when disconnected) */}
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="caption" sx={sectionHeadingSx}>
+                  Sync History
+                </Typography>
+                {syncLogs.length > 0 && (
+                  <Chip label={`${syncLogs.length}`} size="small" variant="outlined" sx={{ height: 20, fontSize: 11, minWidth: 0 }} />
+                )}
               </Box>
-            )}
-          </Box>
-        </Box>
+              <SyncLogList logs={syncLogs} />
+            </Box>
+          </>
+        ) : (
+          <>
+            {/* Sync settings */}
+            <Box>
+              <Typography variant="caption" sx={{ ...sectionHeadingSx, mb: 1.5, display: 'block' }}>
+                Sync Settings
+              </Typography>
 
-        {/* Actions */}
-        <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <Button
-            variant="outlined"
-            startIcon={syncing ? <CircularProgress size={14} thickness={5} /> : <ArrowsClockwiseIcon size={15} weight="light" color="currentColor" />}
-            onClick={handleSync}
-            disabled={syncing}
-            size="small"
-            sx={{ flex: 1, borderRadius: 1.5 }}
-          >
-            {syncing ? 'Syncing...' : 'Sync Now'}
-          </Button>
-          {!confirmDisconnect ? (
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<PlugsConnectedIcon size={15} weight="light" color="currentColor" />}
-              onClick={() => setConfirmDisconnect(true)}
-              size="small"
-              sx={{ borderRadius: 1.5 }}
-            >
-              Disconnect
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleDisconnect}
-              disabled={disconnecting}
-              size="small"
-              sx={{ borderRadius: 1.5 }}
-            >
-              {disconnecting ? 'Removing...' : 'Confirm'}
-            </Button>
-          )}
-        </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>Auto-sync</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Keep data up to date automatically
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={syncEnabled}
+                    onChange={(e) => {
+                      setSyncEnabled(e.target.checked);
+                      handleConfigChange({ syncEnabled: e.target.checked });
+                    }}
+                    size="small"
+                  />
+                </Box>
 
-        <Divider />
+                {syncEnabled && (
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.75 }}>Frequency</Typography>
+                    <Select
+                      value={interval}
+                      size="small"
+                      fullWidth
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setInterval(val);
+                        handleConfigChange({ syncIntervalMinutes: val });
+                      }}
+                    >
+                      {INTERVAL_OPTIONS.map((opt) => (
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
+                )}
+              </Box>
+            </Box>
 
-        {/* Sync history */}
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="caption" sx={sectionHeadingSx}>
-              Sync History
-            </Typography>
-            {syncLogs.length > 0 && (
-              <Chip label={`${syncLogs.length}`} size="small" variant="outlined" sx={{ height: 20, fontSize: 11, minWidth: 0 }} />
-            )}
-          </Box>
-          <SyncLogList logs={syncLogs} />
-        </Box>
+            {/* Actions */}
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant="outlined"
+                startIcon={syncing ? <CircularProgress size={14} thickness={5} /> : <ArrowsClockwiseIcon size={15} weight="light" color="currentColor" />}
+                onClick={handleSync}
+                disabled={syncing}
+                size="small"
+                sx={{ flex: 1, borderRadius: 1.5 }}
+              >
+                {syncing ? 'Syncing...' : 'Sync Now'}
+              </Button>
+              {!confirmDisconnect ? (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<PlugsConnectedIcon size={15} weight="light" color="currentColor" />}
+                  onClick={() => setConfirmDisconnect(true)}
+                  size="small"
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  Disconnect
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={handleDisconnect}
+                  disabled={disconnecting}
+                  size="small"
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  {disconnecting ? 'Disconnecting...' : 'Confirm'}
+                </Button>
+              )}
+            </Box>
+
+            <Divider />
+
+            {/* Sync history */}
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="caption" sx={sectionHeadingSx}>
+                  Sync History
+                </Typography>
+                {syncLogs.length > 0 && (
+                  <Chip label={`${syncLogs.length}`} size="small" variant="outlined" sx={{ height: 20, fontSize: 11, minWidth: 0 }} />
+                )}
+              </Box>
+              <SyncLogList logs={syncLogs} />
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );

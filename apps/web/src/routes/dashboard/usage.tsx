@@ -50,11 +50,20 @@ interface RequestTypeBreakdown {
   totalTokens: number;
 }
 
+interface SourceBreakdown {
+  source: string;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
 interface UsageData {
   summary: UsageSummary;
   daily: DailyUsage[];
   byModel: ModelBreakdown[];
   byRequestType: RequestTypeBreakdown[];
+  bySource: SourceBreakdown[];
 }
 
 export const Route = createFileRoute('/dashboard/usage')({
@@ -226,6 +235,24 @@ function UsagePage() {
                 Input Tokens
               </Typography>
             </Box>
+            <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: FONT_MONO,
+                  fontSize: '3rem',
+                  fontWeight: 400,
+                  lineHeight: 1,
+                  letterSpacing: '0.05em',
+                  color: 'text.primary',
+                }}
+              >
+                {formatNumber(data.summary.totalOutputTokens)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Output Tokens
+              </Typography>
+            </Box>
           </Box>
 
           {/* Daily usage chart */}
@@ -237,7 +264,7 @@ function UsagePage() {
           </Box>
 
           {/* By Model */}
-          <Typography variant="h6" sx={{ mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ mb: 2 }}>
             Usage by Model
           </Typography>
           <MainTable
@@ -245,7 +272,9 @@ function UsagePage() {
             headerNames={{
               model: 'Model',
               requests: 'Requests',
-              tokens: 'Tokens',
+              input: 'Input',
+              output: 'Output',
+              total: 'Total',
             }}
             rowTitle={(row) => row.model}
             keyExtractor={(row) => row.model}
@@ -265,26 +294,94 @@ function UsagePage() {
                   {formatNumber(row.requests)}
                 </Typography>
               ),
-              tokens: (row) => (
+              input: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatNumber(row.inputTokens)}
+                </Typography>
+              ),
+              output: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatNumber(row.outputTokens)}
+                </Typography>
+              ),
+              total: (row) => (
                 <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
                   {formatNumber(row.totalTokens)}
                 </Typography>
               ),
             }}
             sorting={{
-              sortableColumns: ['requests', 'tokens'] as const,
-              defaultSort: 'requests',
+              sortableColumns: ['requests', 'input', 'output', 'total'] as const,
+              defaultSort: 'total',
               defaultDirection: 'desc',
               getSortValue: (row, col) => {
                 if (col === 'requests') return row.requests;
-                if (col === 'tokens') return row.totalTokens;
+                if (col === 'input') return row.inputTokens;
+                if (col === 'output') return row.outputTokens;
+                if (col === 'total') return row.totalTokens;
+                return null;
+              },
+            }}
+          />
+
+          {/* By Source */}
+          <Typography variant="subtitle1" sx={{ mt: 4, mb: 2 }}>
+            Usage by Source
+          </Typography>
+          <MainTable
+            data={data.bySource}
+            headerNames={{
+              source: 'Source',
+              requests: 'Requests',
+              input: 'Input',
+              output: 'Output',
+              total: 'Total',
+            }}
+            rowTitle={(row) => row.source}
+            keyExtractor={(row) => row.source}
+            renderItems={{
+              source: (row) => (
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {row.source}
+                </Typography>
+              ),
+              requests: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatNumber(row.requests)}
+                </Typography>
+              ),
+              input: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatNumber(row.inputTokens)}
+                </Typography>
+              ),
+              output: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatNumber(row.outputTokens)}
+                </Typography>
+              ),
+              total: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatNumber(row.totalTokens)}
+                </Typography>
+              ),
+            }}
+            sorting={{
+              sortableColumns: ['requests', 'input', 'output', 'total'] as const,
+              defaultSort: 'total',
+              defaultDirection: 'desc',
+              getSortValue: (row, col) => {
+                if (col === 'requests') return row.requests;
+                if (col === 'input') return row.inputTokens;
+                if (col === 'output') return row.outputTokens;
+                if (col === 'total') return row.totalTokens;
                 return null;
               },
             }}
           />
 
           {/* By Request Type */}
-          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ mt: 4, mb: 2 }}>
             Usage by Type
           </Typography>
           <MainTable

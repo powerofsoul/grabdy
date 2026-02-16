@@ -1,15 +1,17 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
+import type { Card, CardMetadata, CardSource } from '@grabdy/contracts';
+import { chatSourceSchema, type ChatSource } from '@grabdy/contracts';
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { DotsSixVerticalIcon, PencilSimpleIcon, SparkleIcon, TrashIcon } from '@phosphor-icons/react';
 import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
 
+import { SourceChips } from '../chat/components/source-chips';
+
 const parseCardId = nonDbIdSchema('CanvasCard').parse;
-import type { Card, CardMetadata, CardSource } from '@grabdy/contracts';
 
 import { EditActions } from './components/EditActions';
-import { SourceLinkComponent } from './components/SourceLinkComponent';
 import { EditModeContext } from './hooks/useEditMode';
 import { renderComponent } from './componentRegistry';
 
@@ -31,6 +33,32 @@ interface CardNodeData extends Record<string, unknown> {
 
 /** Selectors for elements that should block node dragging (text selection, inputs) */
 const INTERACTIVE_SELECTOR = 'input, textarea, [contenteditable], .tiptap, .nodrag';
+
+function cardSourcesToChat(sources: CardSource[]): ChatSource[] {
+  const result: ChatSource[] = [];
+  for (const s of sources) {
+    if (!s.dataSourceId || !s.type) continue;
+    const base = {
+      dataSourceId: s.dataSourceId,
+      dataSourceName: s.name,
+      score: s.score ?? 0,
+      type: s.type,
+      sourceUrl: s.sourceUrl,
+    };
+    // Add type-specific metadata fields required by chatSourceSchema
+    let full: Record<string, unknown> = base;
+    if (s.type === 'PDF' || s.type === 'DOCX') {
+      full = { ...base, pages: s.pages ?? [] };
+    } else if (s.type === 'XLSX') {
+      full = { ...base, sheet: s.sheet ?? '', rows: s.rows ?? [], columns: s.columns ?? [] };
+    } else if (s.type === 'CSV') {
+      full = { ...base, rows: s.rows ?? [], columns: s.columns ?? [] };
+    }
+    const parsed = chatSourceSchema.safeParse(full);
+    if (parsed.success) result.push(parsed.data);
+  }
+  return result;
+}
 
 function CardNodeInner({ data }: { data: CardNodeData }) {
   const theme = useTheme();
@@ -217,7 +245,9 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
         >
           {renderComponent(data.component, parseCardId(data.id), onComponentEdit)}
           {data.sources && data.sources.length > 0 && (
-            <SourceLinkComponent data={{ sources: data.sources }} />
+            <Box sx={{ px: 1.5, pb: 1, pt: 1.5 }}>
+              <SourceChips sources={cardSourcesToChat(data.sources)} />
+            </Box>
           )}
         </Box>
 
