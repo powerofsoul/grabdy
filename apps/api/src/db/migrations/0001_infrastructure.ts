@@ -42,7 +42,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     CREATE TYPE "TokenType" AS ENUM ('PASSWORD_RESET', 'EMAIL_VERIFY');
     CREATE TYPE "OrgRole" AS ENUM ('OWNER', 'ADMIN', 'MEMBER');
     CREATE TYPE "DataSourceStatus" AS ENUM ('UPLOADED', 'PROCESSING', 'READY', 'FAILED');
-    CREATE TYPE "DataSourceType" AS ENUM ('PDF', 'CSV', 'DOCX', 'TXT', 'JSON');
+    CREATE TYPE "DataSourceType" AS ENUM ('PDF', 'CSV', 'DOCX', 'TXT', 'JSON', 'XLSX', 'IMAGE', 'SLACK');
 
     -- ============================================================
     -- Packed UUID functions (public schema)

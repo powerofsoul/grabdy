@@ -16,6 +16,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     CREATE INDEX chat_threads_membership_id_idx ON data.chat_threads (membership_id);
     ALTER TABLE data.chat_threads ADD CONSTRAINT chk_chat_threads_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.ChatThread)});
     ALTER TABLE data.chat_threads ADD CONSTRAINT chk_chat_threads_org CHECK (extract_org_numeric_id(id) = extract_org_numeric_id(org_id));
+    ALTER TABLE data.chat_threads ADD CONSTRAINT chk_chat_threads_collection_org CHECK (collection_id IS NULL OR extract_org_numeric_id(collection_id) = extract_org_numeric_id(org_id));
+    ALTER TABLE data.chat_threads ADD CONSTRAINT chk_chat_threads_membership_org CHECK (extract_org_numeric_id(membership_id) = extract_org_numeric_id(org_id));
   `.execute(db);
 }
 

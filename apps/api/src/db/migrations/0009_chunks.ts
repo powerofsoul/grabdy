@@ -7,7 +7,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.Chunk)}),
       content TEXT NOT NULL,
       chunk_index INT NOT NULL,
-      metadata JSONB,
+      metadata JSONB NOT NULL,
+      source_url TEXT NOT NULL,
       embedding vector(1536),
       data_source_id UUID NOT NULL REFERENCES data.data_sources(id) ON DELETE CASCADE,
       collection_id UUID REFERENCES data.collections(id) ON DELETE SET NULL,
@@ -17,9 +18,12 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     CREATE INDEX chunks_org_id_idx ON data.chunks (org_id);
     CREATE INDEX chunks_data_source_id_idx ON data.chunks (data_source_id);
     CREATE INDEX chunks_collection_id_idx ON data.chunks (collection_id);
+    CREATE INDEX chunks_metadata_type_idx ON data.chunks ((metadata->>'type'));
     CREATE INDEX chunks_embedding_idx ON data.chunks USING hnsw (embedding vector_cosine_ops);
     ALTER TABLE data.chunks ADD CONSTRAINT chk_chunks_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.Chunk)});
     ALTER TABLE data.chunks ADD CONSTRAINT chk_chunks_org CHECK (extract_org_numeric_id(id) = extract_org_numeric_id(org_id));
+    ALTER TABLE data.chunks ADD CONSTRAINT chk_chunks_data_source_org CHECK (extract_org_numeric_id(data_source_id) = extract_org_numeric_id(org_id));
+    ALTER TABLE data.chunks ADD CONSTRAINT chk_chunks_collection_org CHECK (collection_id IS NULL OR extract_org_numeric_id(collection_id) = extract_org_numeric_id(org_id));
   `.execute(db);
 }
 

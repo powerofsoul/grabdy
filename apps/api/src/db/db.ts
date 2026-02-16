@@ -25,8 +25,8 @@ type Timestamp = ColumnType<Date, Date | string, Date | string>;
 type ChunkMeta =
   | { type: 'PDF'; pages: number[] }
   | { type: 'DOCX'; pages: number[] }
-  | { type: 'XLSX'; sheet?: string; row?: number }
-  | { type: 'CSV'; row?: number }
+  | { type: 'XLSX'; sheet: string; row: number; columns: string[] }
+  | { type: 'CSV'; row: number; columns: string[] }
   | { type: 'TXT' }
   | { type: 'JSON' }
   | { type: 'IMAGE' }
@@ -96,21 +96,18 @@ export interface DB {
 
   'data.data_sources': {
     id: Generated<DbId<'DataSource'>>;
-    name: string;
-    filename: string;
+    title: string;
     mime_type: string;
     file_size: number;
     storage_path: string;
-    type: 'PDF' | 'CSV' | 'DOCX' | 'TXT' | 'JSON' | 'XLSX' | 'IMAGE' | 'INTEGRATION';
+    type: 'PDF' | 'CSV' | 'DOCX' | 'TXT' | 'JSON' | 'XLSX' | 'IMAGE' | 'SLACK';
     status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED'>;
     summary: string | null;
     page_count: number | null;
     collection_id: DbId<'Collection'> | null;
     connection_id: DbId<'Connection'> | null;
     external_id: string | null;
-    source_url: string | null;
-    ai_tags: string[] | null;
-    ai_description: string | null;
+    source_url: string;
     org_id: DbId<'Org'>;
     uploaded_by_id: DbId<'User'> | null;
     created_at: Generated<Timestamp>;
@@ -121,9 +118,8 @@ export interface DB {
     id: Generated<DbId<'Chunk'>>;
     content: string;
     chunk_index: number;
-    metadata: ChunkMeta | null;
-    source_type: 'UPLOAD' | 'SLACK';
-    source_url: string | null;
+    metadata: ChunkMeta;
+    source_url: string;
     embedding: string;
     data_source_id: DbId<'DataSource'>;
     collection_id: DbId<'Collection'> | null;
@@ -223,6 +219,7 @@ export interface DB {
     provider: string;
     caller_type: 'MEMBER' | 'SYSTEM' | 'API_KEY';
     request_type: 'CHAT' | 'EMBEDDING';
+    source: 'WEB' | 'SLACK' | 'API' | 'MCP' | 'SYSTEM';
     input_tokens: Generated<number>;
     output_tokens: Generated<number>;
     total_tokens: Generated<number>;

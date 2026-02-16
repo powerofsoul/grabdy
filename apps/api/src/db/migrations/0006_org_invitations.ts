@@ -15,6 +15,9 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     );
     CREATE UNIQUE INDEX org_invitations_org_id_email_key ON org.org_invitations (org_id, email);
     CREATE UNIQUE INDEX org_invitations_token_key ON org.org_invitations (token);
+
+    ALTER TABLE org.org_invitations ADD CONSTRAINT chk_org_invitations_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.OrgInvitation)});
+    ALTER TABLE org.org_invitations ADD CONSTRAINT chk_org_invitations_org CHECK (extract_org_numeric_id(id) = extract_org_numeric_id(org_id));
   `.execute(db);
 }
 

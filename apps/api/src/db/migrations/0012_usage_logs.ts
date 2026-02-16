@@ -1,9 +1,10 @@
+import { ENTITY_TYPE_MAP } from '@grabdy/common';
 import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`
     CREATE TABLE api.usage_logs (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.UsageLog)}),
       api_key_id UUID NOT NULL REFERENCES api.api_keys(id) ON DELETE CASCADE,
       endpoint TEXT NOT NULL,
       input_tokens INT NOT NULL DEFAULT 0,
@@ -13,6 +14,10 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     );
     CREATE INDEX usage_logs_org_id_created_at_idx ON api.usage_logs (org_id, created_at);
     CREATE INDEX usage_logs_api_key_id_idx ON api.usage_logs (api_key_id);
+
+    ALTER TABLE api.usage_logs ADD CONSTRAINT chk_usage_logs_entity_type CHECK (extract_entity_type(id) = ${sql.lit(ENTITY_TYPE_MAP.UsageLog)});
+    ALTER TABLE api.usage_logs ADD CONSTRAINT chk_usage_logs_org CHECK (extract_org_numeric_id(id) = extract_org_numeric_id(org_id));
+    ALTER TABLE api.usage_logs ADD CONSTRAINT chk_usage_logs_api_key_org CHECK (extract_org_numeric_id(api_key_id) = extract_org_numeric_id(org_id));
 
     CREATE OR REPLACE FUNCTION usage_logs_append_only()
     RETURNS TRIGGER LANGUAGE plpgsql AS $$
