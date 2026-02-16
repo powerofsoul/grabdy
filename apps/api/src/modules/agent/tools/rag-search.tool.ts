@@ -23,7 +23,7 @@ export class RagSearchTool {
     private aiUsageService: AiUsageService,
   ) {}
 
-  create(orgId: DbId<'Org'>, collectionIds?: DbId<'Collection'>[], defaultTopK = 5) {
+  create(orgId: DbId<'Org'>, collectionIds?: DbId<'Collection'>[], defaultTopK = 5, userId?: DbId<'User'> | null) {
     const db = this.db;
     const storage = this.storage;
     const aiUsageService = this.aiUsageService;
@@ -56,7 +56,7 @@ Use metadata to give context (page numbers, sheet names, Slack authors, etc.) wh
           0,
           AiCallerType.SYSTEM,
           AiRequestType.EMBEDDING,
-          { orgId, source: 'SYSTEM' },
+          { orgId, userId, source: 'SYSTEM' },
         ).catch((err) => logger.error(`RAG embedding usage logging failed: ${err}`));
 
         const embeddingStr = `[${embedding.join(',')}]`;

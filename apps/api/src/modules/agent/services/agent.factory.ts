@@ -76,7 +76,7 @@ export class AgentFactory {
       maxSteps,
     } = opts;
 
-    const ragTool = this.ragSearchTool.create(orgId, collectionIds, defaultTopK);
+    const ragTool = this.ragSearchTool.create(orgId, collectionIds, defaultTopK, userId);
 
     const tools: ToolsInput = {
       'rag-search': ragTool,
