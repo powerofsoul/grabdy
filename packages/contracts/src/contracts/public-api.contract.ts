@@ -2,6 +2,8 @@ import { dbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
+import { chunkMetaSchema } from '../schemas/chunk-meta.js';
+
 const c = initContract();
 
 // ── Shared schemas ──────────────────────────────────────────────
@@ -13,7 +15,7 @@ export const publicSourceSchema = z.object({
     id: z.string().describe('Data source ID'),
     name: z.string().describe('Data source file name'),
   }),
-  metadata: z.record(z.string(), z.unknown()).describe('Chunk metadata (page number, section, etc.)'),
+  metadata: chunkMetaSchema.nullable().describe('Chunk metadata (page number, section, etc.)'),
 });
 
 export const publicCollectionSchema = z.object({

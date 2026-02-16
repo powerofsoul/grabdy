@@ -34,6 +34,7 @@ const syncLogSchema = z.object({
   itemsSynced: z.number(),
   itemsFailed: z.number(),
   errorMessage: z.string().nullable(),
+  details: z.object({ items: z.array(z.string()) }).nullable(),
   startedAt: z.string().nullable(),
   completedAt: z.string().nullable(),
   createdAt: z.string(),
@@ -68,8 +69,21 @@ export const integrationsContract = c.router(
       },
     },
     disconnect: {
-      method: 'DELETE',
+      method: 'POST',
       path: '/orgs/:orgId/integrations/:provider/disconnect',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        provider: integrationProviderEnum,
+      }),
+      body: z.object({}),
+      responses: {
+        200: z.object({ success: z.literal(true) }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    deleteConnection: {
+      method: 'DELETE',
+      path: '/orgs/:orgId/integrations/:provider',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
         provider: integrationProviderEnum,

@@ -1,6 +1,8 @@
 import { dbIdSchema, nonDbIdSchema } from '@grabdy/common';
 import { z } from 'zod';
 
+import { chunkMetaTypeEnum } from './chunk-meta.js';
+
 // ---------------------------------------------------------------------------
 // Citations (shared across all components)
 // ---------------------------------------------------------------------------
@@ -15,6 +17,27 @@ export const citationSchema = z.object({
 export type Citation = z.infer<typeof citationSchema>;
 
 const citations = z.array(citationSchema).optional();
+
+// ---------------------------------------------------------------------------
+// Card sources — defined before COMPONENT_DEFINITIONS so source_link can use it
+// ---------------------------------------------------------------------------
+
+export const cardSourceSchema = z.object({
+  name: z.string(),
+  score: z.number().optional(),
+  chunkId: dbIdSchema('Chunk').optional(),
+  dataSourceId: dbIdSchema('DataSource').optional(),
+  collectionId: dbIdSchema('Collection').optional(),
+  sourceUrl: z.string().nullable().optional(),
+  type: chunkMetaTypeEnum.optional(),
+  // Location metadata — populated from chunk metadata when the AI creates the card
+  pages: z.array(z.number()).optional(),
+  sheet: z.string().optional(),
+  rows: z.array(z.number()).optional(),
+  columns: z.array(z.string()).optional(),
+});
+
+export type CardSource = z.infer<typeof cardSourceSchema>;
 
 // ---------------------------------------------------------------------------
 // Component Definitions — single source of truth
@@ -461,17 +484,10 @@ export const COMPONENT_DEFINITIONS = {
   },
   source_link: {
     category: 'reference',
-    description: '{ sources: [{name, score?, chunkId?, dataSourceId?}] }',
+    description: '{ sources: CardSource[] }',
     usage: 'document source references — added automatically to cards via the sources field',
     dataSchema: z.object({
-      sources: z.array(
-        z.object({
-          name: z.string(),
-          score: z.number().optional(),
-          chunkId: dbIdSchema('Chunk').optional(),
-          dataSourceId: dbIdSchema('DataSource').optional(),
-        })
-      ),
+      sources: z.array(cardSourceSchema),
     }),
   },
   document_link: {
@@ -743,16 +759,6 @@ export function generateComponentPrompt(): string {
 // ---------------------------------------------------------------------------
 // Card
 // ---------------------------------------------------------------------------
-
-export const cardSourceSchema = z.object({
-  name: z.string(),
-  score: z.number().optional(),
-  chunkId: dbIdSchema('Chunk').optional(),
-  dataSourceId: dbIdSchema('DataSource').optional(),
-  collectionId: dbIdSchema('Collection').optional(),
-});
-
-export type CardSource = z.infer<typeof cardSourceSchema>;
 
 export const cardStyleSchema = z.object({
   backgroundColor: z.string().optional(),

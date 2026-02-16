@@ -8,8 +8,7 @@ const c = initContract();
 
 const dataSourceSchema = z.object({
   id: dbIdSchema('DataSource'),
-  name: z.string(),
-  filename: z.string(),
+  title: z.string(),
   mimeType: z.string(),
   fileSize: z.number(),
   type: dataSourceTypeEnum,
@@ -96,7 +95,7 @@ export const dataSourcesContract = c.router(
         orgId: dbIdSchema('Org'),
         id: dbIdSchema('DataSource'),
       }),
-      body: z.object({ name: z.string().min(1).max(255) }),
+      body: z.object({ title: z.string().min(1).max(255) }),
       responses: {
         200: z.object({ success: z.literal(true), data: dataSourceSchema }),
         404: z.object({ success: z.literal(false), error: z.string() }),
@@ -115,9 +114,7 @@ export const dataSourcesContract = c.router(
           data: z.object({
             url: z.string(),
             mimeType: z.string(),
-            filename: z.string(),
-            aiTags: z.array(z.string()).optional(),
-            aiDescription: z.string().optional(),
+            title: z.string(),
           }),
         }),
         404: z.object({ success: z.literal(false), error: z.string() }),

@@ -3,6 +3,7 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
 import { canvasEdgeSchema, canvasStateSchema, cardSchema } from '../schemas/canvas.js';
+import { chunkMetaSchema } from '../schemas/chunk-meta.js';
 
 const c = initContract();
 
@@ -10,31 +11,37 @@ const searchResultSchema = z.object({
   chunkId: dbIdSchema('Chunk'),
   content: z.string(),
   score: z.number(),
-  metadata: z.record(z.string(), z.unknown()),
+  metadata: chunkMetaSchema.nullable(),
   dataSourceName: z.string(),
   dataSourceId: dbIdSchema('DataSource'),
+  sourceUrl: z.string().nullable(),
 });
 
-const chatSourceSchema = z.object({
+const chatSourceBase = {
   dataSourceId: dbIdSchema('DataSource'),
   dataSourceName: z.string(),
   score: z.number(),
-  pages: z.array(z.number()).optional(),
-});
+  sourceUrl: z.string().nullable().optional(),
+};
+
+export const chatSourceSchema = z.discriminatedUnion('type', [
+  z.object({ ...chatSourceBase, type: z.literal('PDF'), pages: z.array(z.number()) }),
+  z.object({ ...chatSourceBase, type: z.literal('DOCX'), pages: z.array(z.number()) }),
+  z.object({ ...chatSourceBase, type: z.literal('XLSX'), sheet: z.string(), rows: z.array(z.number()), columns: z.array(z.string()) }),
+  z.object({ ...chatSourceBase, type: z.literal('CSV'), rows: z.array(z.number()), columns: z.array(z.string()) }),
+  z.object({ ...chatSourceBase, type: z.literal('TXT') }),
+  z.object({ ...chatSourceBase, type: z.literal('JSON') }),
+  z.object({ ...chatSourceBase, type: z.literal('IMAGE') }),
+  z.object({ ...chatSourceBase, type: z.literal('SLACK') }),
+]);
+
+export type ChatSource = z.infer<typeof chatSourceSchema>;
 
 const chatMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant']),
   content: z.string(),
   sources: z.array(chatSourceSchema).nullable(),
-  thinkingSteps: z
-    .array(
-      z.object({
-        toolName: z.string(),
-        summary: z.string(),
-      })
-    )
-    .nullable(),
   createdAt: z.string(),
 });
 
@@ -51,28 +58,8 @@ const threadWithMessagesSchema = threadSchema.extend({
   canvasState: canvasStateSchema.nullable(),
 });
 
-export const retrievalContract = c.router(
+export const chatContract = c.router(
   {
-    query: {
-      method: 'POST',
-      path: '/orgs/:orgId/query',
-      pathParams: z.object({ orgId: dbIdSchema('Org') }),
-      body: z.object({
-        query: z.string().min(1),
-        collectionId: dbIdSchema('Collection').optional(),
-        limit: z.number().min(1).max(50).default(10),
-      }),
-      responses: {
-        200: z.object({
-          success: z.literal(true),
-          data: z.object({
-            results: z.array(searchResultSchema),
-            queryTimeMs: z.number(),
-          }),
-        }),
-        400: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
     chat: {
       method: 'POST',
       path: '/orgs/:orgId/chat',
@@ -169,7 +156,7 @@ export const retrievalContract = c.router(
         zIndex: z.number().optional(),
       }),
       responses: {
-        200: z.object({ success: z.literal(true), canvasState: canvasStateSchema }),
+        200: z.object({ success: z.literal(true) }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
@@ -183,7 +170,7 @@ export const retrievalContract = c.router(
       }),
       body: z.object({}),
       responses: {
-        200: z.object({ success: z.literal(true), canvasState: canvasStateSchema }),
+        200: z.object({ success: z.literal(true) }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
@@ -198,7 +185,7 @@ export const retrievalContract = c.router(
         edges: z.array(canvasEdgeSchema),
       }),
       responses: {
-        200: z.object({ success: z.literal(true), canvasState: canvasStateSchema }),
+        200: z.object({ success: z.literal(true) }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
@@ -213,7 +200,7 @@ export const retrievalContract = c.router(
         edge: canvasEdgeSchema,
       }),
       responses: {
-        200: z.object({ success: z.literal(true), canvasState: canvasStateSchema }),
+        200: z.object({ success: z.literal(true) }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
@@ -227,7 +214,7 @@ export const retrievalContract = c.router(
       }),
       body: z.object({}),
       responses: {
-        200: z.object({ success: z.literal(true), canvasState: canvasStateSchema }),
+        200: z.object({ success: z.literal(true) }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
@@ -244,7 +231,7 @@ export const retrievalContract = c.router(
         data: z.record(z.string(), z.unknown()),
       }),
       responses: {
-        200: z.object({ success: z.literal(true), canvasState: canvasStateSchema }),
+        200: z.object({ success: z.literal(true) }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
@@ -259,7 +246,7 @@ export const retrievalContract = c.router(
         card: cardSchema,
       }),
       responses: {
-        200: z.object({ success: z.literal(true), canvasState: canvasStateSchema }),
+        200: z.object({ success: z.literal(true) }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },

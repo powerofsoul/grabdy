@@ -18,6 +18,7 @@ export type TableIdName =
   | 'Chunk'
   | 'ExtractedImage'
   | 'ApiKey'
+  | 'UsageLog'
   | 'ChatThread'
   | 'AiUsageLog'
   | 'Connection'
@@ -50,6 +51,7 @@ export const ENTITY_TYPE_MAP = {
   ExtractedImage: 0x13,
   // API
   ApiKey: 0x20,
+  UsageLog: 0x21,
   // Chat
   ChatThread: 0x30,
   CanvasCard: 0x31,

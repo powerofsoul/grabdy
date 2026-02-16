@@ -35,7 +35,7 @@ export const DataSourceType = {
   JSON: 'JSON',
   XLSX: 'XLSX',
   IMAGE: 'IMAGE',
-  INTEGRATION: 'INTEGRATION',
+  SLACK: 'SLACK',
 } as const;
 export type DataSourceType = (typeof DataSourceType)[keyof typeof DataSourceType];
 
@@ -111,11 +111,6 @@ export const MIME_TO_DATA_SOURCE_TYPE: Record<SupportedMime, DataSourceType> = O
   SUPPORTED_FILE_TYPES.map((f) => [f.mime, f.type]),
 ) as Record<SupportedMime, DataSourceType>;
 
-export const ChunkSourceType = {
-  UPLOAD: 'UPLOAD',
-  SLACK: 'SLACK',
-} as const;
-export type ChunkSourceType = (typeof ChunkSourceType)[keyof typeof ChunkSourceType];
 
 export const AiCallerType = {
   MEMBER: 'MEMBER',
@@ -130,6 +125,22 @@ export const AiRequestType = {
 } as const;
 export type AiRequestType = (typeof AiRequestType)[keyof typeof AiRequestType];
 
+export const AiRequestSource = {
+  WEB: 'WEB',
+  SLACK: 'SLACK',
+  API: 'API',
+  MCP: 'MCP',
+  SYSTEM: 'SYSTEM',
+} as const;
+export type AiRequestSource = (typeof AiRequestSource)[keyof typeof AiRequestSource];
+
+/** Fenced code block names the AI can output in chat responses. */
+export const StreamBlock = {
+  THINKING: 'thinking',
+  SOURCES: 'sources',
+} as const;
+export type StreamBlock = (typeof StreamBlock)[keyof typeof StreamBlock];
+
 export const dataSourceStatusEnum = z.enum(objectValues(DataSourceStatus));
 export const dataSourceTypeEnum = z.enum(objectValues(DataSourceType));
 export const orgRoleEnum = z.enum(objectValues(OrgRole));
@@ -137,4 +148,3 @@ export const integrationProviderEnum = z.enum(objectValues(IntegrationProvider))
 export const connectionStatusEnum = z.enum(objectValues(ConnectionStatus));
 export const syncStatusEnum = z.enum(objectValues(SyncStatus));
 export const syncTriggerEnum = z.enum(objectValues(SyncTrigger));
-export const chunkSourceTypeEnum = z.enum(objectValues(ChunkSourceType));

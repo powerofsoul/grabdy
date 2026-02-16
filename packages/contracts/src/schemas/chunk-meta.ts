@@ -13,13 +13,15 @@ const docxChunkMetaSchema = z.object({
 
 const xlsxChunkMetaSchema = z.object({
   type: z.literal('XLSX'),
-  sheet: z.string().optional(),
-  row: z.number().optional(),
+  sheet: z.string(),
+  row: z.number(),
+  columns: z.array(z.string()),
 });
 
 const csvChunkMetaSchema = z.object({
   type: z.literal('CSV'),
-  row: z.number().optional(),
+  row: z.number(),
+  columns: z.array(z.string()),
 });
 
 const txtChunkMetaSchema = z.object({ type: z.literal('TXT') });
@@ -40,3 +42,7 @@ export const chunkMetaSchema = z.discriminatedUnion('type', [
 ]);
 
 export type ChunkMeta = z.infer<typeof chunkMetaSchema>;
+
+/** Enum of all chunk metadata type discriminants. */
+export const chunkMetaTypeEnum = z.enum(['PDF', 'DOCX', 'XLSX', 'CSV', 'TXT', 'JSON', 'IMAGE', 'SLACK']);
+export type ChunkMetaType = z.infer<typeof chunkMetaTypeEnum>;
