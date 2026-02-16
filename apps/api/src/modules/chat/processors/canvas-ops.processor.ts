@@ -1,15 +1,15 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 
-import type { CanvasState } from '@grabdy/contracts';
+import { type CanvasState, canvasStateSchema } from '@grabdy/contracts';
 import { Job } from 'bullmq';
 import { sql } from 'kysely';
 
 import { DbService } from '../../../db/db.module';
-import { CANVAS_OPS_QUEUE } from '../queue.constants';
+import { CANVAS_OPS_QUEUE } from '../../queue/queue.constants';
 
-import { findAndUpdateComponent } from './canvas-ops.helpers';
-import type { CanvasOp } from './canvas-ops.types';
+import { mergeComponentData } from './canvas-ops.helpers';
+import type { BatchInnerOp, CanvasOp } from './canvas-ops.types';
 
 // BullMQ serializes processor errors as plain Error objects, losing the original
 // class. We use this prefix so the service can reliably re-throw as NotFoundException.
@@ -21,6 +21,57 @@ function notFound(detail: string): Error {
 
 function emptyCanvas(): CanvasState {
   return { version: 1, viewport: { x: 0, y: 0, zoom: 1 }, cards: [], edges: [] };
+}
+
+function applyInnerOp(state: CanvasState, innerOp: BatchInnerOp): void {
+  switch (innerOp.op) {
+    case 'add_card': {
+      state.cards.push(...innerOp.cards);
+      break;
+    }
+    case 'remove_card': {
+      const idx = state.cards.findIndex((c) => c.id === innerOp.cardId);
+      if (idx === -1) throw notFound('Card not found');
+      state.cards.splice(idx, 1);
+      state.edges = state.edges.filter((e) => e.source !== innerOp.cardId && e.target !== innerOp.cardId);
+      break;
+    }
+    case 'move_card': {
+      const card = state.cards.find((c) => c.id === innerOp.cardId);
+      if (!card) throw notFound('Card not found');
+      if (innerOp.position) card.position = innerOp.position;
+      if (innerOp.width !== undefined) card.width = innerOp.width;
+      if (innerOp.height !== undefined) card.height = innerOp.height;
+      break;
+    }
+    case 'update_component': {
+      const card = state.cards.find((c) => c.id === innerOp.cardId);
+      if (!card) throw notFound('Card not found');
+      const found = mergeComponentData(card, innerOp.componentId, innerOp.data);
+      if (!found) throw notFound('Component not found');
+      break;
+    }
+    case 'add_edge': {
+      const sourceExists = state.cards.some((c) => c.id === innerOp.edge.source);
+      const targetExists = state.cards.some((c) => c.id === innerOp.edge.target);
+      if (!sourceExists || !targetExists) {
+        throw notFound('Edge source or target card not found');
+      }
+      const exists = state.edges.some(
+        (e) =>
+          (e.source === innerOp.edge.source && e.target === innerOp.edge.target) ||
+          (e.source === innerOp.edge.target && e.target === innerOp.edge.source)
+      );
+      if (!exists) {
+        state.edges.push(innerOp.edge);
+      }
+      break;
+    }
+    case 'remove_edge': {
+      state.edges = state.edges.filter((e) => e.id !== innerOp.edgeId);
+      break;
+    }
+  }
 }
 
 @Processor(CANVAS_OPS_QUEUE, { concurrency: 10 })
@@ -55,7 +106,9 @@ export class CanvasOpsProcessor extends WorkerHost {
         throw notFound('Thread not found');
       }
 
-      const state = (thread.canvas_state ?? emptyCanvas()) satisfies CanvasState;
+      const state = thread.canvas_state
+        ? canvasStateSchema.parse(thread.canvas_state)
+        : emptyCanvas();
 
       switch (op.type) {
         case 'add_card': {
@@ -66,9 +119,7 @@ export class CanvasOpsProcessor extends WorkerHost {
           const idx = state.cards.findIndex((c) => c.id === op.cardId);
           if (idx === -1) throw notFound('Card not found');
           state.cards.splice(idx, 1);
-          state.edges = state.edges.filter(
-            (e) => e.source !== op.cardId && e.target !== op.cardId
-          );
+          state.edges = state.edges.filter((e) => e.source !== op.cardId && e.target !== op.cardId);
           break;
         }
         case 'move_card': {
@@ -108,8 +159,14 @@ export class CanvasOpsProcessor extends WorkerHost {
         case 'update_component': {
           const card = state.cards.find((c) => c.id === op.cardId);
           if (!card) throw notFound('Card not found');
-          const found = findAndUpdateComponent(card, op.componentId, op.data);
+          const found = mergeComponentData(card, op.componentId, op.data);
           if (!found) throw notFound('Component not found');
+          break;
+        }
+        case 'batch': {
+          for (const innerOp of op.operations) {
+            applyInnerOp(state, innerOp);
+          }
           break;
         }
       }

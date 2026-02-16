@@ -2,18 +2,13 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
-import { EMBEDDING_MODEL } from '@grabdy/contracts';
+import { AiCallerType, AiRequestType, EMBEDDING_MODEL } from '@grabdy/contracts';
 import { createTool } from '@mastra/core/tools';
 import { embed } from 'ai';
 import { sql } from 'kysely';
 import { z } from 'zod';
 
 import { DbService } from '../../../db/db.module';
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-import { AiCallerType, AiRequestType } from '../../../db/enums';
 import { AiUsageService } from '../../ai/ai-usage.service';
 import type { FileStorage } from '../../storage/file-storage.interface';
 import { FILE_STORAGE } from '../../storage/file-storage.interface';
@@ -36,8 +31,14 @@ export class RagSearchTool {
 
     return createTool({
       id: 'rag-search',
-      description:
-        'Search the knowledge base for relevant information. Use this tool to find context before answering questions. Results may include extracted image URLs from documents.',
+      description: `Search the knowledge base. Each result includes:
+- content: the matched text
+- dataSourceName: human-readable source name
+- sourceUrl: direct link to the source (use this to create clickable links when citing)
+- metadata: depends on type — PDF/DOCX: { type, pages[] }, XLSX: { type, sheet?, row? }, CSV: { type, row? }, IMAGE: { type }, SLACK: { type, slackChannelId, slackMessageTs, slackAuthor }
+- extractedImages: image URLs from documents (if any)
+
+Use metadata to give context (page numbers, sheet names, Slack authors, etc.) when citing sources.`,
       inputSchema: z.object({
         query: z.string().describe('The search query to find relevant documents'),
         topK: z.number().optional().default(defaultTopK).describe('Number of results to return'),
@@ -55,7 +56,7 @@ export class RagSearchTool {
           0,
           AiCallerType.SYSTEM,
           AiRequestType.EMBEDDING,
-          { orgId },
+          { orgId, source: 'SYSTEM' },
         ).catch((err) => logger.error(`RAG embedding usage logging failed: ${err}`));
 
         const embeddingStr = `[${embedding.join(',')}]`;
@@ -67,8 +68,9 @@ export class RagSearchTool {
             'data.chunks.id as chunk_id',
             'data.chunks.content',
             'data.chunks.metadata',
-            'data.data_sources.name as data_source_name',
+            'data.data_sources.title as data_source_name',
             'data.data_sources.id as data_source_id',
+            'data.chunks.source_url',
             'data.data_sources.collection_id',
             sql<number>`1 - (data.chunks.embedding <=> ${embeddingStr}::vector)`.as('score'),
           ])
@@ -112,9 +114,10 @@ export class RagSearchTool {
             chunkId: r.chunk_id,
             content: r.content,
             score: Number(r.score),
-            metadata: isRecord(r.metadata) ? r.metadata : {},
+            metadata: r.metadata,
             dataSourceName: r.data_source_name,
             dataSourceId: r.data_source_id,
+            sourceUrl: r.source_url,
             collectionId: r.collection_id,
           })),
           extractedImages: extractedImageUrls.length > 0 ? extractedImageUrls : undefined,

@@ -1,7 +1,7 @@
 import type { NonDbId } from '@grabdy/common';
 import type { Card } from '@grabdy/contracts';
 
-export function findAndUpdateComponent(
+export function mergeComponentData(
   card: Card,
   componentKey: NonDbId<'CanvasComponent'>,
   data: Record<string, unknown>

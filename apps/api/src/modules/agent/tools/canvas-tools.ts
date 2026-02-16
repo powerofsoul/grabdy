@@ -1,22 +1,23 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
-import {
-  nonDbIdSchema,
-  packNonDbId,
-} from '@grabdy/common';
-import { canvasEdgeSchema, cardSchema } from '@grabdy/contracts';
+import { nonDbIdSchema, packNonDbId } from '@grabdy/common';
+import { canvasEdgeSchema, cardSchema, chunkMetaTypeEnum } from '@grabdy/contracts';
 import { createTool } from '@mastra/core/tools';
+import { Queue } from 'bullmq';
 import { z } from 'zod';
 
-import { CanvasOpsService } from '../../queue/canvas-ops.service';
+import { type CanvasOp, batchInnerOpSchema } from '../../chat/processors/canvas-ops.types';
+import { CANVAS_OPS_QUEUE } from '../../queue/queue.constants';
 
 // ---------------------------------------------------------------------------
 // AI-friendly input schemas
 //
 // The AI cannot generate packed UUIDs, so we accept z.string() for IDs that
 // the server will replace. IDs of *existing* entities (remove, move, update)
-// still use nonDbIdSchema because those values come from prior server output.
+// still come from prior server output but may also be placeholder IDs from
+// earlier ops in the same batch — resolution happens at execution time.
 // ---------------------------------------------------------------------------
 
 const aiComponentSchema = z.object({
@@ -41,6 +42,8 @@ const aiCardSourceSchema = z.object({
   chunkId: z.string().optional(),
   dataSourceId: z.string().optional(),
   collectionId: z.string().optional(),
+  sourceUrl: z.string().nullable().optional(),
+  type: chunkMetaTypeEnum.optional(),
 });
 
 const aiCardSchema = z.object({
@@ -71,158 +74,186 @@ const aiCardSchema = z.object({
 
 const aiEdgeSchema = z.object({
   id: z.string().describe('Placeholder edge ID — the server will replace it'),
-  source: z.string().describe('Source card ID (use the server-returned ID from canvas_add_card)'),
-  target: z.string().describe('Target card ID (use the server-returned ID from canvas_add_card)'),
+  source: z.string().describe('Source card ID (placeholder from this batch or existing server ID)'),
+  target: z.string().describe('Target card ID (placeholder from this batch or existing server ID)'),
   label: z.string().optional(),
   strokeWidth: z.number().default(2),
 });
+
+const canvasOpInputSchema = z.discriminatedUnion('op', [
+  z.object({ op: z.literal('add_card'), card: aiCardSchema }),
+  z.object({ op: z.literal('remove_card'), cardId: z.string() }),
+  z.object({
+    op: z.literal('move_card'),
+    cardId: z.string(),
+    position: z.object({ x: z.number(), y: z.number() }).optional(),
+    width: z.number().optional(),
+    height: z.number().optional(),
+  }),
+  z.object({
+    op: z.literal('update_component'),
+    cardId: z.string(),
+    componentId: z.string(),
+    data: z.record(z.string(), z.unknown()),
+  }),
+  z.object({ op: z.literal('add_edge'), edge: aiEdgeSchema }),
+  z.object({ op: z.literal('remove_edge'), edgeId: z.string() }),
+]);
+
+type CanvasOpInput = z.infer<typeof canvasOpInputSchema>;
+
+type ResolveResult = { ok: true; id: string } | { ok: false; error: string };
+
+const cardIdValidator = nonDbIdSchema('CanvasCard');
+const edgeIdValidator = nonDbIdSchema('CanvasEdge');
+const componentIdValidator = nonDbIdSchema('CanvasComponent');
+
+function resolveCardId(id: string, idMap: Map<string, string>): ResolveResult {
+  const mapped = idMap.get(id);
+  if (mapped) return { ok: true, id: mapped };
+  if (cardIdValidator.safeParse(id).success) return { ok: true, id };
+  return { ok: false, error: `Invalid card ID "${id}" — not a placeholder from this batch and not a valid server ID` };
+}
+
+function resolveEdgeId(id: string, idMap: Map<string, string>): ResolveResult {
+  const mapped = idMap.get(id);
+  if (mapped) return { ok: true, id: mapped };
+  if (edgeIdValidator.safeParse(id).success) return { ok: true, id };
+  return { ok: false, error: `Invalid edge ID "${id}" — not a placeholder from this batch and not a valid server ID` };
+}
+
+function resolveComponentId(id: string, idMap: Map<string, string>): ResolveResult {
+  const mapped = idMap.get(id);
+  if (mapped) return { ok: true, id: mapped };
+  if (componentIdValidator.safeParse(id).success) return { ok: true, id };
+  return { ok: false, error: `Invalid component ID "${id}" — not a placeholder from this batch and not a valid server ID` };
+}
 
 @Injectable()
 export class CanvasTools {
   private readonly logger = new Logger(CanvasTools.name);
 
-  constructor(private canvasOps: CanvasOpsService) {}
+  constructor(@InjectQueue(CANVAS_OPS_QUEUE) private canvasQueue: Queue<CanvasOp>) {}
 
   create(threadId: DbId<'ChatThread'>, orgId: DbId<'Org'>) {
-    const canvasOps = this.canvasOps;
+    const queue = this.canvasQueue;
     const logger = this.logger;
 
-    const addCard = createTool({
-      id: 'canvas_add_card',
+    const canvasUpdate = createTool({
+      id: 'canvas_update',
       description:
-        'Add one or more cards to the canvas. Returns the created cards with server-generated IDs — use those IDs (not your input IDs) when calling canvas_add_edge to connect cards.',
+        'Apply one or more canvas operations in a single batch. Use placeholder IDs for new cards/edges — the server replaces them with real IDs. Later operations in the same batch can reference placeholder IDs from earlier operations.',
       inputSchema: z.object({
-        cards: z.array(aiCardSchema).describe('Array of cards to add to the canvas'),
+        operations: z.array(canvasOpInputSchema).describe('Ordered array of canvas operations to apply'),
       }),
       execute: async (input) => {
-        // Replace AI-provided IDs with proper packed UUIDs
-        const rawCards = input.cards.map((c) => ({
-          ...c,
-          id: packNonDbId('CanvasCard', orgId),
-          component: {
-            ...c.component,
-            id: packNonDbId('CanvasComponent', orgId),
-          },
-        }));
+        const idMap = new Map<string, string>();
+        const results: Array<Record<string, unknown>> = [];
 
-        // Validate through the real schema to ensure correct component data
-        const parsed = z.array(cardSchema).safeParse(rawCards);
-        if (!parsed.success) {
-          logger.warn(`[canvas_add_card] Validation failed: ${parsed.error.message}`);
-          return { error: `Invalid card data: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}` };
+        for (const op of input.operations) {
+          const result = processOp(op, orgId, idMap, logger);
+          if ('error' in result) {
+            return { error: result.error, results };
+          }
+          results.push(result);
         }
 
-        await canvasOps.execute({ type: 'add_card', threadId, orgId, cards: parsed.data });
-        return { cards: parsed.data };
-      },
-    });
+        // Parse results through the schema to get properly branded types
+        const batchOps = results.map((r) => batchInnerOpSchema.parse(r));
 
-    const removeCard = createTool({
-      id: 'canvas_remove_card',
-      description: 'Remove a card from the canvas by its ID.',
-      inputSchema: z.object({
-        cardId: nonDbIdSchema('CanvasCard').describe('The ID of the card to remove'),
-      }),
-      execute: async (input) => {
-        await canvasOps.execute({ type: 'remove_card', threadId, orgId, cardId: input.cardId });
-        return { removed: true };
-      },
-    });
-
-    const moveCard = createTool({
-      id: 'canvas_move_card',
-      description: 'Move or resize a card on the canvas.',
-      inputSchema: z.object({
-        cardId: nonDbIdSchema('CanvasCard').describe('The ID of the card to move'),
-        position: z.object({ x: z.number(), y: z.number() }).optional(),
-        width: z.number().optional(),
-        height: z.number().optional(),
-      }),
-      execute: async (input) => {
-        const state = await canvasOps.execute({
-          type: 'move_card',
+        await queue.add('batch', {
+          type: 'batch',
           threadId,
           orgId,
-          cardId: input.cardId,
-          position: input.position,
-          width: input.width,
-          height: input.height,
-        });
-        const card = state.cards.find((c) => c.id === input.cardId);
-        return { cardId: input.cardId, position: card?.position };
-      },
-    });
+          operations: batchOps,
+        }, { attempts: 1 });
 
-    const updateComponent = createTool({
-      id: 'canvas_update_component',
-      description:
-        "Update a card's component data. Merges the new data into the card's single component.",
-      inputSchema: z.object({
-        cardId: nonDbIdSchema('CanvasCard').describe('The ID of the card to update'),
-        componentId: nonDbIdSchema('CanvasComponent').describe(
-          'The ID of the component to update'
-        ),
-        data: z.record(z.string(), z.unknown()).describe('Data fields to merge into the component'),
-      }),
-      execute: async (input) => {
-        const state = await canvasOps.execute({
-          type: 'update_component',
-          threadId,
-          orgId,
-          cardId: input.cardId,
-          componentId: input.componentId,
-          data: input.data,
-        });
-        const card = state.cards.find((c) => c.id === input.cardId);
-        return { cardId: input.cardId, componentId: input.componentId, position: card?.position };
-      },
-    });
-
-    const addEdge = createTool({
-      id: 'canvas_add_edge',
-      description:
-        'Connect two cards with a visible edge/arrow. Use to show relationships, flow, or dependencies between cards.',
-      inputSchema: z.object({
-        edge: aiEdgeSchema.describe(
-          'Edge object with id, source (card ID), target (card ID), optional label and strokeWidth'
-        ),
-      }),
-      execute: async (input) => {
-        const rawEdge = {
-          ...input.edge,
-          id: packNonDbId('CanvasEdge', orgId),
-        };
-
-        const parsed = canvasEdgeSchema.safeParse(rawEdge);
-        if (!parsed.success) {
-          logger.warn(`[canvas_add_edge] Validation failed: ${parsed.error.message}`);
-          return { error: `Invalid edge data: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}` };
-        }
-
-        await canvasOps.execute({ type: 'add_edge', threadId, orgId, edge: parsed.data });
-        return { edge: parsed.data };
-      },
-    });
-
-    const removeEdge = createTool({
-      id: 'canvas_remove_edge',
-      description: 'Remove a connection/edge between two cards.',
-      inputSchema: z.object({
-        edgeId: nonDbIdSchema('CanvasEdge').describe('The ID of the edge to remove'),
-      }),
-      execute: async (input) => {
-        await canvasOps.execute({ type: 'delete_edge', threadId, orgId, edgeId: input.edgeId });
-        return { removed: true };
+        return { results };
       },
     });
 
     return {
-      canvas_add_card: addCard,
-      canvas_remove_card: removeCard,
-      canvas_move_card: moveCard,
-      canvas_update_component: updateComponent,
-      canvas_add_edge: addEdge,
-      canvas_remove_edge: removeEdge,
+      canvas_update: canvasUpdate,
     };
   }
 }
+
+function processOp(
+  op: CanvasOpInput,
+  orgId: DbId<'Org'>,
+  idMap: Map<string, string>,
+  logger: Logger,
+): Record<string, unknown> {
+  switch (op.op) {
+    case 'add_card': {
+      const cardId = packNonDbId('CanvasCard', orgId);
+      const componentId = packNonDbId('CanvasComponent', orgId);
+      idMap.set(op.card.id, cardId);
+      idMap.set(op.card.component.id, componentId);
+
+      const rawCard = {
+        ...op.card,
+        id: cardId,
+        component: {
+          ...op.card.component,
+          id: componentId,
+        },
+      };
+
+      const parsed = cardSchema.safeParse(rawCard);
+      if (!parsed.success) {
+        logger.warn(`[canvas_update:add_card] Validation failed: ${parsed.error.message}`);
+        return { error: `Invalid card data: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}` };
+      }
+
+      return { op: 'add_card', cards: [parsed.data] };
+    }
+    case 'remove_card': {
+      const resolved = resolveCardId(op.cardId, idMap);
+      if (!resolved.ok) return { error: resolved.error };
+      return { op: 'remove_card', cardId: resolved.id };
+    }
+    case 'move_card': {
+      const resolved = resolveCardId(op.cardId, idMap);
+      if (!resolved.ok) return { error: resolved.error };
+      return { op: 'move_card', cardId: resolved.id, position: op.position, width: op.width, height: op.height };
+    }
+    case 'update_component': {
+      const resolvedCard = resolveCardId(op.cardId, idMap);
+      if (!resolvedCard.ok) return { error: resolvedCard.error };
+      const resolvedComp = resolveComponentId(op.componentId, idMap);
+      if (!resolvedComp.ok) return { error: resolvedComp.error };
+      return { op: 'update_component', cardId: resolvedCard.id, componentId: resolvedComp.id, data: op.data };
+    }
+    case 'add_edge': {
+      const edgeId = packNonDbId('CanvasEdge', orgId);
+      idMap.set(op.edge.id, edgeId);
+
+      const resolvedSource = resolveCardId(op.edge.source, idMap);
+      if (!resolvedSource.ok) return { error: resolvedSource.error };
+      const resolvedTarget = resolveCardId(op.edge.target, idMap);
+      if (!resolvedTarget.ok) return { error: resolvedTarget.error };
+
+      const rawEdge = {
+        ...op.edge,
+        id: edgeId,
+        source: resolvedSource.id,
+        target: resolvedTarget.id,
+      };
+
+      const parsed = canvasEdgeSchema.safeParse(rawEdge);
+      if (!parsed.success) {
+        logger.warn(`[canvas_update:add_edge] Validation failed: ${parsed.error.message}`);
+        return { error: `Invalid edge data: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}` };
+      }
+
+      return { op: 'add_edge', edge: parsed.data };
+    }
+    case 'remove_edge': {
+      const resolved = resolveEdgeId(op.edgeId, idMap);
+      if (!resolved.ok) return { error: resolved.error };
+      return { op: 'remove_edge', edgeId: resolved.id };
+    }
+  }
+}
+

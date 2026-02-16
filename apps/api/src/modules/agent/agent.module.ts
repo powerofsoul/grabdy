@@ -1,5 +1,7 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Global, Module } from '@nestjs/common';
 
+import { CANVAS_OPS_QUEUE } from '../queue/queue.constants';
 import { StorageModule } from '../storage/storage.module';
 
 import { AgentFactory } from './services/agent.factory';
@@ -10,8 +12,8 @@ import { RagSearchTool } from './tools/rag-search.tool';
 
 @Global()
 @Module({
-  imports: [StorageModule],
+  imports: [StorageModule, BullModule.registerQueue({ name: CANVAS_OPS_QUEUE })],
   providers: [AgentStorageProvider, AgentMemoryService, RagSearchTool, CanvasTools, AgentFactory],
-  exports: [AgentMemoryService, AgentFactory],
+  exports: [AgentMemoryService, AgentFactory, CanvasTools],
 })
 export class AgentModule {}

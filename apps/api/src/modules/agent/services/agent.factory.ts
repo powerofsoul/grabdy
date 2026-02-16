@@ -1,142 +1,104 @@
 import { Injectable } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
-import type { CanvasState } from '@grabdy/contracts';
+import { AiCallerType, type AiRequestSource, AiRequestType, CHAT_MODEL } from '@grabdy/contracts';
 import type { ToolsInput } from '@mastra/core/agent';
+import type { Memory } from '@mastra/memory';
 
-import { AiCallerType, AiRequestType } from '../../../db/enums';
 import { AiUsageService } from '../../ai/ai-usage.service';
-import { DataAgent } from '../data-agent';
-import { CanvasTools } from '../tools/canvas-tools';
+import { BaseAgent } from '../base-agent';
 import { RagSearchTool } from '../tools/rag-search.tool';
 
-import { AgentMemoryService } from './memory.service';
+const DATA_AGENT_PROMPT = `You are a data assistant that answers questions EXCLUSIVELY from a knowledge base. You have NO general knowledge. The ONLY information you can use is what your search tool returns.
 
-const CARD_GAP = 20;
-const DEFAULT_CARD_W = 400;
-const DEFAULT_CARD_H = 300;
+## ABSOLUTE RULE: Knowledge Base Only
 
-function summarizeCanvas(state: CanvasState): string {
-  if (state.cards.length === 0) return '';
+- You know NOTHING except what your search returns. Never use outside knowledge, never suggest alternative meanings, never speculate.
+- If search returns results, that IS the answer. Do not list other possible meanings from your training data.
+- If search returns nothing relevant, say "I couldn't find information about that in the knowledge base." — nothing more.
+- NEVER disambiguate with meanings not found in the knowledge base. If the user asks about "NAPA" and the knowledge base has NAPA software docs, that is what NAPA means. Period.
 
-  const lines: string[] = ['## Current canvas state'];
+## When to Search vs. Respond Directly
 
-  for (const card of state.cards) {
-    const meta = card.metadata;
-    let line = `- Card "${card.id}" at (${card.position.x},${card.position.y}) ${card.width}x${card.height}`;
-    if (card.title) line += ` "${card.title}"`;
-    line += ` [${card.component.type}]`;
+**Search** when the user asks a factual question, requests information, or mentions a topic you need data for.
 
-    if (meta) {
-      if (meta.locked) line += ' LOCKED';
-      if (meta.tags && meta.tags.length > 0) line += ` tags:[${meta.tags.join(',')}]`;
-      if (meta.aiNotes) line += ` notes:"${meta.aiNotes}"`;
-      if (meta.createdBy !== 'ai' && typeof meta.createdBy === 'object') {
-        line += ` (by ${meta.createdBy.name})`;
-      }
-    }
+**Do NOT search** — just respond directly — for:
+- Greetings, thank-yous, small talk ("hi", "thanks", "goodbye")
+- Clarifying questions ("what do you mean?", "which report?")
+- Meta-questions about your capabilities ("what can you do?")
+- Follow-ups about your previous answer that don't need new data ("can you rephrase that?", "summarize what you just said", "explain that simpler")
+- Acknowledgments or confirmations
 
-    lines.push(line);
-  }
+**When you DO search:**
+- Never assume what a term means — the knowledge base defines what things are
+- Search each key term individually — e.g. for "How does Project Alpha affect Q4 revenue?", search "Project Alpha" first, then "Q4 revenue", then combine
+- Craft specific, targeted search queries — not the user's exact words
+- For broad questions, break into 2-3 focused searches
+- If the first search returns low-relevance results (scores below 0.3), rephrase and search again with different keywords
 
-  const occupied = state.cards.map((c) => ({
-    x1: c.position.x,
-    y1: c.position.y,
-    x2: c.position.x + c.width,
-    y2: c.position.y + c.height,
-  }));
+## Answering
 
-  const maxX = Math.max(...occupied.map((o) => o.x2));
-  const maxY = Math.max(...occupied.map((o) => o.y2));
-
-  // Build candidate positions from edges of existing cards + canvas boundary
-  const candidateXs = new Set([0]);
-  const candidateYs = new Set([0]);
-  for (const o of occupied) {
-    candidateXs.add(o.x2 + CARD_GAP);
-    candidateYs.add(o.y2 + CARD_GAP);
-  }
-  // Also try just past all cards
-  candidateXs.add(maxX + CARD_GAP);
-  candidateYs.add(maxY + CARD_GAP);
-
-  const suggestions: Array<{ x: number; y: number }> = [];
-  const sortedXs = [...candidateXs].sort((a, b) => a - b);
-  const sortedYs = [...candidateYs].sort((a, b) => a - b);
-
-  for (const x of sortedXs) {
-    for (const y of sortedYs) {
-      const overlaps = occupied.some(
-        (o) =>
-          x < o.x2 + CARD_GAP &&
-          x + DEFAULT_CARD_W + CARD_GAP > o.x1 &&
-          y < o.y2 + CARD_GAP &&
-          y + DEFAULT_CARD_H + CARD_GAP > o.y1
-      );
-      if (!overlaps) {
-        suggestions.push({ x, y });
-        if (suggestions.length >= 3) break;
-      }
-    }
-    if (suggestions.length >= 3) break;
-  }
-
-  // Fallback: place to the right or below all cards
-  if (suggestions.length === 0) {
-    suggestions.push({ x: maxX + CARD_GAP, y: 0 }, { x: 0, y: maxY + CARD_GAP });
-  }
-
-  lines.push(
-    `\nNext free positions (use these): ${suggestions.map((p) => `(${p.x}, ${p.y})`).join(', ')}`
-  );
-
-  return lines.join('\n');
-}
+- Be concise — answer the question directly, then stop. Do not add context the user did not ask for.
+- Stay strictly on topic — never deviate
+- Never include page numbers, dataSourceIds, or technical metadata in your answer text.
+- When multiple sources agree, synthesize into a single clear answer
+- When sources conflict, note the discrepancy`;
 
 @Injectable()
 export class AgentFactory {
   constructor(
-    private memoryService: AgentMemoryService,
     private ragSearchTool: RagSearchTool,
-    private canvasTools: CanvasTools,
     private aiUsageService: AiUsageService
   ) {}
 
   createDataAgent(opts: {
     orgId: DbId<'Org'>;
-    collectionIds?: DbId<'Collection'>[];
-    userId?: DbId<'User'>;
-    threadId?: DbId<'ChatThread'>;
-    canvasState?: CanvasState;
+    source: AiRequestSource;
     callerType?: AiCallerType;
-    enableCanvas?: boolean;
+    userId?: DbId<'User'>;
+    collectionIds?: DbId<'Collection'>[];
     defaultTopK?: number;
-  }): DataAgent {
-    const { orgId, collectionIds, userId, threadId, canvasState, callerType, enableCanvas = true, defaultTopK } = opts;
+    tools?: ToolsInput[];
+    instructions?: string;
+    memory?: Memory;
+    maxSteps?: number;
+  }): BaseAgent {
+    const {
+      orgId,
+      source,
+      callerType,
+      userId,
+      collectionIds,
+      defaultTopK,
+      tools: extraTools,
+      instructions,
+      memory,
+      maxSteps,
+    } = opts;
+
     const ragTool = this.ragSearchTool.create(orgId, collectionIds, defaultTopK);
 
     const tools: ToolsInput = {
       'rag-search': ragTool,
+      ...Object.assign({}, ...(extraTools ?? [])),
     };
 
-    if (enableCanvas && threadId) {
-      const canvasToolSet = this.canvasTools.create(threadId, orgId);
-      Object.assign(tools, canvasToolSet);
-    }
+    const prompt = instructions ? `${DATA_AGENT_PROMPT}\n\n${instructions}` : DATA_AGENT_PROMPT;
 
-    const canvasContext = enableCanvas && canvasState ? summarizeCanvas(canvasState) : undefined;
-
-    return new DataAgent(
+    return new BaseAgent(
+      'data-assistant',
+      'Data Assistant',
+      prompt,
       tools,
-      this.memoryService.getMemory(),
+      CHAT_MODEL,
       this.aiUsageService,
       {
         callerType: callerType ?? AiCallerType.MEMBER,
         requestType: AiRequestType.CHAT,
-        context: { orgId, userId },
+        context: { orgId, userId, source },
       },
-      canvasContext,
-      enableCanvas
+      memory,
+      maxSteps
     );
   }
 }

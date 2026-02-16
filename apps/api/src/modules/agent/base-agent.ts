@@ -1,12 +1,11 @@
 import { Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
-import type { ModelId } from '@grabdy/contracts';
+import type { AiCallerType, AiRequestType, ModelId } from '@grabdy/contracts';
 import type { ToolsInput } from '@mastra/core/agent';
 import { Agent } from '@mastra/core/agent';
 import type { Memory } from '@mastra/memory';
 
-import type { AiCallerType, AiRequestType } from '../../db/enums';
 import type { AiUsageService, UsageContext } from '../ai/ai-usage.service';
 
 export interface AgentUsageConfig {
@@ -15,27 +14,32 @@ export interface AgentUsageConfig {
   context: UsageContext;
 }
 
-export abstract class BaseAgent {
+export class BaseAgent {
   protected agent: Agent;
   protected logger: Logger;
   private usageService: AiUsageService | null;
   private usageConfig: AgentUsageConfig | null;
   private modelName: ModelId;
+  private maxSteps: number;
+  private hasMemory: boolean;
 
   constructor(
     id: string,
     name: string,
     instructions: string,
     tools: ToolsInput,
-    memory: Memory,
     model: ModelId,
     usageService?: AiUsageService,
     usageConfig?: AgentUsageConfig,
+    memory?: Memory,
+    maxSteps = 25
   ) {
     this.logger = new Logger(this.constructor.name);
     this.usageService = usageService ?? null;
     this.usageConfig = usageConfig ?? null;
     this.modelName = model;
+    this.maxSteps = maxSteps;
+    this.hasMemory = Boolean(memory);
 
     this.agent = new Agent({
       id,
@@ -43,7 +47,7 @@ export abstract class BaseAgent {
       instructions,
       model,
       tools,
-      memory,
+      ...(memory ? { memory } : {}),
     });
   }
 
@@ -55,7 +59,7 @@ export abstract class BaseAgent {
         thread: threadId,
         resource: membershipId,
       },
-      maxSteps: 10,
+      maxSteps: this.maxSteps,
     });
 
     // Fire-and-forget usage logging after stream completes
@@ -74,7 +78,7 @@ export abstract class BaseAgent {
             cfg.callerType,
             cfg.requestType,
             cfg.context,
-            { streaming: true },
+            { streaming: true }
           );
         })
         .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
@@ -86,13 +90,14 @@ export abstract class BaseAgent {
   generate(message: string, threadId?: DbId<'ChatThread'>, membershipId?: DbId<'OrgMembership'>) {
     this.logger.debug(`Generating message${threadId ? ` for thread: ${threadId}` : ''}`);
 
-    const memoryOpts = threadId && membershipId
-      ? { memory: { thread: threadId, resource: membershipId } }
-      : {};
+    const memoryOpts =
+      this.hasMemory && threadId && membershipId
+        ? { memory: { thread: threadId, resource: membershipId } }
+        : {};
 
     const result = this.agent.generate(message, {
       ...memoryOpts,
-      maxSteps: 10,
+      maxSteps: this.maxSteps,
     });
 
     // Fire-and-forget usage logging after generation completes
@@ -110,7 +115,7 @@ export abstract class BaseAgent {
             usage.outputTokens ?? 0,
             cfg.callerType,
             cfg.requestType,
-            cfg.context,
+            cfg.context
           );
         })
         .catch((err) => this.logger.error(`Usage logging failed: ${err}`));

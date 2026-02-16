@@ -1,11 +1,7 @@
-import { nonDbIdSchema } from '@grabdy/common';
 import type { CanvasEdge, Card } from '@grabdy/contracts';
-import { contract } from '@grabdy/contracts';
+import { canvasEdgeSchema, contract } from '@grabdy/contracts';
 import { ApiFetcherArgs, initClient } from '@ts-rest/core';
 import { z } from 'zod';
-
-const cardIdSchema = nonDbIdSchema('CanvasCard');
-const edgeIdSchema = nonDbIdSchema('CanvasEdge');
 
 const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -59,65 +55,33 @@ export const api = initClient(contract, {
   api: customFetcher,
 });
 
-export type CanvasUpdate =
-  | { tool: 'canvas_add_card'; args: { cards: unknown[] }; result: { cards?: Card[] } }
-  | { tool: 'canvas_remove_card'; args: { cardId: string }; result: unknown }
-  | { tool: 'canvas_move_card'; args: { cardId: string; position?: { x: number; y: number }; width?: number; height?: number }; result: unknown }
-  | { tool: 'canvas_update_component'; args: { cardId: string; componentId: string; data: Record<string, unknown> }; result: unknown }
-  | { tool: 'canvas_add_edge'; args: { edge: CanvasEdge }; result: unknown }
-  | { tool: 'canvas_remove_edge'; args: { edgeId: string }; result: unknown };
+export type CanvasOpResult =
+  | { op: 'add_card'; cards: Card[] }
+  | { op: 'remove_card'; cardId: string }
+  | { op: 'move_card'; cardId: string; position?: { x: number; y: number }; width?: number; height?: number }
+  | { op: 'update_component'; cardId: string; componentId: string; data: Record<string, unknown> }
+  | { op: 'add_edge'; edge: CanvasEdge }
+  | { op: 'remove_edge'; edgeId: string };
 
-export interface StreamThinkingStep {
-  toolName: string;
-  summary: string;
+export interface CanvasUpdate {
+  results: CanvasOpResult[];
 }
 
 interface StreamCallbacks {
   onText: (text: string) => void;
-  onDone: (metadata: { threadId?: string; sources?: StreamSource[]; thinkingSteps?: StreamThinkingStep[] }) => void;
+  onDone: (metadata: { threadId?: string }) => void;
   onCanvasUpdate?: (update: CanvasUpdate) => void;
-  onToolStart?: (toolName: string, label?: string) => void;
-  onToolEnd?: (toolName: string, summary: string) => void;
   onError?: (error: Error) => void;
-}
-
-interface StreamSource {
-  dataSourceId: string;
-  dataSourceName: string;
-  score: number;
-  pages?: number[];
 }
 
 const textDeltaSchema = z.string();
 const metadataEventSchema = z.object({
   type: z.string(),
   threadId: z.string().optional(),
-  sources: z.array(z.object({
-    dataSourceId: z.string(),
-    dataSourceName: z.string(),
-    score: z.number(),
-    pages: z.array(z.number()).optional(),
-  })).optional(),
-  thinkingSteps: z.array(z.object({
-    toolName: z.string(),
-    summary: z.string(),
-  })).optional(),
   tool: z.string().optional(),
-  toolName: z.string().optional(),
-  label: z.string().optional(),
-  summary: z.string().optional(),
   args: z.unknown().optional(),
   result: z.unknown().optional(),
 });
-
-const CANVAS_TOOL_NAMES = new Set([
-  'canvas_add_card',
-  'canvas_remove_card',
-  'canvas_move_card',
-  'canvas_update_component',
-  'canvas_add_edge',
-  'canvas_remove_edge',
-]);
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
@@ -127,68 +91,53 @@ function rec(v: unknown): Record<string, unknown> {
   return isRecord(v) ? v : {};
 }
 
-function toCanvasUpdate(tool: string, args: unknown, result: unknown): CanvasUpdate | null {
-  if (!CANVAS_TOOL_NAMES.has(tool)) return null;
-  const a = rec(args);
-  switch (tool) {
-    case 'canvas_add_card': {
-      const r = rec(result);
+function parseOpResult(r: unknown): CanvasOpResult | null {
+  if (!isRecord(r)) return null;
+  const op = r['op'];
+  switch (op) {
+    case 'add_card':
+      return Array.isArray(r['cards']) ? { op: 'add_card', cards: r['cards'] } : null;
+    case 'remove_card':
+      return { op: 'remove_card', cardId: String(r['cardId'] ?? '') };
+    case 'move_card': {
+      const pos = isRecord(r['position']) ? { x: Number(r['position']['x']), y: Number(r['position']['y']) } : undefined;
       return {
-        tool: 'canvas_add_card',
-        args: { cards: Array.isArray(a['cards']) ? a['cards'] : [] },
-        result: { cards: Array.isArray(r['cards']) ? r['cards'] : undefined },
+        op: 'move_card',
+        cardId: String(r['cardId'] ?? ''),
+        position: pos,
+        width: typeof r['width'] === 'number' ? r['width'] : undefined,
+        height: typeof r['height'] === 'number' ? r['height'] : undefined,
       };
     }
-    case 'canvas_remove_card':
-      return { tool: 'canvas_remove_card', args: { cardId: String(a['cardId'] ?? '') }, result };
-    case 'canvas_move_card': {
-      const pos = rec(a['position']);
+    case 'update_component':
       return {
-        tool: 'canvas_move_card',
-        args: {
-          cardId: String(a['cardId'] ?? ''),
-          position: a['position'] ? { x: Number(pos['x']), y: Number(pos['y']) } : undefined,
-          width: typeof a['width'] === 'number' ? a['width'] : undefined,
-          height: typeof a['height'] === 'number' ? a['height'] : undefined,
-        },
-        result,
+        op: 'update_component',
+        cardId: String(r['cardId'] ?? ''),
+        componentId: String(r['componentId'] ?? ''),
+        data: rec(r['data']),
       };
+    case 'add_edge': {
+      const parsed = canvasEdgeSchema.safeParse(r['edge']);
+      if (!parsed.success) return null;
+      return { op: 'add_edge', edge: parsed.data };
     }
-    case 'canvas_update_component':
-      return {
-        tool: 'canvas_update_component',
-        args: {
-          cardId: String(a['cardId'] ?? ''),
-          componentId: String(a['componentId'] ?? ''),
-          data: rec(a['data']),
-        },
-        result,
-      };
-    case 'canvas_add_edge': {
-      const e = rec(a['edge']);
-      const id = edgeIdSchema.safeParse(String(e['id'] ?? ''));
-      const source = cardIdSchema.safeParse(String(e['source'] ?? ''));
-      const target = cardIdSchema.safeParse(String(e['target'] ?? ''));
-      if (!id.success || !source.success || !target.success) return null;
-      return {
-        tool: 'canvas_add_edge',
-        args: {
-          edge: {
-            id: id.data,
-            source: source.data,
-            target: target.data,
-            label: typeof e['label'] === 'string' ? e['label'] : undefined,
-            strokeWidth: typeof e['strokeWidth'] === 'number' ? e['strokeWidth'] : 2,
-          },
-        },
-        result,
-      };
-    }
-    case 'canvas_remove_edge':
-      return { tool: 'canvas_remove_edge', args: { edgeId: String(a['edgeId'] ?? '') }, result };
+    case 'remove_edge':
+      return { op: 'remove_edge', edgeId: String(r['edgeId'] ?? '') };
     default:
       return null;
   }
+}
+
+function toCanvasUpdate(tool: string, _args: unknown, result: unknown): CanvasUpdate | null {
+  if (tool !== 'canvas_update') return null;
+  const r = rec(result);
+  const rawResults = Array.isArray(r['results']) ? r['results'] : [];
+  const results: CanvasOpResult[] = [];
+  for (const item of rawResults) {
+    const parsed = parseOpResult(item);
+    if (parsed) results.push(parsed);
+  }
+  return { results };
 }
 
 export async function streamChat(
@@ -251,14 +200,7 @@ export async function streamChat(
             if (metadata.type === 'done') {
               callbacks.onDone({
                 threadId: metadata.threadId,
-                sources: metadata.sources,
-                thinkingSteps: metadata.thinkingSteps,
               });
-            } else if (metadata.type === 'tool_start' && callbacks.onToolStart && typeof metadata.toolName === 'string') {
-              const label = typeof metadata.label === 'string' ? metadata.label : undefined;
-              callbacks.onToolStart(metadata.toolName, label);
-            } else if (metadata.type === 'tool_end' && callbacks.onToolEnd && typeof metadata.toolName === 'string') {
-              callbacks.onToolEnd(metadata.toolName, typeof metadata.summary === 'string' ? metadata.summary : 'Done');
             } else if (metadata.type === 'canvas_update' && callbacks.onCanvasUpdate && metadata.tool) {
               const update = toCanvasUpdate(metadata.tool, metadata.args, metadata.result);
               if (update) {
