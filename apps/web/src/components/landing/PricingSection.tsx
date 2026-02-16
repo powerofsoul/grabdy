@@ -25,8 +25,8 @@ interface Tier {
 const TIERS = [
   {
     name: 'Pro',
-    price: '$29',
-    priceSuffix: '/mo',
+    price: 'Beta',
+    priceSuffix: '',
     badge: 'Free during beta',
     description: 'Everything you need to get started. Free while we\u2019re in beta\u00a0\u2014\u00a0no credit card required.',
     cta: 'Join waitlist',
@@ -51,8 +51,8 @@ const TIERS = [
   },
   {
     name: 'Business',
-    price: '$79',
-    priceSuffix: '/mo',
+    price: 'Custom',
+    priceSuffix: '',
     badge: 'Coming soon',
     description: 'For growing teams that need higher limits, priority support, and advanced integrations.',
     cta: 'Join waitlist',
@@ -158,8 +158,6 @@ function PricingCard({ tier }: { tier: Tier }) {
             sx={{
               fontWeight: 700,
               fontSize: { xs: '2rem', md: '2.5rem' },
-              textDecoration: tier.highlighted ? 'line-through' : 'none',
-              color: tier.highlighted ? 'text.secondary' : 'text.primary',
             }}
           >
             {tier.price}
@@ -170,11 +168,6 @@ function PricingCard({ tier }: { tier: Tier }) {
             </Typography>
           )}
         </Box>
-        {tier.highlighted && (
-          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: 'primary.main' }}>
-            Free during beta
-          </Typography>
-        )}
       </Box>
 
       <Typography

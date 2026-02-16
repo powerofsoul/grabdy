@@ -1,10 +1,25 @@
-import { alpha, AppBar, Box, Button, Container, Toolbar, useScrollTrigger, useTheme } from '@mui/material';
+import { alpha, AppBar, Box, Button, Container, Toolbar, Typography, useScrollTrigger, useTheme } from '@mui/material';
 import { Link } from '@tanstack/react-router';
 
 import { Logo } from '../ui/Logo';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
 import { useWaitlist } from './WaitlistModal';
+
+const NAV_LINKS = [
+  { label: 'Features', href: '#features' },
+  { label: 'Integrations', href: '#integrations' },
+  { label: 'Developers', href: '#developers' },
+  { label: 'Pricing', href: '#pricing' },
+] as const;
+
+const navLinkSx = {
+  fontSize: '0.82rem',
+  color: 'text.secondary',
+  textDecoration: 'none',
+  transition: 'color 0.2s',
+  '&:hover': { color: 'text.primary' },
+};
 
 export function LandingNav() {
   const theme = useTheme();
@@ -36,6 +51,21 @@ export function LandingNav() {
         >
           <Logo size="lg" />
 
+          {/* Center nav links — desktop only */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              alignItems: 'center',
+              gap: 3,
+            }}
+          >
+            {NAV_LINKS.map((link) => (
+              <Typography key={link.href} component="a" href={link.href} sx={navLinkSx}>
+                {link.label}
+              </Typography>
+            ))}
+          </Box>
+
           {/* Right actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <ThemeToggle />
@@ -43,7 +73,10 @@ export function LandingNav() {
               <Button
                 variant="text"
                 size="small"
-                sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'text.primary' },
+                }}
               >
                 Login
               </Button>

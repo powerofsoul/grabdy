@@ -1,4 +1,5 @@
-import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Container, IconButton, Typography, useTheme } from '@mui/material';
+import { LinkedinLogo as LinkedinLogoIcon, XLogo as XLogoIcon } from '@phosphor-icons/react';
 
 import { Logo } from '../ui/Logo';
 
@@ -76,11 +77,43 @@ export function Footer() {
           </Box>
         </Box>
 
-        {/* Bottom copyright */}
-        <Box sx={{ mt: 4, pt: 2.5, borderTop: '1px solid', borderColor: 'grey.900' }}>
+        {/* Bottom copyright + social */}
+        <Box
+          sx={{
+            mt: 4,
+            pt: 2.5,
+            borderTop: '1px solid',
+            borderColor: 'grey.900',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Typography sx={{ fontSize: '0.72rem', color: alpha(theme.palette.text.secondary, 0.6) }}>
             &copy; {new Date().getFullYear()} Grabdy. All rights reserved.
           </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <IconButton
+              component="a"
+              href="https://x.com/GrabdyAi"
+              target="_blank"
+              rel="noopener noreferrer"
+              size="small"
+              sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+            >
+              <XLogoIcon size={16} weight="light" />
+            </IconButton>
+            <IconButton
+              component="a"
+              href="https://www.linkedin.com/company/111773181"
+              target="_blank"
+              rel="noopener noreferrer"
+              size="small"
+              sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+            >
+              <LinkedinLogoIcon size={16} weight="light" />
+            </IconButton>
+          </Box>
         </Box>
       </Container>
     </Box>
