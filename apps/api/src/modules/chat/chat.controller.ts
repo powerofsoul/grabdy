@@ -12,6 +12,7 @@ import {
   CurrentMembership,
   JwtMembership,
 } from '../../common/decorators/current-membership.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
@@ -27,10 +28,13 @@ export class ChatController {
 
   @OrgAccess(chatContract.chat, { params: ['orgId'] })
   @TsRestHandler(chatContract.chat)
-  async chat(@CurrentMembership() membership: JwtMembership) {
+  async chat(
+    @CurrentMembership() membership: JwtMembership,
+    @CurrentUser('sub') userId: DbId<'User'>,
+  ) {
     return tsRestHandler(chatContract.chat, async ({ params, body }) => {
       try {
-        const result = await this.chatService.chat(params.orgId, membership.id, body.message, {
+        const result = await this.chatService.chat(params.orgId, membership.id, userId, body.message, {
           threadId: body.threadId,
           collectionId: body.collectionId,
         });
@@ -241,11 +245,12 @@ export class ChatController {
     @Param('orgId', new ZodValidationPipe(dbIdSchema('Org')))
     orgId: DbId<'Org'>,
     @CurrentMembership() membership: JwtMembership,
+    @CurrentUser('sub') userId: DbId<'User'>,
     @Body(new ZodValidationPipe(streamChatBodySchema)) body: StreamChatBody,
     @Res() res: Response,
   ) {
     try {
-      const result = await this.chatService.streamChat(orgId, membership.id, body.message, {
+      const result = await this.chatService.streamChat(orgId, membership.id, userId, body.message, {
         threadId: body.threadId,
         collectionId: body.collectionId,
       });

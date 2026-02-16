@@ -89,6 +89,7 @@ export class ChatService {
   async chat(
     orgId: DbId<'Org'>,
     membershipId: DbId<'OrgMembership'>,
+    userId: DbId<'User'>,
     message: string,
     options: {
       threadId?: DbId<'ChatThread'>;
@@ -104,6 +105,7 @@ export class ChatService {
 
     const chatAgent = this.agentFactory.createDataAgent({
       orgId,
+      userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
       instructions: this.buildChatInstructions(canvasState),
@@ -122,6 +124,7 @@ export class ChatService {
   async streamChat(
     orgId: DbId<'Org'>,
     membershipId: DbId<'OrgMembership'>,
+    userId: DbId<'User'>,
     message: string,
     options: {
       threadId?: DbId<'ChatThread'>;
@@ -133,6 +136,7 @@ export class ChatService {
 
     const agent = this.agentFactory.createDataAgent({
       orgId,
+      userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
       instructions: this.buildChatInstructions(canvasState),
