@@ -93,7 +93,11 @@ const environment = [
   { name: 'INTEGRATION_ENCRYPTION_KEY', value: Env.integrationEncryptionKey },
   { name: 'S3_UPLOADS_BUCKET', value: uploadsBucket.bucket },
   { name: 'AWS_REGION', value: Env.region.name },
-  { name: 'SES_FROM_EMAIL', value: `Grabdy <noreply@${Env.domain}>` },
+  { name: 'SMTP_HOST', value: Env.smtpHost },
+  { name: 'SMTP_PORT', value: Env.smtpPort },
+  { name: 'SMTP_USER', value: Env.smtpUser },
+  { name: 'SMTP_PASS', value: Env.smtpPass },
+  { name: 'EMAIL_FROM', value: Env.emailFrom },
   { name: 'SLACK_WEBHOOK_URL', value: Env.slackWebhookUrl },
   // Integrations (set to __TEMP__ until real credentials are configured)
   { name: 'LINEAR_CLIENT_ID', value: '__TEMP__' },

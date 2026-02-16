@@ -1,7 +1,6 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
-import { Env } from '../env';
 import { uploadsBucket } from '../storage/buckets';
 
 // ECS task execution role — pulls images from ECR, writes logs
@@ -23,8 +22,6 @@ export const taskRole = new aws.iam.Role('grabdy-task-role', {
   }),
 });
 
-const callerIdentity = aws.getCallerIdentity();
-
 new aws.iam.RolePolicy('grabdy-task-policy', {
   role: taskRole.name,
   policy: pulumi.jsonStringify({
@@ -35,12 +32,6 @@ new aws.iam.RolePolicy('grabdy-task-policy', {
         Effect: 'Allow',
         Action: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
         Resource: [uploadsBucket.arn, pulumi.interpolate`${uploadsBucket.arn}/*`],
-      },
-      // SES send email
-      {
-        Effect: 'Allow',
-        Action: ['ses:SendEmail', 'ses:SendRawEmail'],
-        Resource: pulumi.interpolate`arn:aws:ses:${Env.region.name}:${callerIdentity.then((id) => id.accountId)}:identity/${Env.domain}`,
       },
     ],
   }),

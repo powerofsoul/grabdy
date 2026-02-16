@@ -9,9 +9,6 @@ import { db } from './src/data/database';
 import { frontendBucket } from './src/storage/buckets';
 import { distribution } from './src/storage/cdn';
 
-// Side-effect imports — these modules create resources on import
-import './src/network/email';
-
 // DNS records (wires ALB + CloudFront to Route53)
 const zone = aws.route53.getZone({ name: Env.domain });
 

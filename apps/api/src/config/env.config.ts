@@ -44,7 +44,11 @@ export const env = {
   s3UploadsBucket: requiredInProd('S3_UPLOADS_BUCKET', 'grabdy-uploads-dev'),
   awsRegion: process.env.AWS_REGION || 'eu-central-1',
 
-  sesFromEmail: process.env.SES_FROM_EMAIL || 'Grabdy <noreply@grabdy.com>',
+  smtpHost: process.env.SMTP_HOST || 'smtp.zeptomail.eu',
+  smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
+  smtpUser: requiredInProd('SMTP_USER', ''),
+  smtpPass: requiredInProd('SMTP_PASS', ''),
+  emailFrom: process.env.EMAIL_FROM || 'Grabdy <noreply@grabdy.com>',
 
   adminApiKey: required('ADMIN_API_KEY'),
 

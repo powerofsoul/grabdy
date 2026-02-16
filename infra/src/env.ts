@@ -14,5 +14,10 @@ export const Env = {
   bullBoardPassword: config.requireSecret('bullBoardPassword'),
   integrationEncryptionKey: config.requireSecret('integrationEncryptionKey'),
   slackWebhookUrl: config.requireSecret('slackWebhookUrl'),
+  smtpHost: config.require('smtpHost'),
+  smtpPort: config.require('smtpPort'),
+  smtpUser: config.require('smtpUser'),
+  smtpPass: config.requireSecret('smtpPass'),
+  emailFrom: config.require('emailFrom'),
   region: aws.getRegionOutput(),
 } as const;
