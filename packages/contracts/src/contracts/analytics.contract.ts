@@ -42,6 +42,15 @@ const sourceBreakdownSchema = z.object({
   totalTokens: z.number(),
 });
 
+const memberBreakdownSchema = z.object({
+  userId: z.string().nullable(),
+  userName: z.string(),
+  requests: z.number(),
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  totalTokens: z.number(),
+});
+
 export const analyticsContract = c.router(
   {
     getUsageSummary: {
@@ -60,6 +69,7 @@ export const analyticsContract = c.router(
             byModel: z.array(modelBreakdownSchema),
             byRequestType: z.array(requestTypeBreakdownSchema),
             bySource: z.array(sourceBreakdownSchema),
+            byMember: z.array(memberBreakdownSchema),
           }),
         }),
       },

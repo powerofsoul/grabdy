@@ -13,15 +13,16 @@ export class AnalyticsService {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    const [summary, daily, byModel, byRequestType, bySource] = await Promise.all([
+    const [summary, daily, byModel, byRequestType, bySource, byMember] = await Promise.all([
       this.getSummary(orgId, since),
       this.getDailyUsage(orgId, since),
       this.getModelBreakdown(orgId, since),
       this.getRequestTypeBreakdown(orgId, since),
       this.getSourceBreakdown(orgId, since),
+      this.getMemberBreakdown(orgId, since),
     ]);
 
-    return { summary, daily, byModel, byRequestType, bySource };
+    return { summary, daily, byModel, byRequestType, bySource, byMember };
   }
 
   private async getSummary(orgId: DbId<'Org'>, since: Date) {
@@ -136,6 +137,34 @@ export class AnalyticsService {
 
     return results.map((r) => ({
       source: r.source,
+      requests: Number(r.requests),
+      inputTokens: Number(r.input_tokens),
+      outputTokens: Number(r.output_tokens),
+      totalTokens: Number(r.total_tokens),
+    }));
+  }
+
+  private async getMemberBreakdown(orgId: DbId<'Org'>, since: Date) {
+    const results = await this.db.kysely
+      .selectFrom('analytics.ai_usage_logs')
+      .leftJoin('auth.users', 'auth.users.id', 'analytics.ai_usage_logs.user_id')
+      .select([
+        'analytics.ai_usage_logs.user_id',
+        sql<string>`coalesce(auth.users.name, 'System')`.as('user_name'),
+        sql<number>`count(*)::int`.as('requests'),
+        sql<number>`coalesce(sum(analytics.ai_usage_logs.input_tokens), 0)::int`.as('input_tokens'),
+        sql<number>`coalesce(sum(analytics.ai_usage_logs.output_tokens), 0)::int`.as('output_tokens'),
+        sql<number>`coalesce(sum(analytics.ai_usage_logs.total_tokens), 0)::int`.as('total_tokens'),
+      ])
+      .where('analytics.ai_usage_logs.org_id', '=', orgId)
+      .where('analytics.ai_usage_logs.created_at', '>=', since)
+      .groupBy(['analytics.ai_usage_logs.user_id', 'auth.users.name'])
+      .orderBy(sql`sum(analytics.ai_usage_logs.total_tokens)`, 'desc')
+      .execute();
+
+    return results.map((r) => ({
+      userId: r.user_id,
+      userName: r.user_name,
       requests: Number(r.requests),
       inputTokens: Number(r.input_tokens),
       outputTokens: Number(r.output_tokens),
