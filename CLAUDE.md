@@ -42,7 +42,9 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - Use `satisfies` for type checking without casting.
 - **Use `satisfies T[] as const` for typed constant arrays.**
 - **NEVER use `string` or `number` as `Record` key type.** Always use a typed union (e.g., `Record<ToolName, Display>` not `Record<string, Display>`).
+- **NEVER use `Record<string, unknown>` as a bag of fields.** Use discriminated unions with typed fields instead. Functions that accept or return partial data should use `Partial<DiscriminatedUnion>`, not `Record<string, unknown>`.
 - **NEVER use interfaces with multiple optional keys where the shape depends on the type.** Use discriminated unions instead.
+- **ALWAYS use Zod schemas to parse raw/unknown data at trust boundaries** (DB JSONB columns, API responses, webhook payloads). Never use `typeof` checks to manually narrow — define a Zod schema and call `.parse()`.
 
 ### ID System — Packed UUIDs
 
@@ -69,6 +71,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - **Use snake_case for all PostgreSQL table and column names.**
 - Keep TypeScript model names in PascalCase, field names in camelCase.
+- **NEVER modify existing migration files.** Production has already run them. Always create a new migration for schema changes.
 
 ### NestJS
 
