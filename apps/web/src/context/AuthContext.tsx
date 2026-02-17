@@ -29,6 +29,8 @@ interface AuthContextType {
   isOwner: boolean;
   selectOrg: (orgId: DbId<'Org'>) => void;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<void>;
+  googleAuth: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
@@ -100,6 +102,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw new Error('Login failed');
   };
 
+  const signup = async (email: string, password: string, name: string) => {
+    const res = await api.auth.signup({ body: { email, password, name } });
+
+    if (res.status === 200 && res.body.success) {
+      setUser(res.body.data);
+      return;
+    }
+
+    if (res.status === 409) {
+      throw new Error(res.body.error || 'An account with this email already exists');
+    }
+
+    if (res.status === 400) {
+      throw new Error(res.body.error || 'Signup failed');
+    }
+
+    throw new Error('Signup failed');
+  };
+
+  const googleAuth = async (credential: string) => {
+    const res = await api.auth.googleAuth({ body: { credential } });
+
+    if (res.status === 200 && res.body.success) {
+      setUser(res.body.data);
+      return;
+    }
+
+    if (res.status === 400) {
+      throw new Error(res.body.error || 'Google authentication failed');
+    }
+
+    throw new Error('Google authentication failed');
+  };
+
   const logout = async () => {
     await api.auth.logout({ body: {} });
     localStorage.removeItem(STORAGE_KEYS.SELECTED_ORG_ID);
@@ -150,6 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isOwner,
         selectOrg,
         login,
+        signup,
+        googleAuth,
         logout,
         forgotPassword,
         resetPassword,

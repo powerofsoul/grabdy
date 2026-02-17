@@ -14,8 +14,6 @@ export const Env = {
   bullBoardPassword: config.requireSecret('bullBoardPassword'),
   integrationEncryptionKey: config.requireSecret('integrationEncryptionKey'),
 
-  slackWebhookUrl: config.requireSecret('slackWebhookUrl'),
-
   slackClientId: config.require('slackClientId'),
   slackClientSecret: config.requireSecret('slackClientSecret'),
   slackSigningSecret: config.requireSecret('slackSigningSecret'),
@@ -28,6 +26,12 @@ export const Env = {
   githubAppSlug: config.require('githubAppSlug'),
   githubPrivateKey: config.requireSecret('githubPrivateKey'),
   githubWebhookSecret: config.requireSecret('githubWebhookSecret'),
+
+  // Slack internal notifications
+  slackWebhookUrl: config.requireSecret('slackWebhookUrl'),
+
+  // Google OAuth
+  googleClientId: config.require('googleClientId'),
 
   smtpHost: config.require('smtpHost'),
   smtpPort: config.require('smtpPort'),

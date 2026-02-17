@@ -20,9 +20,8 @@ import {
   TrendUpIcon,
   WarningDiamondIcon,
 } from '@phosphor-icons/react';
+import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
-
-import { useWaitlist } from '../WaitlistModal';
 
 import {
   CARD_SOURCES,
@@ -43,8 +42,8 @@ import {
   SWOT,
   TURNS,
 } from './constants';
-import { edgeEndpoints, edgePath } from './helpers';
 import { GoogleDriveIcon } from './GoogleDriveIcon';
+import { edgeEndpoints, edgePath } from './helpers';
 import { LinearIcon } from './LinearIcon';
 import { SlackIcon } from './SlackIcon';
 import type { ChatMsg, HeroCardId, SourceType } from './types';
@@ -53,7 +52,6 @@ import heroClouds from '@/assets/hero-clouds-light.svg';
 
 export function HeroSection() {
   const theme = useTheme();
-  const { open: openWaitlist } = useWaitlist();
   const containerRef = useRef<HTMLDivElement>(null);
   const showcaseRef = useRef<HTMLDivElement>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null);
@@ -82,9 +80,10 @@ export function HeroSection() {
   // Canvas
   const [positions, setPositions] = useState<Record<HeroCardId, { x: number; y: number }>>(() => {
     // Deep copy so state mutations don't affect the constant
-    return Object.fromEntries(
-      Object.entries(INIT_POS).map(([k, v]) => [k, { ...v }]),
-    ) as Record<HeroCardId, { x: number; y: number }>;
+    return Object.fromEntries(Object.entries(INIT_POS).map(([k, v]) => [k, { ...v }])) as Record<
+      HeroCardId,
+      { x: number; y: number }
+    >;
   });
   const [visibleNodes, setVisibleNodes] = useState<Set<string>>(new Set());
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
@@ -614,7 +613,6 @@ export function HeroSection() {
         },
       }}
     >
-
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
         <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto' }}>
           <Typography
@@ -692,23 +690,25 @@ export function HeroSection() {
               mb: { xs: 5, md: 6 },
             }}
           >
-            <Button
-              variant="contained"
-              size="large"
-              endIcon={<ArrowRightIcon size={18} weight="light" />}
-              onClick={openWaitlist}
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontSize: '1rem',
-              }}
-            >
-              Join Waitlist
-            </Button>
+            <Link to="/auth/signup" style={{ textDecoration: 'none' }}>
+              <Button
+                variant="contained"
+                size="large"
+                endIcon={<ArrowRightIcon size={18} weight="light" />}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1rem',
+                }}
+              >
+                Get Started
+              </Button>
+            </Link>
             <Button
               variant="outlined"
               size="large"
-              onClick={openWaitlist}
+              component="a"
+              href="mailto:hello@grabdy.com"
               sx={{
                 px: 4,
                 py: 1.5,
@@ -1842,7 +1842,11 @@ export function HeroSection() {
                   Ask anything about your documents...
                 </Typography>
               )}
-              <PaperPlaneTiltIcon size={14} weight="light" color={inputText ? p.primary.main : alpha(ct, 0.15)} />
+              <PaperPlaneTiltIcon
+                size={14}
+                weight="light"
+                color={inputText ? p.primary.main : alpha(ct, 0.15)}
+              />
             </Box>
           </Box>
         </Box>

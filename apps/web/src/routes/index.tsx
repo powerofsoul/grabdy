@@ -10,7 +10,7 @@ import { LandingNav } from '@/components/landing/LandingNav';
 import { McpSection } from '@/components/landing/McpSection';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { ProofStripSection } from '@/components/landing/ProofStripSection';
-import { WaitlistProvider } from '@/components/landing/WaitlistModal';
+
 import { WhatYouCanAskSection } from '@/components/landing/WhatYouCanAskSection';
 
 export const Route = createFileRoute('/')({
@@ -19,19 +19,17 @@ export const Route = createFileRoute('/')({
 
 function LandingPage() {
   return (
-    <WaitlistProvider>
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <LandingNav />
-        <HeroSection />
-        <ProofStripSection />
-        <WhatYouCanAskSection />
-        <FeaturesSection />
-        <PricingSection />
-        <DevTeaserSection />
-        <McpSection />
-        <CTASection />
-        <Footer />
-      </Box>
-    </WaitlistProvider>
+    <Box sx={{ position: 'relative', zIndex: 1 }}>
+      <LandingNav />
+      <HeroSection />
+      <ProofStripSection />
+      <WhatYouCanAskSection />
+      <FeaturesSection />
+      <PricingSection />
+      <DevTeaserSection />
+      <McpSection />
+      <CTASection />
+      <Footer />
+    </Box>
   );
 }

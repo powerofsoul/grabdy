@@ -2,15 +2,17 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import { type DbId, GLOBAL_ORG, packId } from '@grabdy/common';
-import { type OrgRole, orgRoleEnum, type UserStatus } from '@grabdy/contracts';
+import { isWorkEmail, type OrgRole, orgRoleEnum, type UserStatus } from '@grabdy/contracts';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import type { CookieOptions } from 'express';
+import { OAuth2Client } from 'google-auth-library';
 
 import type { JwtMembership, JwtPayload } from '../../common/guards/auth.guard';
 import {
@@ -24,6 +26,7 @@ import {
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { EmailService } from '../email/email.service';
+import { NotificationService } from '../notification/notification.service';
 
 /**
  * PostgreSQL returns array columns as strings like "{OWNER,ADMIN}".
@@ -74,12 +77,19 @@ export interface UserData {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  private readonly googleClient: OAuth2Client;
+
   constructor(
     private db: DbService,
     private jwtService: JwtService,
     private emailService: EmailService,
-    @InjectEnv('jwtSecret') private readonly jwtSecret: string
-  ) {}
+    private notificationService: NotificationService,
+    @InjectEnv('jwtSecret') private readonly jwtSecret: string,
+    @InjectEnv('googleClientId') private readonly googleClientId: string
+  ) {
+    this.googleClient = new OAuth2Client(this.googleClientId);
+  }
 
   private async getUserMemberships(userId: DbId<'User'>): Promise<OrgMembershipData[]> {
     const memberships = await this.db.kysely
@@ -214,6 +224,153 @@ export class AuthService {
     });
 
     await this.emailService.sendWelcomeEmail(result.user.email, result.user.name);
+    this.notificationService.notifyNewSignup(result.user.email, result.user.name, 'email');
+
+    return {
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        status: result.user.status,
+        memberships,
+      },
+      token: jwtToken,
+    };
+  }
+
+  async googleAuth(credential: string): Promise<{ user: UserData; token: string }> {
+    const ticket = await this.googleClient.verifyIdToken({
+      idToken: credential,
+      audience: this.googleClientId,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload?.email) {
+      throw new BadRequestException('Invalid Google token');
+    }
+
+    if (!payload.email_verified) {
+      throw new BadRequestException('Google email is not verified');
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email.toLowerCase();
+    if (!isWorkEmail(email)) {
+      throw new BadRequestException('Please use your work email');
+    }
+
+    const name = payload.name || email.split('@')[0];
+
+    // 1. Look up by google_id (stable across email changes)
+    const byGoogleId = await this.db.kysely
+      .selectFrom('auth.users')
+      .select(['id', 'email', 'name', 'status'])
+      .where('google_id', '=', googleId)
+      .executeTakeFirst();
+
+    if (byGoogleId) {
+      const memberships = await this.getUserMemberships(byGoogleId.id);
+      const token = this.generateToken({
+        id: byGoogleId.id,
+        email: byGoogleId.email,
+        name: byGoogleId.name,
+        memberships: toJwtMemberships(memberships),
+      });
+
+      return {
+        user: {
+          id: byGoogleId.id,
+          email: byGoogleId.email,
+          name: byGoogleId.name,
+          status: byGoogleId.status,
+          memberships,
+        },
+        token,
+      };
+    }
+
+    // 2. Fall back to email match — link google_id to existing account
+    const byEmail = await this.db.kysely
+      .selectFrom('auth.users')
+      .select(['id', 'email', 'name', 'status'])
+      .where('email', '=', email)
+      .executeTakeFirst();
+
+    if (byEmail) {
+      await this.db.kysely
+        .updateTable('auth.users')
+        .set({ google_id: googleId, email_verified: true, updated_at: new Date() })
+        .where('id', '=', byEmail.id)
+        .execute();
+
+      const memberships = await this.getUserMemberships(byEmail.id);
+      const token = this.generateToken({
+        id: byEmail.id,
+        email: byEmail.email,
+        name: byEmail.name,
+        memberships: toJwtMemberships(memberships),
+      });
+
+      return {
+        user: {
+          id: byEmail.id,
+          email: byEmail.email,
+          name: byEmail.name,
+          status: byEmail.status,
+          memberships,
+        },
+        token,
+      };
+    }
+
+    // 3. New user — create user + org + membership
+    const result = await this.db.kysely.transaction().execute(async (trx) => {
+      const newUser = await trx
+        .insertInto('auth.users')
+        .values({
+          id: packId('User', GLOBAL_ORG),
+          email,
+          name,
+          password_hash: null,
+          google_id: googleId,
+          email_verified: true,
+          updated_at: new Date(),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      const newOrg = await trx
+        .insertInto('org.orgs')
+        .values({
+          name: `${name}'s Organization`,
+          updated_at: new Date(),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      await trx
+        .insertInto('org.org_memberships')
+        .values({
+          id: packId('OrgMembership', newOrg.id),
+          user_id: newUser.id,
+          org_id: newOrg.id,
+          roles: ['OWNER'],
+        })
+        .execute();
+
+      return { user: newUser, org: newOrg };
+    });
+
+    const memberships = await this.getUserMemberships(result.user.id);
+    const jwtToken = this.generateToken({
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.name,
+      memberships: toJwtMemberships(memberships),
+    });
+
+    await this.emailService.sendWelcomeEmail(result.user.email, result.user.name);
+    this.notificationService.notifyNewSignup(result.user.email, result.user.name, 'google');
 
     return {
       user: {

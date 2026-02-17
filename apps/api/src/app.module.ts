@@ -37,10 +37,10 @@ import { EmailModule } from './modules/email/email.module';
 import { HealthModule } from './modules/health/health.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { McpModule } from './modules/mcp/mcp.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { OrgsModule } from './modules/orgs/orgs.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { UsersModule } from './modules/users/users.module';
-import { WaitlistModule } from './modules/waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -86,6 +86,7 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
     AiModule,
     AnalyticsModule,
     EmailModule,
+    NotificationModule,
     HealthModule,
     AuthModule,
     OrgsModule,
@@ -97,7 +98,6 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
     IntegrationsModule,
     PublicApiModule,
     McpModule,
-    WaitlistModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },

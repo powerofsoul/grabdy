@@ -64,6 +64,7 @@ export interface DB {
     email: string;
     name: string;
     password_hash: string | null;
+    google_id: string | null;
     email_verified: Generated<boolean>;
     status: Generated<'ACTIVE' | 'INACTIVE'>;
     created_at: Generated<Timestamp>;

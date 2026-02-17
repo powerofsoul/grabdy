@@ -66,8 +66,6 @@ export const env = {
   slackClientSecret: requiredInProd('SLACK_CLIENT_SECRET', ''),
   slackSigningSecret: requiredInProd('SLACK_SIGNING_SECRET', ''),
 
-  // Waitlist Slack webhook
-  slackWebhookUrl: requiredInProd('SLACK_WEBHOOK_URL', ''),
 
   // Linear
   linearClientId: requiredInProd('LINEAR_CLIENT_ID', ''),
@@ -79,6 +77,12 @@ export const env = {
   githubAppSlug: requiredInProd('GITHUB_APP_SLUG', ''),
   githubPrivateKey: requiredInProd('GITHUB_PRIVATE_KEY', ''),
   githubWebhookSecret: requiredInProd('GITHUB_WEBHOOK_SECRET', ''),
+
+  // Google OAuth
+  googleClientId: requiredInProd('GOOGLE_CLIENT_ID', ''),
+
+  // Slack internal notifications
+  slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
 } as const;
 
 type EnvKey = keyof typeof env;

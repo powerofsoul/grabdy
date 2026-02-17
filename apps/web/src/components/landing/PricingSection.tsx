@@ -4,8 +4,7 @@ import { Box, Button, Container, Typography } from '@mui/material';
 import { ArrowRightIcon, CheckIcon, ClockIcon, MinusIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-import { useWaitlist } from './WaitlistModal';
+import { Link } from '@tanstack/react-router';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -29,7 +28,7 @@ const TIERS = [
     priceSuffix: '',
     badge: 'Free during beta',
     description: 'Everything you need to get started. Free while we\u2019re in beta\u00a0\u2014\u00a0no credit card required.',
-    cta: 'Join waitlist',
+    cta: 'Get started',
     ctaVariant: 'contained',
     comingSoon: false,
     highlighted: true,
@@ -55,7 +54,7 @@ const TIERS = [
     priceSuffix: '',
     badge: 'Coming soon',
     description: 'For growing teams that need higher limits, priority support, and advanced integrations.',
-    cta: 'Join waitlist',
+    cta: 'Get started',
     ctaVariant: 'outlined',
     comingSoon: true,
     highlighted: false,
@@ -104,8 +103,6 @@ const TIERS = [
 ] satisfies ReadonlyArray<Tier>;
 
 function PricingCard({ tier }: { tier: Tier }) {
-  const { open: openWaitlist } = useWaitlist();
-
   return (
     <Box
       className="pricing-card"
@@ -178,17 +175,18 @@ function PricingCard({ tier }: { tier: Tier }) {
         {tier.description}
       </Typography>
 
-      <Button
-        variant={tier.ctaVariant}
-        size="large"
-        fullWidth
-        endIcon={<ArrowRightIcon size={16} weight="light" color="currentColor" />}
-        onClick={openWaitlist}
-        disabled={tier.comingSoon}
-        sx={{ mb: 3, py: 1.25 }}
-      >
-        {tier.cta}
-      </Button>
+      <Link to="/auth/signup" style={{ textDecoration: 'none', width: '100%' }}>
+        <Button
+          variant={tier.ctaVariant}
+          size="large"
+          fullWidth
+          endIcon={<ArrowRightIcon size={16} weight="light" color="currentColor" />}
+          disabled={tier.comingSoon}
+          sx={{ mb: 3, py: 1.25 }}
+        >
+          {tier.cta}
+        </Button>
+      </Link>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {tier.features.map((feature) => (

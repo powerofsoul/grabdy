@@ -63,6 +63,7 @@ const buildFrontend = new command.local.Command('build-frontend', {
     cd ${monorepoRoot}
     export NODE_ENV=production
     export VITE_API_URL="https://${Env.apiDomain}"
+    export VITE_GOOGLE_CLIENT_ID="${Env.googleClientId}"
     yarn workspace @grabdy/web build
   `,
   triggers: [Date.now().toString()],

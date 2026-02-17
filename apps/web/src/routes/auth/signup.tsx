@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
+import { workEmailSchema } from '@grabdy/contracts';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Box,
@@ -11,40 +14,46 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon, UserIcon } from '@phosphor-icons/react';
 import { GoogleLogin } from '@react-oauth/google';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+const signupSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    email: workEmailSchema,
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+type SignupFormData = z.infer<typeof signupSchema>;
+
+export const Route = createFileRoute('/auth/signup')({
+  component: SignupPage,
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
-
-export const Route = createFileRoute('/auth/login')({
-  component: LoginPage,
-});
-
-function LoginPage() {
-  const { login, googleAuth, isAuthenticated, isLoading, user } = useAuth();
+function SignupPage() {
+  const { signup, googleAuth, isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState('');
   const [authInProgress, setAuthInProgress] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
     mode: 'onBlur',
   });
 
@@ -68,6 +77,17 @@ function LoginPage() {
     }
   }, [authInProgress, isLoading, user, navigate, getRedirectPath]);
 
+  const onSubmit = async (data: SignupFormData) => {
+    setServerError('');
+    try {
+      setAuthInProgress(true);
+      await signup(data.email, data.password, data.name);
+    } catch (err) {
+      setAuthInProgress(false);
+      setServerError(err instanceof Error ? err.message : 'Signup failed');
+    }
+  };
+
   const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     if (!credentialResponse.credential) {
       setServerError('Google authentication failed');
@@ -85,21 +105,10 @@ function LoginPage() {
     }
   };
 
-  const onSubmit = async (data: LoginFormData) => {
-    setServerError('');
-    try {
-      setAuthInProgress(true);
-      await login(data.email, data.password);
-    } catch (err) {
-      setAuthInProgress(false);
-      setServerError(err instanceof Error ? err.message : 'Login failed');
-    }
-  };
-
   const busy = isSubmitting || authInProgress;
 
   return (
-    <AuthLayout title="Sign in" subtitle="Welcome back to Grabdy">
+    <AuthLayout title="Create an account" subtitle="Start your free trial">
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
@@ -124,10 +133,29 @@ function LoginPage() {
         )}
 
         <TextField
+          {...register('name')}
+          label="Name"
+          type="text"
+          placeholder="Your name"
+          fullWidth
+          autoComplete="name"
+          error={!!errors.name}
+          helperText={errors.name?.message}
+          sx={{ mb: 2 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
+                <UserIcon size={20} weight="light" color="currentColor" />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <TextField
           {...register('email')}
-          label="Email"
+          label="Work Email"
           type="email"
-          placeholder="you@example.com"
+          placeholder="you@company.com"
           fullWidth
           autoComplete="email"
           error={!!errors.email}
@@ -146,9 +174,9 @@ function LoginPage() {
           {...register('password')}
           label="Password"
           type={showPassword ? 'text' : 'password'}
-          placeholder="Your password"
+          placeholder="Min. 8 characters"
           fullWidth
-          autoComplete="current-password"
+          autoComplete="new-password"
           error={!!errors.password}
           helperText={errors.password?.message}
           sx={{ mb: 2 }}
@@ -178,38 +206,57 @@ function LoginPage() {
           }}
         />
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-          <Link to="/auth/forgot-password" style={{ textDecoration: 'none' }}>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', fontSize: '0.875rem', '&:hover': { color: 'text.primary' } }}
-            >
-              Forgot password?
-            </Typography>
-          </Link>
-        </Box>
-
-        <Button
-          type="submit"
+        <TextField
+          {...register('confirmPassword')}
+          label="Confirm Password"
+          type={showConfirmPassword ? 'text' : 'password'}
+          placeholder="Confirm your password"
           fullWidth
-          variant="contained"
-          disabled={busy}
-          sx={{ py: 1.5, mb: 3 }}
-        >
+          autoComplete="new-password"
+          error={!!errors.confirmPassword}
+          helperText={errors.confirmPassword?.message}
+          sx={{ mb: 3 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
+                <LockIcon size={20} weight="light" color="currentColor" />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  edge="end"
+                  size="small"
+                  tabIndex={-1}
+                  sx={{ color: 'text.disabled' }}
+                >
+                  {showConfirmPassword ? (
+                    <EyeSlashIcon size={20} weight="light" color="currentColor" />
+                  ) : (
+                    <EyeIcon size={20} weight="light" color="currentColor" />
+                  )}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <Button type="submit" fullWidth variant="contained" disabled={busy} sx={{ py: 1.5, mb: 3 }}>
           {busy && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
-          Sign in
+          Create account
         </Button>
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Don&apos;t have an account?{' '}
-            <Link to="/auth/signup" style={{ textDecoration: 'none' }}>
+            Already have an account?{' '}
+            <Link to="/auth/login" style={{ textDecoration: 'none' }}>
               <Typography
                 component="span"
                 variant="body2"
                 sx={{ color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
               >
-                Sign up
+                Sign in
               </Typography>
             </Link>
           </Typography>

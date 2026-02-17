@@ -99,7 +99,6 @@ const environment = [
   { name: 'SMTP_USER', value: Env.smtpUser },
   { name: 'SMTP_PASS', value: Env.smtpPass },
   { name: 'EMAIL_FROM', value: Env.emailFrom },
-  { name: 'SLACK_WEBHOOK_URL', value: Env.slackWebhookUrl },
 
   { name: 'SLACK_CLIENT_ID', value: Env.slackClientId },
   { name: 'SLACK_CLIENT_SECRET', value: Env.slackClientSecret },
@@ -113,6 +112,10 @@ const environment = [
   { name: 'GITHUB_APP_SLUG', value: Env.githubAppSlug },
   { name: 'GITHUB_PRIVATE_KEY', value: Env.githubPrivateKey },
   { name: 'GITHUB_WEBHOOK_SECRET', value: Env.githubWebhookSecret },
+
+  { name: 'GOOGLE_CLIENT_ID', value: Env.googleClientId },
+
+  { name: 'SLACK_WEBHOOK_URL', value: Env.slackWebhookUrl },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
 // Task definition

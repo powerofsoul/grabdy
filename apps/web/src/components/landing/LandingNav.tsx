@@ -4,8 +4,6 @@ import { Link } from '@tanstack/react-router';
 import { Logo } from '../ui/Logo';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
-import { useWaitlist } from './WaitlistModal';
-
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
   { label: 'Integrations', href: '#integrations' },
@@ -24,7 +22,6 @@ const navLinkSx = {
 export function LandingNav() {
   const theme = useTheme();
   const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 50 });
-  const { open } = useWaitlist();
 
   return (
     <AppBar
@@ -81,13 +78,14 @@ export function LandingNav() {
                 Login
               </Button>
             </Link>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={open}
-            >
-              Join Waitlist
-            </Button>
+            <Link to="/auth/signup" style={{ textDecoration: 'none' }}>
+              <Button
+                variant="contained"
+                size="small"
+              >
+                Get Started
+              </Button>
+            </Link>
           </Box>
         </Toolbar>
       </Container>

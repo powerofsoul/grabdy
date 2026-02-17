@@ -2,6 +2,8 @@ import { dbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
+import { workEmailSchema } from '../schemas/work-email.js';
+
 const c = initContract();
 
 const membership = z.object({
@@ -23,6 +25,31 @@ const user = z.object({
 
 export const authContract = c.router(
   {
+    signup: {
+      method: 'POST',
+      path: '/signup',
+      body: z.object({
+        email: workEmailSchema,
+        password: z.string().min(8),
+        name: z.string().min(1),
+      }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: user }),
+        409: z.object({ success: z.literal(false), error: z.string() }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    googleAuth: {
+      method: 'POST',
+      path: '/google',
+      body: z.object({
+        credential: z.string(),
+      }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: user }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
     login: {
       method: 'POST',
       path: '/login',

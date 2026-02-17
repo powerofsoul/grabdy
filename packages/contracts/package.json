@@ -23,6 +23,8 @@
   "dependencies": {
     "@grabdy/common": "workspace:^",
     "@ts-rest/core": "3.53.0-rc.1",
+    "free-email-domains": "^1.2.23",
+    "mailchecker": "^6.0.19",
     "zod": "^4.0.0"
   },
   "devDependencies": {

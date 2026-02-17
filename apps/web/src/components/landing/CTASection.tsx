@@ -4,13 +4,11 @@ import { Box, Button, Container, Typography } from '@mui/material';
 import { ArrowRightIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-import { useWaitlist } from './WaitlistModal';
+import { Link } from '@tanstack/react-router';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function CTASection() {
-  const { open: openWaitlist } = useWaitlist();
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,33 +57,35 @@ export function CTASection() {
           className="cta-subtitle"
           sx={{ mb: 1.5, color: 'text.secondary', fontSize: '1.05rem', lineHeight: 1.6 }}
         >
-          Join the waitlist today. We&apos;re onboarding teams in batches.
+          Get started for free. No credit card required.
         </Typography>
         <Typography
           className="cta-subtitle"
           sx={{ mb: 5, color: 'text.secondary', fontSize: '0.85rem' }}
         >
-          Teams from startups to enterprises are already on the waitlist.
+          Teams from startups to enterprises already use Grabdy.
         </Typography>
 
         <Box className="cta-button" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'center', gap: 2, mb: 2 }}>
-          <Button
-            variant="contained"
-            size="large"
-            endIcon={<ArrowRightIcon size={18} weight="light" color="currentColor" />}
-            onClick={openWaitlist}
-            sx={{
-              px: 6,
-              py: 1.75,
-              fontSize: '1.05rem',
-            }}
-          >
-            Join Waitlist
-          </Button>
+          <Link to="/auth/signup" style={{ textDecoration: 'none' }}>
+            <Button
+              variant="contained"
+              size="large"
+              endIcon={<ArrowRightIcon size={18} weight="light" color="currentColor" />}
+              sx={{
+                px: 6,
+                py: 1.75,
+                fontSize: '1.05rem',
+              }}
+            >
+              Get Started
+            </Button>
+          </Link>
           <Button
             variant="outlined"
             size="large"
-            onClick={openWaitlist}
+            component="a"
+            href="mailto:hello@grabdy.com"
             sx={{
               px: 6,
               py: 1.75,

@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { CssBaseline } from '@mui/material';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 
@@ -21,12 +22,13 @@ const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Root element not found');
 createRoot(rootEl).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <CssBaseline />
-        <ErrorBoundary>
-          <AuthProvider>
-            <DrawerProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <CssBaseline />
+          <ErrorBoundary>
+            <AuthProvider>
+              <DrawerProvider>
               <Toaster
                 position="top-right"
                 closeButton
@@ -43,10 +45,11 @@ createRoot(rootEl).render(
                 }}
               />
               <App />
-            </DrawerProvider>
-          </AuthProvider>
-        </ErrorBoundary>
-      </ThemeProvider>
-    </QueryClientProvider>
+              </DrawerProvider>
+            </AuthProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   </StrictMode>
 );

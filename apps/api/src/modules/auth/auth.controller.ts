@@ -34,6 +34,52 @@ export class AuthController {
     }
 
     return tsRestHandler(authContract, {
+      signup: async ({ body }) => {
+        try {
+          const { user, token } = await this.authService.register(
+            body.email,
+            body.password,
+            body.name
+          );
+          res.cookie('auth_token', token, this.cookieOptions);
+          return {
+            status: 200 as const,
+            body: { success: true as const, data: user },
+          };
+        } catch (error) {
+          if (error instanceof Error && error.message.includes('already exists')) {
+            return {
+              status: 409 as const,
+              body: { success: false as const, error: error.message },
+            };
+          }
+          return {
+            status: 400 as const,
+            body: {
+              success: false as const,
+              error: error instanceof Error ? error.message : 'Signup failed',
+            },
+          };
+        }
+      },
+      googleAuth: async ({ body }) => {
+        try {
+          const { user, token } = await this.authService.googleAuth(body.credential);
+          res.cookie('auth_token', token, this.cookieOptions);
+          return {
+            status: 200 as const,
+            body: { success: true as const, data: user },
+          };
+        } catch (error) {
+          return {
+            status: 400 as const,
+            body: {
+              success: false as const,
+              error: error instanceof Error ? error.message : 'Google authentication failed',
+            },
+          };
+        }
+      },
       login: async ({ body }) => {
         try {
           const { user, token } = await this.authService.login(body.email, body.password);
