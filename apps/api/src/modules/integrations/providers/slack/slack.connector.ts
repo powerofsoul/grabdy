@@ -24,7 +24,7 @@ const SLACK_AUTH_URL = 'https://slack.com/oauth/v2/authorize';
 const SLACK_TOKEN_URL = 'https://slack.com/api/oauth.v2.access';
 const SLACK_API_URL = 'https://slack.com/api';
 const SLACK_SCOPES =
-  'channels:history,channels:read,users:read,team:read,app_mentions:read,chat:write,im:history,im:read';
+  'channels:history,channels:read,channels:join,users:read,team:read,app_mentions:read,chat:write,im:history,im:read';
 
 // --- Slack API response types ---
 
@@ -298,6 +298,12 @@ MANDATORY source citation rules:
     const existingTimestamps = providerData.channelTimestamps;
     const teamDomain = providerData.teamDomain;
 
+    // Auto-join selected channels before fetching messages
+    const selectedIds = providerData.selectedChannelIds ?? [];
+    for (const channelId of selectedIds) {
+      await this.joinChannel(accessToken, channelId);
+    }
+
     // Fetch all non-archived channels the bot is a member of
     const channels = await this.fetchChannels(accessToken);
     const items: SyncedItem[] = [];
@@ -394,6 +400,69 @@ MANDATORY source citation rules:
       teamDomain: tokenMetadata?.teamDomain ?? accountMetadata?.teamDomain,
       channelTimestamps: {},
     };
+  }
+
+  async listResources(
+    accessToken: string,
+    providerData: SlackProviderData
+  ): Promise<Array<{ id: string; name: string; selected: boolean }>> {
+    const selectedIds = new Set(providerData.selectedChannelIds ?? []);
+    const channels = await this.fetchAllPublicChannels(accessToken);
+    return channels.map((ch) => ({
+      id: ch.id,
+      name: ch.name,
+      selected: selectedIds.has(ch.id),
+    }));
+  }
+
+  private async joinChannel(accessToken: string, slackChannelId: string): Promise<void> {
+    const response = await fetch(`${SLACK_API_URL}/conversations.join`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ channel: slackChannelId }),
+    });
+    const data: { ok: boolean; error?: string } = await response.json();
+    if (!data.ok && data.error !== 'already_in_channel') {
+      this.logger.warn(`Failed to join channel ${slackChannelId}: ${data.error ?? 'Unknown'}`);
+    }
+  }
+
+  /** Fetch ALL non-archived public channels (regardless of membership). */
+  private async fetchAllPublicChannels(accessToken: string): Promise<SlackChannel[]> {
+    const channels: SlackChannel[] = [];
+    let nextCursor: string | undefined;
+
+    do {
+      const params = new URLSearchParams({
+        types: 'public_channel',
+        exclude_archived: 'true',
+        limit: '200',
+      });
+      if (nextCursor) {
+        params.set('cursor', nextCursor);
+      }
+
+      const response = await fetch(`${SLACK_API_URL}/conversations.list?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      const data: SlackConversationsListResponse = await response.json();
+
+      if (!data.ok) {
+        throw new Error(`Slack conversations.list error: ${data.error ?? 'Unknown error'}`);
+      }
+
+      if (data.channels) {
+        channels.push(...data.channels);
+      }
+
+      nextCursor = data.response_metadata?.next_cursor || undefined;
+    } while (nextCursor);
+
+    return channels;
   }
 
   private async fetchChannels(accessToken: string): Promise<SlackChannel[]> {

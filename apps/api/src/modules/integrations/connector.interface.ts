@@ -172,4 +172,10 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
     tokenMetadata?: Partial<ProviderDataMap[P]>,
     accountMetadata?: Partial<ProviderDataMap[P]>
   ): ProviderDataMap[P];
+
+  /** List selectable resources (e.g. channels) for the provider. Optional — not all providers support this. */
+  listResources?(
+    accessToken: string,
+    providerData: ProviderDataMap[P]
+  ): Promise<Array<{ id: string; name: string; selected: boolean }>>;
 }

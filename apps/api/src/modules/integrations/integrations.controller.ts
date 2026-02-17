@@ -170,6 +170,39 @@ export class IntegrationsController {
     });
   }
 
+  @OrgAccess(integrationsContract.listResources, { params: ['orgId'] })
+  @TsRestHandler(integrationsContract.listResources)
+  async listResources() {
+    return tsRestHandler(integrationsContract.listResources, async ({ params }) => {
+      const connector = this.providerRegistry.hasConnector(params.provider)
+        ? this.providerRegistry.getConnector(params.provider)
+        : null;
+
+      if (!connector?.listResources) {
+        return {
+          status: 404 as const,
+          body: { success: false as const, error: 'Provider does not support resource listing' },
+        };
+      }
+
+      const connection = await this.integrationsService.getConnection(params.orgId, params.provider);
+      if (!connection) {
+        return {
+          status: 404 as const,
+          body: { success: false as const, error: 'Connection not found' },
+        };
+      }
+
+      const providerData = parseProviderData(connection.provider_data);
+      const resources = await connector.listResources(connection.access_token, providerData);
+
+      return {
+        status: 200 as const,
+        body: { success: true as const, data: resources },
+      };
+    });
+  }
+
   @OrgAccess(integrationsContract.updateConfig, { params: ['orgId'] })
   @TsRestHandler(integrationsContract.updateConfig)
   async updateConfig() {
@@ -192,6 +225,9 @@ export class IntegrationsController {
         await this.integrationsService.updateConnection(connection.id, {
           providerData: parseProviderData(merged),
         });
+
+        // Trigger a sync so the connector can join newly selected channels
+        await this.integrationsService.triggerSync(connection.id, params.orgId, 'MANUAL');
       }
 
       const updated = await this.integrationsService.getConnectionMeta(

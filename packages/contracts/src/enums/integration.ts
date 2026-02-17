@@ -21,6 +21,7 @@ export const SyncTrigger = {
   INITIAL: 'INITIAL',
   WEBHOOK: 'WEBHOOK',
   SCHEDULED: 'SCHEDULED',
+  MANUAL: 'MANUAL',
 } as const;
 export type SyncTrigger = (typeof SyncTrigger)[keyof typeof SyncTrigger];
 

@@ -14,6 +14,7 @@ const slackProviderDataSchema = z.object({
   slackBotUserId: z.string().optional(),
   teamDomain: z.string().optional(),
   channelTimestamps: z.record(z.string(), z.string()),
+  selectedChannelIds: z.array(z.string()).optional(),
 });
 
 const linearProviderDataSchema = z.object({
@@ -105,6 +106,27 @@ export const integrationsContract = c.router(
       body: z.object({}),
       responses: {
         200: z.object({ success: z.literal(true) }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+    listResources: {
+      method: 'GET',
+      path: '/orgs/:orgId/integrations/:provider/resources',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        provider: integrationProviderEnum,
+      }),
+      responses: {
+        200: z.object({
+          success: z.literal(true),
+          data: z.array(
+            z.object({
+              id: z.string(),
+              name: z.string(),
+              selected: z.boolean(),
+            })
+          ),
+        }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
