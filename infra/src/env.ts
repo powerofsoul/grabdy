@@ -24,6 +24,11 @@ export const Env = {
   linearClientSecret: config.requireSecret('linearClientSecret'),
   linearWebhookSecret: config.requireSecret('linearWebhookSecret'),
 
+  githubAppId: config.require('githubAppId'),
+  githubAppSlug: config.require('githubAppSlug'),
+  githubPrivateKey: config.requireSecret('githubPrivateKey'),
+  githubWebhookSecret: config.requireSecret('githubWebhookSecret'),
+
   smtpHost: config.require('smtpHost'),
   smtpPort: config.require('smtpPort'),
   smtpUser: config.require('smtpUser'),

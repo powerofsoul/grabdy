@@ -131,15 +131,6 @@ export class IntegrationsController {
   @TsRestHandler(integrationsContract.disconnect)
   async disconnect() {
     return tsRestHandler(integrationsContract.disconnect, async ({ params }) => {
-      const connection = await this.integrationsService.getConnectionMeta(
-        params.orgId,
-        params.provider
-      );
-      if (connection) {
-        // Remove scheduled sync before disconnecting
-        await this.integrationsService.removeScheduledSync(connection.id, params.provider);
-      }
-
       const success = await this.integrationsService.disconnect(params.orgId, params.provider);
 
       if (!success) {
@@ -246,8 +237,9 @@ export class IntegrationsController {
   @Public()
   @Get('/integrations/callback')
   async oauthCallback(
-    @Query('code') code: string,
+    @Query('code') code: string | undefined,
     @Query('state') state: string,
+    @Query('installation_id') installationId: string | undefined,
     @Res() res: Response
   ): Promise<void> {
     try {
@@ -271,7 +263,14 @@ export class IntegrationsController {
 
       const connector = this.providerRegistry.getConnector(validatedProvider);
       const redirectUri = `${this.apiUrl}/integrations/callback`;
-      const tokens = await connector.exchangeCode(code, redirectUri);
+
+      // GitHub App sends installation_id instead of code
+      const exchangeCode = installationId ?? code;
+      if (!exchangeCode) {
+        res.redirect(`${this.frontendUrl}/dashboard/integrations?error=missing_code`);
+        return;
+      }
+      const tokens = await connector.exchangeCode(exchangeCode, redirectUri);
 
       // Get external account info from the connector
       const accountInfo = await connector.getAccountInfo(tokens.accessToken);
@@ -366,6 +365,13 @@ export class IntegrationsController {
         connections,
         typeof rawBody === 'string' ? rawBody : undefined
       );
+
+      // Handle disconnection events (e.g. GitHub App uninstalled)
+      if (result.disconnectConnections) {
+        for (const conn of result.disconnectConnections) {
+          await this.integrationsService.disconnect(conn.orgId, validProvider);
+        }
+      }
 
       // Queue webhook sync jobs for matched connections
       if (result.syncConnections) {

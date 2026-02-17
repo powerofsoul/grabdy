@@ -73,6 +73,12 @@ export const env = {
   linearClientId: requiredInProd('LINEAR_CLIENT_ID', ''),
   linearClientSecret: requiredInProd('LINEAR_CLIENT_SECRET', ''),
   linearWebhookSecret: requiredInProd('LINEAR_WEBHOOK_SECRET', ''),
+
+  // GitHub App
+  githubAppId: requiredInProd('GITHUB_APP_ID', ''),
+  githubAppSlug: requiredInProd('GITHUB_APP_SLUG', ''),
+  githubPrivateKey: requiredInProd('GITHUB_PRIVATE_KEY', ''),
+  githubWebhookSecret: requiredInProd('GITHUB_WEBHOOK_SECRET', ''),
 } as const;
 
 type EnvKey = keyof typeof env;

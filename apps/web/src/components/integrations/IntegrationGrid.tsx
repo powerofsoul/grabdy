@@ -106,6 +106,14 @@ export function IntegrationGrid({ connections, onConnect, onManage }: Integratio
               onManage={onManage}
             />
           )}
+          {!connections.some((c) => c.provider === 'GITHUB') && (
+            <IntegrationCard
+              provider="GITHUB"
+              connection={null}
+              onConnect={onConnect}
+              onManage={onManage}
+            />
+          )}
           {/* Coming soon cards */}
           {COMING_SOON_PROVIDERS.map((provider) => (
             <IntegrationCard

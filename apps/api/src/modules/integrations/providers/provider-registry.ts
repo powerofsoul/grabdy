@@ -4,6 +4,7 @@ import type { IntegrationProvider } from '@grabdy/contracts';
 
 import type { IntegrationConnector } from '../connector.interface';
 
+import { GitHubConnector } from './github/github.connector';
 import { LinearConnector } from './linear/linear.connector';
 import { SlackConnector } from './slack/slack.connector';
 
@@ -11,10 +12,15 @@ import { SlackConnector } from './slack/slack.connector';
 export class ProviderRegistry {
   private readonly connectors: Map<string, IntegrationConnector>;
 
-  constructor(slackConnector: SlackConnector, linearConnector: LinearConnector) {
+  constructor(
+    slackConnector: SlackConnector,
+    linearConnector: LinearConnector,
+    gitHubConnector: GitHubConnector
+  ) {
     this.connectors = new Map<string, IntegrationConnector>([
       ['SLACK', slackConnector],
       ['LINEAR', linearConnector],
+      ['GITHUB', gitHubConnector],
     ]);
   }
 

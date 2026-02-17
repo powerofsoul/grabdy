@@ -91,7 +91,6 @@ export type ProviderKey =
   | 'TRELLO';
 
 export const COMING_SOON_PROVIDERS = [
-  'GITHUB',
   'NOTION',
   'JIRA',
   'CONFLUENCE',

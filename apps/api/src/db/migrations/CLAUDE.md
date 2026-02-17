@@ -77,4 +77,3 @@ Kysely table interfaces (column types for each table) are defined in **`apps/api
 - Use snake_case for all table and column names
 - Always include `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - Import `ENTITY_TYPE_MAP` from `@grabdy/common` — never hardcode byte values
-- Since we are not live yet, fold schema changes into existing migrations instead of creating new ones

@@ -178,15 +178,25 @@ export class IntegrationsService {
   }
 
   async disconnect(orgId: DbId<'Org'>, provider: IntegrationProvider) {
-    const result = await this.db.kysely
-      .updateTable('integration.connections')
-      .set({ status: 'DISCONNECTED', updated_at: new Date() })
+    const connection = await this.db.kysely
+      .selectFrom('integration.connections')
+      .select(['id'])
       .where('org_id', '=', orgId)
       .where('provider', '=', provider)
       .where('status', '!=', 'DISCONNECTED')
       .executeTakeFirst();
 
-    return Number(result.numUpdatedRows) > 0;
+    if (!connection) return false;
+
+    await this.removeScheduledSync(connection.id, provider);
+
+    await this.db.kysely
+      .updateTable('integration.connections')
+      .set({ status: 'DISCONNECTED', updated_at: new Date() })
+      .where('id', '=', connection.id)
+      .execute();
+
+    return true;
   }
 
   async deleteConnection(orgId: DbId<'Org'>, provider: IntegrationProvider) {

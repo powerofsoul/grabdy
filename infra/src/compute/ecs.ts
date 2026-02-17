@@ -108,6 +108,11 @@ const environment = [
   { name: 'LINEAR_CLIENT_ID', value: Env.linearClientId },
   { name: 'LINEAR_CLIENT_SECRET', value: Env.linearClientSecret },
   { name: 'LINEAR_WEBHOOK_SECRET', value: Env.linearWebhookSecret },
+
+  { name: 'GITHUB_APP_ID', value: Env.githubAppId },
+  { name: 'GITHUB_APP_SLUG', value: Env.githubAppSlug },
+  { name: 'GITHUB_PRIVATE_KEY', value: Env.githubPrivateKey },
+  { name: 'GITHUB_WEBHOOK_SECRET', value: Env.githubWebhookSecret },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
 // Task definition

@@ -11,6 +11,7 @@ import {
 } from '../queue/queue.constants';
 
 import { IntegrationSyncProcessor } from './processors/integration-sync.processor';
+import { GitHubConnector } from './providers/github/github.connector';
 import { LinearConnector } from './providers/linear/linear.connector';
 import { ProviderRegistry } from './providers/provider-registry';
 import { SlackConnector } from './providers/slack/slack.connector';
@@ -45,6 +46,7 @@ import { TokenEncryptionService } from './token-encryption.service';
     SlackBotService,
     SlackConnector,
     LinearConnector,
+    GitHubConnector,
     IntegrationSyncProcessor,
     SlackBotProcessor,
   ],

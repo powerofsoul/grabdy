@@ -33,6 +33,12 @@ type ConnectionProviderData =
       provider: 'LINEAR';
       workspaceSlug?: string;
       lastIssueSyncedAt: string | null;
+    }
+  | {
+      provider: 'GITHUB';
+      githubInstallationId: number;
+      installationOwner?: string;
+      lastSyncedAt: string | null;
     };
 
 /** Chunk metadata — discriminated union keyed on `type`. */
@@ -45,7 +51,8 @@ type ChunkMeta =
   | { type: 'JSON' }
   | { type: 'IMAGE' }
   | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthor: string }
-  | { type: 'LINEAR'; linearIssueId: string; linearCommentId: string | null };
+  | { type: 'LINEAR'; linearIssueId: string; linearCommentId: string | null }
+  | { type: 'GITHUB'; githubItemType: 'issue' | 'pull_request' | 'discussion'; githubCommentId: string | null };
 
 // ---------------------------------------------------------------------------
 // Database interface — maps schema.table names to their column types
@@ -116,7 +123,7 @@ export interface DB {
     mime_type: string;
     file_size: number;
     storage_path: string;
-    type: 'PDF' | 'CSV' | 'DOCX' | 'TXT' | 'JSON' | 'XLSX' | 'IMAGE' | 'SLACK' | 'LINEAR';
+    type: 'PDF' | 'CSV' | 'DOCX' | 'TXT' | 'JSON' | 'XLSX' | 'IMAGE' | 'SLACK' | 'LINEAR' | 'GITHUB';
     status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED'>;
     summary: string | null;
     page_count: number | null;
@@ -171,7 +178,7 @@ export interface DB {
   'integration.connections': {
     id: Generated<DbId<'Connection'>>;
     org_id: DbId<'Org'>;
-    provider: 'SLACK' | 'LINEAR';
+    provider: 'SLACK' | 'LINEAR' | 'GITHUB';
     status: Generated<'ACTIVE' | 'PAUSED' | 'ERROR' | 'DISCONNECTED'>;
     access_token: string;
     refresh_token: string | null;

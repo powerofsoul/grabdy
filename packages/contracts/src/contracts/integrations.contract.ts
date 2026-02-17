@@ -22,14 +22,22 @@ const linearProviderDataSchema = z.object({
   lastIssueSyncedAt: z.string().nullable(),
 });
 
+const githubProviderDataSchema = z.object({
+  provider: z.literal('GITHUB'),
+  installationOwner: z.string().optional(),
+  lastSyncedAt: z.string().nullable(),
+});
+
 const providerDataSchema = z.discriminatedUnion('provider', [
   slackProviderDataSchema,
   linearProviderDataSchema,
+  githubProviderDataSchema,
 ]);
 
 const partialProviderDataSchema = z.union([
   slackProviderDataSchema.partial(),
   linearProviderDataSchema.partial(),
+  githubProviderDataSchema.partial(),
 ]);
 
 const connectionSchema = z.object({

@@ -18,7 +18,7 @@ export const Route = createFileRoute('/dashboard/integrations/')({
   component: IntegrationsPage,
 });
 
-const ALLOWED_PROVIDERS: readonly string[] = ['SLACK', 'LINEAR'] satisfies readonly IntegrationProvider[];
+const ALLOWED_PROVIDERS: readonly string[] = ['SLACK', 'LINEAR', 'GITHUB'] satisfies readonly IntegrationProvider[];
 
 function isAvailableProvider(
   provider: ProviderKey

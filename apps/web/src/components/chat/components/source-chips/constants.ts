@@ -15,6 +15,7 @@ import type { IconComponent } from './types';
 export const SOURCE_NOUN: Record<IntegrationProvider, string> = {
   SLACK: 'channel',
   LINEAR: 'issue',
+  GITHUB: 'item',
 };
 
 /** Integration providers (everything except UPLOAD) -- derived from the enum */

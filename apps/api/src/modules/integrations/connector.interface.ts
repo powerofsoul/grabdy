@@ -3,6 +3,11 @@ import type { ChunkMeta, IntegrationProvider } from '@grabdy/contracts';
 import { z } from 'zod';
 
 import {
+  type GitHubProviderData,
+  githubProviderDataSchema,
+  githubPublicSchema,
+} from './providers/github/github.types';
+import {
   type LinearProviderData,
   linearProviderDataSchema,
   linearPublicSchema,
@@ -13,6 +18,7 @@ import {
   slackPublicSchema,
 } from './providers/slack/slack.types';
 
+export type { GitHubProviderData } from './providers/github/github.types';
 export type { LinearProviderData } from './providers/linear/linear.types';
 export type { SlackProviderData } from './providers/slack/slack.types';
 
@@ -20,11 +26,12 @@ export type { SlackProviderData } from './providers/slack/slack.types';
 // Per-provider data (discriminated union)
 // ---------------------------------------------------------------------------
 
-export type ProviderData = SlackProviderData | LinearProviderData;
+export type ProviderData = SlackProviderData | LinearProviderData | GitHubProviderData;
 
 export type ProviderDataMap = {
   SLACK: SlackProviderData;
   LINEAR: LinearProviderData;
+  GITHUB: GitHubProviderData;
 };
 
 // ---------------------------------------------------------------------------
@@ -80,6 +87,8 @@ export interface WebhookEvent {
 export interface WebhookHandlerResult {
   response: Record<string, unknown>;
   syncConnections?: Array<{ id: DbId<'Connection'>; orgId: DbId<'Org'>; event: WebhookEvent }>;
+  /** Connections to mark as disconnected (e.g. app uninstalled). */
+  disconnectConnections?: Array<{ id: DbId<'Connection'>; orgId: DbId<'Org'> }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +98,7 @@ export interface WebhookHandlerResult {
 export const providerDataSchema = z.discriminatedUnion('provider', [
   slackProviderDataSchema,
   linearProviderDataSchema,
+  githubProviderDataSchema,
 ]);
 
 /** Parse raw JSONB provider_data from DB into typed ProviderData (trust boundary). */
@@ -99,6 +109,7 @@ export function parseProviderData(raw: unknown): ProviderData {
 const publicProviderDataSchema = z.discriminatedUnion('provider', [
   slackPublicSchema,
   linearPublicSchema,
+  githubPublicSchema,
 ]);
 
 export type PublicProviderData = z.infer<typeof publicProviderDataSchema>;

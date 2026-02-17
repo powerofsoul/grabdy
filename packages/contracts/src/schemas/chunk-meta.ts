@@ -46,10 +46,16 @@ const linearChunkMetaSchema = z.object({
   linearTimestamp: z.string().nullable().optional(),
 });
 
+const githubChunkMetaSchema = z.object({
+  type: z.literal('GITHUB'),
+  githubItemType: z.enum(['issue', 'pull_request', 'discussion']),
+  githubCommentId: z.string().nullable(),
+});
+
 export const chunkMetaSchema = z.discriminatedUnion('type', [
   pdfChunkMetaSchema, docxChunkMetaSchema, xlsxChunkMetaSchema,
   csvChunkMetaSchema, txtChunkMetaSchema, jsonChunkMetaSchema, imageChunkMetaSchema,
-  slackChunkMetaSchema, linearChunkMetaSchema,
+  slackChunkMetaSchema, linearChunkMetaSchema, githubChunkMetaSchema,
 ]);
 
 export type ChunkMeta = z.infer<typeof chunkMetaSchema>;
@@ -65,3 +71,21 @@ type _AssertChunkMetaExhaustive =
     : never;
 const _chunkMetaCheck: _AssertChunkMetaExhaustive = true;
 void _chunkMetaCheck;
+
+/**
+ * Human-readable description of metadata fields per chunk type.
+ * Keyed on DataSourceType so TypeScript errors when a new type is added without a description.
+ * Used by the RAG search tool to tell the LLM what metadata fields are available.
+ */
+export const CHUNK_META_DESCRIPTIONS: Record<DataSourceType, string> = {
+  PDF: '{ type, pages[] }',
+  DOCX: '{ type, pages[] }',
+  XLSX: '{ type, sheet, row, columns[] }',
+  CSV: '{ type, row, columns[] }',
+  TXT: '{ type }',
+  JSON: '{ type }',
+  IMAGE: '{ type }',
+  SLACK: '{ type, slackChannelId, slackMessageTs, slackAuthor }',
+  LINEAR: '{ type, linearIssueId, linearCommentId, linearTimestamp }',
+  GITHUB: '{ type, githubItemType (issue|pull_request|discussion), githubCommentId }',
+};

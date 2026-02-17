@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
-import { AiCallerType, AiRequestType, EMBEDDING_MODEL } from '@grabdy/contracts';
+import { AiCallerType, AiRequestType, CHUNK_META_DESCRIPTIONS, EMBEDDING_MODEL } from '@grabdy/contracts';
 import { createTool } from '@mastra/core/tools';
 import { embed } from 'ai';
 import { sql } from 'kysely';
@@ -34,13 +34,17 @@ export class RagSearchTool {
     const aiUsageService = this.aiUsageService;
     const logger = this.logger;
 
+    const metadataDesc = Object.entries(CHUNK_META_DESCRIPTIONS)
+      .map(([type, shape]) => `${type}: ${shape}`)
+      .join(', ');
+
     return createTool({
       id: 'rag-search',
       description: `Search the knowledge base. Each result includes:
 - content: the matched text
 - dataSourceName: human-readable source name
 - sourceUrl: direct link to the source (use this to create clickable links when citing)
-- metadata: depends on type — PDF/DOCX: { type, pages[] }, XLSX: { type, sheet?, row? }, CSV: { type, row? }, IMAGE: { type }, SLACK: { type, slackChannelId, slackMessageTs, slackAuthor }, LINEAR: { type, linearIssueId, linearCommentId, linearTimestamp }
+- metadata: depends on type — ${metadataDesc}
 - extractedImages: image URLs from documents (if any)
 
 Use metadata to give context (page numbers, sheet names, Slack authors, etc.) when citing sources.`,
