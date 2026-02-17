@@ -85,7 +85,7 @@ async function bootstrap() {
   });
 
   // Register after CORS so headers are applied
-  server.get('/api/v1/openapi.json', (_req, res) => {
+  server.get('/v1/openapi.json', (_req, res) => {
     res.json(openApiDocument);
   });
 

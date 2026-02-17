@@ -29,7 +29,7 @@ const targetGroup = new aws.lb.TargetGroup('grabdy-api-tg', {
   targetType: 'ip',
   vpcId: vpc.vpcId,
   healthCheck: {
-    path: '/api/health',
+    path: '/health',
     port: '4000',
     protocol: 'HTTP',
     healthyThreshold: 2,
@@ -107,6 +107,7 @@ const environment = [
 
   { name: 'LINEAR_CLIENT_ID', value: Env.linearClientId },
   { name: 'LINEAR_CLIENT_SECRET', value: Env.linearClientSecret },
+  { name: 'LINEAR_WEBHOOK_SECRET', value: Env.linearWebhookSecret },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
 // Task definition

@@ -102,5 +102,5 @@ export const authContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api/auth' }
+  { pathPrefix: '/auth' }
 );

@@ -18,5 +18,5 @@ export const waitlistContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api/waitlist' }
+  { pathPrefix: '/waitlist' }
 );

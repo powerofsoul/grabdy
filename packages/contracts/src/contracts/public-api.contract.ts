@@ -129,5 +129,5 @@ export const publicApiContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api' }
+  { pathPrefix: '' }
 );

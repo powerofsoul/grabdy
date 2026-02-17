@@ -145,7 +145,7 @@ export async function streamChat(
   body: { message: string; threadId?: string; collectionId?: string },
   callbacks: StreamCallbacks,
 ): Promise<void> {
-  const response = await fetch(`${baseUrl}/api/orgs/${orgId}/chat/stream`, {
+  const response = await fetch(`${baseUrl}/orgs/${orgId}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',

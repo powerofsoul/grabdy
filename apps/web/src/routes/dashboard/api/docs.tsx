@@ -76,7 +76,7 @@ function ApiDocsPage() {
         <ApiReferenceReact
           key={darkModeState}
           configuration={{
-            url: `${apiUrl}/api/v1/openapi.json`,
+            url: `${apiUrl}/v1/openapi.json`,
             forceDarkModeState: darkModeState,
             hideDarkModeToggle: true,
             withDefaultFonts: false,

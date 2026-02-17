@@ -80,5 +80,5 @@ export const collectionsContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api' }
+  { pathPrefix: '' }
 );

@@ -240,7 +240,7 @@ export class DataSourcesController {
     });
   }
 
-  @Get('/api/files/:orgNum/:filename')
+  @Get('/files/:orgNum/:filename')
   async serveFile(
     @Param('orgNum') orgNum: string,
     @Param('filename') filename: string,

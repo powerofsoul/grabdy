@@ -273,7 +273,7 @@ export const chatContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api' }
+  { pathPrefix: '' }
 );
 
 /**

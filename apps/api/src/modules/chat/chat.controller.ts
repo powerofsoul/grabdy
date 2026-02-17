@@ -240,7 +240,7 @@ export class ChatController {
   }
 
   @OrgAccess({ params: ['orgId'] })
-  @Post('/api/orgs/:orgId/chat/stream')
+  @Post('/orgs/:orgId/chat/stream')
   async streamChat(
     @Param('orgId', new ZodValidationPipe(dbIdSchema('Org')))
     orgId: DbId<'Org'>,

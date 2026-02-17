@@ -23,5 +23,5 @@ export const usersContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api' }
+  { pathPrefix: '' }
 );

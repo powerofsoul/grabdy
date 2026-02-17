@@ -1,7 +1,7 @@
 import { Controller, Get, Inject, Logger, Param, Post, Query, Req, Res } from '@nestjs/common';
 
 import { dbIdSchema } from '@grabdy/common';
-import { IntegrationProvider, integrationProviderEnum, integrationsContract } from '@grabdy/contracts';
+import { integrationProviderEnum, integrationsContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { randomBytes } from 'crypto';
 import type { Request, Response } from 'express';
@@ -13,7 +13,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { InjectEnv } from '../../config/env.config';
 
 import { ProviderRegistry } from './providers/provider-registry';
-import { SlackBotService } from './providers/slack/slack-bot.service';
+import { parseProviderData, parsePublicProviderData } from './connector.interface';
 import { INTEGRATIONS_REDIS } from './integrations.constants';
 import { IntegrationsService } from './integrations.service';
 
@@ -35,6 +35,14 @@ function toISOString(date: Date): string {
   return date instanceof Date ? date.toISOString() : String(date);
 }
 
+function formatSyncScheduleLabel(everyMs: number): string {
+  const hours = Math.round(everyMs / 3_600_000);
+  if (hours === 1) return 'Updates every hour';
+  if (hours > 1) return `Updates every ${hours} hours`;
+  const minutes = Math.round(everyMs / 60_000);
+  return `Updates every ${minutes} minutes`;
+}
+
 @Controller()
 export class IntegrationsController {
   private readonly logger = new Logger(IntegrationsController.name);
@@ -42,10 +50,9 @@ export class IntegrationsController {
   constructor(
     private integrationsService: IntegrationsService,
     private providerRegistry: ProviderRegistry,
-    private slackBotService: SlackBotService,
     @Inject(INTEGRATIONS_REDIS) private readonly redis: Redis,
     @InjectEnv('frontendUrl') private readonly frontendUrl: string,
-    @InjectEnv('apiUrl') private readonly apiUrl: string,
+    @InjectEnv('apiUrl') private readonly apiUrl: string
   ) {}
 
   @OrgAccess(integrationsContract.listConnections, { params: ['orgId'] })
@@ -57,12 +64,22 @@ export class IntegrationsController {
         status: 200 as const,
         body: {
           success: true as const,
-          data: connections.map((c) => ({
-            ...c,
-            lastSyncedAt: toISOStringOrNull(c.lastSyncedAt),
-            createdAt: toISOString(c.createdAt),
-            updatedAt: toISOString(c.updatedAt),
-          })),
+          data: connections.map((c) => {
+            const connector = this.providerRegistry.hasConnector(c.provider)
+              ? this.providerRegistry.getConnector(c.provider)
+              : null;
+            const syncScheduleLabel = connector?.syncSchedule
+              ? formatSyncScheduleLabel(connector.syncSchedule.every)
+              : null;
+            return {
+              ...c,
+              providerData: parsePublicProviderData(c.providerData),
+              lastSyncedAt: toISOStringOrNull(c.lastSyncedAt),
+              syncScheduleLabel,
+              createdAt: toISOString(c.createdAt),
+              updatedAt: toISOString(c.updatedAt),
+            };
+          }),
         },
       };
     });
@@ -97,7 +114,7 @@ export class IntegrationsController {
         OAUTH_STATE_TTL_SECONDS
       );
 
-      const redirectUri = `${this.apiUrl}/api/integrations/callback`;
+      const redirectUri = `${this.apiUrl}/integrations/callback`;
       const redirectUrl = connector.getAuthUrl(params.orgId, state, redirectUri);
 
       return {
@@ -114,6 +131,15 @@ export class IntegrationsController {
   @TsRestHandler(integrationsContract.disconnect)
   async disconnect() {
     return tsRestHandler(integrationsContract.disconnect, async ({ params }) => {
+      const connection = await this.integrationsService.getConnectionMeta(
+        params.orgId,
+        params.provider
+      );
+      if (connection) {
+        // Remove scheduled sync before disconnecting
+        await this.integrationsService.removeScheduledSync(connection.id, params.provider);
+      }
+
       const success = await this.integrationsService.disconnect(params.orgId, params.provider);
 
       if (!success) {
@@ -134,7 +160,10 @@ export class IntegrationsController {
   @TsRestHandler(integrationsContract.deleteConnection)
   async deleteConnection() {
     return tsRestHandler(integrationsContract.deleteConnection, async ({ params }) => {
-      const success = await this.integrationsService.deleteConnection(params.orgId, params.provider);
+      const success = await this.integrationsService.deleteConnection(
+        params.orgId,
+        params.provider
+      );
 
       if (!success) {
         return {
@@ -165,11 +194,14 @@ export class IntegrationsController {
         };
       }
 
-      await this.integrationsService.updateConnection(connection.id, {
-        syncEnabled: body.syncEnabled,
-        syncIntervalMinutes: body.syncIntervalMinutes,
-        config: body.config,
-      });
+      // Read-merge-write: parse existing provider data, merge partial config, write back
+      if (body.config) {
+        const current = parseProviderData(connection.provider_data);
+        const merged = { ...current, ...body.config };
+        await this.integrationsService.updateConnection(connection.id, {
+          providerData: parseProviderData(merged),
+        });
+      }
 
       const updated = await this.integrationsService.getConnectionMeta(
         params.orgId,
@@ -182,6 +214,13 @@ export class IntegrationsController {
         };
       }
 
+      const connector = this.providerRegistry.hasConnector(updated.provider)
+        ? this.providerRegistry.getConnector(updated.provider)
+        : null;
+      const syncScheduleLabel = connector?.syncSchedule
+        ? formatSyncScheduleLabel(connector.syncSchedule.every)
+        : null;
+
       return {
         status: 200 as const,
         body: {
@@ -193,9 +232,8 @@ export class IntegrationsController {
             externalAccountId: updated.external_account_id,
             externalAccountName: updated.external_account_name,
             lastSyncedAt: toISOStringOrNull(updated.last_synced_at),
-            syncEnabled: updated.sync_enabled,
-            syncIntervalMinutes: updated.sync_interval_minutes,
-            config: updated.config,
+            syncScheduleLabel,
+            providerData: parsePublicProviderData(updated.provider_data),
             orgId: updated.org_id,
             createdAt: toISOString(updated.created_at),
             updatedAt: toISOString(updated.updated_at),
@@ -205,102 +243,8 @@ export class IntegrationsController {
     });
   }
 
-  @OrgAccess(integrationsContract.triggerSync, { params: ['orgId'] })
-  @TsRestHandler(integrationsContract.triggerSync)
-  async triggerSync() {
-    return tsRestHandler(integrationsContract.triggerSync, async ({ params }) => {
-      const connection = await this.integrationsService.getConnectionMeta(
-        params.orgId,
-        params.provider
-      );
-      if (!connection) {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Connection not found' },
-        };
-      }
-
-      const syncLog = await this.integrationsService.triggerSync(
-        connection.id,
-        params.orgId,
-        'MANUAL'
-      );
-
-      if (!syncLog) {
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            alreadySyncing: true,
-            data: null,
-          },
-        };
-      }
-
-      return {
-        status: 200 as const,
-        body: {
-          success: true as const,
-          alreadySyncing: false,
-          data: {
-            id: syncLog.id,
-            connectionId: syncLog.connection_id,
-            status: syncLog.status,
-            trigger: syncLog.trigger,
-            itemsSynced: syncLog.items_synced,
-            itemsFailed: syncLog.items_failed,
-            errorMessage: syncLog.error_message,
-            details: syncLog.details ?? null,
-            startedAt: toISOStringOrNull(syncLog.started_at),
-            completedAt: toISOStringOrNull(syncLog.completed_at),
-            createdAt: toISOString(syncLog.created_at),
-          },
-        },
-      };
-    });
-  }
-
-  @OrgAccess(integrationsContract.listSyncLogs, { params: ['orgId'] })
-  @TsRestHandler(integrationsContract.listSyncLogs)
-  async listSyncLogs() {
-    return tsRestHandler(integrationsContract.listSyncLogs, async ({ params }) => {
-      const connection = await this.integrationsService.getConnectionMeta(
-        params.orgId,
-        params.provider
-      );
-      if (!connection) {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Connection not found' },
-        };
-      }
-
-      const logs = await this.integrationsService.listSyncLogs(params.orgId, connection.id);
-
-      return {
-        status: 200 as const,
-        body: {
-          success: true as const,
-          data: logs.map((log) => ({
-            id: log.id,
-            connectionId: log.connection_id,
-            status: log.status,
-            trigger: log.trigger,
-            itemsSynced: log.items_synced,
-            itemsFailed: log.items_failed,
-            errorMessage: log.error_message,
-            details: log.details ?? null,
-            startedAt: toISOStringOrNull(log.started_at),
-            completedAt: toISOStringOrNull(log.completed_at),
-            createdAt: toISOString(log.created_at),
-          })),
-        },
-      };
-    });
-  }
-
   @Public()
-  @Get('/api/integrations/callback')
+  @Get('/integrations/callback')
   async oauthCallback(
     @Query('code') code: string,
     @Query('state') state: string,
@@ -326,7 +270,7 @@ export class IntegrationsController {
       const validatedProvider = integrationProviderEnum.parse(provider);
 
       const connector = this.providerRegistry.getConnector(validatedProvider);
-      const redirectUri = `${this.apiUrl}/api/integrations/callback`;
+      const redirectUri = `${this.apiUrl}/integrations/callback`;
       const tokens = await connector.exchangeCode(code, redirectUri);
 
       // Get external account info from the connector
@@ -337,28 +281,32 @@ export class IntegrationsController {
       // Remove any existing connection for this org+provider (e.g. DISCONNECTED) before creating a new one
       await this.integrationsService.deleteConnection(orgId, validatedProvider);
 
+      // Build provider data before creating the connection so the row is never in an invalid state
+      const providerData = connector.buildInitialProviderData(
+        tokens.metadata,
+        accountInfo.metadata
+      );
+
       const newConnection = await this.integrationsService.createConnection({
         orgId,
         provider: validatedProvider,
         tokens,
+        providerData,
         externalAccountRef,
         externalAccountName,
         createdById: userId,
       });
 
-      // Store provider-specific metadata (e.g. Slack bot_user_id, teamDomain) in connection config
-      const configMetadata = {
-        ...tokens.metadata,
-        ...accountInfo.metadata,
-      };
-      if (Object.keys(configMetadata).length > 0) {
-        await this.integrationsService.updateConnection(newConnection.id, {
-          config: configMetadata,
-        });
+      // Register scheduled sync if the provider needs it
+      if (connector.syncSchedule) {
+        await this.integrationsService.registerScheduledSync(
+          newConnection.id,
+          connector.syncSchedule.every
+        );
       }
 
       // Trigger initial sync
-      await this.integrationsService.triggerSync(newConnection.id, orgId, 'MANUAL');
+      await this.integrationsService.triggerSync(newConnection.id, orgId, 'INITIAL');
 
       res.redirect(`${this.frontendUrl}/dashboard/integrations?connected=${validatedProvider}`);
     } catch (error) {
@@ -369,7 +317,7 @@ export class IntegrationsController {
   }
 
   @Public()
-  @Post('/api/webhooks/:provider')
+  @Post('/integrations/webhook/:provider')
   async webhookReceiver(
     @Param('provider') provider: string,
     @Req() req: Request,
@@ -383,69 +331,25 @@ export class IntegrationsController {
         return;
       }
 
-      const validProvider = parsed.data;
-
-      // Slack-specific handling: url_verification, app_mention, member_joined_channel
-      if (validProvider === IntegrationProvider.SLACK) {
-        // Handle url_verification before anything else (Slack requires immediate response)
-        if (
-          typeof req.body === 'object' &&
-          req.body !== null &&
-          'type' in req.body &&
-          req.body.type === 'url_verification' &&
-          'challenge' in req.body
-        ) {
-          res.status(200).json({ challenge: req.body.challenge });
-          return;
-        }
-
-        const rows = await this.integrationsService.listConnectionsByProvider(validProvider);
-        if (rows.length === 0) {
-          this.logger.warn('No active Slack connections found for webhook');
-          res.status(200).json({ ok: true });
-          return;
-        }
-
-        // Flatten headers to string record
-        const headers: Record<string, string> = {};
-        for (const [key, value] of Object.entries(req.headers)) {
-          if (typeof value === 'string') {
-            headers[key] = value;
-          }
-        }
-
-        const rawBody = ('rawBody' in req ? req.rawBody : undefined);
-        const result = this.slackBotService.handleWebhook(headers, req.body, rows, typeof rawBody === 'string' ? rawBody : undefined);
-
-        if (result.handled) {
-          this.logger.log('Slack webhook handled by bot service');
-          res.status(200).json({ ok: true });
-          return;
-        }
-
-        this.logger.log('Slack webhook not handled by bot service, falling through to sync');
-
-        // Fall through to normal sync handling for message events
-        res.status(200).json({ ok: true });
-
-        const connector = this.providerRegistry.getConnector(validProvider);
-        for (const conn of rows) {
-          const event = connector.parseWebhook(headers, req.body, conn.webhookSecret, typeof rawBody === 'string' ? rawBody : undefined);
-          if (event) {
-            await this.integrationsService.triggerSync(conn.id, conn.orgId, 'WEBHOOK');
-          }
-        }
+      // Slack url_verification must be answered before any DB lookup
+      const body = req.body;
+      if (
+        typeof body === 'object' &&
+        body !== null &&
+        'type' in body &&
+        body.type === 'url_verification' &&
+        'challenge' in body
+      ) {
+        res.status(200).json({ challenge: body.challenge });
         return;
       }
 
-      // Generic webhook handling for non-Slack providers
-      res.status(200).json({ ok: true });
-
-      const rows = await this.integrationsService.listConnectionsByProvider(validProvider);
-      if (rows.length === 0) return;
-
-      const connector = this.providerRegistry.getConnector(validProvider);
-      const rawBody = ('rawBody' in req ? req.rawBody : undefined);
+      const validProvider = parsed.data;
+      const connections = await this.integrationsService.listConnectionsByProvider(validProvider);
+      if (connections.length === 0) {
+        res.status(200).json({ ok: true });
+        return;
+      }
 
       const headers: Record<string, string> = {};
       for (const [key, value] of Object.entries(req.headers)) {
@@ -454,12 +358,27 @@ export class IntegrationsController {
         }
       }
 
-      for (const conn of rows) {
-        const event = connector.parseWebhook(headers, req.body, conn.webhookSecret, typeof rawBody === 'string' ? rawBody : undefined);
-        if (event) {
-          await this.integrationsService.triggerSync(conn.id, conn.orgId, 'WEBHOOK');
+      const rawBody = 'rawBody' in req ? req.rawBody : undefined;
+      const connector = this.providerRegistry.getConnector(validProvider);
+      const result = connector.handleWebhookRequest(
+        headers,
+        req.body,
+        connections,
+        typeof rawBody === 'string' ? rawBody : undefined
+      );
+
+      // Queue webhook sync jobs for matched connections
+      if (result.syncConnections) {
+        for (const syncConn of result.syncConnections) {
+          await this.integrationsService.triggerWebhookSync(
+            syncConn.id,
+            syncConn.orgId,
+            syncConn.event
+          );
         }
       }
+
+      res.status(200).json(result.response);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Webhook processing failed for ${provider}: ${msg}`);

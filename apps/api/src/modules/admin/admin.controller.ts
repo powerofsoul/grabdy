@@ -25,7 +25,7 @@ interface InviteMemberBody {
   roles: OrgRole[];
 }
 
-@Controller('api/admin')
+@Controller('admin')
 @Public()
 @UseGuards(AdminApiKeyGuard)
 export class AdminController {

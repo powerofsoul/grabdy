@@ -26,6 +26,6 @@ export class LocalFileStorage implements FileStorage {
   }
 
   async getUrl(key: string): Promise<string> {
-    return `${this.baseUrl}/api/files/${key}`;
+    return `${this.baseUrl}/files/${key}`;
   }
 }

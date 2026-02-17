@@ -54,5 +54,5 @@ export const apiKeysContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api' }
+  { pathPrefix: '' }
 );

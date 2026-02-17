@@ -142,5 +142,5 @@ export const dataSourcesContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api' }
+  { pathPrefix: '' }
 );

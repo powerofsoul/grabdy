@@ -13,7 +13,7 @@ function McpPage() {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-  const mcpUrl = `${apiUrl}/api/v1/mcp`;
+  const mcpUrl = `${apiUrl}/v1/mcp`;
 
   const stdioConfig = JSON.stringify(
     {

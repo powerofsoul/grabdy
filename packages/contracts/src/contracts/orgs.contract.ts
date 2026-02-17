@@ -136,5 +136,5 @@ export const orgsContract = c.router(
       },
     },
   },
-  { pathPrefix: '/api' }
+  { pathPrefix: '' }
 );
