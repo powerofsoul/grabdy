@@ -9,6 +9,7 @@ import { HeroSection } from '@/components/landing/hero';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { McpSection } from '@/components/landing/McpSection';
 import { PricingSection } from '@/components/landing/PricingSection';
+import { SlackBotSection } from '@/components/landing/SlackBotSection';
 import { ProofStripSection } from '@/components/landing/ProofStripSection';
 
 import { WhatYouCanAskSection } from '@/components/landing/WhatYouCanAskSection';
@@ -25,6 +26,7 @@ function LandingPage() {
       <ProofStripSection />
       <WhatYouCanAskSection />
       <FeaturesSection />
+      <SlackBotSection />
       <PricingSection />
       <DevTeaserSection />
       <McpSection />
