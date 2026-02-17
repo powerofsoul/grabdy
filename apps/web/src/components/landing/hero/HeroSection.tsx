@@ -704,19 +704,6 @@ export function HeroSection() {
                 Get Started
               </Button>
             </Link>
-            <Button
-              variant="outlined"
-              size="large"
-              component="a"
-              href="mailto:hello@grabdy.com"
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontSize: '1rem',
-              }}
-            >
-              Watch Demo
-            </Button>
           </Box>
         </Box>
 

@@ -81,19 +81,6 @@ export function CTASection() {
               Get Started
             </Button>
           </Link>
-          <Button
-            variant="outlined"
-            size="large"
-            component="a"
-            href="mailto:hello@grabdy.com"
-            sx={{
-              px: 6,
-              py: 1.75,
-              fontSize: '1.05rem',
-            }}
-          >
-            Watch Demo
-          </Button>
         </Box>
 
         <Box className="cta-note" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
