@@ -17,6 +17,7 @@ import {
   type WebhookEvent,
   type WebhookHandlerResult,
 } from '../../connector.interface';
+import { getInitialSyncSince } from '../../integrations.constants';
 
 import type { LinearProviderData } from './linear.types';
 
@@ -384,9 +385,8 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     const client = new LinearClient({ accessToken });
     const lastIssueSyncedAt = providerData.lastIssueSyncedAt;
 
-    const filter = lastIssueSyncedAt
-      ? { updatedAt: { gt: new Date(lastIssueSyncedAt) } }
-      : undefined;
+    const sinceCursor = lastIssueSyncedAt ?? getInitialSyncSince();
+    const filter = { updatedAt: { gt: new Date(sinceCursor) } };
 
     const issuesConnection = await client.issues({
       first: 50,

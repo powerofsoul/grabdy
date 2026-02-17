@@ -15,6 +15,7 @@ import {
   type WebhookEvent,
   type WebhookHandlerResult,
 } from '../../connector.interface';
+import { getInitialSyncSlackTs } from '../../integrations.constants';
 
 import type { SlackProviderData } from './slack.types';
 import { SlackBotService } from './slack-bot.service';
@@ -303,7 +304,7 @@ MANDATORY source citation rules:
     const newTimestamps: Record<string, string> = {};
 
     for (const channel of channels) {
-      const cursorTs = existingTimestamps[channel.id] ?? '0';
+      const cursorTs = existingTimestamps[channel.id] ?? getInitialSyncSlackTs();
 
       // Quick check: are there new messages since last sync?
       const { messages: newMessages, latestTs } = await this.fetchChannelMessages(
@@ -320,11 +321,12 @@ MANDATORY source citation rules:
         continue;
       }
 
-      // Fetch full history so the data source contains all messages
-      const { messages: allMessages } =
-        cursorTs === '0'
-          ? { messages: newMessages }
-          : await this.fetchChannelMessages(accessToken, channel.id, '0');
+      // On initial sync (no saved timestamp), newMessages already contains everything from lookback.
+      // On subsequent syncs, re-fetch from the lookback window to rebuild the full data source.
+      const isInitialSync = !existingTimestamps[channel.id];
+      const { messages: allMessages } = isInitialSync
+        ? { messages: newMessages }
+        : await this.fetchChannelMessages(accessToken, channel.id, getInitialSyncSlackTs());
 
       const messages = allMessages.map((msg) => {
         const ts = msg.ts ?? '';

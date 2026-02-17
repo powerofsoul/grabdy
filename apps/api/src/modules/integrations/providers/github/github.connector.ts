@@ -20,6 +20,8 @@ import {
   type WebhookHandlerResult,
 } from '../../connector.interface';
 
+import { getInitialSyncSince } from '../../integrations.constants';
+
 import type { GitHubProviderData } from './github.types';
 
 // ---------------------------------------------------------------------------
@@ -338,7 +340,7 @@ export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
 
   async sync(accessToken: string, providerData: GitHubProviderData): Promise<SyncResult> {
     const octokit = new Octokit({ auth: accessToken });
-    const since = providerData.lastSyncedAt ?? undefined;
+    const since = providerData.lastSyncedAt ?? getInitialSyncSince();
 
     const items: SyncedItem[] = [];
     let maxUpdatedAt = providerData.lastSyncedAt;
