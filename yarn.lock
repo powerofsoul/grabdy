@@ -2524,6 +2524,7 @@ __metadata:
     "@bull-board/ui": "npm:^6.16.2"
     "@grabdy/common": "npm:*"
     "@grabdy/contracts": "npm:*"
+    "@linear/sdk": "npm:^75.0.0"
     "@mastra/core": "npm:^1.2.0"
     "@mastra/memory": "npm:^1.1.0"
     "@mastra/pg": "npm:^1.2.0"
@@ -2658,6 +2659,15 @@ __metadata:
     zod: "npm:^4.0.0"
   languageName: unknown
   linkType: soft
+
+"@graphql-typed-document-node/core@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "@graphql-typed-document-node/core@npm:3.2.0"
+  peerDependencies:
+    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+  checksum: 10c0/94e9d75c1f178bbae8d874f5a9361708a3350c8def7eaeb6920f2c820e82403b7d4f55b3735856d68e145e86c85cbfe2adc444fdc25519cd51f108697e99346c
+  languageName: node
+  linkType: hard
 
 "@headlessui/tailwindcss@npm:^0.2.2":
   version: 0.2.2
@@ -3433,6 +3443,15 @@ __metadata:
     "@lezer/highlight": "npm:^1.0.0"
     "@lezer/lr": "npm:^1.4.0"
   checksum: 10c0/3b93d05b00bca843954752487019b3a8a97c46756987e7867612cc52772b220b70c102c3ce59e57b318683383f3734fdd657f9f86bdd4689314e9a194aa63367
+  languageName: node
+  linkType: hard
+
+"@linear/sdk@npm:^75.0.0":
+  version: 75.0.0
+  resolution: "@linear/sdk@npm:75.0.0"
+  dependencies:
+    "@graphql-typed-document-node/core": "npm:^3.2.0"
+  checksum: 10c0/a60cabc057eba3969f03e0bffc87b4f158e876f5b94e8560be3ff3af393500ef4d8e5a4f31c96da20b71b2469fbdbefd1239eebc56af09d36c65b25175fced39
   languageName: node
   linkType: hard
 

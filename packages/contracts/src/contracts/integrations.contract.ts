@@ -5,11 +5,32 @@ import { z } from 'zod';
 import {
   connectionStatusEnum,
   integrationProviderEnum,
-  syncStatusEnum,
-  syncTriggerEnum,
 } from '../enums/index.js';
 
 const c = initContract();
+
+const slackProviderDataSchema = z.object({
+  provider: z.literal('SLACK'),
+  slackBotUserId: z.string().optional(),
+  teamDomain: z.string().optional(),
+  channelTimestamps: z.record(z.string(), z.string()),
+});
+
+const linearProviderDataSchema = z.object({
+  provider: z.literal('LINEAR'),
+  workspaceSlug: z.string().optional(),
+  lastIssueSyncedAt: z.string().nullable(),
+});
+
+const providerDataSchema = z.discriminatedUnion('provider', [
+  slackProviderDataSchema,
+  linearProviderDataSchema,
+]);
+
+const partialProviderDataSchema = z.union([
+  slackProviderDataSchema.partial(),
+  linearProviderDataSchema.partial(),
+]);
 
 const connectionSchema = z.object({
   id: dbIdSchema('Connection'),
@@ -18,26 +39,11 @@ const connectionSchema = z.object({
   externalAccountId: z.string().nullable(),
   externalAccountName: z.string().nullable(),
   lastSyncedAt: z.string().nullable(),
-  syncEnabled: z.boolean(),
-  syncIntervalMinutes: z.number(),
-  config: z.record(z.string(), z.unknown()),
+  syncScheduleLabel: z.string().nullable(),
+  providerData: providerDataSchema,
   orgId: dbIdSchema('Org'),
   createdAt: z.string(),
   updatedAt: z.string(),
-});
-
-const syncLogSchema = z.object({
-  id: dbIdSchema('SyncLog'),
-  connectionId: dbIdSchema('Connection'),
-  status: syncStatusEnum,
-  trigger: syncTriggerEnum,
-  itemsSynced: z.number(),
-  itemsFailed: z.number(),
-  errorMessage: z.string().nullable(),
-  details: z.object({ items: z.array(z.string()) }).nullable(),
-  startedAt: z.string().nullable(),
-  completedAt: z.string().nullable(),
-  createdAt: z.string(),
 });
 
 export const integrationsContract = c.router(
@@ -102,9 +108,7 @@ export const integrationsContract = c.router(
         provider: integrationProviderEnum,
       }),
       body: z.object({
-        syncEnabled: z.boolean().optional(),
-        syncIntervalMinutes: z.number().min(5).max(1440).optional(),
-        config: z.record(z.string(), z.unknown()).optional(),
+        config: partialProviderDataSchema.optional(),
       }),
       responses: {
         200: z.object({
@@ -114,38 +118,6 @@ export const integrationsContract = c.router(
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
-    triggerSync: {
-      method: 'POST',
-      path: '/orgs/:orgId/integrations/:provider/sync',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        provider: integrationProviderEnum,
-      }),
-      body: z.object({}),
-      responses: {
-        200: z.object({
-          success: z.literal(true),
-          alreadySyncing: z.boolean(),
-          data: syncLogSchema.nullable(),
-        }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    listSyncLogs: {
-      method: 'GET',
-      path: '/orgs/:orgId/integrations/:provider/sync-logs',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        provider: integrationProviderEnum,
-      }),
-      responses: {
-        200: z.object({
-          success: z.literal(true),
-          data: z.array(syncLogSchema),
-        }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
   },
-  { pathPrefix: '/api' }
+  { pathPrefix: '' }
 );

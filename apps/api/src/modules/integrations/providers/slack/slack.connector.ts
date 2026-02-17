@@ -10,13 +10,14 @@ import {
   IntegrationConnector,
   type OAuthTokens,
   type RateLimitConfig,
-  type SlackConnectionConfig,
-  type SyncCursor,
   type SyncedItem,
   type SyncResult,
   type WebhookEvent,
-  type WebhookInfo,
+  type WebhookHandlerResult,
 } from '../../connector.interface';
+
+import type { SlackProviderData } from './slack.types';
+import { SlackBotService } from './slack-bot.service';
 
 const SLACK_AUTH_URL = 'https://slack.com/oauth/v2/authorize';
 const SLACK_TOKEN_URL = 'https://slack.com/api/oauth.v2.access';
@@ -82,14 +83,6 @@ interface SlackConversationsHistoryResponse {
   };
 }
 
-interface SlackChannelCursors {
-  [channel: string]: string;
-}
-
-interface SlackSyncCursor {
-  channelCursors: SlackChannelCursors;
-}
-
 function formatSlackTs(ts: string | undefined): string {
   if (!ts) return '';
   const date = new Date(parseFloat(ts) * 1000);
@@ -106,20 +99,6 @@ function formatSlackMessage(msg: SlackMessage): string {
   return `[${time}] ${user}: ${text}`;
 }
 
-function isSlackSyncCursor(value: unknown): value is SlackSyncCursor {
-  if (!value || typeof value !== 'object') return false;
-  if (!('channelCursors' in value)) return false;
-  const candidate = value;
-  if (
-    !('channelCursors' in candidate) ||
-    typeof candidate.channelCursors !== 'object' ||
-    candidate.channelCursors === null
-  ) {
-    return false;
-  }
-  return true;
-}
-
 @Injectable()
 export class SlackConnector extends IntegrationConnector<'SLACK'> {
   readonly provider = IntegrationProvider.SLACK;
@@ -127,7 +106,8 @@ export class SlackConnector extends IntegrationConnector<'SLACK'> {
     maxRequestsPerMinute: 50,
     maxRequestsPerHour: 3000,
   };
-  readonly supportsWebhooks = true;
+  readonly syncSchedule = { every: 3_600_000 }; // 1 hour
+
   readonly botInstructions = `You are a Slack bot. Answer concisely. Do a single search and stop.
 
 Use Slack mrkdwn only: *bold*, _italic_, \`code\`, > quotes. Do NOT use markdown **bold**, # headings, or [links](url).
@@ -143,7 +123,8 @@ MANDATORY source citation rules:
   constructor(
     @InjectEnv('slackClientId') private readonly oauthClient: string,
     @InjectEnv('slackClientSecret') private readonly clientSecret: string,
-    @InjectEnv('slackSigningSecret') private readonly signingSecret: string
+    @InjectEnv('slackSigningSecret') private readonly signingSecret: string,
+    private readonly slackBotService: SlackBotService
   ) {
     super();
   }
@@ -218,17 +199,35 @@ MANDATORY source citation rules:
     };
   }
 
-  async registerWebhook(
-    _accessToken: string,
-    _config: SlackConnectionConfig
-  ): Promise<WebhookInfo | null> {
-    // Slack uses Events API - webhooks are configured in the Slack app dashboard
-    // The endpoint URL is set there, not via API
-    return null;
-  }
+  handleWebhookRequest(
+    headers: Record<string, string>,
+    body: unknown,
+    connections: ReadonlyArray<{
+      id: DbId<'Connection'>;
+      orgId: DbId<'Org'>;
+      providerData: SlackProviderData;
+    }>,
+    rawBody?: string
+  ): WebhookHandlerResult {
+    // Handle url_verification before anything else (Slack requires immediate response)
+    if (
+      typeof body === 'object' &&
+      body !== null &&
+      'type' in body &&
+      body.type === 'url_verification' &&
+      'challenge' in body
+    ) {
+      return { response: { challenge: body.challenge } };
+    }
 
-  async deregisterWebhook(_accessToken: string, _webhookRef: string): Promise<void> {
-    // No-op: Slack Events API webhooks are managed in the app dashboard
+    // Delegate bot events (app_mention, member_joined, DM) to SlackBotService
+    const botResult = this.slackBotService.handleWebhook(headers, body, connections, rawBody);
+    if (botResult.handled) {
+      return { response: { ok: true } };
+    }
+
+    // Non-bot events are acknowledged but no incremental sync is performed
+    return { response: { ok: true } };
   }
 
   parseWebhook(
@@ -294,24 +293,17 @@ MANDATORY source citation rules:
     };
   }
 
-  async sync(
-    accessToken: string,
-    config: SlackConnectionConfig,
-    cursor: SyncCursor | null
-  ): Promise<SyncResult> {
-    const existingCursors: SlackChannelCursors = isSlackSyncCursor(cursor)
-      ? cursor.channelCursors
-      : {};
-
-    const teamDomain = config.teamDomain;
+  async sync(accessToken: string, providerData: SlackProviderData): Promise<SyncResult> {
+    const existingTimestamps = providerData.channelTimestamps;
+    const teamDomain = providerData.teamDomain;
 
     // Fetch all non-archived channels the bot is a member of
     const channels = await this.fetchChannels(accessToken);
     const items: SyncedItem[] = [];
-    const newCursors: SlackChannelCursors = {};
+    const newTimestamps: Record<string, string> = {};
 
     for (const channel of channels) {
-      const cursorTs = existingCursors[channel.id] ?? '0';
+      const cursorTs = existingTimestamps[channel.id] ?? '0';
 
       // Quick check: are there new messages since last sync?
       const { messages: newMessages, latestTs } = await this.fetchChannelMessages(
@@ -321,9 +313,9 @@ MANDATORY source citation rules:
       );
 
       if (newMessages.length === 0) {
-        // No changes — preserve existing cursor
-        if (existingCursors[channel.id]) {
-          newCursors[channel.id] = existingCursors[channel.id];
+        // No changes — preserve existing timestamp
+        if (existingTimestamps[channel.id]) {
+          newTimestamps[channel.id] = existingTimestamps[channel.id];
         }
         continue;
       }
@@ -344,7 +336,8 @@ MANDATORY source citation rules:
             slackMessageTs: ts,
             slackAuthor: msg.user ?? 'unknown',
           },
-          sourceUrl: teamDomain && ts
+          sourceUrl:
+            teamDomain && ts
               ? `https://${teamDomain}.slack.com/archives/${channel.id}/p${ts.replace('.', '')}`
               : `https://slack.com/app_redirect?channel=${channel.id}`,
         };
@@ -366,14 +359,38 @@ MANDATORY source citation rules:
         },
       });
 
-      newCursors[channel.id] = latestTs || cursorTs;
+      newTimestamps[channel.id] = latestTs || cursorTs;
     }
 
     return {
       items,
       deletedExternalIds: [],
-      cursor: { channelCursors: newCursors },
+      updatedProviderData: {
+        ...providerData,
+        channelTimestamps: newTimestamps,
+      },
       hasMore: false,
+    };
+  }
+
+  async processWebhookItem(
+    _accessToken: string,
+    _providerData: SlackProviderData,
+    _event: WebhookEvent
+  ): Promise<{ item: SyncedItem | null; deletedExternalId: string | null }> {
+    // Slack doesn't do incremental webhook sync — it uses hourly full sync
+    return { item: null, deletedExternalId: null };
+  }
+
+  buildInitialProviderData(
+    tokenMetadata?: Partial<SlackProviderData>,
+    accountMetadata?: Partial<SlackProviderData>
+  ): SlackProviderData {
+    return {
+      provider: 'SLACK',
+      slackBotUserId: tokenMetadata?.slackBotUserId ?? accountMetadata?.slackBotUserId,
+      teamDomain: tokenMetadata?.teamDomain ?? accountMetadata?.teamDomain,
+      channelTimestamps: {},
     };
   }
 

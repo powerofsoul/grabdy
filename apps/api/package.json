@@ -22,6 +22,7 @@
     "@bull-board/ui": "^6.16.2",
     "@grabdy/common": "*",
     "@grabdy/contracts": "*",
+    "@linear/sdk": "^75.0.0",
     "@mastra/core": "^1.2.0",
     "@mastra/memory": "^1.1.0",
     "@mastra/pg": "^1.2.0",

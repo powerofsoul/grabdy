@@ -21,6 +21,20 @@ type Timestamp = ColumnType<Date, Date | string, Date | string>;
 // JSONB column types (opaque at DB level — consumers parse with Zod schemas)
 // ---------------------------------------------------------------------------
 
+/** Provider-specific connection data — discriminated union keyed on `provider`. */
+type ConnectionProviderData =
+  | {
+      provider: 'SLACK';
+      slackBotUserId?: string;
+      teamDomain?: string;
+      channelTimestamps: Record<string, string>;
+    }
+  | {
+      provider: 'LINEAR';
+      workspaceSlug?: string;
+      lastIssueSyncedAt: string | null;
+    };
+
 /** Chunk metadata — discriminated union keyed on `type`. */
 type ChunkMeta =
   | { type: 'PDF'; pages: number[] }
@@ -165,31 +179,11 @@ export interface DB {
     scopes: string[] | null;
     external_account_id: string | null;
     external_account_name: string | null;
-    sync_cursor: Record<string, unknown> | null;
     last_synced_at: Timestamp | null;
-    sync_enabled: Generated<boolean>;
-    sync_interval_minutes: Generated<number>;
-    config: Generated<Record<string, unknown>>;
-    webhook_id: string | null;
-    webhook_secret: string | null;
+    provider_data: Generated<ConnectionProviderData>;
     created_by_id: DbId<'User'>;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
-  };
-
-  'integration.sync_logs': {
-    id: Generated<DbId<'SyncLog'>>;
-    org_id: DbId<'Org'>;
-    connection_id: DbId<'Connection'>;
-    status: Generated<'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'>;
-    trigger: 'MANUAL' | 'SCHEDULED' | 'WEBHOOK';
-    items_synced: Generated<number>;
-    items_failed: Generated<number>;
-    error_message: string | null;
-    details: { items: string[] } | null;
-    started_at: Timestamp | null;
-    completed_at: Timestamp | null;
-    created_at: Generated<Timestamp>;
   };
 
   'api.api_keys': {

@@ -5,17 +5,25 @@ import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
 import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '@grabdy/contracts';
 import { Queue } from 'bullmq';
+import { sql } from 'kysely';
 
 import { DbService } from '../../db/db.module';
 import { INTEGRATION_SYNC_QUEUE } from '../queue/queue.constants';
 
-import type { ConnectionConfig, OAuthTokens, SyncLogDetails } from './connector.interface';
+import { ProviderRegistry } from './providers/provider-registry';
+import {
+  type OAuthTokens,
+  parseProviderData,
+  type ProviderData,
+  type WebhookEvent,
+} from './connector.interface';
 import { TokenEncryptionService } from './token-encryption.service';
 
 interface CreateConnectionParams {
   orgId: DbId<'Org'>;
   provider: IntegrationProvider;
   tokens: OAuthTokens;
+  providerData: ProviderData;
   externalAccountRef: string | null;
   externalAccountName: string | null;
   createdById: DbId<'User'>;
@@ -27,13 +35,8 @@ interface ConnectionUpdateFields {
   refreshToken?: string | null;
   tokenExpiresAt?: Date | null;
   scopes?: string[];
-  syncCursor?: Record<string, unknown> | null;
   lastSyncedAt?: Date;
-  syncEnabled?: boolean;
-  syncIntervalMinutes?: number;
-  config?: ConnectionConfig;
-  webhookRef?: string | null;
-  webhookSecret?: string | null;
+  providerData?: ProviderData;
 }
 
 @Injectable()
@@ -43,6 +46,7 @@ export class IntegrationsService {
   constructor(
     private db: DbService,
     private tokenEncryption: TokenEncryptionService,
+    private providerRegistry: ProviderRegistry,
     @InjectQueue(INTEGRATION_SYNC_QUEUE) private syncQueue: Queue
   ) {}
 
@@ -61,9 +65,7 @@ export class IntegrationsService {
       externalAccountId: row.external_account_id,
       externalAccountName: row.external_account_name,
       lastSyncedAt: row.last_synced_at,
-      syncEnabled: row.sync_enabled,
-      syncIntervalMinutes: row.sync_interval_minutes,
-      config: row.config,
+      providerData: row.provider_data,
       orgId: row.org_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -130,6 +132,7 @@ export class IntegrationsService {
         scopes: params.tokens.scopes,
         external_account_id: params.externalAccountRef,
         external_account_name: params.externalAccountName,
+        provider_data: sql`${JSON.stringify(params.providerData)}::jsonb`,
         org_id: params.orgId,
         created_by_id: params.createdById,
         updated_at: new Date(),
@@ -141,53 +144,43 @@ export class IntegrationsService {
   }
 
   async updateConnection(connectionId: DbId<'Connection'>, updates: ConnectionUpdateFields) {
-    const dbUpdates: Partial<{
-      status: ConnectionStatus;
-      access_token: string;
-      refresh_token: string | null;
-      token_expires_at: Date | null;
-      scopes: string[];
-      sync_cursor: Record<string, unknown> | null;
-      last_synced_at: Date;
-      sync_enabled: boolean;
-      sync_interval_minutes: number;
-      config: ConnectionConfig;
-      webhook_id: string | null;
-      webhook_secret: string | null;
-      updated_at: Date;
-    }> = { updated_at: new Date() };
+    let query = this.db.kysely
+      .updateTable('integration.connections')
+      .set('updated_at', new Date())
+      .where('id', '=', connectionId);
 
-    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.status !== undefined) {
+      query = query.set('status', updates.status);
+    }
     if (updates.accessToken !== undefined) {
-      dbUpdates.access_token = this.tokenEncryption.encrypt(updates.accessToken);
+      query = query.set('access_token', this.tokenEncryption.encrypt(updates.accessToken));
     }
     if (updates.refreshToken !== undefined) {
-      dbUpdates.refresh_token = updates.refreshToken
-        ? this.tokenEncryption.encrypt(updates.refreshToken)
-        : null;
+      query = query.set(
+        'refresh_token',
+        updates.refreshToken ? this.tokenEncryption.encrypt(updates.refreshToken) : null
+      );
     }
-    if (updates.tokenExpiresAt !== undefined) dbUpdates.token_expires_at = updates.tokenExpiresAt;
-    if (updates.scopes !== undefined) dbUpdates.scopes = updates.scopes;
-    if (updates.syncCursor !== undefined) dbUpdates.sync_cursor = updates.syncCursor;
-    if (updates.lastSyncedAt !== undefined) dbUpdates.last_synced_at = updates.lastSyncedAt;
-    if (updates.syncEnabled !== undefined) dbUpdates.sync_enabled = updates.syncEnabled;
-    if (updates.syncIntervalMinutes !== undefined)
-      dbUpdates.sync_interval_minutes = updates.syncIntervalMinutes;
-    if (updates.config !== undefined) dbUpdates.config = updates.config;
-    if (updates.webhookRef !== undefined) dbUpdates.webhook_id = updates.webhookRef;
-    if (updates.webhookSecret !== undefined) dbUpdates.webhook_secret = updates.webhookSecret;
+    if (updates.tokenExpiresAt !== undefined) {
+      query = query.set('token_expires_at', updates.tokenExpiresAt);
+    }
+    if (updates.scopes !== undefined) {
+      query = query.set('scopes', updates.scopes);
+    }
+    if (updates.lastSyncedAt !== undefined) {
+      query = query.set('last_synced_at', updates.lastSyncedAt);
+    }
+    if (updates.providerData !== undefined) {
+      query = query.set('provider_data', sql`${JSON.stringify(updates.providerData)}::jsonb`);
+    }
 
-    await this.db.kysely
-      .updateTable('integration.connections')
-      .set(dbUpdates)
-      .where('id', '=', connectionId)
-      .execute();
+    await query.execute();
   }
 
   async disconnect(orgId: DbId<'Org'>, provider: IntegrationProvider) {
     const result = await this.db.kysely
       .updateTable('integration.connections')
-      .set({ status: 'DISCONNECTED', sync_enabled: false, updated_at: new Date() })
+      .set({ status: 'DISCONNECTED', updated_at: new Date() })
       .where('org_id', '=', orgId)
       .where('provider', '=', provider)
       .where('status', '!=', 'DISCONNECTED')
@@ -197,7 +190,6 @@ export class IntegrationsService {
   }
 
   async deleteConnection(orgId: DbId<'Org'>, provider: IntegrationProvider) {
-    // Find the connection first
     const connection = await this.db.kysely
       .selectFrom('integration.connections')
       .select(['id'])
@@ -207,13 +199,14 @@ export class IntegrationsService {
 
     if (!connection) return false;
 
+    await this.removeScheduledSync(connection.id, provider);
+
     // Delete associated data sources (chunks cascade from data_sources)
     await this.db.kysely
       .deleteFrom('data.data_sources')
       .where('connection_id', '=', connection.id)
       .execute();
 
-    // Delete the connection (sync_logs cascade from connections)
     const result = await this.db.kysely
       .deleteFrom('integration.connections')
       .where('id', '=', connection.id)
@@ -223,76 +216,59 @@ export class IntegrationsService {
   }
 
   async triggerSync(connectionId: DbId<'Connection'>, orgId: DbId<'Org'>, trigger: SyncTrigger) {
-    const activeSyncLog = await this.db.kysely
-      .selectFrom('integration.sync_logs')
-      .select('id')
-      .where('connection_id', '=', connectionId)
-      .where('status', 'in', ['PENDING', 'RUNNING'])
-      .executeTakeFirst();
-
-    if (activeSyncLog) {
-      this.logger.log(`Sync already active for connection ${connectionId}, skipping ${trigger} trigger`);
-      return null;
-    }
-
-    const syncLogId = packId('SyncLog', extractOrgNumericId(orgId));
-
-    const syncLog = await this.db.kysely
-      .insertInto('integration.sync_logs')
-      .values({
-        id: syncLogId,
-        connection_id: connectionId,
-        status: 'PENDING',
-        trigger,
-        org_id: orgId,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
     await this.syncQueue.add('sync-full', {
       connectionId,
-      syncLogId,
       orgId,
       trigger,
     });
 
     this.logger.log(`Queued ${trigger} sync for connection ${connectionId}`);
-    return syncLog;
   }
 
-  async updateSyncLog(
-    syncLogId: DbId<'SyncLog'>,
-    updates: {
-      status?: string;
-      itemsSynced?: number;
-      itemsFailed?: number;
-      errorMessage?: string | null;
-      details?: SyncLogDetails | null;
-      startedAt?: Date;
-      completedAt?: Date;
-    }
+  async triggerWebhookSync(
+    connectionId: DbId<'Connection'>,
+    orgId: DbId<'Org'>,
+    event: WebhookEvent
   ) {
-    const dbUpdates: Record<string, unknown> = {};
+    await this.syncQueue.add('sync-webhook', {
+      connectionId,
+      orgId,
+      event,
+    });
 
-    if (updates.status !== undefined) dbUpdates.status = updates.status;
-    if (updates.itemsSynced !== undefined) dbUpdates.items_synced = updates.itemsSynced;
-    if (updates.itemsFailed !== undefined) dbUpdates.items_failed = updates.itemsFailed;
-    if (updates.errorMessage !== undefined) dbUpdates.error_message = updates.errorMessage;
-    if (updates.details !== undefined) dbUpdates.details = JSON.stringify(updates.details);
-    if (updates.startedAt !== undefined) dbUpdates.started_at = updates.startedAt;
-    if (updates.completedAt !== undefined) dbUpdates.completed_at = updates.completedAt;
+    this.logger.log(
+      `Queued webhook sync for connection ${connectionId}, event: ${event.action} ${event.externalId}`
+    );
+  }
 
-    await this.db.kysely
-      .updateTable('integration.sync_logs')
-      .set(dbUpdates)
-      .where('id', '=', syncLogId)
-      .execute();
+  async registerScheduledSync(connectionId: DbId<'Connection'>, everyMs: number) {
+    await this.syncQueue.add(
+      'sync-scheduled',
+      { connectionId },
+      { repeat: { every: everyMs }, jobId: `scheduled-${connectionId}` }
+    );
+    this.logger.log(`Registered scheduled sync every ${everyMs}ms for connection ${connectionId}`);
+  }
+
+  async removeScheduledSync(connectionId: DbId<'Connection'>, provider: IntegrationProvider) {
+    const connector = this.providerRegistry.getConnector(provider);
+    if (!connector.syncSchedule) return;
+
+    try {
+      await this.syncQueue.removeRepeatable('sync-scheduled', {
+        every: connector.syncSchedule.every,
+        jobId: `scheduled-${connectionId}`,
+      });
+      this.logger.log(`Removed scheduled sync for connection ${connectionId}`);
+    } catch {
+      // Repeatable job may not exist — safe to ignore
+    }
   }
 
   async listConnectionsByProvider(provider: IntegrationProvider) {
     const rows = await this.db.kysely
       .selectFrom('integration.connections')
-      .select(['id', 'org_id', 'webhook_secret', 'config'])
+      .select(['id', 'org_id', 'provider_data'])
       .where('provider', '=', provider)
       .where('status', '=', 'ACTIVE')
       .execute();
@@ -300,19 +276,7 @@ export class IntegrationsService {
     return rows.map((row) => ({
       id: row.id,
       orgId: row.org_id,
-      webhookSecret: row.webhook_secret,
-      config: row.config,
+      providerData: parseProviderData(row.provider_data),
     }));
-  }
-
-  async listSyncLogs(orgId: DbId<'Org'>, connectionId: DbId<'Connection'>) {
-    return this.db.kysely
-      .selectFrom('integration.sync_logs')
-      .selectAll()
-      .where('org_id', '=', orgId)
-      .where('connection_id', '=', connectionId)
-      .orderBy('created_at', 'desc')
-      .limit(50)
-      .execute();
   }
 }

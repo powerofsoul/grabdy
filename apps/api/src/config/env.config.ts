@@ -72,6 +72,7 @@ export const env = {
   // Linear
   linearClientId: requiredInProd('LINEAR_CLIENT_ID', ''),
   linearClientSecret: requiredInProd('LINEAR_CLIENT_SECRET', ''),
+  linearWebhookSecret: requiredInProd('LINEAR_WEBHOOK_SECRET', ''),
 } as const;
 
 type EnvKey = keyof typeof env;

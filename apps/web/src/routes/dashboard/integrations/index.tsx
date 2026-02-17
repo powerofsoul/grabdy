@@ -74,9 +74,8 @@ function IntegrationsPage() {
           provider={connection.provider}
           status={connection.status}
           lastSyncedAt={connection.lastSyncedAt}
-          syncEnabled={connection.syncEnabled}
-          syncIntervalMinutes={connection.syncIntervalMinutes}
           externalAccountName={connection.externalAccountName}
+          syncScheduleLabel={connection.syncScheduleLabel}
           onRefresh={fetchConnections}
           onConnect={handleConnect}
         />

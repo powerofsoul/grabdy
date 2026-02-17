@@ -1,35 +1,31 @@
 import type { DbId } from '@grabdy/common';
 import type { ChunkMeta, IntegrationProvider } from '@grabdy/contracts';
+import { z } from 'zod';
+
+import {
+  type LinearProviderData,
+  linearProviderDataSchema,
+  linearPublicSchema,
+} from './providers/linear/linear.types';
+import {
+  type SlackProviderData,
+  slackProviderDataSchema,
+  slackPublicSchema,
+} from './providers/slack/slack.types';
+
+export type { LinearProviderData } from './providers/linear/linear.types';
+export type { SlackProviderData } from './providers/slack/slack.types';
 
 // ---------------------------------------------------------------------------
-// Per-provider connection config (discriminated by provider field)
+// Per-provider data (discriminated union)
 // ---------------------------------------------------------------------------
 
-export interface SlackConnectionConfig {
-  slackBotUserId?: string;
-  teamDomain?: string;
-  [key: string]: unknown;
-}
+export type ProviderData = SlackProviderData | LinearProviderData;
 
-export interface LinearConnectionConfig {
-  workspaceSlug?: string;
-  [key: string]: unknown;
-}
-
-export type ConnectionConfigMap = {
-  SLACK: SlackConnectionConfig;
-  LINEAR: LinearConnectionConfig;
+export type ProviderDataMap = {
+  SLACK: SlackProviderData;
+  LINEAR: LinearProviderData;
 };
-
-export type ConnectionConfig = ConnectionConfigMap[IntegrationProvider];
-
-/** Narrow a connection config to a specific provider's type. */
-export function connectionConfig<P extends IntegrationProvider>(
-  _provider: P,
-  config: ConnectionConfig
-): ConnectionConfigMap[P] {
-  return config satisfies ConnectionConfigMap[P];
-}
 
 // ---------------------------------------------------------------------------
 // OAuth & Account info
@@ -45,15 +41,15 @@ export interface OAuthTokens<P extends IntegrationProvider = IntegrationProvider
   refreshToken: string | null;
   expiresAt: Date | null;
   scopes: string[];
-  /** Provider-specific metadata stored in connection config. */
-  metadata?: ConnectionConfigMap[P];
+  /** Provider-specific metadata stored in provider data. */
+  metadata?: Partial<ProviderDataMap[P]>;
 }
 
 export interface AccountInfo<P extends IntegrationProvider = IntegrationProvider> {
   id: string;
   name: string;
-  /** Provider-specific metadata to store in connection config. */
-  metadata?: ConnectionConfigMap[P];
+  /** Provider-specific metadata to store in provider data. */
+  metadata?: Partial<ProviderDataMap[P]>;
 }
 
 export interface SyncedItem {
@@ -67,25 +63,12 @@ export interface SyncedItem {
   metadata: Record<string, unknown>;
 }
 
-export interface SyncCursor {
-  [key: string]: unknown;
-}
-
 export interface SyncResult {
   items: SyncedItem[];
   deletedExternalIds: string[];
-  cursor: SyncCursor | null;
+  /** Updated provider data to persist (includes new sync cursors/timestamps). */
+  updatedProviderData: ProviderData;
   hasMore: boolean;
-}
-
-export interface SyncLogDetails {
-  /** Names of items synced during this sync run. */
-  items: string[];
-}
-
-export interface WebhookInfo {
-  webhookRef: string;
-  secret: string | null;
 }
 
 export interface WebhookEvent {
@@ -94,10 +77,47 @@ export interface WebhookEvent {
   data?: SyncedItem;
 }
 
+export interface WebhookHandlerResult {
+  response: Record<string, unknown>;
+  syncConnections?: Array<{ id: DbId<'Connection'>; orgId: DbId<'Org'>; event: WebhookEvent }>;
+}
+
+// ---------------------------------------------------------------------------
+// Zod schemas for parsing raw provider_data JSONB from DB (trust boundary)
+// ---------------------------------------------------------------------------
+
+export const providerDataSchema = z.discriminatedUnion('provider', [
+  slackProviderDataSchema,
+  linearProviderDataSchema,
+]);
+
+/** Parse raw JSONB provider_data from DB into typed ProviderData (trust boundary). */
+export function parseProviderData(raw: unknown): ProviderData {
+  return providerDataSchema.parse(raw);
+}
+
+const publicProviderDataSchema = z.discriminatedUnion('provider', [
+  slackPublicSchema,
+  linearPublicSchema,
+]);
+
+export type PublicProviderData = z.infer<typeof publicProviderDataSchema>;
+
+/** Strip internal-only fields for API response. */
+export function parsePublicProviderData(raw: unknown): PublicProviderData {
+  return publicProviderDataSchema.parse(raw);
+}
+
+// ---------------------------------------------------------------------------
+// Abstract connector
+// ---------------------------------------------------------------------------
+
 export abstract class IntegrationConnector<P extends IntegrationProvider = IntegrationProvider> {
   abstract readonly provider: P;
   abstract readonly rateLimits: RateLimitConfig;
-  abstract readonly supportsWebhooks: boolean;
+
+  /** If non-null, the provider needs periodic full syncs. BullMQ repeat pattern (milliseconds). */
+  abstract readonly syncSchedule: { every: number } | null;
 
   /** Custom system prompt prepended to the AI agent when responding via this integration. */
   readonly botInstructions: string | undefined = undefined;
@@ -109,11 +129,6 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
   /** Fetch the connected account's ID and display name after OAuth. */
   abstract getAccountInfo(accessToken: string): Promise<AccountInfo<P>>;
 
-  abstract registerWebhook(
-    accessToken: string,
-    config: ConnectionConfigMap[P]
-  ): Promise<WebhookInfo | null>;
-  abstract deregisterWebhook(accessToken: string, webhookRef: string): Promise<void>;
   abstract parseWebhook(
     headers: Record<string, string>,
     body: unknown,
@@ -121,9 +136,29 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
     rawBody?: string
   ): WebhookEvent | null;
 
-  abstract sync(
+  abstract handleWebhookRequest(
+    headers: Record<string, string>,
+    body: unknown,
+    connections: ReadonlyArray<{
+      id: DbId<'Connection'>;
+      orgId: DbId<'Org'>;
+      providerData: ProviderDataMap[P];
+    }>,
+    rawBody?: string
+  ): WebhookHandlerResult;
+
+  abstract sync(accessToken: string, providerData: ProviderDataMap[P]): Promise<SyncResult>;
+
+  /** Process a single webhook event item (fetch + build SyncedItem). */
+  abstract processWebhookItem(
     accessToken: string,
-    config: ConnectionConfigMap[P],
-    cursor: SyncCursor | null
-  ): Promise<SyncResult>;
+    providerData: ProviderDataMap[P],
+    event: WebhookEvent
+  ): Promise<{ item: SyncedItem | null; deletedExternalId: string | null }>;
+
+  /** Build initial provider data from OAuth + account metadata after first connection. */
+  abstract buildInitialProviderData(
+    tokenMetadata?: Partial<ProviderDataMap[P]>,
+    accountMetadata?: Partial<ProviderDataMap[P]>
+  ): ProviderDataMap[P];
 }

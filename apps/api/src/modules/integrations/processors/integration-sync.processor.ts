@@ -9,16 +9,40 @@ import { Job, Queue } from 'bullmq';
 import { DbService } from '../../../db/db.module';
 import type { DataSourceJobData } from '../../data-sources/data-source.processor';
 import { DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE } from '../../queue/queue.constants';
-import type { SyncedItem } from '../connector.interface';
+import {
+  parseProviderData,
+  type ProviderData,
+  type SyncedItem,
+  type WebhookEvent,
+} from '../connector.interface';
 import { IntegrationsService } from '../integrations.service';
 import { ProviderRegistry } from '../providers/provider-registry';
 import { TokenEncryptionService } from '../token-encryption.service';
 
 export interface IntegrationSyncJobData {
   connectionId: DbId<'Connection'>;
-  syncLogId: DbId<'SyncLog'>;
   orgId: DbId<'Org'>;
   trigger: SyncTrigger;
+}
+
+export interface IntegrationWebhookJobData {
+  connectionId: DbId<'Connection'>;
+  orgId: DbId<'Org'>;
+  event: WebhookEvent;
+}
+
+export interface IntegrationScheduledJobData {
+  connectionId: DbId<'Connection'>;
+}
+
+type JobData = IntegrationSyncJobData | IntegrationWebhookJobData | IntegrationScheduledJobData;
+
+function isWebhookJob(data: JobData): data is IntegrationWebhookJobData {
+  return 'event' in data;
+}
+
+function isSyncJob(data: JobData): data is IntegrationSyncJobData {
+  return 'trigger' in data;
 }
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // Refresh 5 minutes before expiry
@@ -37,57 +61,43 @@ export class IntegrationSyncProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<IntegrationSyncJobData>): Promise<void> {
-    const { connectionId, syncLogId, orgId, trigger } = job.data;
+  async process(job: Job<JobData>): Promise<void> {
+    const { data } = job;
+    if (job.name === 'sync-webhook' && isWebhookJob(data)) {
+      await this.processWebhookJob(data);
+    } else if (job.name === 'sync-scheduled') {
+      await this.processScheduledJob(data);
+    } else if (job.name === 'sync-full' && isSyncJob(data)) {
+      await this.processFullSync(data, (progress) => job.updateProgress(progress));
+    } else {
+      this.logger.warn(`Unknown job name: ${job.name}`);
+    }
+  }
+
+  private async processFullSync(
+    data: IntegrationSyncJobData,
+    updateProgress?: (progress: number) => Promise<void>
+  ): Promise<void> {
+    const { connectionId, orgId, trigger } = data;
     this.logger.log(`Processing ${trigger} sync for connection ${connectionId}`);
 
     try {
-      // Load connection with decrypted tokens
-      const connection = await this.integrationsService.getConnectionById(connectionId);
-      if (!connection) {
-        throw new Error(`Connection ${connectionId} not found`);
-      }
-
+      const { accessToken, connection } = await this.loadConnection(connectionId);
       const connector = this.providerRegistry.getConnector(connection.provider);
-
-      // Refresh tokens if near expiry
-      let accessToken = connection.access_token;
-      if (connection.token_expires_at && connection.refresh_token) {
-        const expiresAt = new Date(connection.token_expires_at).getTime();
-        if (expiresAt - Date.now() < TOKEN_REFRESH_BUFFER_MS) {
-          this.logger.log(`Refreshing tokens for connection ${connectionId}`);
-          const newTokens = await connector.refreshTokens(connection.refresh_token);
-          await this.integrationsService.updateConnection(connectionId, {
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken,
-            tokenExpiresAt: newTokens.expiresAt,
-          });
-          accessToken = newTokens.accessToken;
-        }
-      }
-
-      // Update sync log to RUNNING
-      await this.integrationsService.updateSyncLog(syncLogId, {
-        status: 'RUNNING',
-        startedAt: new Date(),
-      });
-
       // Sync loop
-      let cursor = connection.sync_cursor;
+      let currentProviderData: ProviderData = parseProviderData(connection.provider_data);
       let totalSynced = 0;
       let totalFailed = 0;
-      const syncedNames: string[] = [];
 
       let hasMore = true;
       while (hasMore) {
-        const result = await connector.sync(accessToken, connection.config, cursor);
+        const result = await connector.sync(accessToken, currentProviderData);
 
         // Process synced items
         for (const item of result.items) {
           try {
             await this.processItem(item, connectionId, orgId, connection.provider);
             totalSynced++;
-            syncedNames.push(item.title);
           } catch (error) {
             const msg = error instanceof Error ? error.message : 'Unknown error';
             this.logger.warn(`Failed to process item ${item.externalId}: ${msg}`);
@@ -105,26 +115,18 @@ export class IntegrationSyncProcessor extends WorkerHost {
           }
         }
 
-        cursor = result.cursor;
+        currentProviderData = result.updatedProviderData;
         hasMore = result.hasMore;
 
-        // Update progress
-        await job.updateProgress(hasMore ? 50 : 100);
+        if (updateProgress) {
+          await updateProgress(hasMore ? 50 : 100);
+        }
       }
 
-      // Update connection cursor and sync time
+      // Persist updated provider data and sync time
       await this.integrationsService.updateConnection(connectionId, {
-        syncCursor: cursor,
+        providerData: currentProviderData,
         lastSyncedAt: new Date(),
-      });
-
-      // Mark sync complete
-      await this.integrationsService.updateSyncLog(syncLogId, {
-        status: 'COMPLETED',
-        itemsSynced: totalSynced,
-        itemsFailed: totalFailed,
-        details: syncedNames.length > 0 ? { items: syncedNames } : null,
-        completedAt: new Date(),
       });
 
       this.logger.log(
@@ -134,20 +136,95 @@ export class IntegrationSyncProcessor extends WorkerHost {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Sync failed for connection ${connectionId}: ${message}`);
 
-      await this.integrationsService.updateSyncLog(syncLogId, {
-        status: 'FAILED',
-        errorMessage: message,
-        completedAt: new Date(),
-      });
-
-      // Disconnect the integration on sync failure so the user knows to reconnect
       await this.integrationsService.updateConnection(connectionId, {
         status: 'DISCONNECTED',
-        syncEnabled: false,
       });
 
       throw error;
     }
+  }
+
+  private async processWebhookJob(data: IntegrationWebhookJobData): Promise<void> {
+    const { connectionId, orgId, event } = data;
+    this.logger.log(
+      `Processing webhook sync for connection ${connectionId}: ${event.action} ${event.externalId}`
+    );
+
+    try {
+      const { accessToken, connection } = await this.loadConnection(connectionId);
+      const connector = this.providerRegistry.getConnector(connection.provider);
+      const providerData = parseProviderData(connection.provider_data);
+
+      const result = await connector.processWebhookItem(accessToken, providerData, event);
+
+      if (result.item) {
+        await this.processItem(result.item, connectionId, orgId, connection.provider);
+      }
+
+      if (result.deletedExternalId) {
+        await this.deleteItem(result.deletedExternalId, connectionId);
+      }
+
+      await this.integrationsService.updateConnection(connectionId, {
+        lastSyncedAt: new Date(),
+      });
+
+      this.logger.log(`Webhook sync complete for connection ${connectionId}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Webhook sync failed for connection ${connectionId}: ${message}`);
+      throw error;
+    }
+  }
+
+  private async processScheduledJob(data: IntegrationScheduledJobData): Promise<void> {
+    const { connectionId } = data;
+    this.logger.log(`Processing scheduled sync for connection ${connectionId}`);
+
+    // Load connection to get orgId, then delegate to full sync
+    const connection = await this.integrationsService.getConnectionById(connectionId);
+    if (!connection) {
+      this.logger.warn(`Connection ${connectionId} not found for scheduled sync`);
+      return;
+    }
+
+    if (connection.status !== 'ACTIVE') {
+      this.logger.log(`Skipping scheduled sync for non-active connection ${connectionId}`);
+      return;
+    }
+
+    await this.processFullSync({
+      connectionId,
+      orgId: connection.org_id,
+      trigger: 'SCHEDULED',
+    });
+  }
+
+  private async loadConnection(connectionId: DbId<'Connection'>) {
+    const connection = await this.integrationsService.getConnectionById(connectionId);
+    if (!connection) {
+      throw new Error(`Connection ${connectionId} not found`);
+    }
+
+    const connector = this.providerRegistry.getConnector(connection.provider);
+
+    // Refresh tokens if near expiry
+    let accessToken = connection.access_token;
+    if (connection.token_expires_at && connection.refresh_token) {
+      const expiresAt = new Date(connection.token_expires_at).getTime();
+      if (expiresAt - Date.now() < TOKEN_REFRESH_BUFFER_MS) {
+        this.logger.log(`Refreshing tokens for connection ${connectionId}`);
+        const newTokens = await connector.refreshTokens(connection.refresh_token);
+        await this.integrationsService.updateConnection(connectionId, {
+          accessToken: newTokens.accessToken,
+          refreshToken: newTokens.refreshToken,
+          tokenExpiresAt: newTokens.expiresAt,
+        });
+        accessToken = newTokens.accessToken;
+      }
+    }
+
+    return { accessToken, connection };
   }
 
   private async processItem(

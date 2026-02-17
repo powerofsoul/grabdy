@@ -9,9 +9,8 @@ export interface ConnectionSummary {
   provider: IntegrationProvider;
   status: string;
   lastSyncedAt: string | null;
-  syncEnabled: boolean;
-  syncIntervalMinutes: number;
   externalAccountName: string | null;
+  syncScheduleLabel: string | null;
 }
 
 interface IntegrationGridProps {

@@ -2,128 +2,39 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { IntegrationProvider } from '@grabdy/contracts';
+import { LinearClient, PaginationOrderBy } from '@linear/sdk';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { z } from 'zod';
 
 import { InjectEnv } from '../../../../config/env.config';
 import {
   type AccountInfo,
   IntegrationConnector,
-  type LinearConnectionConfig,
   type OAuthTokens,
   type RateLimitConfig,
-  type SyncCursor,
   type SyncedItem,
   type SyncResult,
   type WebhookEvent,
-  type WebhookInfo,
+  type WebhookHandlerResult,
 } from '../../connector.interface';
+
+import type { LinearProviderData } from './linear.types';
 
 const LINEAR_AUTH_URL = 'https://linear.app/oauth/authorize';
 const LINEAR_TOKEN_URL = 'https://api.linear.app/oauth/token';
-const LINEAR_API_URL = 'https://api.linear.app/graphql';
 const LINEAR_SCOPES = 'read';
 
-// --- Linear GraphQL response types ---
-
-interface LinearOrganization {
-  id: string;
-  name: string;
-  urlKey: string;
-}
-
-interface LinearUser {
-  name: string;
-}
-
-interface LinearLabel {
-  name: string;
-}
-
-interface LinearComment {
-  id: string;
-  body: string;
-  user: LinearUser | null;
-  createdAt: string;
-  url: string;
-}
-
-interface LinearIssue {
-  id: string;
-  identifier: string;
-  title: string;
-  description: string | null;
-  url: string;
-  updatedAt: string;
-  priority: number;
-  priorityLabel: string;
-  state: { name: string } | null;
-  assignee: LinearUser | null;
-  team: { name: string } | null;
-  labels: { nodes: LinearLabel[] };
-  parent: { identifier: string; title: string } | null;
-  children: { nodes: Array<{ identifier: string; title: string; state: { name: string } | null }> };
-  comments: {
-    nodes: LinearComment[];
-  };
-}
-
-interface LinearPageInfo {
-  hasNextPage: boolean;
-  endCursor: string | null;
-}
-
-interface LinearIssuesResponse {
-  data?: {
-    issues?: {
-      nodes?: LinearIssue[];
-      pageInfo?: LinearPageInfo;
-    };
-  };
-  errors?: Array<{ message: string }>;
-}
-
-interface LinearOrganizationResponse {
-  data?: {
-    organization?: LinearOrganization;
-  };
-  errors?: Array<{ message: string }>;
-}
-
-interface LinearWebhookCreateResponse {
-  data?: {
-    webhookCreate?: {
-      success: boolean;
-      webhook?: {
-        id: string;
-      };
-    };
-  };
-  errors?: Array<{ message: string }>;
-}
-
-interface LinearWebhookBody {
-  action?: string;
-  type?: string;
-  data?: {
-    id?: string;
-    // eslint-disable-next-line local/enforce-dbid -- must match Linear webhook wire format
-    issueId?: string;
-  };
-  url?: string;
-}
-
-interface LinearSyncCursor {
-  /** GraphQL pagination cursor within a single sync run */
-  endCursor: string | null;
-  /** ISO timestamp of the most recently updated issue seen — used to filter subsequent syncs */
-  lastUpdatedAt: string | null;
-  [key: string]: unknown;
-}
-
-function isLinearSyncCursor(value: unknown): value is LinearSyncCursor {
-  if (!value || typeof value !== 'object') return false;
-  return 'endCursor' in value;
-}
+const linearWebhookBodySchema = z.object({
+  action: z.string().optional(),
+  type: z.string().optional(),
+  data: z
+    .object({
+      id: z.string().optional(),
+      issueId: z.string().optional(),
+    })
+    .optional(),
+  url: z.string().optional(),
+});
 
 function formatLinearDate(iso: string): string {
   return new Date(iso)
@@ -132,7 +43,35 @@ function formatLinearDate(iso: string): string {
     .replace(/\.\d+Z$/, ' UTC');
 }
 
-function buildIssueContextHeader(issue: LinearIssue): string {
+interface IssueFields {
+  id: string;
+  identifier: string;
+  title: string;
+  description: string | undefined;
+  url: string;
+  updatedAt: Date;
+  priority: number;
+  priorityLabel: string;
+  state: { name: string } | undefined;
+  assignee: { name: string } | undefined;
+  team: { name: string } | undefined;
+  labels: { nodes: Array<{ name: string }> };
+  parent: { identifier: string; title: string } | undefined;
+  children: {
+    nodes: Array<{ identifier: string; title: string; state: { name: string } | undefined }>;
+  };
+  comments: {
+    nodes: Array<{
+      id: string;
+      body: string;
+      user: { name: string } | undefined;
+      createdAt: Date;
+      url: string;
+    }>;
+  };
+}
+
+function buildIssueContextHeader(issue: IssueFields): string {
   const lines: string[] = [];
 
   lines.push(`Issue ${issue.identifier}: ${issue.title}`);
@@ -161,11 +100,138 @@ function buildIssueContextHeader(issue: LinearIssue): string {
   return lines.join('\n');
 }
 
-function buildCommentContextLine(issue: LinearIssue): string {
+function buildCommentContextLine(issue: IssueFields): string {
   const parts = [`Comment on ${issue.identifier} (${issue.title})`];
   if (issue.state) parts.push(issue.state.name);
   if (issue.priorityLabel) parts.push(issue.priorityLabel);
   return parts.join(' | ');
+}
+
+function buildSyncedItemFromIssue(issue: IssueFields): SyncedItem {
+  const messages: SyncedItem['messages'] = [];
+  const contextHeader = buildIssueContextHeader(issue);
+
+  // Issue description (or header-only) as first message
+  const descriptionContent = issue.description
+    ? `${contextHeader}\n\n${issue.description}`
+    : contextHeader;
+
+  messages.push({
+    content: descriptionContent,
+    metadata: {
+      type: 'LINEAR' as const,
+      linearIssueId: issue.id,
+      linearCommentId: null,
+    },
+    sourceUrl: issue.url,
+  });
+
+  // Each comment as a separate message with context line
+  const commentContext = buildCommentContextLine(issue);
+  for (const comment of issue.comments.nodes) {
+    const author = comment.user?.name ?? 'Unknown';
+    const time = formatLinearDate(comment.createdAt.toISOString());
+    messages.push({
+      content: `${commentContext}\n[${time}] ${author}: ${comment.body}`,
+      metadata: {
+        type: 'LINEAR' as const,
+        linearIssueId: issue.id,
+        linearCommentId: comment.id,
+      },
+      sourceUrl: comment.url,
+    });
+  }
+
+  const content = messages.map((m) => m.content).join('\n\n');
+  const labelNames = issue.labels.nodes.map((l) => l.name);
+
+  return {
+    externalId: issue.id,
+    title: `[${issue.identifier}] ${issue.title}`,
+    content,
+    messages,
+    sourceUrl: issue.url,
+    metadata: {
+      linearIssueId: issue.id,
+      identifier: issue.identifier,
+      commentCount: issue.comments.nodes.length,
+      status: issue.state?.name ?? null,
+      priority: issue.priorityLabel || null,
+      assignee: issue.assignee?.name ?? null,
+      team: issue.team?.name ?? null,
+      labels: labelNames.length > 0 ? labelNames : null,
+    },
+  };
+}
+
+async function fetchIssueWithRelations(
+  client: LinearClient,
+  linearIssueId: string
+): Promise<IssueFields | null> {
+  const issue = await client.issue(linearIssueId);
+  if (!issue) return null;
+
+  const [
+    stateResult,
+    assigneeResult,
+    teamResult,
+    labelsResult,
+    parentResult,
+    childrenResult,
+    commentsResult,
+  ] = await Promise.all([
+    issue.state,
+    issue.assignee,
+    issue.team,
+    issue.labels(),
+    issue.parent,
+    issue.children(),
+    issue.comments(),
+  ]);
+
+  const commentNodes = await Promise.all(
+    commentsResult.nodes.map(async (c) => {
+      const user = await c.user;
+      return {
+        id: c.id,
+        body: c.body,
+        user: user ? { name: user.name } : undefined,
+        createdAt: c.createdAt,
+        url: c.url,
+      };
+    })
+  );
+
+  const childNodes = await Promise.all(
+    childrenResult.nodes.map(async (child) => {
+      const childState = await child.state;
+      return {
+        identifier: child.identifier,
+        title: child.title,
+        state: childState ? { name: childState.name } : undefined,
+      };
+    })
+  );
+
+  return {
+    id: issue.id,
+    identifier: issue.identifier,
+    title: issue.title,
+    description: issue.description ?? undefined,
+    url: issue.url,
+    updatedAt: issue.updatedAt,
+    priority: issue.priority,
+    priorityLabel: issue.priorityLabel,
+    state: stateResult ? { name: stateResult.name } : undefined,
+    assignee: assigneeResult ? { name: assigneeResult.name } : undefined,
+    team: teamResult ? { name: teamResult.name } : undefined,
+    labels: { nodes: labelsResult.nodes.map((l) => ({ name: l.name })) },
+    parent: parentResult
+      ? { identifier: parentResult.identifier, title: parentResult.title }
+      : undefined,
+    children: { nodes: childNodes },
+    comments: { nodes: commentNodes },
+  };
 }
 
 @Injectable()
@@ -175,13 +241,14 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     maxRequestsPerMinute: 25,
     maxRequestsPerHour: 1500,
   };
-  readonly supportsWebhooks = true;
+  readonly syncSchedule = null; // Webhook-driven only
 
   private readonly logger = new Logger(LinearConnector.name);
 
   constructor(
     @InjectEnv('linearClientId') private readonly linearClientId: string,
-    @InjectEnv('linearClientSecret') private readonly linearClientSecret: string
+    @InjectEnv('linearClientSecret') private readonly linearClientSecret: string,
+    @InjectEnv('linearWebhookSecret') private readonly linearWebhookSecret: string
   ) {
     super();
   }
@@ -211,8 +278,7 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
       }),
     });
 
-    const data: { access_token?: string; error?: string; scope?: string } =
-      await response.json();
+    const data: { access_token?: string; error?: string; scope?: string } = await response.json();
 
     if (!data.access_token) {
       throw new Error(`Linear OAuth error: ${data.error ?? 'Unknown error'}`);
@@ -231,65 +297,14 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
   }
 
   async getAccountInfo(accessToken: string): Promise<AccountInfo<'LINEAR'>> {
-    const result: LinearOrganizationResponse = await this.graphql(accessToken, `{
-      organization { id name urlKey }
-    }`);
-
-    const org = result.data?.organization;
-    if (!org) {
-      throw new Error(
-        `Linear organization query failed: ${result.errors?.map((e) => e.message).join(', ') ?? 'Unknown error'}`
-      );
-    }
+    const client = new LinearClient({ accessToken });
+    const org = await client.organization;
 
     return {
       id: org.id,
       name: org.name,
       metadata: { workspaceSlug: org.urlKey },
     };
-  }
-
-  async registerWebhook(
-    accessToken: string,
-    _config: LinearConnectionConfig
-  ): Promise<WebhookInfo | null> {
-    const secret = this.generateWebhookSecret();
-
-    const result: LinearWebhookCreateResponse = await this.graphql(
-      accessToken,
-      `mutation CreateWebhook($url: String!, $resourceTypes: [String!]!, $secret: String!) {
-        webhookCreate(input: { url: $url, resourceTypes: $resourceTypes, secret: $secret }) {
-          success
-          webhook { id }
-        }
-      }`,
-      {
-        url: `${process.env.API_URL ?? ''}/api/webhooks/LINEAR`,
-        resourceTypes: ['Issue', 'Comment'],
-        secret,
-      }
-    );
-
-    const webhook = result.data?.webhookCreate;
-    if (!webhook?.success || !webhook.webhook) {
-      this.logger.warn('Failed to create Linear webhook', result.errors);
-      return null;
-    }
-
-    return {
-      webhookRef: webhook.webhook.id,
-      secret,
-    };
-  }
-
-  async deregisterWebhook(accessToken: string, webhookRef: string): Promise<void> {
-    await this.graphql(
-      accessToken,
-      `mutation DeleteWebhook($id: String!) {
-        webhookDelete(id: $id) { success }
-      }`,
-      { id: webhookRef }
-    );
   }
 
   parseWebhook(
@@ -314,10 +329,10 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
       return null;
     }
 
-    const payload = body satisfies object;
-    if (!('action' in payload) || !('type' in payload)) return null;
+    const parsed = linearWebhookBodySchema.safeParse(body);
+    if (!parsed.success) return null;
 
-    const typedPayload = payload as unknown as LinearWebhookBody;
+    const typedPayload = parsed.data;
     const actionStr = typedPayload.action;
     const typeStr = typedPayload.type;
 
@@ -340,162 +355,100 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     return { action, externalId };
   }
 
-  async sync(
-    accessToken: string,
-    _config: LinearConnectionConfig,
-    cursor: SyncCursor | null
-  ): Promise<SyncResult> {
-    const parsed = isLinearSyncCursor(cursor) ? cursor : null;
-    // On first call of a sync run, endCursor is null; on continuation pages it's set
-    const paginationCursor = parsed?.endCursor ?? null;
-    // Filter to issues updated after the last completed sync
-    const lastUpdatedAt = parsed?.lastUpdatedAt ?? null;
-
-    const filter = lastUpdatedAt ? { updatedAt: { gt: lastUpdatedAt } } : undefined;
-
-    const result: LinearIssuesResponse = await this.graphql(
-      accessToken,
-      `query Issues($first: Int!, $after: String, $filter: IssueFilter) {
-        issues(first: $first, after: $after, orderBy: updatedAt, filter: $filter) {
-          nodes {
-            id
-            identifier
-            title
-            description
-            url
-            updatedAt
-            priority
-            priorityLabel
-            state { name }
-            assignee { name }
-            team { name }
-            labels { nodes { name } }
-            parent { identifier title }
-            children { nodes { identifier title state { name } } }
-            comments {
-              nodes {
-                id
-                body
-                user { name }
-                createdAt
-                url
-              }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-        }
-      }`,
-      { first: 50, after: paginationCursor, filter }
-    );
-
-    const issues = result.data?.issues?.nodes ?? [];
-    const pageInfo = result.data?.issues?.pageInfo;
-
-    if (result.errors?.length) {
-      this.logger.error(`Linear GraphQL errors during sync: ${result.errors.map((e) => e.message).join(', ')}`);
+  handleWebhookRequest(
+    headers: Record<string, string>,
+    body: unknown,
+    connections: ReadonlyArray<{
+      id: DbId<'Connection'>;
+      orgId: DbId<'Org'>;
+      providerData: LinearProviderData;
+    }>,
+    rawBody?: string
+  ): WebhookHandlerResult {
+    // App-level webhook — verify once with the shared secret, then dispatch to all connections
+    const event = this.parseWebhook(headers, body, this.linearWebhookSecret, rawBody);
+    if (!event) {
+      return { response: { ok: true } };
     }
 
-    const items: SyncedItem[] = issues.map((issue) => {
-      const messages: SyncedItem['messages'] = [];
-      const contextHeader = buildIssueContextHeader(issue);
+    const syncConnections = connections.map((conn) => ({
+      id: conn.id,
+      orgId: conn.orgId,
+      event,
+    }));
 
-      // Issue description (or header-only) as first message
-      const descriptionContent = issue.description
-        ? `${contextHeader}\n\n${issue.description}`
-        : contextHeader;
+    return { response: { ok: true }, syncConnections };
+  }
 
-      messages.push({
-        content: descriptionContent,
-        metadata: {
-          type: 'LINEAR' as const,
-          linearIssueId: issue.id,
-          linearCommentId: null,
-          linearTimestamp: issue.updatedAt,
-        },
-        sourceUrl: issue.url,
-      });
+  async sync(accessToken: string, providerData: LinearProviderData): Promise<SyncResult> {
+    const client = new LinearClient({ accessToken });
+    const lastIssueSyncedAt = providerData.lastIssueSyncedAt;
 
-      // Each comment as a separate message with context line
-      const commentContext = buildCommentContextLine(issue);
-      for (const comment of issue.comments.nodes) {
-        const author = comment.user?.name ?? 'Unknown';
-        const time = formatLinearDate(comment.createdAt);
-        messages.push({
-          content: `${commentContext}\n[${time}] ${author}: ${comment.body}`,
-          metadata: {
-            type: 'LINEAR' as const,
-            linearIssueId: issue.id,
-            linearCommentId: comment.id,
-            linearTimestamp: comment.createdAt,
-          },
-          sourceUrl: comment.url,
-        });
-      }
+    const filter = lastIssueSyncedAt
+      ? { updatedAt: { gt: new Date(lastIssueSyncedAt) } }
+      : undefined;
 
-      const content = messages.map((m) => m.content).join('\n\n');
-
-      const labelNames = issue.labels.nodes.map((l) => l.name);
-
-      return {
-        externalId: issue.id,
-        title: `[${issue.identifier}] ${issue.title}`,
-        content,
-        messages,
-        sourceUrl: issue.url,
-        metadata: {
-          linearIssueId: issue.id,
-          identifier: issue.identifier,
-          commentCount: issue.comments.nodes.length,
-          status: issue.state?.name ?? null,
-          priority: issue.priorityLabel || null,
-          assignee: issue.assignee?.name ?? null,
-          team: issue.team?.name ?? null,
-          labels: labelNames.length > 0 ? labelNames : null,
-        },
-      };
+    const issuesConnection = await client.issues({
+      first: 50,
+      orderBy: PaginationOrderBy.UpdatedAt,
+      filter,
     });
 
-    const hasMore = pageInfo?.hasNextPage ?? false;
+    const items: SyncedItem[] = [];
+    let maxUpdatedAt = lastIssueSyncedAt;
 
-    // Track the latest updatedAt across all issues in this batch
-    let maxUpdatedAt = lastUpdatedAt;
-    for (const issue of issues) {
-      if (!maxUpdatedAt || issue.updatedAt > maxUpdatedAt) {
-        maxUpdatedAt = issue.updatedAt;
+    for (const issue of issuesConnection.nodes) {
+      const fields = await fetchIssueWithRelations(client, issue.id);
+      if (!fields) continue;
+
+      items.push(buildSyncedItemFromIssue(fields));
+
+      const updatedAtStr = fields.updatedAt.toISOString();
+      if (!maxUpdatedAt || updatedAtStr > maxUpdatedAt) {
+        maxUpdatedAt = updatedAtStr;
       }
     }
 
-    const nextCursor: LinearSyncCursor = hasMore
-      ? { endCursor: pageInfo?.endCursor ?? null, lastUpdatedAt: maxUpdatedAt }
-      : { endCursor: null, lastUpdatedAt: maxUpdatedAt };
+    const hasMore = issuesConnection.pageInfo.hasNextPage;
 
     return {
       items,
       deletedExternalIds: [],
-      cursor: nextCursor,
+      updatedProviderData: {
+        ...providerData,
+        lastIssueSyncedAt: maxUpdatedAt,
+      },
       hasMore,
     };
   }
 
-  private async graphql<T>(accessToken: string, query: string, variables?: Record<string, unknown>): Promise<T> {
-    const response = await fetch(LINEAR_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ query, variables }),
-    });
+  async processWebhookItem(
+    accessToken: string,
+    providerData: LinearProviderData,
+    event: WebhookEvent
+  ): Promise<{ item: SyncedItem | null; deletedExternalId: string | null }> {
+    if (event.action === 'deleted') {
+      return { item: null, deletedExternalId: event.externalId };
+    }
 
-    return response.json() satisfies Promise<T>;
+    const client = new LinearClient({ accessToken });
+    const fields = await fetchIssueWithRelations(client, event.externalId);
+    if (!fields) {
+      this.logger.warn(`Could not fetch Linear issue ${event.externalId} for webhook sync`);
+      return { item: null, deletedExternalId: null };
+    }
+
+    return { item: buildSyncedItemFromIssue(fields), deletedExternalId: null };
   }
 
-  private generateWebhookSecret(): string {
-    const bytes = new Uint8Array(32);
-    crypto.getRandomValues(bytes);
-    return Buffer.from(bytes).toString('hex');
+  buildInitialProviderData(
+    tokenMetadata?: Partial<LinearProviderData>,
+    accountMetadata?: Partial<LinearProviderData>
+  ): LinearProviderData {
+    return {
+      provider: 'LINEAR',
+      workspaceSlug: tokenMetadata?.workspaceSlug ?? accountMetadata?.workspaceSlug,
+      lastIssueSyncedAt: null,
+    };
   }
 }

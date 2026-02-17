@@ -7,7 +7,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 
 import { InjectEnv } from '../../../../config/env.config';
 import { SLACK_BOT_QUEUE } from '../../../queue/queue.constants';
-import type { SlackConnectionConfig } from '../../connector.interface';
+import type { SlackProviderData } from './slack.types';
 
 export interface SlackBotJobData {
   type: 'app_mention' | 'channel_joined' | 'dm';
@@ -63,7 +63,7 @@ export class SlackBotService {
     connections: ReadonlyArray<{
       id: DbId<'Connection'>;
       orgId: DbId<'Org'>;
-      config: SlackConnectionConfig;
+      providerData: SlackProviderData;
     }>,
     rawBody?: string
   ): SlackWebhookResult {
@@ -144,7 +144,7 @@ export class SlackBotService {
     connections: ReadonlyArray<{
       id: DbId<'Connection'>;
       orgId: DbId<'Org'>;
-      config: SlackConnectionConfig;
+      providerData: SlackProviderData;
     }>
   ): void {
     const slackChannelId = event.channel;
@@ -183,7 +183,7 @@ export class SlackBotService {
     connections: ReadonlyArray<{
       id: DbId<'Connection'>;
       orgId: DbId<'Org'>;
-      config: SlackConnectionConfig;
+      providerData: SlackProviderData;
     }>
   ): void {
     const slackChannelId = event.channel;
@@ -214,7 +214,7 @@ export class SlackBotService {
     connections: ReadonlyArray<{
       id: DbId<'Connection'>;
       orgId: DbId<'Org'>;
-      config: SlackConnectionConfig;
+      providerData: SlackProviderData;
     }>
   ): void {
     const slackChannelId = event.channel;
@@ -224,7 +224,7 @@ export class SlackBotService {
 
     // Only trigger when the bot itself joins the channel
     for (const conn of connections) {
-      if (conn.config.slackBotUserId && joinedUserId === conn.config.slackBotUserId) {
+      if (conn.providerData.slackBotUserId && joinedUserId === conn.providerData.slackBotUserId) {
         const jobData: SlackBotJobData = {
           type: 'channel_joined',
           connectionId: conn.id,

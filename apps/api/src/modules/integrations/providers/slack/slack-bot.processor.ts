@@ -5,14 +5,15 @@ import { extractOrgNumericId, packId } from '@grabdy/common';
 import { AiCallerType } from '@grabdy/contracts';
 import { Job, Queue } from 'bullmq';
 
-import { DbService } from '../../../db/db.module';
-import { AgentFactory } from '../../agent/services/agent.factory';
-import type { DataSourceJobData } from '../../data-sources/data-source.processor';
-import { DATA_SOURCE_QUEUE, SLACK_BOT_QUEUE } from '../../queue/queue.constants';
-import { connectionConfig } from '../connector.interface';
-import { IntegrationsService } from '../integrations.service';
-import { SlackConnector } from '../providers/slack/slack.connector';
-import type { SlackBotJobData } from '../providers/slack/slack-bot.service';
+import { DbService } from '../../../../db/db.module';
+import { AgentFactory } from '../../../agent/services/agent.factory';
+import type { DataSourceJobData } from '../../../data-sources/data-source.processor';
+import { DATA_SOURCE_QUEUE, SLACK_BOT_QUEUE } from '../../../queue/queue.constants';
+import { parseProviderData } from '../../connector.interface';
+import { IntegrationsService } from '../../integrations.service';
+
+import { SlackConnector } from './slack.connector';
+import type { SlackBotJobData } from './slack-bot.service';
 
 const SLACK_API_URL = 'https://slack.com/api';
 
@@ -78,8 +79,12 @@ export class SlackBotProcessor extends WorkerHost {
       return;
     }
 
-    const slackConfig = connectionConfig('SLACK', connection.config);
-    const slackBotUserId = slackConfig.slackBotUserId;
+    const providerData = parseProviderData(connection.provider_data);
+    if (providerData.provider !== 'SLACK') {
+      this.logger.warn(`Connection ${connectionId} is not a Slack connection`);
+      return;
+    }
+    const slackBotUserId = providerData.slackBotUserId;
 
     try {
       // Fetch thread history for context
@@ -158,8 +163,9 @@ export class SlackBotProcessor extends WorkerHost {
         return;
       }
 
-      const joinedConfig = connectionConfig('SLACK', connection.config);
-      const teamDomain = joinedConfig.teamDomain;
+      const joinedProviderData = parseProviderData(connection.provider_data);
+      const teamDomain =
+        joinedProviderData.provider === 'SLACK' ? joinedProviderData.teamDomain : undefined;
 
       const syncedMessages = messages.map((msg) => {
         const time = msg.ts
@@ -179,7 +185,8 @@ export class SlackBotProcessor extends WorkerHost {
             slackMessageTs: ts,
             slackAuthor: user,
           },
-          sourceUrl: teamDomain && ts
+          sourceUrl:
+            teamDomain && ts
               ? `https://${teamDomain}.slack.com/archives/${slackChannelId}/p${ts.replace('.', '')}`
               : `https://slack.com/app_redirect?channel=${slackChannelId}`,
         };

@@ -1,6 +1,5 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Inject, Module, OnModuleDestroy } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 
 import Redis from 'ioredis';
 
@@ -12,16 +11,14 @@ import {
 } from '../queue/queue.constants';
 
 import { IntegrationSyncProcessor } from './processors/integration-sync.processor';
-
-import { SlackBotProcessor } from './processors/slack-bot.processor';
-import { ProviderRegistry } from './providers/provider-registry';
 import { LinearConnector } from './providers/linear/linear.connector';
+import { ProviderRegistry } from './providers/provider-registry';
 import { SlackConnector } from './providers/slack/slack.connector';
+import { SlackBotProcessor } from './providers/slack/slack-bot.processor';
 import { SlackBotService } from './providers/slack/slack-bot.service';
 import { INTEGRATIONS_REDIS } from './integrations.constants';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
-import { SyncSchedulerService } from './sync-scheduler.service';
 import { TokenEncryptionService } from './token-encryption.service';
 
 @Module({
@@ -29,7 +26,6 @@ import { TokenEncryptionService } from './token-encryption.service';
     BullModule.registerQueue({ name: INTEGRATION_SYNC_QUEUE }),
     BullModule.registerQueue({ name: DATA_SOURCE_QUEUE }),
     BullModule.registerQueue({ name: SLACK_BOT_QUEUE }),
-    ScheduleModule.forRoot(),
   ],
   controllers: [IntegrationsController],
   providers: [
@@ -49,7 +45,6 @@ import { TokenEncryptionService } from './token-encryption.service';
     SlackBotService,
     SlackConnector,
     LinearConnector,
-    SyncSchedulerService,
     IntegrationSyncProcessor,
     SlackBotProcessor,
   ],

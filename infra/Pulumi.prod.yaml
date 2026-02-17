@@ -30,6 +30,8 @@ config:
   grabdy:slackSigningSecret:
     secure: AAABAHiBymrGOnexOC8emkoD9nOnFUUAGt9cm66VUNG2nDIgkO9QLUtAkHzo7Alm+g0U2RxB5f0iNogV4SEbIA==
   grabdy:linearClientId:
-    secure: AAABAKhk2bmDnqrxQvTTYmQD1/VL6mjc6Kbbtza6GhKwK3lwKGvA1teCiVHP2aaDKDnf8s1bONYKqmxzS2/uYQ==
+    secure: AAABAJid1ULXsaorMomP2UVx93/q4vPFDuAke54owIvvRNmvmfhH7Okq2NAf7NkfI0p8QFrUHcWYP6/8ufgHcQ==
   grabdy:linearClientSecret:
-    secure: AAABAOKw2YLhK7Cw4dTNj8VYshtVdk5/cUUidQwDonAhvJwaE6kAwB1Y9LkxD97lDi2RuQMZ8HEcXSuDn4bE9w==
+    secure: AAABANhKHBZT9srAJErhk7bvhynlYyaLJxD4+81RvykP7DHjXJ05TSZ7LcG5j+OI/674F1aLy8D7Wx3/7rcIAQ==
+  grabdy:linearWebhookSecret:
+    secure: AAABAD36nzX8SlmOL540IqdBdYwp7Sy1wboFjiH22AJp8JRK7clDJbeaQ2oX+OVWzp9zdQajkvYtnj/wa4xO8RKSdKgelhxrQImb+hXQDauzTUA=
