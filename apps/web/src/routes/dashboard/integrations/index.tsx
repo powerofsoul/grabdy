@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { IntegrationProvider } from '@grabdy/contracts';
+import { integrationProviderEnum } from '@grabdy/contracts';
 import { Box, CircularProgress } from '@mui/material';
 import { PlugIcon } from '@phosphor-icons/react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 import { ConnectionDetailDrawer, IntegrationGrid } from '@/components/integrations';
 import type { ConnectionSummary } from '@/components/integrations/IntegrationGrid';
@@ -14,8 +16,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
 
+const integrationsSearchSchema = z.object({
+  connected: integrationProviderEnum.optional(),
+  error: z.string().optional(),
+});
+
 export const Route = createFileRoute('/dashboard/integrations/')({
   component: IntegrationsPage,
+  validateSearch: integrationsSearchSchema,
 });
 
 const ALLOWED_PROVIDERS: readonly string[] = ['SLACK', 'LINEAR', 'GITHUB'] satisfies readonly IntegrationProvider[];
@@ -29,8 +37,11 @@ function isAvailableProvider(
 function IntegrationsPage() {
   const { selectedOrgId } = useAuth();
   const { pushDrawer } = useDrawer();
+  const navigate = useNavigate();
+  const { connected, error } = useSearch({ from: '/dashboard/integrations/' });
   const [connections, setConnections] = useState<ConnectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const autoOpenedRef = useRef(false);
 
   const fetchConnections = useCallback(async () => {
     if (!selectedOrgId) return;
@@ -52,7 +63,7 @@ function IntegrationsPage() {
     fetchConnections();
   }, [fetchConnections]);
 
-  const handleConnect = async (provider: ProviderKey) => {
+  const handleConnect = useCallback(async (provider: ProviderKey) => {
     if (!selectedOrgId || !isAvailableProvider(provider)) return;
     try {
       const res = await api.integrations.connect({
@@ -64,9 +75,9 @@ function IntegrationsPage() {
     } catch {
       toast.error('Failed to start connection');
     }
-  };
+  }, [selectedOrgId]);
 
-  const handleManage = (_provider: IntegrationProvider, connection: ConnectionSummary) => {
+  const openDrawer = useCallback((connection: ConnectionSummary) => {
     pushDrawer(
       (onClose) => (
         <ConnectionDetailDrawer
@@ -82,7 +93,29 @@ function IntegrationsPage() {
       ),
       { title: 'Connection Details', mode: 'drawer', width: 480 }
     );
-  };
+  }, [pushDrawer, fetchConnections, handleConnect]);
+
+  const handleManage = useCallback((_provider: IntegrationProvider, connection: ConnectionSummary) => {
+    openDrawer(connection);
+  }, [openDrawer]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(`Connection failed: ${error}`);
+      navigate({ to: '/dashboard/integrations', search: {}, replace: true });
+    }
+  }, [error, navigate]);
+
+  // Auto-open the drawer after a successful OAuth callback
+  useEffect(() => {
+    if (!connected || loading || autoOpenedRef.current) return;
+    const connection = connections.find((c) => c.provider === connected);
+    if (!connection) return;
+    autoOpenedRef.current = true;
+    navigate({ to: '/dashboard/integrations', search: {}, replace: true });
+    toast.success(`${connected} connected`);
+    openDrawer(connection);
+  }, [connected, loading, connections, navigate, openDrawer]);
 
   return (
     <DashboardPage
