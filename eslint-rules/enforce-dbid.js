@@ -45,6 +45,10 @@ const EXTERNAL_PATTERNS = [
   'installationId',
   'InstallationId',
   'googleClientId',
+  'notionClientId',
+  'notionPageId',
+  'notionBlockId',
+  'notionWorkspaceId',
 ];
 
 /**

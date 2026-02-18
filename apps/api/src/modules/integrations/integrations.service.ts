@@ -9,7 +9,7 @@ import { sql } from 'kysely';
 
 import { EncryptionService } from '../../common/encryption/encryption.service';
 import { DbService } from '../../db/db.module';
-import { INTEGRATION_SYNC_QUEUE } from '../queue/queue.constants';
+import { INTEGRATIONS_QUEUE } from '../queue/queue.constants';
 
 import { ProviderRegistry } from './providers/provider-registry';
 import {
@@ -47,7 +47,7 @@ export class IntegrationsService {
     private db: DbService,
     private encryption: EncryptionService,
     private providerRegistry: ProviderRegistry,
-    @InjectQueue(INTEGRATION_SYNC_QUEUE) private syncQueue: Queue
+    @InjectQueue(INTEGRATIONS_QUEUE) private syncQueue: Queue
   ) {}
 
   async listConnections(orgId: DbId<'Org'>) {
@@ -226,13 +226,13 @@ export class IntegrationsService {
   }
 
   async triggerSync(connectionId: DbId<'Connection'>, orgId: DbId<'Org'>, trigger: SyncTrigger) {
-    await this.syncQueue.add('sync-full', {
+    await this.syncQueue.add('discover', {
       connectionId,
       orgId,
       trigger,
     });
 
-    this.logger.log(`Queued ${trigger} sync for connection ${connectionId}`);
+    this.logger.log(`Queued ${trigger} discovery for connection ${connectionId}`);
   }
 
   async triggerWebhookSync(
@@ -240,20 +240,20 @@ export class IntegrationsService {
     orgId: DbId<'Org'>,
     event: WebhookEvent
   ) {
-    await this.syncQueue.add('sync-webhook', {
+    await this.syncQueue.add('process-item', {
       connectionId,
       orgId,
       event,
     });
 
     this.logger.log(
-      `Queued webhook sync for connection ${connectionId}, event: ${event.action} ${event.externalId}`
+      `Queued process-item for connection ${connectionId}: ${event.action} ${event.externalId}`
     );
   }
 
   async registerScheduledSync(connectionId: DbId<'Connection'>, everyMs: number) {
     await this.syncQueue.add(
-      'sync-scheduled',
+      'scheduled-sync',
       { connectionId },
       { repeat: { every: everyMs }, jobId: `scheduled-${connectionId}` }
     );
@@ -265,7 +265,7 @@ export class IntegrationsService {
     if (!connector.syncSchedule) return;
 
     try {
-      await this.syncQueue.removeRepeatable('sync-scheduled', {
+      await this.syncQueue.removeRepeatable('scheduled-sync', {
         every: connector.syncSchedule.every,
         jobId: `scheduled-${connectionId}`,
       });

@@ -15,7 +15,7 @@ import { buildOpenApiDocument } from './config/openapi';
 import {
   CANVAS_OPS_QUEUE,
   DATA_SOURCE_QUEUE,
-  INTEGRATION_SYNC_QUEUE,
+  INTEGRATIONS_QUEUE,
   SLACK_BOT_QUEUE,
 } from './modules/queue/queue.constants';
 import { AppModule } from './app.module';
@@ -42,14 +42,14 @@ export async function bootstrap() {
 
   const dataSourceQueue = app.get<Queue>(getQueueToken(DATA_SOURCE_QUEUE));
   const canvasOpsQueue = app.get<Queue>(getQueueToken(CANVAS_OPS_QUEUE));
-  const integrationSyncQueue = app.get<Queue>(getQueueToken(INTEGRATION_SYNC_QUEUE));
+  const integrationsQueue = app.get<Queue>(getQueueToken(INTEGRATIONS_QUEUE));
   const slackBotQueue = app.get<Queue>(getQueueToken(SLACK_BOT_QUEUE));
 
   createBullBoard({
     queues: [
       new BullMQAdapter(dataSourceQueue),
       new BullMQAdapter(canvasOpsQueue),
-      new BullMQAdapter(integrationSyncQueue),
+      new BullMQAdapter(integrationsQueue),
       new BullMQAdapter(slackBotQueue),
     ],
     serverAdapter,

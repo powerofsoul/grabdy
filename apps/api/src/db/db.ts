@@ -39,6 +39,12 @@ type ConnectionProviderData =
       githubInstallationId: number;
       installationOwner?: string;
       lastSyncedAt: string | null;
+    }
+  | {
+      provider: 'NOTION';
+      workspaceName?: string;
+      notionWorkspaceId?: string;
+      lastSyncedAt: string | null;
     };
 
 /** Chunk metadata — discriminated union keyed on `type`. */
@@ -56,7 +62,8 @@ type ChunkMeta =
       type: 'GITHUB';
       githubItemType: 'issue' | 'pull_request' | 'discussion';
       githubCommentId: string | null;
-    };
+    }
+  | { type: 'NOTION'; notionPageId: string; notionBlockId: string | null };
 
 // ---------------------------------------------------------------------------
 // Database interface — maps schema.table names to their column types
@@ -138,7 +145,8 @@ export interface DB {
       | 'IMAGE'
       | 'SLACK'
       | 'LINEAR'
-      | 'GITHUB';
+      | 'GITHUB'
+      | 'NOTION';
     status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED'>;
     summary: string | null;
     page_count: number | null;
@@ -193,7 +201,7 @@ export interface DB {
   'integration.connections': {
     id: Generated<DbId<'Connection'>>;
     org_id: DbId<'Org'>;
-    provider: 'SLACK' | 'LINEAR' | 'GITHUB';
+    provider: 'SLACK' | 'LINEAR' | 'GITHUB' | 'NOTION';
     status: Generated<'ACTIVE' | 'PAUSED' | 'ERROR' | 'DISCONNECTED'>;
     access_token: string;
     refresh_token: string | null;

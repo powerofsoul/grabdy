@@ -30,6 +30,7 @@ const ALLOWED_PROVIDERS: readonly string[] = [
   'SLACK',
   'LINEAR',
   'GITHUB',
+  'NOTION',
 ] satisfies readonly IntegrationProvider[];
 
 function isAvailableProvider(provider: ProviderKey): provider is IntegrationProvider {

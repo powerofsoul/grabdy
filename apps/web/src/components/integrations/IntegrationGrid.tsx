@@ -114,6 +114,14 @@ export function IntegrationGrid({ connections, onConnect, onManage }: Integratio
               onManage={onManage}
             />
           )}
+          {!connections.some((c) => c.provider === 'NOTION') && (
+            <IntegrationCard
+              provider="NOTION"
+              connection={null}
+              onConnect={onConnect}
+              onManage={onManage}
+            />
+          )}
           {/* Coming soon cards */}
           {COMING_SOON_PROVIDERS.map((provider) => (
             <IntegrationCard

@@ -6,6 +6,7 @@ import type { IntegrationConnector } from '../connector.interface';
 
 import { GitHubConnector } from './github/github.connector';
 import { LinearConnector } from './linear/linear.connector';
+import { NotionConnector } from './notion/notion.connector';
 import { SlackConnector } from './slack/slack.connector';
 
 @Injectable()
@@ -15,12 +16,14 @@ export class ProviderRegistry {
   constructor(
     slackConnector: SlackConnector,
     linearConnector: LinearConnector,
-    gitHubConnector: GitHubConnector
+    gitHubConnector: GitHubConnector,
+    notionConnector: NotionConnector
   ) {
     this.connectors = new Map<string, IntegrationConnector>([
       ['SLACK', slackConnector],
       ['LINEAR', linearConnector],
       ['GITHUB', gitHubConnector],
+      ['NOTION', notionConnector],
     ]);
   }
 

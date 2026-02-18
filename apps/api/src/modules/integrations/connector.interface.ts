@@ -13,6 +13,11 @@ import {
   linearPublicSchema,
 } from './providers/linear/linear.types';
 import {
+  type NotionProviderData,
+  notionProviderDataSchema,
+  notionPublicSchema,
+} from './providers/notion/notion.types';
+import {
   type SlackProviderData,
   slackProviderDataSchema,
   slackPublicSchema,
@@ -20,18 +25,24 @@ import {
 
 export type { GitHubProviderData } from './providers/github/github.types';
 export type { LinearProviderData } from './providers/linear/linear.types';
+export type { NotionProviderData } from './providers/notion/notion.types';
 export type { SlackProviderData } from './providers/slack/slack.types';
 
 // ---------------------------------------------------------------------------
 // Per-provider data (discriminated union)
 // ---------------------------------------------------------------------------
 
-export type ProviderData = SlackProviderData | LinearProviderData | GitHubProviderData;
+export type ProviderData =
+  | SlackProviderData
+  | LinearProviderData
+  | GitHubProviderData
+  | NotionProviderData;
 
 export type ProviderDataMap = {
   SLACK: SlackProviderData;
   LINEAR: LinearProviderData;
   GITHUB: GitHubProviderData;
+  NOTION: NotionProviderData;
 };
 
 // ---------------------------------------------------------------------------
@@ -76,6 +87,9 @@ export interface SyncResult {
   /** Updated provider data to persist (includes new sync cursors/timestamps). */
   updatedProviderData: ProviderData;
   hasMore: boolean;
+  /** Events to queue as individual webhook jobs instead of processing inline.
+   *  Used by providers (e.g. Notion) that discover pages in bulk but fetch content per-page. */
+  webhookEvents?: WebhookEvent[];
 }
 
 export interface WebhookEvent {
@@ -99,6 +113,7 @@ export const providerDataSchema = z.discriminatedUnion('provider', [
   slackProviderDataSchema,
   linearProviderDataSchema,
   githubProviderDataSchema,
+  notionProviderDataSchema,
 ]);
 
 /** Parse raw JSONB provider_data from DB into typed ProviderData (trust boundary). */
@@ -110,6 +125,7 @@ const publicProviderDataSchema = z.discriminatedUnion('provider', [
   slackPublicSchema,
   linearPublicSchema,
   githubPublicSchema,
+  notionPublicSchema,
 ]);
 
 export type PublicProviderData = z.infer<typeof publicProviderDataSchema>;

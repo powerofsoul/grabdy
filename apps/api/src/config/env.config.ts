@@ -74,6 +74,11 @@ export const env = {
   githubPrivateKey: requiredInProd('GITHUB_PRIVATE_KEY', ''),
   githubWebhookSecret: requiredInProd('GITHUB_WEBHOOK_SECRET', ''),
 
+  // Notion
+  notionClientId: requiredInProd('NOTION_CLIENT_ID', ''),
+  notionClientSecret: requiredInProd('NOTION_CLIENT_SECRET', ''),
+  notionWebhookSecret: requiredInProd('NOTION_WEBHOOK_SECRET', ''),
+
   // Google OAuth
   googleClientId: requiredInProd('GOOGLE_CLIENT_ID', ''),
 

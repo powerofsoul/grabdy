@@ -52,6 +52,12 @@ const githubChunkMetaSchema = z.object({
   githubCommentId: z.string().nullable(),
 });
 
+const notionChunkMetaSchema = z.object({
+  type: z.literal('NOTION'),
+  notionPageId: z.string(),
+  notionBlockId: z.string().nullable(),
+});
+
 export const chunkMetaSchema = z.discriminatedUnion('type', [
   pdfChunkMetaSchema,
   docxChunkMetaSchema,
@@ -63,6 +69,7 @@ export const chunkMetaSchema = z.discriminatedUnion('type', [
   slackChunkMetaSchema,
   linearChunkMetaSchema,
   githubChunkMetaSchema,
+  notionChunkMetaSchema,
 ]);
 
 export type ChunkMeta = z.infer<typeof chunkMetaSchema>;
@@ -96,4 +103,5 @@ export const CHUNK_META_DESCRIPTIONS: Record<DataSourceType, string> = {
   SLACK: '{ type, slackChannelId, slackMessageTs, slackAuthor }',
   LINEAR: '{ type, linearIssueId, linearCommentId, linearTimestamp }',
   GITHUB: '{ type, githubItemType (issue|pull_request|discussion), githubCommentId }',
+  NOTION: '{ type, notionPageId, notionBlockId }',
 };

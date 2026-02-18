@@ -2984,6 +2984,7 @@ __metadata:
     "@nestjs/platform-express": "npm:^11.1.11"
     "@nestjs/schedule": "npm:^6.1.1"
     "@nestjs/throttler": "npm:^6.5.0"
+    "@notionhq/client": "npm:^5.9.0"
     "@octokit/auth-app": "npm:^8.2.0"
     "@octokit/graphql": "npm:^9.0.3"
     "@octokit/rest": "npm:^22.0.1"
@@ -4727,6 +4728,13 @@ __metadata:
   version: 16.1.6
   resolution: "@next/swc-win32-x64-msvc@npm:16.1.6"
   conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@notionhq/client@npm:^5.9.0":
+  version: 5.9.0
+  resolution: "@notionhq/client@npm:5.9.0"
+  checksum: 10c0/d40a53f906e6aecd691f5e18e4fd0d4d6b8f8b787179d435cf932674fb1c8bc2d74fb5520c60abab5cd9b8e30d54e583899c4e27775cd4c65cd38f7ff630135c
   languageName: node
   linkType: hard
 

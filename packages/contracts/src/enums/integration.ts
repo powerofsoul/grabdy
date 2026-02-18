@@ -6,6 +6,7 @@ export const IntegrationProvider = {
   SLACK: 'SLACK',
   LINEAR: 'LINEAR',
   GITHUB: 'GITHUB',
+  NOTION: 'NOTION',
 } as const;
 export type IntegrationProvider = (typeof IntegrationProvider)[keyof typeof IntegrationProvider];
 

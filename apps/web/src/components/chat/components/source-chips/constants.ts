@@ -19,6 +19,7 @@ export const SOURCE_NOUN: Record<IntegrationProvider, string> = {
   SLACK: 'channel',
   LINEAR: 'issue',
   GITHUB: 'item',
+  NOTION: 'page',
 };
 
 /** Integration providers (everything except UPLOAD) -- derived from the enum */

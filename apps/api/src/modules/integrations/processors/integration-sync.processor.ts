@@ -8,7 +8,7 @@ import { Job, Queue } from 'bullmq';
 
 import { DbService } from '../../../db/db.module';
 import type { DataSourceJobData } from '../../data-sources/data-source.processor';
-import { DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE } from '../../queue/queue.constants';
+import { DATA_SOURCE_QUEUE, INTEGRATIONS_QUEUE } from '../../queue/queue.constants';
 import {
   parseProviderData,
   type ProviderData,
@@ -46,7 +46,7 @@ function isSyncJob(data: JobData): data is IntegrationSyncJobData {
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // Refresh 5 minutes before expiry
 
-@Processor(INTEGRATION_SYNC_QUEUE, { concurrency: 50 })
+@Processor(INTEGRATIONS_QUEUE, { concurrency: 50 })
 export class IntegrationSyncProcessor extends WorkerHost {
   private readonly logger = new Logger(IntegrationSyncProcessor.name);
 
@@ -54,25 +54,26 @@ export class IntegrationSyncProcessor extends WorkerHost {
     private db: DbService,
     private providerRegistry: ProviderRegistry,
     private integrationsService: IntegrationsService,
-    @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue
+    @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue,
+    @InjectQueue(INTEGRATIONS_QUEUE) private syncQueue: Queue
   ) {
     super();
   }
 
   async process(job: Job<JobData>): Promise<void> {
     const { data } = job;
-    if (job.name === 'sync-webhook' && isWebhookJob(data)) {
-      await this.processWebhookJob(data);
-    } else if (job.name === 'sync-scheduled') {
+    if (job.name === 'process-item' && isWebhookJob(data)) {
+      await this.processItemJob(data);
+    } else if (job.name === 'scheduled-sync') {
       await this.processScheduledJob(data);
-    } else if (job.name === 'sync-full' && isSyncJob(data)) {
-      await this.processFullSync(data, (progress) => job.updateProgress(progress));
+    } else if (job.name === 'discover' && isSyncJob(data)) {
+      await this.processDiscovery(data, (progress) => job.updateProgress(progress));
     } else {
       this.logger.warn(`Unknown job name: ${job.name}`);
     }
   }
 
-  private async processFullSync(
+  private async processDiscovery(
     data: IntegrationSyncJobData,
     updateProgress?: (progress: number) => Promise<void>
   ): Promise<void> {
@@ -113,6 +114,20 @@ export class IntegrationSyncProcessor extends WorkerHost {
           }
         }
 
+        // Queue discovered items as individual jobs (for bulk-discover providers like Notion)
+        if (result.webhookEvents && result.webhookEvents.length > 0) {
+          await this.syncQueue.addBulk(
+            result.webhookEvents.map((event) => ({
+              name: 'process-item',
+              data: { connectionId, orgId, event },
+              opts: { jobId: `${connectionId}-${event.externalId}` },
+            }))
+          );
+          this.logger.log(
+            `Queued ${result.webhookEvents.length} items for connection ${connectionId}`
+          );
+        }
+
         currentProviderData = result.updatedProviderData;
         hasMore = result.hasMore;
 
@@ -142,10 +157,10 @@ export class IntegrationSyncProcessor extends WorkerHost {
     }
   }
 
-  private async processWebhookJob(data: IntegrationWebhookJobData): Promise<void> {
+  private async processItemJob(data: IntegrationWebhookJobData): Promise<void> {
     const { connectionId, orgId, event } = data;
     this.logger.log(
-      `Processing webhook sync for connection ${connectionId}: ${event.action} ${event.externalId}`
+      `Processing item for connection ${connectionId}: ${event.action} ${event.externalId}`
     );
 
     try {
@@ -167,10 +182,10 @@ export class IntegrationSyncProcessor extends WorkerHost {
         lastSyncedAt: new Date(),
       });
 
-      this.logger.log(`Webhook sync complete for connection ${connectionId}`);
+      this.logger.log(`Item processed for connection ${connectionId}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Webhook sync failed for connection ${connectionId}: ${message}`);
+      this.logger.error(`Item processing failed for connection ${connectionId}: ${message}`);
       throw error;
     }
   }
@@ -191,7 +206,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
       return;
     }
 
-    await this.processFullSync({
+    await this.processDiscovery({
       connectionId,
       orgId: connection.org_id,
       trigger: 'SCHEDULED',

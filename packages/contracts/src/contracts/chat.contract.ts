@@ -47,6 +47,7 @@ export const chatSourceSchema = z.discriminatedUnion('type', [
   z.object({ ...chatSourceBase, type: z.literal('SLACK') }),
   z.object({ ...chatSourceBase, type: z.literal('LINEAR') }),
   z.object({ ...chatSourceBase, type: z.literal('GITHUB') }),
+  z.object({ ...chatSourceBase, type: z.literal('NOTION') }),
 ]);
 
 export type ChatSource = z.infer<typeof chatSourceSchema>;

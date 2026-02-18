@@ -5,6 +5,7 @@ import { integrationProviderEnum, integrationsContract } from '@grabdy/contracts
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { randomBytes } from 'crypto';
 import type { Request, Response } from 'express';
+import { z } from 'zod';
 
 import { CurrentUser, type JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
@@ -24,6 +25,8 @@ interface OAuthState {
 }
 
 const OAUTH_STATE_TTL_SECONDS = 600; // 10 minutes
+
+const notionVerificationSchema = z.object({ verification_token: z.string() });
 
 function toISOStringOrNull(date: Date | null | undefined): string | null {
   if (!date) return null;
@@ -378,6 +381,14 @@ export class IntegrationsController {
         'challenge' in body
       ) {
         res.status(200).json({ challenge: body.challenge });
+        return;
+      }
+
+      // Notion webhook verification must be answered before any DB lookup
+      // (connections may not exist yet during initial webhook setup)
+      if (providerUpper === 'NOTION' && notionVerificationSchema.safeParse(body).success) {
+        this.logger.log('Received Notion webhook verification token');
+        res.status(200).json({ ok: true });
         return;
       }
 

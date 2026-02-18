@@ -26,16 +26,25 @@ const githubProviderDataSchema = z.object({
   lastSyncedAt: z.string().nullable(),
 });
 
+const notionProviderDataSchema = z.object({
+  provider: z.literal('NOTION'),
+  workspaceName: z.string().optional(),
+  notionWorkspaceId: z.string().optional(),
+  lastSyncedAt: z.string().nullable(),
+});
+
 const providerDataSchema = z.discriminatedUnion('provider', [
   slackProviderDataSchema,
   linearProviderDataSchema,
   githubProviderDataSchema,
+  notionProviderDataSchema,
 ]);
 
 const partialProviderDataSchema = z.union([
   slackProviderDataSchema.partial(),
   linearProviderDataSchema.partial(),
   githubProviderDataSchema.partial(),
+  notionProviderDataSchema.partial(),
 ]);
 
 const connectionSchema = z.object({

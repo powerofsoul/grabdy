@@ -39,6 +39,7 @@
     "@nestjs/platform-express": "^11.1.11",
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/throttler": "^6.5.0",
+    "@notionhq/client": "^5.9.0",
     "@octokit/auth-app": "^8.2.0",
     "@octokit/graphql": "^9.0.3",
     "@octokit/rest": "^22.0.1",
