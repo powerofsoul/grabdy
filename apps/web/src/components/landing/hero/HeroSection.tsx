@@ -27,9 +27,6 @@ import {
   CARD_SOURCES,
   CHANNEL_FLOW,
   COMPETITORS,
-  CURSOR_TARGETS,
-  CX,
-  CY,
   EDGES,
   INIT_POS,
   MARKET_BARS,
@@ -53,28 +50,12 @@ import heroClouds from '@/assets/hero-clouds-light.svg';
 export function HeroSection() {
   const theme = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
-  const showcaseRef = useRef<HTMLDivElement>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const animStarted = useRef(false);
-  const cleanupRef = useRef<{
-    timeouts: ReturnType<typeof setTimeout>[];
-    intervals: ReturnType<typeof setInterval>[];
-  }>({
-    timeouts: [],
-    intervals: [],
-  });
   const isDark = theme.palette.mode === 'dark';
 
   // Chat
   const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [thinkActive, setThinkActive] = useState(false);
-  const [thinkSteps, setThinkSteps] = useState<string[]>([]);
-  const [thinkStep, setThinkStep] = useState(-1);
-  const [typedAnswer, setTypedAnswer] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [inputText, setInputText] = useState('');
-  const [inputActive, setInputActive] = useState(false);
   const [inView, setInView] = useState(false);
 
   // Canvas
@@ -86,13 +67,9 @@ export function HeroSection() {
     >;
   });
   const [visibleNodes, setVisibleNodes] = useState<Set<string>>(new Set());
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
-  const [cursorVisible, setCursorVisible] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [showEdges, setShowEdges] = useState(false);
-  const [flashNode, setFlashNode] = useState<string | null>(null);
-  const [shareToast, setShareToast] = useState(false);
   const [smoothTx, setSmoothTx] = useState(true);
   const [measuredH, setMeasuredH] = useState<Partial<Record<HeroCardId, number>>>({});
   const [isPanning, setIsPanning] = useState(false);
@@ -119,8 +96,6 @@ export function HeroSection() {
     posRef.current = positions;
   }, [positions]);
 
-  const showNode = (id: string) => setVisibleNodes((p) => new Set([...p, id]));
-
   // Measure real card heights from DOM
   useEffect(() => {
     const container = canvasRef.current;
@@ -141,11 +116,11 @@ export function HeroSection() {
     });
   }, [visibleNodes]);
 
-  // Scroll chat panel only
+  // Scroll chat panel to bottom when messages are set
   useEffect(() => {
     const el = chatPanelRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, thinkActive, typedAnswer]);
+  }, [messages.length]);
 
   // Wheel zoom
   useEffect(() => {
@@ -236,234 +211,34 @@ export function HeroSection() {
     setZoom((z) => Math.min(2, Math.max(0.25, +(z + delta).toFixed(2))));
   };
 
-  // ── Orchestrator ──
+  // ── Set final state for chat + canvas immediately ──
+  useEffect(() => {
+    const allMsgs: ChatMsg[] = [];
+    let id = 0;
+    for (const turn of TURNS) {
+      allMsgs.push({ id: id++, role: 'user', text: turn.user });
+      allMsgs.push({
+        id: id++,
+        role: 'assistant',
+        text: turn.answer,
+        sources: turn.sources,
+        responseMs: turn.responseMs,
+      });
+    }
+    queueMicrotask(() => {
+      setMessages(allMsgs);
+      setVisibleNodes(new Set(Object.keys(INIT_POS)));
+      setZoom(0.48);
+      setShowEdges(true);
+      setInView(true);
+    });
+  }, []);
+
+  // ── Hero entrance animations ──
   useEffect(() => {
     if (!containerRef.current) return;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      const allMsgs: ChatMsg[] = [];
-      let id = 0;
-      for (const turn of TURNS) {
-        allMsgs.push({ id: id++, role: 'user', text: turn.user });
-        allMsgs.push({
-          id: id++,
-          role: 'assistant',
-          text: turn.answer,
-          sources: turn.sources,
-          responseMs: turn.responseMs,
-        });
-      }
-      queueMicrotask(() => {
-        setMessages(allMsgs);
-        setVisibleNodes(new Set(Object.keys(INIT_POS)));
-        setZoom(0.48);
-        setShowEdges(true);
-      });
-      return;
-    }
-
-    const c = cleanupRef.current;
-    const sched = (fn: () => void, delay: number) => {
-      c.timeouts.push(setTimeout(fn, delay));
-    };
-
-    // Type text into the input bar, then "send" it as a user message
-    function typeInput(text: string, onSent: () => void) {
-      setInputActive(true);
-      setInputText('');
-      let idx = 0;
-      const iv = setInterval(() => {
-        idx += 2;
-        if (idx >= text.length) {
-          clearInterval(iv);
-          setInputText(text);
-          // Brief pause then "send"
-          c.timeouts.push(
-            setTimeout(() => {
-              setInputText('');
-              setInputActive(false);
-              setMessages((p) => [...p, { id: Date.now(), role: 'user', text }]);
-              onSent();
-            }, 250)
-          );
-          return;
-        }
-        setInputText(text.slice(0, idx));
-      }, 18);
-      c.intervals.push(iv);
-    }
-
-    function typeAnswer(text: string, sources: string[], responseMs: number, onDone: () => void) {
-      setIsTyping(true);
-      setTypedAnswer('');
-      let idx = 0;
-      const iv = setInterval(() => {
-        idx += 3;
-        if (idx >= text.length) {
-          clearInterval(iv);
-          setMessages((p) => [
-            ...p,
-            { id: Date.now(), role: 'assistant', text, sources, responseMs },
-          ]);
-          setIsTyping(false);
-          setTypedAnswer('');
-          onDone();
-          return;
-        }
-        setTypedAnswer(text.slice(0, idx));
-      }, 12);
-      c.intervals.push(iv);
-    }
-
-    // Pan + zoom the camera to center on a point in canvas space
-    function autoView(cx: number, cy: number, z: number) {
-      if (userInteracted.current) return;
-      setSmoothTx(true);
-      setZoom(z);
-      setPan({ x: (CX - cx) * z, y: (CY - cy) * z });
-    }
-
-    function run() {
-      let t = 0;
-
-      for (let ti = 0; ti < TURNS.length; ti++) {
-        const turn = TURNS[ti];
-
-        // Type into input bar → send → thinking → answer
-        const inputDur = Math.ceil(turn.user.length / 2) * 18 + 250 + 100;
-        sched(() => typeInput(turn.user, () => {}), t);
-        t += inputDur;
-
-        const steps = turn.thinking;
-        sched(() => {
-          setThinkActive(true);
-          setThinkSteps(steps);
-          setThinkStep(0);
-        }, t);
-        for (let s = 1; s < steps.length; s++) {
-          t += 350;
-          const si = s;
-          sched(() => setThinkStep(si), t);
-        }
-        t += 350;
-
-        const answer = turn.answer;
-        const turnSources = turn.sources;
-        const turnMs = turn.responseMs;
-        sched(() => {
-          setThinkActive(false);
-          typeAnswer(answer, turnSources, turnMs, () => {});
-        }, t);
-        t += Math.ceil(answer.length / 3) * 12 + 400;
-
-        // Canvas placement — camera follows cursor, zooms in on each card, pulls back after each turn
-        if (ti === 0) {
-          // Row 1: hub → market → competitors → swot → pull back
-          sched(() => {
-            setCursorVisible(true);
-            setCursorPos(CURSOR_TARGETS.hub);
-            autoView(630, 30, 0.9);
-          }, t);
-          t += 500;
-          sched(() => showNode('hub'), t);
-          t += 400;
-          sched(() => {
-            setCursorPos(CURSOR_TARGETS.market);
-            autoView(145, 200, 0.85);
-          }, t);
-          t += 550;
-          sched(() => showNode('market'), t);
-          t += 400;
-          sched(() => {
-            setCursorPos(CURSOR_TARGETS.competitors);
-            autoView(545, 200, 0.8);
-          }, t);
-          t += 550;
-          sched(() => showNode('competitors'), t);
-          t += 400;
-          sched(() => {
-            setCursorPos(CURSOR_TARGETS.swot);
-            autoView(975, 200, 0.75);
-          }, t);
-          t += 550;
-          sched(() => showNode('swot'), t);
-          t += 400;
-          sched(() => {
-            setCursorVisible(false);
-            autoView(550, 180, 0.6);
-          }, t);
-        } else if (ti === 1) {
-          // Flash source → metrics → channels → risks → pull back
-          sched(() => {
-            setCursorVisible(true);
-            setCursorPos(CURSOR_TARGETS.market);
-            autoView(145, 200, 0.8);
-          }, t);
-          t += 350;
-          sched(() => setFlashNode('market'), t);
-          t += 400;
-          sched(() => {
-            setFlashNode(null);
-            setCursorPos(CURSOR_TARGETS.metrics);
-            autoView(130, 500, 0.8);
-          }, t);
-          t += 550;
-          sched(() => showNode('metrics'), t);
-          t += 400;
-          sched(() => {
-            setCursorPos(CURSOR_TARGETS.channels);
-            autoView(520, 490, 0.75);
-          }, t);
-          t += 550;
-          sched(() => showNode('channels'), t);
-          t += 400;
-          sched(() => {
-            setCursorPos(CURSOR_TARGETS.risks);
-            autoView(950, 500, 0.7);
-          }, t);
-          t += 550;
-          sched(() => showNode('risks'), t);
-          t += 400;
-          sched(() => {
-            setCursorVisible(false);
-            autoView(550, 350, 0.42);
-          }, t);
-        } else if (ti === 2) {
-          // Recommendations → roadmap → summary → edges → full zoom out
-          sched(() => {
-            setCursorVisible(true);
-            setCursorPos(CURSOR_TARGETS.recommendations);
-            autoView(235, 760, 0.65);
-          }, t);
-          t += 550;
-          sched(() => showNode('recommendations'), t);
-          t += 400;
-          sched(() => {
-            setCursorPos(CURSOR_TARGETS.roadmap);
-            autoView(720, 750, 0.6);
-          }, t);
-          t += 550;
-          sched(() => showNode('roadmap'), t);
-          t += 400;
-          sched(() => {
-            setCursorPos(CURSOR_TARGETS.summary);
-            autoView(570, 960, 0.55);
-          }, t);
-          t += 550;
-          sched(() => showNode('summary'), t);
-          t += 400;
-          sched(() => setShowEdges(true), t);
-          t += 300;
-          sched(() => {
-            setCursorVisible(false);
-            autoView(CX, CY, 0.48);
-          }, t);
-        }
-
-        t += 600;
-        if (ti < TURNS.length - 1) t += 1200;
-      }
-    }
+    if (prefersReducedMotion) return;
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ delay: 0.15 });
@@ -477,27 +252,7 @@ export function HeroSection() {
       );
     }, containerRef);
 
-    // Only start the chat + canvas animation when the showcase scrolls into view
-    const showcaseEl = showcaseRef.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && !animStarted.current) {
-          animStarted.current = true;
-          setInView(true);
-          run();
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.8 }
-    );
-    if (showcaseEl) observer.observe(showcaseEl);
-
-    return () => {
-      observer.disconnect();
-      c.timeouts.forEach(clearTimeout);
-      c.intervals.forEach(clearInterval);
-      ctx.revert();
-    };
+    return () => ctx.revert();
   }, []);
 
   const ct = theme.palette.text.primary;
@@ -709,7 +464,7 @@ export function HeroSection() {
 
         {/* ── Showcase (hidden on mobile) ── */}
         <Box
-          ref={showcaseRef}
+
           className="hero-showcase"
           sx={{
             display: { xs: 'none', md: 'block' },
@@ -874,104 +629,6 @@ export function HeroSection() {
                 </Box>
               ))}
 
-              {thinkActive && (
-                <Box sx={{ maxWidth: '90%' }}>
-                  <Box
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.75,
-                      mb: 0.5,
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1.5,
-                      bgcolor: alpha(p.primary.main, 0.08),
-                      border: '1px solid',
-                      borderColor: alpha(p.primary.main, 0.15),
-                    }}
-                  >
-                    <BrainIcon size={12} weight="light" color={p.primary.main} />
-                    <Typography sx={{ color: 'primary.main', fontSize: '0.7rem', fontWeight: 600 }}>
-                      Thinking
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      ml: 1,
-                      pl: 1.5,
-                      borderLeft: '2px solid',
-                      borderColor: alpha(p.primary.main, 0.15),
-                    }}
-                  >
-                    {thinkSteps.slice(0, thinkStep + 1).map((step, i) => (
-                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: i === thinkStep ? alpha(ct, 0.9) : alpha(ct, 0.4),
-                            fontSize: '0.68rem',
-                            fontWeight: i === thinkStep ? 600 : 400,
-                            lineHeight: 1.7,
-                          }}
-                        >
-                          {step}
-                        </Typography>
-                        {i === thinkStep && (
-                          <Box sx={{ display: 'flex', gap: 0.3, ml: 0.25 }}>
-                            {[0, 1, 2].map((d) => (
-                              <Box
-                                key={d}
-                                sx={{
-                                  width: 3,
-                                  height: 3,
-                                  borderRadius: '50%',
-                                  bgcolor: 'primary.main',
-                                  animation: `dotPulse 1.2s ease-in-out ${d * 0.2}s infinite`,
-                                }}
-                              />
-                            ))}
-                          </Box>
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
-
-              {isTyping && typedAnswer && (
-                <Box sx={{ maxWidth: '85%' }}>
-                  <Box
-                    sx={{
-                      px: 2,
-                      py: 1.25,
-                      borderRadius: 2,
-                      borderBottomLeftRadius: 4,
-                      bgcolor: alpha(ct, 0.06),
-                      border: '1px solid',
-                      borderColor: alpha(ct, 0.08),
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{ color: 'text.primary', fontSize: '0.82rem', lineHeight: 1.6 }}
-                    >
-                      {typedAnswer}
-                      <Box
-                        component="span"
-                        sx={{
-                          display: 'inline-block',
-                          width: 2,
-                          height: '1em',
-                          bgcolor: 'primary.main',
-                          ml: 0.25,
-                          verticalAlign: 'text-bottom',
-                          animation: 'cursorBlink 0.8s step-end infinite',
-                        }}
-                      />
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
             </Box>
 
             {/* ── Canvas Panel ── */}
@@ -1031,7 +688,7 @@ export function HeroSection() {
                         fill="none"
                         stroke={alpha(ct, 0.18)}
                         strokeWidth={2}
-                        strokeDasharray="8 5"
+                        strokeLinecap="round"
                         opacity={showEdges && bothVisible ? 1 : 0}
                         style={{ transition: 'opacity 0.6s ease' }}
                       />
@@ -1051,62 +708,6 @@ export function HeroSection() {
                       );
                     })}
                 </Box>
-
-                {/* AI Cursor */}
-                {cursorVisible && cursorPos && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      left: cursorPos.x,
-                      top: cursorPos.y,
-                      transition:
-                        'left 0.5s cubic-bezier(0.4,0,0.2,1), top 0.5s cubic-bezier(0.4,0,0.2,1)',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    <Box
-                      component="svg"
-                      width={16}
-                      height={20}
-                      viewBox="0 0 16 20"
-                      sx={{
-                        display: 'block',
-                        filter: `drop-shadow(0 1px 2px ${alpha(p.common.black, 0.3)})`,
-                      }}
-                    >
-                      <path
-                        d="M1 1 L1 16 L5 12 L8 19 L10 18 L7 11 L13 10.5 Z"
-                        fill={p.primary.main}
-                        stroke={isDark ? p.common.white : p.common.black}
-                        strokeWidth={0.6}
-                        strokeOpacity={0.4}
-                      />
-                    </Box>
-                    <Box
-                      sx={{
-                        display: 'inline-block',
-                        px: 0.75,
-                        py: 0.2,
-                        bgcolor: 'primary.main',
-                        borderRadius: '4px',
-                        mt: -0.5,
-                        ml: 1.5,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          color: 'primary.contrastText',
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        AI
-                      </Typography>
-                    </Box>
-                  </Box>
-                )}
 
                 {/* ── Hub node ── */}
                 <Box
@@ -1138,7 +739,7 @@ export function HeroSection() {
                     ...cardSx(
                       p.info.main,
                       visibleNodes.has('market'),
-                      flashNode === 'market',
+                      false,
                       'market'
                     ),
                     pointerEvents: visibleNodes.has('market') ? 'auto' : 'none',
@@ -1713,39 +1314,9 @@ export function HeroSection() {
                   <PlusIcon size={12} weight="light" color={alpha(p.primary.main, 0.7)} />
                 </IconButton>
                 <Box sx={{ width: '1px', height: 14, bgcolor: alpha(ct, 0.1), mx: 0.25 }} />
-                <Box sx={{ position: 'relative' }}>
-                  <IconButton
-                    size="small"
-                    sx={{ p: 0.4 }}
-                    onClick={() => {
-                      setShareToast(true);
-                      setTimeout(() => setShareToast(false), 1500);
-                    }}
-                  >
-                    <ShareNetworkIcon size={12} weight="light" color={alpha(ct, 0.5)} />
-                  </IconButton>
-                  {shareToast && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        bottom: '100%',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        px: 1,
-                        py: 0.3,
-                        bgcolor: 'text.primary',
-                        color: 'background.default',
-                        borderRadius: 1,
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap',
-                        mb: 0.5,
-                      }}
-                    >
-                      Link copied!
-                    </Box>
-                  )}
-                </Box>
+                <IconButton size="small" sx={{ p: 0.4 }}>
+                  <ShareNetworkIcon size={12} weight="light" color={alpha(ct, 0.5)} />
+                </IconButton>
               </Box>
 
               {/* Node count badge */}
@@ -1801,38 +1372,20 @@ export function HeroSection() {
                 py: 1,
                 borderRadius: 1.5,
                 border: '1px solid',
-                borderColor: inputActive ? alpha(p.primary.main, 0.3) : alpha(ct, 0.1),
+                borderColor: alpha(ct, 0.1),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 transition: 'border-color 0.2s',
               }}
             >
-              {inputText ? (
-                <Typography sx={{ color: 'text.primary', fontSize: '0.82rem' }}>
-                  {inputText}
-                  <Box
-                    component="span"
-                    sx={{
-                      display: 'inline-block',
-                      width: 2,
-                      height: '1em',
-                      bgcolor: 'primary.main',
-                      ml: 0.25,
-                      verticalAlign: 'text-bottom',
-                      animation: 'cursorBlink 0.8s step-end infinite',
-                    }}
-                  />
-                </Typography>
-              ) : (
-                <Typography sx={{ color: alpha(ct, 0.25), fontSize: '0.82rem' }}>
-                  Ask anything about your documents...
-                </Typography>
-              )}
+              <Typography sx={{ color: alpha(ct, 0.25), fontSize: '0.82rem' }}>
+                Ask anything about your documents...
+              </Typography>
               <PaperPlaneTiltIcon
                 size={14}
                 weight="light"
-                color={inputText ? p.primary.main : alpha(ct, 0.15)}
+                color={alpha(ct, 0.15)}
               />
             </Box>
           </Box>
