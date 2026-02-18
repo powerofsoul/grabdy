@@ -1,20 +1,20 @@
-import { Controller, Get, Inject, Logger, Param, Post, Query, Req, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Param, Post, Query, Req, Res } from '@nestjs/common';
 
 import { dbIdSchema } from '@grabdy/common';
 import { integrationProviderEnum, integrationsContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { randomBytes } from 'crypto';
 import type { Request, Response } from 'express';
-import type Redis from 'ioredis';
 
 import { CurrentUser, type JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { InjectEnv } from '../../config/env.config';
+import { redisKeys } from '../../redis/redis-keys';
+import { RedisService } from '../../redis/redis.module';
 
 import { ProviderRegistry } from './providers/provider-registry';
 import { parseProviderData, parsePublicProviderData } from './connector.interface';
-import { INTEGRATIONS_REDIS } from './integrations.constants';
 import { IntegrationsService } from './integrations.service';
 
 interface OAuthState {
@@ -24,7 +24,6 @@ interface OAuthState {
 }
 
 const OAUTH_STATE_TTL_SECONDS = 600; // 10 minutes
-const OAUTH_STATE_PREFIX = 'oauth_state:';
 
 function toISOStringOrNull(date: Date | null | undefined): string | null {
   if (!date) return null;
@@ -50,7 +49,7 @@ export class IntegrationsController {
   constructor(
     private integrationsService: IntegrationsService,
     private providerRegistry: ProviderRegistry,
-    @Inject(INTEGRATIONS_REDIS) private readonly redis: Redis,
+    private redis: RedisService,
     @InjectEnv('frontendUrl') private readonly frontendUrl: string,
     @InjectEnv('apiUrl') private readonly apiUrl: string
   ) {}
@@ -108,7 +107,7 @@ export class IntegrationsController {
         provider,
       };
       await this.redis.set(
-        `${OAUTH_STATE_PREFIX}${state}`,
+        redisKeys.oauthState(state),
         JSON.stringify(stateData),
         'EX',
         OAUTH_STATE_TTL_SECONDS
@@ -283,7 +282,7 @@ export class IntegrationsController {
   ): Promise<void> {
     try {
       // Validate state from Redis (auto-expires via TTL)
-      const stateKey = `${OAUTH_STATE_PREFIX}${state}`;
+      const stateKey = redisKeys.oauthState(state);
       const stateJson = await this.redis.get(stateKey);
       if (!stateJson) {
         res.redirect(`${this.frontendUrl}/dashboard/integrations?error=invalid_state`);

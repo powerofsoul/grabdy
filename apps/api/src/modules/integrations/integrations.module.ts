@@ -1,9 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Inject, Module, OnModuleDestroy } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import Redis from 'ioredis';
-
-import { env } from '../../config/env.config';
 import {
   DATA_SOURCE_QUEUE,
   INTEGRATION_SYNC_QUEUE,
@@ -17,7 +14,6 @@ import { ProviderRegistry } from './providers/provider-registry';
 import { SlackConnector } from './providers/slack/slack.connector';
 import { SlackBotProcessor } from './providers/slack/slack-bot.processor';
 import { SlackBotService } from './providers/slack/slack-bot.service';
-import { INTEGRATIONS_REDIS } from './integrations.constants';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
 
@@ -29,16 +25,6 @@ import { IntegrationsService } from './integrations.service';
   ],
   controllers: [IntegrationsController],
   providers: [
-    {
-      provide: INTEGRATIONS_REDIS,
-      useFactory: () =>
-        new Redis({
-          host: env.redisHost,
-          port: env.redisPort,
-          password: env.redisPassword,
-          maxRetriesPerRequest: 3,
-        }),
-    },
     IntegrationsService,
     ProviderRegistry,
     SlackBotService,
@@ -50,10 +36,4 @@ import { IntegrationsService } from './integrations.service';
   ],
   exports: [IntegrationsService],
 })
-export class IntegrationsModule implements OnModuleDestroy {
-  constructor(@Inject(INTEGRATIONS_REDIS) private readonly redis: Redis) {}
-
-  async onModuleDestroy(): Promise<void> {
-    await this.redis.quit();
-  }
-}
+export class IntegrationsModule {}

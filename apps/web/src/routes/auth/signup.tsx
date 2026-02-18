@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
-import { workEmailSchema } from '@grabdy/contracts';
+import { contract, workEmailSchema } from '@grabdy/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
@@ -14,12 +14,19 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon, UserIcon } from '@phosphor-icons/react';
+import {
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  LockIcon,
+  UserIcon,
+} from '@phosphor-icons/react';
 import { GoogleLogin } from '@react-oauth/google';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
+import { OtpInput } from '@/components/ui/OtpInput';
 import { useAuth } from '@/context/AuthContext';
 
 const signupSchema = z
@@ -37,25 +44,33 @@ const signupSchema = z
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
+const verifySchema = contract.auth.verifyEmail.body.pick({ otp: true });
+type VerifyFormData = z.infer<typeof verifySchema>;
+
 export const Route = createFileRoute('/auth/signup')({
   component: SignupPage,
 });
 
 function SignupPage() {
-  const { signup, googleAuth, isAuthenticated, isLoading, user } = useAuth();
+  const { signup, verifyEmail, resendVerification, googleAuth, isAuthenticated, isLoading, user } =
+    useAuth();
   const navigate = useNavigate();
-  const [serverError, setServerError] = useState('');
+  const [step, setStep] = useState<'signup' | 'verify'>('signup');
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [authInProgress, setAuthInProgress] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<SignupFormData>({
+  const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     mode: 'onBlur',
+  });
+
+  const verifyForm = useForm<VerifyFormData>({
+    resolver: zodResolver(verifySchema),
+    mode: 'onBlur',
+    defaultValues: { otp: '' },
   });
 
   const getRedirectPath = useCallback(() => {
@@ -78,42 +93,148 @@ function SignupPage() {
     }
   }, [authInProgress, isLoading, user, navigate, getRedirectPath]);
 
-  const onSubmit = async (data: SignupFormData) => {
-    setServerError('');
+  const onSignup = async (data: SignupFormData) => {
+    try {
+      const email = await signup(data.email, data.password, data.firstName, data.lastName);
+      setSubmittedEmail(email);
+      setStep('verify');
+    } catch (err) {
+      signupForm.setError('root', {
+        message: err instanceof Error ? err.message : 'Signup failed',
+      });
+    }
+  };
+
+  const onVerify = async (data: VerifyFormData) => {
     try {
       setAuthInProgress(true);
-      await signup(data.email, data.password, data.firstName, data.lastName);
+      await verifyEmail(submittedEmail, data.otp);
     } catch (err) {
       setAuthInProgress(false);
-      setServerError(err instanceof Error ? err.message : 'Signup failed');
+      verifyForm.setError('root', {
+        message: err instanceof Error ? err.message : 'Verification failed',
+      });
+    }
+  };
+
+  const handleResend = async () => {
+    setResendMessage('');
+    verifyForm.clearErrors('root');
+    try {
+      await resendVerification(submittedEmail);
+      setResendMessage('A new verification code has been sent.');
+    } catch (err) {
+      verifyForm.setError('root', {
+        message: err instanceof Error ? err.message : 'Failed to resend code',
+      });
     }
   };
 
   const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     if (!credentialResponse.credential) {
-      setServerError('Google authentication failed');
+      signupForm.setError('root', { message: 'Google authentication failed' });
       return;
     }
-
-    setServerError('');
 
     try {
       setAuthInProgress(true);
       await googleAuth(credentialResponse.credential);
     } catch (err) {
       setAuthInProgress(false);
-      setServerError(err instanceof Error ? err.message : 'Google authentication failed');
+      signupForm.setError('root', {
+        message: err instanceof Error ? err.message : 'Google authentication failed',
+      });
     }
   };
 
-  const busy = isSubmitting || authInProgress;
+  if (step === 'verify') {
+    const verifyBusy = verifyForm.formState.isSubmitting || authInProgress;
+
+    return (
+      <AuthLayout title="Verify your email" subtitle={`We sent a code to ${submittedEmail}`}>
+        {resendMessage && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            {resendMessage}
+          </Alert>
+        )}
+
+        <form onSubmit={verifyForm.handleSubmit(onVerify)} noValidate autoComplete="off">
+          {verifyForm.formState.errors.root && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {verifyForm.formState.errors.root.message}
+            </Alert>
+          )}
+
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="body2"
+              sx={{ color: 'text.secondary', textAlign: 'center', mb: 1.5 }}
+            >
+              Enter the 6-digit code
+            </Typography>
+            <Controller
+              name="otp"
+              control={verifyForm.control}
+              render={({ field }) => (
+                <OtpInput
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={!!verifyForm.formState.errors.otp}
+                  autoFocus
+                />
+              )}
+            />
+            {verifyForm.formState.errors.otp && (
+              <Typography
+                variant="caption"
+                sx={{ color: 'error.main', textAlign: 'center', display: 'block', mt: 1 }}
+              >
+                {verifyForm.formState.errors.otp.message}
+              </Typography>
+            )}
+          </Box>
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            disabled={verifyBusy}
+            sx={{ py: 1.5, mb: 3 }}
+          >
+            {verifyBusy && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
+            Verify email
+          </Button>
+
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Didn&apos;t receive the code?{' '}
+              <Typography
+                component="span"
+                variant="body2"
+                onClick={handleResend}
+                sx={{
+                  color: 'primary.main',
+                  cursor: 'pointer',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                Resend code
+              </Typography>
+            </Typography>
+          </Box>
+        </form>
+      </AuthLayout>
+    );
+  }
+
+  const signupBusy = signupForm.formState.isSubmitting || authInProgress;
 
   return (
     <AuthLayout title="Create an account" subtitle="Start your free trial">
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
-          onError={() => setServerError('Google authentication failed')}
+          onError={() => signupForm.setError('root', { message: 'Google authentication failed' })}
           text="continue_with"
           shape="rectangular"
           width={400}
@@ -126,23 +247,23 @@ function SignupPage() {
         </Typography>
       </Divider>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        {serverError && (
+      <form onSubmit={signupForm.handleSubmit(onSignup)} noValidate>
+        {signupForm.formState.errors.root && (
           <Alert severity="error" sx={{ mb: 3 }}>
-            {serverError}
+            {signupForm.formState.errors.root.message}
           </Alert>
         )}
 
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           <TextField
-            {...register('firstName')}
+            {...signupForm.register('firstName')}
             label="First Name"
             type="text"
             placeholder="First name"
             fullWidth
             autoComplete="given-name"
-            error={!!errors.firstName}
-            helperText={errors.firstName?.message}
+            error={!!signupForm.formState.errors.firstName}
+            helperText={signupForm.formState.errors.firstName?.message}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
@@ -152,26 +273,26 @@ function SignupPage() {
             }}
           />
           <TextField
-            {...register('lastName')}
+            {...signupForm.register('lastName')}
             label="Last Name"
             type="text"
             placeholder="Last name"
             fullWidth
             autoComplete="family-name"
-            error={!!errors.lastName}
-            helperText={errors.lastName?.message}
+            error={!!signupForm.formState.errors.lastName}
+            helperText={signupForm.formState.errors.lastName?.message}
           />
         </Box>
 
         <TextField
-          {...register('email')}
+          {...signupForm.register('email')}
           label="Work Email"
           type="email"
           placeholder="you@company.com"
           fullWidth
           autoComplete="email"
-          error={!!errors.email}
-          helperText={errors.email?.message}
+          error={!!signupForm.formState.errors.email}
+          helperText={signupForm.formState.errors.email?.message}
           sx={{ mb: 2 }}
           InputProps={{
             startAdornment: (
@@ -183,14 +304,14 @@ function SignupPage() {
         />
 
         <TextField
-          {...register('password')}
+          {...signupForm.register('password')}
           label="Password"
           type={showPassword ? 'text' : 'password'}
           placeholder="Min. 8 characters"
           fullWidth
           autoComplete="new-password"
-          error={!!errors.password}
-          helperText={errors.password?.message}
+          error={!!signupForm.formState.errors.password}
+          helperText={signupForm.formState.errors.password?.message}
           sx={{ mb: 2 }}
           InputProps={{
             startAdornment: (
@@ -219,14 +340,14 @@ function SignupPage() {
         />
 
         <TextField
-          {...register('confirmPassword')}
+          {...signupForm.register('confirmPassword')}
           label="Confirm Password"
           type={showConfirmPassword ? 'text' : 'password'}
           placeholder="Confirm your password"
           fullWidth
           autoComplete="new-password"
-          error={!!errors.confirmPassword}
-          helperText={errors.confirmPassword?.message}
+          error={!!signupForm.formState.errors.confirmPassword}
+          helperText={signupForm.formState.errors.confirmPassword?.message}
           sx={{ mb: 3 }}
           InputProps={{
             startAdornment: (
@@ -254,8 +375,14 @@ function SignupPage() {
           }}
         />
 
-        <Button type="submit" fullWidth variant="contained" disabled={busy} sx={{ py: 1.5, mb: 3 }}>
-          {busy && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          disabled={signupBusy}
+          sx={{ py: 1.5, mb: 3 }}
+        >
+          {signupBusy && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
           Create account
         </Button>
 

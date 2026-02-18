@@ -7,6 +7,7 @@ import { authLinks } from '../../common/auth-links';
 import { InjectEnv } from '../../config/env.config';
 
 import { AccountSetupEmail } from './templates/account-setup';
+import { EmailVerifyEmail } from './templates/email-verify';
 import { PasswordResetEmail } from './templates/password-reset';
 import { WelcomeEmail } from './templates/welcome';
 
@@ -65,6 +66,12 @@ export class EmailService {
       this.logger.error(`Failed to send email to ${to}: ${message}`);
       throw new InternalServerErrorException(`Failed to send email: ${message}`);
     }
+  }
+
+  async sendEmailVerificationOTP(to: string, name: string, otp: string) {
+    const props = { name, otp };
+    const html = await render(EmailVerifyEmail(props));
+    await this.sendEmail(to, 'Verify your email', html, 'EmailVerifyEmail', props);
   }
 
   async sendPasswordResetOTP(to: string, name: string, otp: string) {

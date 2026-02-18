@@ -30,7 +30,9 @@ interface AuthContextType {
   isOwner: boolean;
   selectOrg: (orgId: DbId<'Org'>) => void;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<string>;
+  verifyEmail: (email: string, otp: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
   googleAuth: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -107,12 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await api.auth.signup({ body: { email, password, firstName, lastName } });
 
     if (res.status === 200 && res.body.success) {
-      setUser(res.body.data);
-      return;
-    }
-
-    if (res.status === 409) {
-      throw new Error(res.body.error || 'An account with this email already exists');
+      return res.body.data.email;
     }
 
     if (res.status === 400) {
@@ -120,6 +117,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     throw new Error('Signup failed');
+  };
+
+  const verifyEmail = async (email: string, otp: string) => {
+    const res = await api.auth.verifyEmail({ body: { email, otp } });
+
+    if (res.status === 200 && res.body.success) {
+      setUser(res.body.data);
+      return;
+    }
+
+    if (res.status === 400) {
+      throw new Error(res.body.error || 'Verification failed');
+    }
+
+    throw new Error('Verification failed');
+  };
+
+  const resendVerification = async (email: string) => {
+    const res = await api.auth.resendVerification({ body: { email } });
+
+    if (res.status === 200 && res.body.success) {
+      return;
+    }
+
+    if (res.status === 400) {
+      throw new Error(res.body.error || 'Failed to resend code');
+    }
+
+    throw new Error('Failed to resend code');
   };
 
   const googleAuth = async (credential: string) => {
@@ -188,6 +214,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         selectOrg,
         login,
         signup,
+        verifyEmail,
+        resendVerification,
         googleAuth,
         logout,
         forgotPassword,

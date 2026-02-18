@@ -7,6 +7,7 @@ export const OTP_MAX = 999999;
 export const OTP_EXPIRY_MINUTES = 15;
 export const JWT_EXPIRY = '7d';
 export const JWT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+export const VERIFICATION_OTP_MAX_PER_HOUR = 5;
 
 // ── Rate Limiting (ThrottlerModule) ─────────────────────────────────
 export const THROTTLE_SHORT_TTL_MS = 1000;

@@ -1,27 +1,44 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { contract } from '@grabdy/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
+  Box,
   Button,
   CircularProgress,
+  IconButton,
   InputAdornment,
   TextField,
   Typography,
 } from '@mui/material';
-import { EnvelopeIcon, KeyIcon, ShieldCheckIcon } from '@phosphor-icons/react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import {
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  KeyIcon,
+} from '@phosphor-icons/react';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 
+import { OtpInput } from '@/components/ui/OtpInput';
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 
 const emailSchema = contract.auth.forgotPassword.body;
 type EmailFormData = z.infer<typeof emailSchema>;
 
-const resetSchema = contract.auth.resetPassword.body.pick({ otp: true, newPassword: true });
+const resetSchema = contract.auth.resetPassword.body
+  .pick({ otp: true, newPassword: true })
+  .extend({
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
 type ResetFormData = z.infer<typeof resetSchema>;
 
 export const Route = createFileRoute('/auth/forgot-password')({
@@ -30,9 +47,12 @@ export const Route = createFileRoute('/auth/forgot-password')({
 
 function ForgotPasswordPage() {
   const { forgotPassword, resetPassword } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<'email' | 'reset'>('email');
   const [message, setMessage] = useState('');
   const [submittedEmail, setSubmittedEmail] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const emailForm = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
@@ -42,6 +62,7 @@ function ForgotPasswordPage() {
   const resetForm = useForm<ResetFormData>({
     resolver: zodResolver(resetSchema),
     mode: 'onBlur',
+    defaultValues: { otp: '' },
   });
 
   const handleSendOTP = async (data: EmailFormData) => {
@@ -58,7 +79,8 @@ function ForgotPasswordPage() {
   const handleReset = async (data: ResetFormData) => {
     try {
       await resetPassword(submittedEmail, data.otp, data.newPassword);
-      setMessage('Password reset successfully. You can now sign in.');
+      setMessage('Password reset successfully. Redirecting to sign in...');
+      setTimeout(() => navigate({ to: '/auth/login' }), 1500);
     } catch (err) {
       resetForm.setError('root', {
         message: err instanceof Error ? err.message : 'Failed to reset password',
@@ -113,37 +135,87 @@ function ForgotPasswordPage() {
           </Button>
         </form>
       ) : (
-        <form onSubmit={resetForm.handleSubmit(handleReset)} noValidate>
+        <form onSubmit={resetForm.handleSubmit(handleReset)} noValidate autoComplete="off">
           {resetForm.formState.errors.root && (
             <Alert severity="error" sx={{ mb: 3 }}>
               {resetForm.formState.errors.root.message}
             </Alert>
           )}
-          <TextField
-            {...resetForm.register('otp')}
-            label="Reset code"
-            placeholder="Enter the code from your email"
-            fullWidth
-            error={!!resetForm.formState.errors.otp}
-            helperText={resetForm.formState.errors.otp?.message}
-            sx={{ mb: 2 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                  <ShieldCheckIcon size={20} weight="light" color="currentColor" />
-                </InputAdornment>
-              ),
-            }}
-          />
+
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="body2"
+              sx={{ color: 'text.secondary', textAlign: 'center', mb: 1.5 }}
+            >
+              Enter the 6-digit code
+            </Typography>
+            <Controller
+              name="otp"
+              control={resetForm.control}
+              render={({ field }) => (
+                <OtpInput
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={!!resetForm.formState.errors.otp}
+                  autoFocus
+                />
+              )}
+            />
+            {resetForm.formState.errors.otp && (
+              <Typography
+                variant="caption"
+                sx={{ color: 'error.main', textAlign: 'center', display: 'block', mt: 1 }}
+              >
+                {resetForm.formState.errors.otp.message}
+              </Typography>
+            )}
+          </Box>
+
           <TextField
             {...resetForm.register('newPassword')}
             label="New password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="Minimum 8 characters"
             fullWidth
             autoComplete="new-password"
             error={!!resetForm.formState.errors.newPassword}
             helperText={resetForm.formState.errors.newPassword?.message}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
+                  <KeyIcon size={20} weight="light" color="currentColor" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                    size="small"
+                    tabIndex={-1}
+                    sx={{ color: 'text.disabled' }}
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon size={20} weight="light" color="currentColor" />
+                    ) : (
+                      <EyeIcon size={20} weight="light" color="currentColor" />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <TextField
+            {...resetForm.register('confirmPassword')}
+            label="Confirm password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            placeholder="Confirm your new password"
+            fullWidth
+            autoComplete="new-password"
+            error={!!resetForm.formState.errors.confirmPassword}
+            helperText={resetForm.formState.errors.confirmPassword?.message}
             sx={{ mb: 3 }}
             InputProps={{
               startAdornment: (
@@ -151,8 +223,26 @@ function ForgotPasswordPage() {
                   <KeyIcon size={20} weight="light" color="currentColor" />
                 </InputAdornment>
               ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    edge="end"
+                    size="small"
+                    tabIndex={-1}
+                    sx={{ color: 'text.disabled' }}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeSlashIcon size={20} weight="light" color="currentColor" />
+                    ) : (
+                      <EyeIcon size={20} weight="light" color="currentColor" />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
             }}
           />
+
           <Button
             type="submit"
             variant="contained"

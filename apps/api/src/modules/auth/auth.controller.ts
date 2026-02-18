@@ -36,29 +36,60 @@ export class AuthController {
     return tsRestHandler(authContract, {
       signup: async ({ body }) => {
         try {
-          const { user, token } = await this.authService.register(
+          const data = await this.authService.register(
             body.email,
             body.password,
             body.firstName,
             body.lastName
           );
+          return {
+            status: 200 as const,
+            body: { success: true as const, data },
+          };
+        } catch (error) {
+          return {
+            status: 400 as const,
+            body: {
+              success: false as const,
+              error: error instanceof Error ? error.message : 'Signup failed',
+            },
+          };
+        }
+      },
+      verifyEmail: async ({ body }) => {
+        try {
+          const { user, token } = await this.authService.verifyEmail(body.email, body.otp);
           res.cookie('auth_token', token, this.cookieOptions);
           return {
             status: 200 as const,
             body: { success: true as const, data: user },
           };
         } catch (error) {
-          if (error instanceof Error && error.message.includes('already exists')) {
-            return {
-              status: 409 as const,
-              body: { success: false as const, error: error.message },
-            };
-          }
           return {
             status: 400 as const,
             body: {
               success: false as const,
-              error: error instanceof Error ? error.message : 'Signup failed',
+              error: error instanceof Error ? error.message : 'Verification failed',
+            },
+          };
+        }
+      },
+      resendVerification: async ({ body }) => {
+        try {
+          await this.authService.resendVerificationOTP(body.email);
+          return {
+            status: 200 as const,
+            body: {
+              success: true as const,
+              message: 'If an account exists, a new verification code has been sent.',
+            },
+          };
+        } catch (error) {
+          return {
+            status: 400 as const,
+            body: {
+              success: false as const,
+              error: error instanceof Error ? error.message : 'Failed to resend code',
             },
           };
         }

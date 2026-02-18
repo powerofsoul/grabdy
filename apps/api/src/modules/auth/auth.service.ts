@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -22,9 +21,12 @@ import {
   OTP_EXPIRY_MINUTES,
   OTP_MAX,
   OTP_MIN,
+  VERIFICATION_OTP_MAX_PER_HOUR,
 } from '../../config/constants';
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
+import { redisKeys } from '../../redis/redis-keys';
+import { RedisService } from '../../redis/redis.module';
 import { EmailService } from '../email/email.service';
 import { NotificationService } from '../notification/notification.service';
 
@@ -83,6 +85,7 @@ export class AuthService {
 
   constructor(
     private db: DbService,
+    private redis: RedisService,
     private jwtService: JwtService,
     private emailService: EmailService,
     private notificationService: NotificationService,
@@ -165,10 +168,10 @@ export class AuthService {
     password: string,
     firstName: string,
     lastName: string
-  ): Promise<{ user: UserData; token: string }> {
+  ): Promise<{ email: string }> {
     const normalizedEmail = email.toLowerCase();
 
-    // Check if user already exists
+    // Check if user already exists — silent success to prevent enumeration
     const existing = await this.db.kysely
       .selectFrom('auth.users')
       .select(['id'])
@@ -176,38 +179,79 @@ export class AuthService {
       .executeTakeFirst();
 
     if (existing) {
-      throw new ConflictException('An account with this email already exists');
+      return { email: normalizedEmail };
+    }
+
+    // Rate limit: max N verification codes per hour per email
+    const rateCount = await this.redis.incr(redisKeys.signupRate(normalizedEmail));
+    if (rateCount === 1) {
+      await this.redis.expire(redisKeys.signupRate(normalizedEmail), 3600);
+    }
+    if (rateCount > VERIFICATION_OTP_MAX_PER_HOUR) {
+      throw new BadRequestException('Too many verification codes requested. Please try again later.');
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    const otp = this.generateOTP();
+    const ttlSeconds = OTP_EXPIRY_MINUTES * 60;
 
-    // Transaction: create user -> create org -> create membership with OWNER role
+    // Store pending signup data in Redis with TTL
+    await this.redis.set(
+      redisKeys.pendingSignup(normalizedEmail),
+      JSON.stringify({ passwordHash, firstName, lastName, otp }),
+      'EX',
+      ttlSeconds
+    );
+
+    await this.emailService.sendEmailVerificationOTP(normalizedEmail, firstName, otp);
+
+    return { email: normalizedEmail };
+  }
+
+  async verifyEmail(email: string, otp: string): Promise<{ user: UserData; token: string }> {
+    const normalizedEmail = email.toLowerCase();
+
+    const raw = await this.redis.get(redisKeys.pendingSignup(normalizedEmail));
+    if (!raw) {
+      throw new BadRequestException('Invalid or expired code');
+    }
+
+    const pending = JSON.parse(raw) as {
+      passwordHash: string;
+      firstName: string;
+      lastName: string;
+      otp: string;
+    };
+
+    if (pending.otp !== otp) {
+      throw new BadRequestException('Invalid or expired code');
+    }
+
+    // Create user + org + membership in transaction
     const result = await this.db.kysely.transaction().execute(async (trx) => {
       const newUser = await trx
         .insertInto('auth.users')
         .values({
           id: packId('User', GLOBAL_ORG),
           email: normalizedEmail,
-          first_name: firstName,
-          last_name: lastName,
-          password_hash: passwordHash,
-          email_verified: false,
+          first_name: pending.firstName,
+          last_name: pending.lastName,
+          password_hash: pending.passwordHash,
+          email_verified: true,
           updated_at: new Date(),
         })
         .returningAll()
         .executeTakeFirstOrThrow();
 
-      // Auto-create an org named after the user
       const newOrg = await trx
         .insertInto('org.orgs')
         .values({
-          name: `${firstName}'s Organization`,
+          name: `${pending.firstName}'s Organization`,
           updated_at: new Date(),
         })
         .returningAll()
         .executeTakeFirstOrThrow();
 
-      // Create membership with OWNER role
       await trx
         .insertInto('org.org_memberships')
         .values({
@@ -218,8 +262,12 @@ export class AuthService {
         })
         .execute();
 
-      return { user: newUser, org: newOrg };
+      return { user: newUser };
     });
+
+    // Clean up Redis keys
+    await this.redis.del(redisKeys.pendingSignup(normalizedEmail));
+    await this.redis.del(redisKeys.signupRate(normalizedEmail));
 
     const memberships = await this.getUserMemberships(result.user.id);
     const jwtToken = this.generateToken({
@@ -244,6 +292,43 @@ export class AuthService {
       },
       token: jwtToken,
     };
+  }
+
+  async resendVerificationOTP(email: string): Promise<void> {
+    const normalizedEmail = email.toLowerCase();
+
+    const raw = await this.redis.get(redisKeys.pendingSignup(normalizedEmail));
+    // Silent success to prevent email enumeration
+    if (!raw) return;
+
+    // Rate limit
+    const rateCount = await this.redis.incr(redisKeys.signupRate(normalizedEmail));
+    if (rateCount === 1) {
+      await this.redis.expire(redisKeys.signupRate(normalizedEmail), 3600);
+    }
+    if (rateCount > VERIFICATION_OTP_MAX_PER_HOUR) {
+      throw new BadRequestException('Too many verification codes requested. Please try again later.');
+    }
+
+    const pending = JSON.parse(raw) as {
+      passwordHash: string;
+      firstName: string;
+      lastName: string;
+      otp: string;
+    };
+
+    const otp = this.generateOTP();
+    const ttlSeconds = OTP_EXPIRY_MINUTES * 60;
+
+    // Update with new OTP
+    await this.redis.set(
+      redisKeys.pendingSignup(normalizedEmail),
+      JSON.stringify({ ...pending, otp }),
+      'EX',
+      ttlSeconds
+    );
+
+    await this.emailService.sendEmailVerificationOTP(normalizedEmail, pending.firstName, otp);
   }
 
   async googleAuth(credential: string): Promise<{ user: UserData; token: string }> {
