@@ -257,6 +257,20 @@ export interface DB {
     created_at: Generated<Timestamp>;
   };
 
+  'data.shared_chats': {
+    id: Generated<DbId<'SharedChat'>>;
+    thread_id: DbId<'ChatThread'>;
+    org_id: DbId<'Org'>;
+    membership_id: DbId<'OrgMembership'>;
+    title: string | null;
+    messages_snapshot: unknown;
+    canvas_state_snapshot: unknown | null;
+    share_token: string;
+    is_public: Generated<boolean>;
+    revoked: Generated<boolean>;
+    created_at: Generated<Timestamp>;
+  };
+
   'agent.mastra_messages': {
     id: string;
     thread_id: DbId<'ChatThread'>;

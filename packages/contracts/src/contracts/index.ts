@@ -9,6 +9,7 @@ import { dataSourcesContract } from './data-sources.contract.js';
 import { integrationsContract } from './integrations.contract.js';
 import { orgsContract } from './orgs.contract.js';
 import { publicApiContract } from './public-api.contract.js';
+import { sharedChatsContract } from './shared-chats.contract.js';
 import { usersContract } from './users.contract.js';
 
 const c = initContract();
@@ -21,6 +22,7 @@ export const contract = c.router({
   dataSources: dataSourcesContract,
   integrations: integrationsContract,
   chat: chatContract,
+  sharedChats: sharedChatsContract,
   apiKeys: apiKeysContract,
   users: usersContract,
 });
@@ -35,11 +37,17 @@ export {
   integrationsContract,
   orgsContract,
   publicApiContract,
+  sharedChatsContract,
   streamChatBodySchema,
   usersContract,
 };
 
 export { type ChatSource, chatSourceSchema } from './chat.contract.js';
+export {
+  chatMessageSnapshotSchema,
+  sharedChatSchema,
+  sharedChatSnapshotSchema,
+} from './shared-chats.contract.js';
 export {
   listCollectionsResponseSchema,
   publicApiErrorSchema,

@@ -29,6 +29,7 @@ import {
 import { ChatEmptyState } from './components/ChatEmptyState';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessages } from './components/ChatMessages';
+import { ShareButton } from './components/share';
 import { useCanvasOps } from './hooks/useCanvasOps';
 import { useChatStream } from './hooks/useChatStream';
 import { useThreadManager } from './hooks/useThreadManager';
@@ -448,6 +449,9 @@ export function ChatPanel({
                 <ClockCounterClockwiseIcon size={18} weight="light" color="currentColor" />
               </IconButton>
             </Tooltip>
+            {threadManager.activeThreadId && (
+              <ShareButton threadId={threadManager.activeThreadId} />
+            )}
             <Tooltip
               title={
                 {

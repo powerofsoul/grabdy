@@ -22,7 +22,7 @@ import {
   useNodesState,
 } from '@xyflow/react';
 
-import { useAuth } from '../../context/AuthContext';
+import { useOptionalAuth } from '../../context/AuthContext';
 
 import '@xyflow/react/dist/style.css';
 
@@ -75,7 +75,8 @@ interface ContextMenuState {
   y: number;
 }
 
-interface CanvasProps {
+interface CanvasPropsEditable {
+  readOnly?: false;
   nodes: Node[];
   edges: Edge[];
   onDeleteCard: (cardId: NonDbId<'CanvasCard'>) => void;
@@ -96,29 +97,41 @@ interface CanvasProps {
   onToggleMaximize?: () => void;
 }
 
+interface CanvasPropsReadOnly {
+  readOnly: true;
+  nodes: Node[];
+  edges: Edge[];
+}
+
+type CanvasProps = CanvasPropsEditable | CanvasPropsReadOnly;
+
 const NODE_TYPES = { card: CardNode };
 const EDGE_TYPES = { custom: CustomEdge };
 const DEFAULT_EDGE_OPTIONS = { type: 'custom' };
 const FIT_VIEW_OPTIONS = { padding: 0.3, duration: 500 };
 
-export function Canvas({
-  nodes: externalNodes,
-  edges: externalEdges,
-  onDeleteCard,
-  onMoveCard,
-  onEdgesChange: onEdgesChangeProp,
-  onAddEdge,
-  onDeleteEdge,
-  onComponentEdit,
-  onTitleEdit,
-  onResizeCard,
-  onReorderCard,
-  onAddCard,
-  isMaximized,
-  onToggleMaximize,
-}: CanvasProps) {
+export function Canvas(props: CanvasProps) {
+  const {
+    nodes: externalNodes,
+    edges: externalEdges,
+    readOnly,
+  } = props;
+
+  const onDeleteCard = readOnly ? undefined : props.onDeleteCard;
+  const onMoveCard = readOnly ? undefined : props.onMoveCard;
+  const onEdgesChangeProp = readOnly ? undefined : props.onEdgesChange;
+  const onAddEdge = readOnly ? undefined : props.onAddEdge;
+  const onDeleteEdge = readOnly ? undefined : props.onDeleteEdge;
+  const onComponentEdit = readOnly ? undefined : props.onComponentEdit;
+  const onTitleEdit = readOnly ? undefined : props.onTitleEdit;
+  const onResizeCard = readOnly ? undefined : props.onResizeCard;
+  const onReorderCard = readOnly ? undefined : props.onReorderCard;
+  const onAddCard = readOnly ? undefined : props.onAddCard;
+  const isMaximized = readOnly ? undefined : props.isMaximized;
+  const onToggleMaximize = readOnly ? undefined : props.onToggleMaximize;
   const theme = useTheme();
-  const { selectedOrgId } = useAuth();
+  const auth = useOptionalAuth();
+  const selectedOrgId = auth?.selectedOrgId;
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const prevNodeCount = useRef(0);
 
@@ -138,7 +151,7 @@ export function Canvas({
         ...node,
         data: {
           ...node.data,
-          onDelete: () => onDeleteCard(parseCardId(node.id)),
+          onDelete: onDeleteCard ? () => onDeleteCard(parseCardId(node.id)) : undefined,
           onComponentEdit,
           onTitleEdit,
           onResize: onResizeCard
@@ -216,7 +229,7 @@ export function Canvas({
           const updated = [...prev, newEdge];
           clearTimeout(edgeSaveTimer.current);
           edgeSaveTimer.current = setTimeout(() => {
-            onEdgesChangeProp(edgesToCanvasEdges(updated));
+            onEdgesChangeProp?.(edgesToCanvasEdges(updated));
           }, 500);
         }
         return [...prev, newEdge];
@@ -238,7 +251,7 @@ export function Canvas({
           clearTimeout(edgeSaveTimer.current);
           edgeSaveTimer.current = setTimeout(() => {
             setLocalEdges((current) => {
-              onEdgesChangeProp(edgesToCanvasEdges(current));
+              onEdgesChangeProp?.(edgesToCanvasEdges(current));
               return current;
             });
           }, 500);
@@ -257,7 +270,7 @@ export function Canvas({
         );
         clearTimeout(edgeSaveTimer.current);
         edgeSaveTimer.current = setTimeout(() => {
-          onEdgesChangeProp(edgesToCanvasEdges(updated));
+          onEdgesChangeProp?.(edgesToCanvasEdges(updated));
         }, 500);
         return updated;
       });
@@ -316,7 +329,7 @@ export function Canvas({
 
   const handleNodeDragStop: OnNodeDrag = useCallback(
     (_event, node) => {
-      onMoveCard(parseCardId(node.id), node.position);
+      onMoveCard?.(parseCardId(node.id), node.position);
     },
     [onMoveCard]
   );
@@ -344,7 +357,7 @@ export function Canvas({
 
   // Context menu actions
   const handleContextDelete = useCallback(() => {
-    if (contextMenu) onDeleteCard(parseCardId(contextMenu.nodeId));
+    if (contextMenu) onDeleteCard?.(parseCardId(contextMenu.nodeId));
   }, [contextMenu, onDeleteCard]);
 
   const handleBringToFront = useCallback(() => {
@@ -438,18 +451,18 @@ export function Canvas({
         onEdgesChange={onLocalEdgesChange}
         onConnect={handleConnect}
         onNodeDragStop={handleNodeDragStop}
-        onNodeContextMenu={handleNodeContextMenu}
-        onPaneContextMenu={handlePaneContextMenu}
-        onPaneClick={handlePaneClick}
+        onNodeContextMenu={readOnly ? undefined : handleNodeContextMenu}
+        onPaneContextMenu={readOnly ? undefined : handlePaneContextMenu}
+        onPaneClick={readOnly ? undefined : handlePaneClick}
         fitView={externalNodes.length > 0}
         fitViewOptions={FIT_VIEW_OPTIONS}
         minZoom={0.1}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         connectionMode={ConnectionMode.Loose}
-        nodesDraggable={!isPlacing}
-        nodesConnectable={!isPlacing}
-        elementsSelectable={!isPlacing}
+        nodesDraggable={!readOnly && !isPlacing}
+        nodesConnectable={!readOnly && !isPlacing}
+        elementsSelectable={!readOnly && !isPlacing}
       >
         <Background
           variant={BackgroundVariant.Dots}
@@ -493,20 +506,22 @@ export function Canvas({
               >
                 Nothing here yet
               </Typography>
-              <Typography
-                sx={{
-                  fontSize: 13,
-                  color: alpha(theme.palette.text.primary, 0.14),
-                  lineHeight: 1.6,
-                }}
-              >
-                Ask something in the chat and cards will appear here
-              </Typography>
+              {!readOnly && (
+                <Typography
+                  sx={{
+                    fontSize: 13,
+                    color: alpha(theme.palette.text.primary, 0.14),
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Ask something in the chat and cards will appear here
+                </Typography>
+              )}
             </Box>
           </Box>
         )}
 
-        {onAddCard && <CanvasToolbar onStartPlacement={setPendingCard} />}
+        {!readOnly && onAddCard && <CanvasToolbar onStartPlacement={setPendingCard} />}
 
         {onToggleMaximize && (
           <Panel position="bottom-right">
@@ -559,14 +574,16 @@ export function Canvas({
         </Box>
       )}
 
-      <CanvasContextMenu
-        anchorPosition={contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null}
-        onClose={closeContextMenu}
-        onDelete={handleContextDelete}
-        onDuplicate={handleDuplicate}
-        onBringToFront={onReorderCard ? handleBringToFront : undefined}
-        onSendToBack={onReorderCard ? handleSendToBack : undefined}
-      />
+      {!readOnly && (
+        <CanvasContextMenu
+          anchorPosition={contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null}
+          onClose={closeContextMenu}
+          onDelete={handleContextDelete}
+          onDuplicate={handleDuplicate}
+          onBringToFront={onReorderCard ? handleBringToFront : undefined}
+          onSendToBack={onReorderCard ? handleSendToBack : undefined}
+        />
+      )}
     </Box>
   );
 }

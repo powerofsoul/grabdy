@@ -3016,6 +3016,7 @@ __metadata:
     kysely: "npm:^0.28.9"
     mammoth: "npm:^1.8.0"
     multer: "npm:^1.4.5-lts.2"
+    nanoid: "npm:^5.1.6"
     nodemailer: "npm:^8.0.1"
     openai: "npm:^6.16.0"
     passport: "npm:^0.7.0"

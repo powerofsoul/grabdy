@@ -21,6 +21,7 @@ export type TableIdName =
   | 'UsageLog'
   | 'ChatThread'
   | 'AiUsageLog'
+  | 'SharedChat'
   | 'Connection'
   | 'SyncLog';
 
@@ -57,6 +58,7 @@ export const ENTITY_TYPE_MAP = {
   CanvasCard: 0x31,
   CanvasEdge: 0x32,
   CanvasComponent: 0x33,
+  SharedChat: 0x34,
   // Analytics
   AiUsageLog: 0x40,
   // Integrations

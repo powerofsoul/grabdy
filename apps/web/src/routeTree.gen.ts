@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as DashboardUsageRouteImport } from './routes/dashboard/usage'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
@@ -65,6 +66,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
+} as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardUsageRoute = DashboardUsageRouteImport.update({
   id: '/usage',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
+  '/share/$token': typeof ShareTokenRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/api/docs': typeof DashboardApiDocsRoute
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
+  '/share/$token': typeof ShareTokenRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/api/docs': typeof DashboardApiDocsRoute
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
+  '/share/$token': typeof ShareTokenRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/api/docs': typeof DashboardApiDocsRoute
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/dashboard/members'
     | '/dashboard/settings'
     | '/dashboard/usage'
+    | '/share/$token'
     | '/dashboard/'
     | '/dashboard/api/docs'
     | '/dashboard/api/keys'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/dashboard/members'
     | '/dashboard/settings'
     | '/dashboard/usage'
+    | '/share/$token'
     | '/dashboard'
     | '/dashboard/api/docs'
     | '/dashboard/api/keys'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/dashboard/members'
     | '/dashboard/settings'
     | '/dashboard/usage'
+    | '/share/$token'
     | '/dashboard/'
     | '/dashboard/api/docs'
     | '/dashboard/api/keys'
@@ -286,6 +298,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  ShareTokenRoute: typeof ShareTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/usage': {
       id: '/dashboard/usage'
@@ -495,6 +515,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  ShareTokenRoute: ShareTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
