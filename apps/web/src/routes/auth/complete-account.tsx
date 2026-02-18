@@ -10,8 +10,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { contract } from '@grabdy/contracts';
 import { EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react';
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { api } from '@/lib/api';
@@ -19,6 +23,9 @@ import { api } from '@/lib/api';
 interface SearchParams {
   token?: string;
 }
+
+const passwordSchema = contract.auth.completeAccount.body.pick({ password: true });
+type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export const Route = createFileRoute('/auth/complete-account')({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
@@ -30,10 +37,7 @@ export const Route = createFileRoute('/auth/complete-account')({
 function CompleteAccountPage() {
   const navigate = useNavigate();
   const { token } = useSearch({ from: '/auth/complete-account' });
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   const [isVerifying, setIsVerifying] = useState(true);
   const [inviteData, setInviteData] = useState<{
@@ -42,9 +46,19 @@ function CompleteAccountPage() {
     orgName: string;
   } | null>(null);
 
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
+    mode: 'onBlur',
+  });
+
   useEffect(() => {
     if (!token) {
-      setError('Invalid invitation link');
+      setError('root', { message: 'Invalid invitation link' });
       setIsVerifying(false);
       return;
     }
@@ -55,39 +69,33 @@ function CompleteAccountPage() {
         if (res.status === 200) {
           setInviteData(res.body.data);
         } else if (res.status === 400) {
-          setError(res.body.error);
+          setError('root', { message: res.body.error });
         }
       } catch {
-        setError('Invalid or expired invitation');
+        setError('root', { message: 'Invalid or expired invitation' });
       } finally {
         setIsVerifying(false);
       }
     };
 
     verify();
-  }, [token]);
+  }, [token, setError]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token || !password) return;
-
-    setIsSubmitting(true);
-    setError('');
+  const onSubmit = async (data: PasswordFormData) => {
+    if (!token) return;
 
     try {
       const res = await api.auth.completeAccount({
-        body: { token, password },
+        body: { token, password: data.password },
       });
 
       if (res.status === 200) {
         navigate({ to: '/dashboard' });
       } else if (res.status === 400) {
-        setError(res.body.error);
+        setError('root', { message: res.body.error });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to complete account setup');
-    } finally {
-      setIsSubmitting(false);
+      setError('root', { message: err instanceof Error ? err.message : 'Failed to complete account setup' });
     }
   };
 
@@ -104,7 +112,7 @@ function CompleteAccountPage() {
   if (!inviteData) {
     return (
       <AuthLayout title="Invalid Invitation" showBack={false}>
-        <Alert severity="error">{error || 'This invitation link is invalid or has expired.'}</Alert>
+        <Alert severity="error">{errors.root?.message ?? 'This invitation link is invalid or has expired.'}</Alert>
         <Button
           variant="text"
           onClick={() => navigate({ to: '/auth/login' })}
@@ -128,10 +136,10 @@ function CompleteAccountPage() {
         </Typography>
       </Box>
 
-      <form onSubmit={handleSubmit}>
-        {error && (
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        {errors.root && (
           <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
+            {errors.root.message}
           </Alert>
         )}
 
@@ -152,16 +160,15 @@ function CompleteAccountPage() {
         />
 
         <TextField
+          {...register('password')}
           label="Password"
           type={showPassword ? 'text' : 'password'}
           placeholder="Minimum 8 characters"
           fullWidth
           autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          error={!!errors.password}
+          helperText={errors.password?.message ?? 'Minimum 8 characters'}
           sx={{ mb: 3 }}
-          required
-          helperText="Minimum 8 characters"
           InputProps={{
             startAdornment: (
               <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
@@ -188,7 +195,7 @@ function CompleteAccountPage() {
           type="submit"
           fullWidth
           variant="contained"
-          disabled={isSubmitting || password.length < 8}
+          disabled={isSubmitting}
           sx={{ py: 1.5 }}
         >
           {isSubmitting && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}

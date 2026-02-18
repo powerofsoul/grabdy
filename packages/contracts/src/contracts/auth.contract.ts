@@ -30,8 +30,8 @@ export const authContract = c.router(
       path: '/signup',
       body: z.object({
         email: workEmailSchema,
-        password: z.string().min(8),
-        name: z.string().min(1),
+        password: z.string().min(8, 'Password must be at least 8 characters'),
+        name: z.string().min(1, 'Name is required'),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: user }),
@@ -54,8 +54,8 @@ export const authContract = c.router(
       method: 'POST',
       path: '/login',
       body: z.object({
-        email: z.string().email(),
-        password: z.string().min(1),
+        email: z.string().email('Please enter a valid email'),
+        password: z.string().min(1, 'Password is required'),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: user }),
@@ -73,7 +73,7 @@ export const authContract = c.router(
     forgotPassword: {
       method: 'POST',
       path: '/forgot-password',
-      body: z.object({ email: z.string().email() }),
+      body: z.object({ email: z.string().email('Please enter a valid email') }),
       responses: {
         200: z.object({ success: z.literal(true), message: z.string() }),
         400: z.object({ success: z.literal(false), error: z.string() }),
@@ -83,9 +83,9 @@ export const authContract = c.router(
       method: 'POST',
       path: '/reset-password',
       body: z.object({
-        email: z.string().email(),
-        otp: z.string().length(6),
-        newPassword: z.string().min(8),
+        email: z.string().email('Please enter a valid email'),
+        otp: z.string().length(6, 'Reset code must be 6 characters'),
+        newPassword: z.string().min(8, 'Password must be at least 8 characters'),
       }),
       responses: {
         200: z.object({ success: z.literal(true), message: z.string() }),
@@ -121,7 +121,7 @@ export const authContract = c.router(
       path: '/complete-account',
       body: z.object({
         token: z.string(),
-        password: z.string().min(8),
+        password: z.string().min(8, 'Password must be at least 8 characters'),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: user }),

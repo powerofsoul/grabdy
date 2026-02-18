@@ -105,6 +105,8 @@ function StepRow({
   completedLabel?: string;
   actions: Array<{ label: string; to: string }>;
 }) {
+  const theme = useTheme();
+
   return (
     <Box sx={{ py: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
@@ -130,7 +132,7 @@ function StepRow({
           </Typography>
           {completed && completedLabel ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <CheckCircleIcon size={16} weight="fill" color="var(--mui-palette-success-main)" />
+              <CheckCircleIcon size={16} weight="fill" color={theme.palette.success.main} />
               <Typography variant="body2" sx={{ color: 'success.main' }}>
                 {completedLabel}
               </Typography>

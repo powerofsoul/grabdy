@@ -38,7 +38,7 @@ export const orgsContract = c.router(
     create: {
       method: 'POST',
       path: '/orgs',
-      body: z.object({ name: z.string().min(1) }),
+      body: z.object({ name: z.string().min(1, 'Organization name is required') }),
       responses: {
         200: z.object({ success: z.literal(true), data: orgSchema }),
         400: z.object({ success: z.literal(false), error: z.string() }),
@@ -57,7 +57,7 @@ export const orgsContract = c.router(
       method: 'PATCH',
       path: '/orgs/:orgId',
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
-      body: z.object({ name: z.string().optional() }),
+      body: z.object({ name: z.string().min(1, 'Organization name is required').optional() }),
       responses: {
         200: z.object({ success: z.literal(true), data: orgSchema }),
         400: z.object({ success: z.literal(false), error: z.string() }),
@@ -69,9 +69,9 @@ export const orgsContract = c.router(
       path: '/orgs/:orgId/invite',
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
       body: z.object({
-        email: z.string().email(),
-        name: z.string(),
-        roles: z.array(orgRoleEnum),
+        email: z.string().email('Please enter a valid email'),
+        name: z.string().min(1, 'Name is required'),
+        roles: z.array(orgRoleEnum).min(1, 'At least one role is required'),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: pendingInvitationSchema }),

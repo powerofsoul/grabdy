@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
+import { contract } from '@grabdy/contracts';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Button,
@@ -10,9 +13,16 @@ import {
 } from '@mui/material';
 import { EnvelopeIcon, KeyIcon, ShieldCheckIcon } from '@phosphor-icons/react';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { z } from 'zod';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
+
+const emailSchema = contract.auth.forgotPassword.body;
+type EmailFormData = z.infer<typeof emailSchema>;
+
+const resetSchema = contract.auth.resetPassword.body.pick({ otp: true, newPassword: true });
+type ResetFormData = z.infer<typeof resetSchema>;
 
 export const Route = createFileRoute('/auth/forgot-password')({
   component: ForgotPasswordPage,
@@ -20,40 +30,39 @@ export const Route = createFileRoute('/auth/forgot-password')({
 
 function ForgotPasswordPage() {
   const { forgotPassword, resetPassword } = useAuth();
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [step, setStep] = useState<'email' | 'reset'>('email');
   const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsSubmitting(true);
+  const emailForm = useForm<EmailFormData>({
+    resolver: zodResolver(emailSchema),
+    mode: 'onBlur',
+  });
+
+  const resetForm = useForm<ResetFormData>({
+    resolver: zodResolver(resetSchema),
+    mode: 'onBlur',
+  });
+
+  const handleSendOTP = async (data: EmailFormData) => {
     try {
-      await forgotPassword(email);
+      await forgotPassword(data.email);
+      setSubmittedEmail(data.email);
       setMessage('If an account exists, you will receive a reset code.');
       setStep('reset');
     } catch {
-      setError('Failed to send reset code');
-    } finally {
-      setIsSubmitting(false);
+      emailForm.setError('root', { message: 'Failed to send reset code' });
     }
   };
 
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsSubmitting(true);
+  const handleReset = async (data: ResetFormData) => {
     try {
-      await resetPassword(email, otp, newPassword);
+      await resetPassword(submittedEmail, data.otp, data.newPassword);
       setMessage('Password reset successfully. You can now sign in.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reset password');
-    } finally {
-      setIsSubmitting(false);
+      resetForm.setError('root', {
+        message: err instanceof Error ? err.message : 'Failed to reset password',
+      });
     }
   };
 
@@ -64,24 +73,24 @@ function ForgotPasswordPage() {
           {message}
         </Alert>
       )}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
 
       {step === 'email' ? (
-        <form onSubmit={handleSendOTP}>
+        <form onSubmit={emailForm.handleSubmit(handleSendOTP)} noValidate>
+          {emailForm.formState.errors.root && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {emailForm.formState.errors.root.message}
+            </Alert>
+          )}
           <TextField
+            {...emailForm.register('email')}
             label="Email"
             type="email"
             placeholder="you@example.com"
             fullWidth
             autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            error={!!emailForm.formState.errors.email}
+            helperText={emailForm.formState.errors.email?.message}
             sx={{ mb: 3 }}
-            required
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
@@ -94,23 +103,30 @@ function ForgotPasswordPage() {
             type="submit"
             variant="contained"
             fullWidth
-            disabled={isSubmitting}
+            disabled={emailForm.formState.isSubmitting}
             sx={{ py: 1.5, mb: 3 }}
           >
-            {isSubmitting && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
+            {emailForm.formState.isSubmitting && (
+              <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />
+            )}
             Send reset code
           </Button>
         </form>
       ) : (
-        <form onSubmit={handleReset}>
+        <form onSubmit={resetForm.handleSubmit(handleReset)} noValidate>
+          {resetForm.formState.errors.root && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {resetForm.formState.errors.root.message}
+            </Alert>
+          )}
           <TextField
+            {...resetForm.register('otp')}
             label="Reset code"
             placeholder="Enter the code from your email"
             fullWidth
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+            error={!!resetForm.formState.errors.otp}
+            helperText={resetForm.formState.errors.otp?.message}
             sx={{ mb: 2 }}
-            required
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
@@ -120,15 +136,15 @@ function ForgotPasswordPage() {
             }}
           />
           <TextField
+            {...resetForm.register('newPassword')}
             label="New password"
             type="password"
             placeholder="Minimum 8 characters"
             fullWidth
             autoComplete="new-password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            error={!!resetForm.formState.errors.newPassword}
+            helperText={resetForm.formState.errors.newPassword?.message}
             sx={{ mb: 3 }}
-            required
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
@@ -141,10 +157,12 @@ function ForgotPasswordPage() {
             type="submit"
             variant="contained"
             fullWidth
-            disabled={isSubmitting}
+            disabled={resetForm.formState.isSubmitting}
             sx={{ py: 1.5, mb: 3 }}
           >
-            {isSubmitting && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
+            {resetForm.formState.isSubmitting && (
+              <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />
+            )}
             Reset password
           </Button>
         </form>
@@ -153,7 +171,11 @@ function ForgotPasswordPage() {
       <Link to="/auth/login" style={{ textDecoration: 'none' }}>
         <Typography
           variant="body2"
-          sx={{ textAlign: 'center', color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+          sx={{
+            textAlign: 'center',
+            color: 'text.secondary',
+            '&:hover': { color: 'text.primary' },
+          }}
         >
           Back to sign in
         </Typography>

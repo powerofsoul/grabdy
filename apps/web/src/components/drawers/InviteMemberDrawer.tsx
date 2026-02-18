@@ -1,19 +1,25 @@
-import { useState } from 'react';
-
 import {
   Box,
   Button,
   FormControl,
+  FormHelperText,
   InputLabel,
   MenuItem,
   Select,
   TextField,
 } from '@mui/material';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { contract } from '@grabdy/contracts';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 import { useAuth } from '@/context/AuthContext';
 import { DrawerProps } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
+
+const inviteSchema = contract.orgs.invite.body;
+type InviteFormData = z.infer<typeof inviteSchema>;
 
 interface InviteMemberDrawerProps extends DrawerProps {
   onInvited: () => void;
@@ -21,28 +27,39 @@ interface InviteMemberDrawerProps extends DrawerProps {
 
 export function InviteMemberDrawer({ onClose, onInvited }: InviteMemberDrawerProps) {
   const { selectedOrgId } = useAuth();
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState<'ADMIN' | 'MEMBER'>('MEMBER');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedOrgId || !email.trim() || !name.trim()) return;
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<InviteFormData>({
+    resolver: zodResolver(inviteSchema),
+    mode: 'onBlur',
+    defaultValues: {
+      email: '',
+      name: '',
+      roles: ['MEMBER'],
+    },
+  });
 
-    setIsSubmitting(true);
+  const onSubmit = async (data: InviteFormData) => {
+    if (!selectedOrgId) return;
+
     try {
       const res = await api.orgs.invite({
         params: { orgId: selectedOrgId },
         body: {
-          email: email.trim(),
-          name: name.trim(),
-          roles: [role],
+          email: data.email.trim(),
+          name: data.name.trim(),
+          roles: data.roles,
         },
       });
 
       if (res.status === 200) {
         toast.success('Invitation sent');
+        reset();
         onInvited();
         onClose();
       } else if (res.status === 400) {
@@ -50,45 +67,50 @@ export function InviteMemberDrawer({ onClose, onInvited }: InviteMemberDrawerPro
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send invitation');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <TextField
+        {...register('name')}
         label="Name"
         fullWidth
-        required
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        error={!!errors.name}
+        helperText={errors.name?.message}
         placeholder="John Doe"
       />
       <TextField
+        {...register('email')}
         label="Email"
         type="email"
         fullWidth
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        error={!!errors.email}
+        helperText={errors.email?.message}
         placeholder="john@example.com"
       />
-      <FormControl fullWidth>
-        <InputLabel>Role</InputLabel>
-        <Select
-          value={role}
-          label="Role"
-          onChange={(e) => setRole(e.target.value as 'ADMIN' | 'MEMBER')}
-        >
-          <MenuItem value="MEMBER">Member</MenuItem>
-          <MenuItem value="ADMIN">Admin</MenuItem>
-        </Select>
-      </FormControl>
+      <Controller
+        name="roles"
+        control={control}
+        render={({ field }) => (
+          <FormControl fullWidth error={!!errors.roles}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={field.value[0] ?? 'MEMBER'}
+              label="Role"
+              onChange={(e) => field.onChange([e.target.value])}
+            >
+              <MenuItem value="MEMBER">Member</MenuItem>
+              <MenuItem value="ADMIN">Admin</MenuItem>
+            </Select>
+            {errors.roles && <FormHelperText>{errors.roles.message}</FormHelperText>}
+          </FormControl>
+        )}
+      />
       <Button
         type="submit"
         variant="contained"
-        disabled={isSubmitting || !email.trim() || !name.trim()}
+        disabled={isSubmitting}
         sx={{ mt: 1 }}
       >
         {isSubmitting ? 'Sending...' : 'Send Invitation'}

@@ -103,6 +103,22 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - **ALWAYS do filtering, sorting, and pagination on the server.**
 
+### Forms (react-hook-form) - CRITICAL
+
+- **ALWAYS use `react-hook-form` with `zodResolver` for all forms.** Never use `useState` for form fields or submission state.
+- **Infer form schemas from ts-rest contract body schemas.** Don't duplicate validation — import the schema from the contract and derive the form type:
+  ```ts
+  import { contract } from '@grabdy/contracts';
+  const schema = contract.auth.forgotPassword.body;
+  type FormData = z.infer<typeof schema>;
+  useForm<FormData>({ resolver: zodResolver(schema), mode: 'onBlur' });
+  ```
+- **Use `.pick()` when only a subset of body fields are form inputs** (e.g., `contract.auth.completeAccount.body.pick({ password: true })` when `token` comes from URL).
+- **Use `.required()` when the contract schema has optional fields but the form requires them** (e.g., `contract.orgs.update.body.required()` for settings).
+- **Use `setError('root', ...)` for server errors** instead of `useState` for error strings. Display via `errors.root?.message`.
+- **Use `formState.isSubmitting`** instead of a manual `isSubmitting` state.
+- **All Zod schemas in contracts MUST include human-readable error messages** (e.g., `z.string().email('Please enter a valid email')`, `z.string().min(8, 'Password must be at least 8 characters')`). These messages are displayed directly in the UI via `helperText={errors.field?.message}`.
+
 ### Single Source of Truth - CRITICAL
 
 - **Shared constants (file types, enums, schemas) MUST be defined once in `@grabdy/contracts` or `@grabdy/common`.**
