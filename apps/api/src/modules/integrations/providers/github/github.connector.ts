@@ -19,7 +19,6 @@ import {
   type WebhookEvent,
   type WebhookHandlerResult,
 } from '../../connector.interface';
-
 import { getInitialSyncSince } from '../../integrations.constants';
 
 import type { GitHubProviderData } from './github.types';
