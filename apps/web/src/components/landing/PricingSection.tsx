@@ -1,227 +1,118 @@
 import { useEffect, useRef } from 'react';
 
-import { Box, Button, Container, Typography } from '@mui/material';
-import { ArrowRightIcon, CheckIcon, ClockIcon, MinusIcon } from '@phosphor-icons/react';
+import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
+import { ArrowRightIcon, CheckIcon, ClockIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Link } from '@tanstack/react-router';
+
+import { SlackLogo } from './IntegrationLogos';
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface Tier {
   name: string;
   price: string;
-  priceSuffix: string;
-  badge: string | null;
   description: string;
   cta: string;
   ctaVariant: 'contained' | 'outlined';
   comingSoon: boolean;
   highlighted: boolean;
-  features: ReadonlyArray<{ label: string; value: string | boolean }>;
 }
 
 const TIERS = [
   {
     name: 'Pro',
     price: 'Beta',
-    priceSuffix: '',
-    badge: 'Free during beta',
-    description:
-      'Everything you need to get started. Free while we\u2019re in beta\u00a0\u2014\u00a0no credit card required.',
+    description: 'Everything you need to get started. No credit card required.',
     cta: 'Get started',
     ctaVariant: 'contained',
     comingSoon: false,
     highlighted: true,
-    features: [
-      { label: 'Up to 3 team members', value: true },
-      { label: 'Unlimited collections', value: true },
-      { label: '100 data sources', value: true },
-      { label: '150 MB per file', value: true },
-      { label: '5 GB storage', value: true },
-      { label: '10,000 API calls / mo (REST + MCP)', value: true },
-      { label: 'REST API + Chat', value: true },
-      { label: 'Canvas AI', value: true },
-      { label: 'MCP server', value: true },
-      { label: 'Slack bot', value: true },
-      { label: 'Up to 5 integrations', value: true },
-      { label: 'Analytics', value: true },
-      { label: 'Email support', value: true },
-    ],
   },
   {
     name: 'Business',
     price: 'Custom',
-    priceSuffix: '',
-    badge: 'Coming soon',
-    description:
-      'For growing teams that need higher limits, priority support, and advanced integrations.',
+    description: 'Higher limits, priority support, and advanced integrations.',
     cta: 'Get started',
     ctaVariant: 'outlined',
     comingSoon: true,
     highlighted: false,
-    features: [
-      { label: 'Up to 15 team members', value: true },
-      { label: 'Unlimited collections', value: true },
-      { label: '500 data sources', value: true },
-      { label: '500 MB per file', value: true },
-      { label: '25 GB storage', value: true },
-      { label: '50,000 API calls / mo (REST + MCP)', value: true },
-      { label: 'REST API + Chat', value: true },
-      { label: 'Canvas AI', value: true },
-      { label: 'MCP server', value: true },
-      { label: 'Slack bot', value: true },
-      { label: 'All integrations', value: true },
-      { label: 'Advanced analytics', value: true },
-      { label: 'Priority support', value: true },
-    ],
   },
   {
     name: 'Enterprise',
     price: 'Custom',
-    priceSuffix: '',
-    badge: null,
-    description:
-      'Dedicated infrastructure, custom integrations, SLA, and hands-on onboarding for your team.',
+    description: 'Dedicated infrastructure, custom integrations, and SLA.',
     cta: 'Talk to us',
     ctaVariant: 'outlined',
     comingSoon: false,
     highlighted: false,
-    features: [
-      { label: 'Unlimited team members', value: true },
-      { label: 'Unlimited collections', value: true },
-      { label: 'Unlimited data sources', value: true },
-      { label: 'Custom file size limits', value: true },
-      { label: 'Custom storage', value: true },
-      { label: 'Unlimited API calls (REST + MCP)', value: true },
-      { label: 'REST API + Chat', value: true },
-      { label: 'Canvas AI', value: true },
-      { label: 'MCP server', value: true },
-      { label: 'Slack bot', value: true },
-      { label: 'Custom integrations', value: true },
-      { label: 'Advanced analytics', value: true },
-      { label: 'Dedicated support + SLA', value: true },
-    ],
   },
 ] satisfies ReadonlyArray<Tier>;
 
-function PricingCard({ tier }: { tier: Tier }) {
+interface FeatureRow {
+  label: string;
+  icon?: 'slack';
+  values: [string | true, string | true, string | true];
+}
+
+const FEATURES = [
+  { label: 'Team members', values: ['Up to 3', 'Up to 15', 'Unlimited'] },
+  { label: 'Collections', values: ['Unlimited', 'Unlimited', 'Unlimited'] },
+  { label: 'Data sources', values: ['100', '500', 'Unlimited'] },
+  { label: 'File size', values: ['150 MB', '500 MB', 'Custom'] },
+  { label: 'Storage', values: ['5 GB', '25 GB', 'Custom'] },
+  { label: 'API calls / mo', values: ['10,000', '50,000', 'Custom'] },
+  { label: 'REST API + Chat', values: [true, true, true] },
+  { label: 'Canvas AI', values: [true, true, true] },
+  { label: 'MCP server', values: [true, true, true] },
+  { label: 'Slack bot', icon: 'slack', values: [true, true, true] },
+  { label: 'Integrations', values: ['Up to 5', 'All', 'Custom'] },
+  { label: 'Analytics', values: ['Basic', 'Advanced', 'Advanced'] },
+  { label: 'Support', values: ['Email', 'Priority', 'Dedicated + SLA'] },
+] satisfies ReadonlyArray<FeatureRow>;
+
+function CellValue({ value, muted }: { value: string | true; muted: boolean }) {
+  if (value === true) {
+    return (
+      <CheckIcon
+        size={15}
+        weight="bold"
+        color="currentColor"
+        style={{ opacity: muted ? 0.25 : 0.45 }}
+      />
+    );
+  }
+
   return (
-    <Box
-      className="pricing-card"
+    <Typography
+      variant="body2"
       sx={{
-        p: { xs: 3, md: 4 },
-        border: '1px solid',
-        borderColor: 'grey.900',
-        borderTop: tier.highlighted ? '2px solid' : '1px solid',
-        borderTopColor: tier.highlighted ? 'primary.main' : 'grey.900',
-        bgcolor: 'transparent',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        opacity: tier.comingSoon ? 0.7 : 1,
+        fontSize: '0.8rem',
+        fontWeight: 500,
+        color: muted ? 'text.disabled' : 'text.primary',
       }}
     >
-      {tier.badge && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            right: 24,
-            transform: 'translateY(-50%)',
-            bgcolor: tier.highlighted ? 'primary.main' : 'grey.800',
-            color: tier.highlighted ? 'primary.contrastText' : 'text.secondary',
-            px: 1.5,
-            py: 0.25,
-            fontSize: '0.7rem',
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-          }}
-        >
-          {tier.comingSoon && <ClockIcon size={11} weight="bold" color="currentColor" />}
-          {tier.badge}
-        </Box>
-      )}
+      {value}
+    </Typography>
+  );
+}
 
-      <Typography variant="h6" sx={{ mb: 0.5 }}>
-        {tier.name}
+function FeatureLabel({ row }: { row: FeatureRow }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      {row.icon === 'slack' && <SlackLogo size={14} />}
+      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+        {row.label}
       </Typography>
-
-      <Box sx={{ mb: 1.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: 700,
-              fontSize: { xs: '2rem', md: '2.5rem' },
-            }}
-          >
-            {tier.price}
-          </Typography>
-          {tier.priceSuffix && (
-            <Typography variant="body2" color="text.secondary">
-              {tier.priceSuffix}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ flex: 1, lineHeight: 1.6, fontSize: '0.85rem', mb: 3 }}
-      >
-        {tier.description}
-      </Typography>
-
-      <Link to="/auth/signup" style={{ textDecoration: 'none', width: '100%' }}>
-        <Button
-          variant={tier.ctaVariant}
-          size="large"
-          fullWidth
-          endIcon={<ArrowRightIcon size={16} weight="light" color="currentColor" />}
-          disabled={tier.comingSoon}
-          sx={{ mb: 3, py: 1.25 }}
-        >
-          {tier.cta}
-        </Button>
-      </Link>
-
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-        {tier.features.map((feature) => (
-          <Box key={feature.label} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {feature.value === false ? (
-              <MinusIcon size={16} weight="light" color="currentColor" style={{ opacity: 0.3 }} />
-            ) : (
-              <CheckIcon size={16} weight="light" color="currentColor" style={{ opacity: 0.6 }} />
-            )}
-            <Typography
-              variant="body2"
-              sx={{
-                fontSize: '0.82rem',
-                color: feature.value === false ? 'text.disabled' : 'text.secondary',
-              }}
-            >
-              {feature.label}
-              {typeof feature.value === 'string' && (
-                <Box component="span" sx={{ color: 'text.primary', fontWeight: 500, ml: 0.5 }}>
-                  {feature.value}
-                </Box>
-              )}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
     </Box>
   );
 }
 
 export function PricingSection() {
+  const theme = useTheme();
   const sectionRef = useRef<HTMLDivElement>(null);
+  const ct = theme.palette.text.primary;
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -233,11 +124,7 @@ export function PricingSection() {
       });
 
       tl.from('.pricing-title', { y: 30, opacity: 0, duration: 0.6 });
-      tl.from(
-        '.pricing-card',
-        { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
-        '-=0.3'
-      );
+      tl.from('.pricing-table', { y: 30, opacity: 0, duration: 0.5, ease: 'power2.out' }, '-=0.3');
       tl.from('.pricing-note', { opacity: 0, duration: 0.3 }, '-=0.1');
     }, sectionRef);
 
@@ -248,20 +135,13 @@ export function PricingSection() {
     <Box
       ref={sectionRef}
       id="pricing"
-      sx={{
-        py: { xs: 10, md: 14 },
-        bgcolor: 'background.default',
-      }}
+      sx={{ py: { xs: 10, md: 14 }, bgcolor: 'background.default' }}
     >
       <Container maxWidth="lg">
         <Typography
           className="pricing-title"
           variant="h2"
-          sx={{
-            textAlign: 'center',
-            mb: 1.5,
-            fontSize: { xs: '2rem', md: '2.5rem' },
-          }}
+          sx={{ textAlign: 'center', mb: 1.5, fontSize: { xs: '2rem', md: '2.5rem' } }}
         >
           Simple pricing, no surprises.
         </Typography>
@@ -274,31 +154,264 @@ export function PricingSection() {
           Pro is free while we&apos;re in beta. No credit card needed.
         </Typography>
 
-        {/* Pricing cards grid */}
+        {/* ── Mobile: stacked cards ── */}
         <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-            gap: { xs: 3, md: 2.5 },
-            maxWidth: 1000,
-            mx: 'auto',
-            mb: { xs: 4, md: 5 },
-          }}
+          className="pricing-table"
+          sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 3, mb: 4 }}
         >
-          {TIERS.map((tier) => (
-            <PricingCard key={tier.name} tier={tier} />
+          {TIERS.map((tier, tierIdx) => (
+            <Box
+              key={tier.name}
+              sx={{
+                border: '1px solid',
+                borderColor: 'grey.900',
+                borderTop: tier.highlighted ? '2px solid' : '1px solid',
+                borderTopColor: tier.highlighted ? 'primary.main' : 'grey.900',
+                opacity: tier.comingSoon ? 0.6 : 1,
+              }}
+            >
+              {/* Card header */}
+              <Box sx={{ p: 3, pb: 2.5 }}>
+                {tier.highlighted && (
+                  <Typography
+                    sx={{
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      color: 'primary.main',
+                      mb: 1,
+                    }}
+                  >
+                    Free during beta
+                  </Typography>
+                )}
+                {tier.comingSoon && (
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      color: 'text.secondary',
+                      mb: 1,
+                    }}
+                  >
+                    <ClockIcon size={10} weight="bold" color="currentColor" />
+                    Coming soon
+                  </Box>
+                )}
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  {tier.name}
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 700, fontSize: '2rem', mt: 0.5, mb: 1 }}>
+                  {tier.price}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 2 }}>
+                  {tier.description}
+                </Typography>
+                <Link to="/auth/signup" style={{ textDecoration: 'none' }}>
+                  <Button
+                    variant={tier.ctaVariant}
+                    size="large"
+                    fullWidth
+                    endIcon={<ArrowRightIcon size={14} weight="light" color="currentColor" />}
+                    disabled={tier.comingSoon}
+                    sx={{ py: 1.25 }}
+                  >
+                    {tier.cta}
+                  </Button>
+                </Link>
+              </Box>
+              {/* Features list */}
+              <Box sx={{ px: 3, pb: 3 }}>
+                {FEATURES.map((row) => (
+                  <Box
+                    key={row.label}
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      py: 1,
+                      borderTop: '1px solid',
+                      borderColor: 'grey.900',
+                    }}
+                  >
+                    <FeatureLabel row={row} />
+                    <CellValue value={row.values[tierIdx]} muted={tier.comingSoon} />
+                  </Box>
+                ))}
+              </Box>
+            </Box>
           ))}
         </Box>
 
-        {/* Extra API calls note */}
+        {/* ── Desktop: comparison table ── */}
+        <Box
+          className="pricing-table"
+          sx={{
+            display: { xs: 'none', md: 'block' },
+            maxWidth: 920,
+            mx: 'auto',
+            mb: 5,
+            border: '1px solid',
+            borderColor: 'grey.900',
+          }}
+        >
+          {/* Header row with pattern background */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '1fr repeat(3, 1fr)',
+              borderBottom: '1px solid',
+              borderColor: 'grey.900',
+              position: 'relative',
+              backgroundImage: `radial-gradient(${alpha(ct, 0.06)} 1px, transparent 1px)`,
+              backgroundSize: '16px 16px',
+            }}
+          >
+            {/* Empty label column — logo/branding */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                px: 3,
+                pb: 3,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontSize: 20, color: 'text.primary' }}>
+                grabdy.
+              </Typography>
+            </Box>
+
+            {/* Tier columns */}
+            {TIERS.map((tier) => (
+              <Box
+                key={tier.name}
+                sx={{
+                  px: 3,
+                  py: 3.5,
+                  borderLeft: '1px solid',
+                  borderColor: 'grey.900',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  opacity: tier.comingSoon ? 0.55 : 1,
+                  ...(tier.highlighted && {
+                    borderTop: '2px solid',
+                    borderTopColor: 'primary.main',
+                    mt: '-1px',
+                  }),
+                }}
+              >
+                {/* Badge area — fixed height so content below aligns */}
+                <Box sx={{ minHeight: 22, mb: 1, display: 'flex', alignItems: 'center' }}>
+                  {tier.highlighted && (
+                    <Typography
+                      sx={{
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        color: 'primary.main',
+                      }}
+                    >
+                      Free during beta
+                    </Typography>
+                  )}
+                  {tier.comingSoon && (
+                    <Box
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        color: 'text.secondary',
+                      }}
+                    >
+                      <ClockIcon size={10} weight="bold" color="currentColor" />
+                      Coming soon
+                    </Box>
+                  )}
+                </Box>
+
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.25 }}>
+                  {tier.name}
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 700, fontSize: '2rem', mb: 1 }}>
+                  {tier.price}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: '0.8rem', lineHeight: 1.5, mb: 2.5, flex: 1 }}
+                >
+                  {tier.description}
+                </Typography>
+                <Link to="/auth/signup" style={{ textDecoration: 'none' }}>
+                  <Button
+                    variant={tier.ctaVariant}
+                    size="medium"
+                    fullWidth
+                    endIcon={<ArrowRightIcon size={14} weight="light" color="currentColor" />}
+                    disabled={tier.comingSoon}
+                    sx={{ py: 1 }}
+                  >
+                    {tier.cta}
+                  </Button>
+                </Link>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Feature rows */}
+          {FEATURES.map((row, rowIdx) => (
+            <Box
+              key={row.label}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '1fr repeat(3, 1fr)',
+                alignItems: 'center',
+                transition: 'background-color 0.15s',
+                '&:hover': { bgcolor: 'action.hover' },
+                ...(rowIdx > 0 && {
+                  borderTop: '1px solid',
+                  borderColor: 'grey.900',
+                }),
+              }}
+            >
+              <Box sx={{ px: 3, py: 1.25 }}>
+                <FeatureLabel row={row} />
+              </Box>
+
+              {row.values.map((value, idx) => (
+                <Box
+                  key={TIERS[idx].name}
+                  sx={{
+                    px: 3,
+                    py: 1.25,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderLeft: '1px solid',
+                    borderColor: 'grey.900',
+                  }}
+                >
+                  <CellValue value={value} muted={TIERS[idx].comingSoon} />
+                </Box>
+              ))}
+            </Box>
+          ))}
+        </Box>
+
         <Typography
           className="pricing-note"
-          sx={{
-            textAlign: 'center',
-            fontSize: '0.8rem',
-            color: 'text.secondary',
-            mb: 1,
-          }}
+          sx={{ textAlign: 'center', fontSize: '0.8rem', color: 'text.secondary', mb: 1 }}
         >
           Need more API calls? Additional requests billed at usage-based rates.
         </Typography>
