@@ -73,17 +73,11 @@ export class EmailService {
     await this.sendEmail(to, 'Your password reset code', html, 'PasswordResetEmail', props);
   }
 
-  async sendOrgInviteEmail(to: string, name: string, orgName: string, token: string) {
+  async sendOrgInviteEmail(to: string, orgName: string, token: string) {
     const setupUrl = authLinks.completeAccount(token);
-    const props = { name, setupUrl };
+    const props = { setupUrl };
     const html = await render(AccountSetupEmail(props));
-    await this.sendEmail(
-      to,
-      `You've been invited to ${orgName}`,
-      html,
-      'AccountSetupEmail',
-      props
-    );
+    await this.sendEmail(to, `You've been invited to ${orgName}`, html, 'AccountSetupEmail', props);
   }
 
   async sendWelcomeEmail(to: string, name: string) {

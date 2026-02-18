@@ -16,7 +16,6 @@ export const Route = createFileRoute('/app')({
   validateSearch: appSearchSchema,
 });
 
-
 function AppPage() {
   const { user, selectedOrgId, isAuthenticated, isAdmin, logout } = useAuth();
   const { preference, setPreference } = useThemeMode();
@@ -34,17 +33,19 @@ function AppPage() {
     return null;
   }
 
-  const initials = user.name
-    ? user.name
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
+  const initials = user.firstName
+    ? `${user.firstName[0]}${user.lastName?.[0] ?? ''}`.toUpperCase()
     : '?';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        bgcolor: 'background.default',
+      }}
+    >
       <ChatPanel
         initialThreadId={thread}
         onThreadChange={(threadId) => {
@@ -93,7 +94,11 @@ function AppPage() {
                 onClick={() => setPreference(isDark ? 'light' : 'dark')}
                 sx={{ color: alpha(ct, 0.35), '&:hover': { color: 'text.primary' } }}
               >
-                {isDark ? <SunIcon size={16} weight="light" color="currentColor" /> : <MoonIcon size={16} weight="light" color="currentColor" />}
+                {isDark ? (
+                  <SunIcon size={16} weight="light" color="currentColor" />
+                ) : (
+                  <MoonIcon size={16} weight="light" color="currentColor" />
+                )}
               </IconButton>
             </Tooltip>
             <Tooltip title="Sign out">

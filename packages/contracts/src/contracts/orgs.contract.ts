@@ -19,14 +19,14 @@ const memberSchema = z.object({
   orgId: dbIdSchema('Org'),
   roles: z.array(z.string()),
   email: z.string().optional(),
-  name: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   createdAt: z.string(),
 });
 
 const pendingInvitationSchema = z.object({
   id: z.string(),
   email: z.string(),
-  name: z.string(),
   roles: z.array(z.string()),
   inviteLink: z.string(),
   expiresAt: z.string().nullable(),
@@ -70,7 +70,6 @@ export const orgsContract = c.router(
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
       body: z.object({
         email: z.string().email('Please enter a valid email'),
-        name: z.string().min(1, 'Name is required'),
         roles: z.array(orgRoleEnum).min(1, 'At least one role is required'),
       }),
       responses: {

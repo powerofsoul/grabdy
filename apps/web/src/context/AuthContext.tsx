@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
-import { type DbId,dbIdSchema } from '@grabdy/common';
+import { type DbId, dbIdSchema } from '@grabdy/common';
 
 import { api } from '../lib/api';
 import { STORAGE_KEYS } from '../lib/storage-keys';
@@ -15,7 +15,8 @@ interface OrgMembership {
 interface User {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   status: string;
   memberships: OrgMembership[];
 }
@@ -29,7 +30,7 @@ interface AuthContextType {
   isOwner: boolean;
   selectOrg: (orgId: DbId<'Org'>) => void;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   googleAuth: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -102,8 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw new Error('Login failed');
   };
 
-  const signup = async (email: string, password: string, name: string) => {
-    const res = await api.auth.signup({ body: { email, password, name } });
+  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
+    const res = await api.auth.signup({ body: { email, password, firstName, lastName } });
 
     if (res.status === 200 && res.body.success) {
       setUser(res.body.data);

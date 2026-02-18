@@ -39,7 +39,6 @@ export function InviteMemberDrawer({ onClose, onInvited }: InviteMemberDrawerPro
     mode: 'onBlur',
     defaultValues: {
       email: '',
-      name: '',
       roles: ['MEMBER'],
     },
   });
@@ -52,7 +51,6 @@ export function InviteMemberDrawer({ onClose, onInvited }: InviteMemberDrawerPro
         params: { orgId: selectedOrgId },
         body: {
           email: data.email.trim(),
-          name: data.name.trim(),
           roles: data.roles,
         },
       });
@@ -71,15 +69,12 @@ export function InviteMemberDrawer({ onClose, onInvited }: InviteMemberDrawerPro
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      <TextField
-        {...register('name')}
-        label="Name"
-        fullWidth
-        error={!!errors.name}
-        helperText={errors.name?.message}
-        placeholder="John Doe"
-      />
+    <Box
+      component="form"
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}
+    >
       <TextField
         {...register('email')}
         label="Email"
@@ -107,12 +102,7 @@ export function InviteMemberDrawer({ onClose, onInvited }: InviteMemberDrawerPro
           </FormControl>
         )}
       />
-      <Button
-        type="submit"
-        variant="contained"
-        disabled={isSubmitting}
-        sx={{ mt: 1 }}
-      >
+      <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ mt: 1 }}>
         {isSubmitting ? 'Sending...' : 'Send Invitation'}
       </Button>
     </Box>

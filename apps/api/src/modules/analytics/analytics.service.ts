@@ -150,15 +150,19 @@ export class AnalyticsService {
       .leftJoin('auth.users', 'auth.users.id', 'analytics.ai_usage_logs.user_id')
       .select([
         'analytics.ai_usage_logs.user_id',
-        sql<string>`coalesce(auth.users.name, 'System')`.as('user_name'),
+        sql<string>`coalesce(trim(auth.users.first_name || ' ' || auth.users.last_name), 'System')`.as(
+          'user_name'
+        ),
         sql<number>`count(*)::int`.as('requests'),
         sql<number>`coalesce(sum(analytics.ai_usage_logs.input_tokens), 0)::int`.as('input_tokens'),
-        sql<number>`coalesce(sum(analytics.ai_usage_logs.output_tokens), 0)::int`.as('output_tokens'),
+        sql<number>`coalesce(sum(analytics.ai_usage_logs.output_tokens), 0)::int`.as(
+          'output_tokens'
+        ),
         sql<number>`coalesce(sum(analytics.ai_usage_logs.total_tokens), 0)::int`.as('total_tokens'),
       ])
       .where('analytics.ai_usage_logs.org_id', '=', orgId)
       .where('analytics.ai_usage_logs.created_at', '>=', since)
-      .groupBy(['analytics.ai_usage_logs.user_id', 'auth.users.name'])
+      .groupBy(['analytics.ai_usage_logs.user_id', 'auth.users.first_name', 'auth.users.last_name'])
       .orderBy(sql`sum(analytics.ai_usage_logs.total_tokens)`, 'desc')
       .execute();
 

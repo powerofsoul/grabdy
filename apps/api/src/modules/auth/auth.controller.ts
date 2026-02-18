@@ -39,7 +39,8 @@ export class AuthController {
           const { user, token } = await this.authService.register(
             body.email,
             body.password,
-            body.name
+            body.firstName,
+            body.lastName
           );
           res.cookie('auth_token', token, this.cookieOptions);
           return {
@@ -149,7 +150,12 @@ export class AuthController {
       },
       completeAccount: async ({ body }) => {
         try {
-          const { user, token } = await this.authService.completeAccount(body.token, body.password);
+          const { user, token } = await this.authService.completeAccount(
+            body.token,
+            body.password,
+            body.firstName,
+            body.lastName
+          );
           res.cookie('auth_token', token, this.cookieOptions);
           return {
             status: 200 as const,
@@ -161,6 +167,40 @@ export class AuthController {
             body: {
               success: false as const,
               error: error instanceof Error ? error.message : 'Failed to complete account setup',
+            },
+          };
+        }
+      },
+      updateProfile: async ({ body }) => {
+        const token = req.cookies?.['auth_token'];
+        if (!token) {
+          return {
+            status: 400 as const,
+            body: { success: false as const, error: 'Not authenticated' },
+          };
+        }
+
+        try {
+          const decoded = jwt.verify(token, this.jwtSecret);
+          const payload = parseJwtPayload(decoded);
+          if (!payload) {
+            return {
+              status: 400 as const,
+              body: { success: false as const, error: 'Invalid token payload' },
+            };
+          }
+          const result = await this.authService.updateProfile(payload.sub, body);
+          res.cookie('auth_token', result.token, this.cookieOptions);
+          return {
+            status: 200 as const,
+            body: { success: true as const, data: result.user },
+          };
+        } catch (error) {
+          return {
+            status: 400 as const,
+            body: {
+              success: false as const,
+              error: error instanceof Error ? error.message : 'Failed to update profile',
             },
           };
         }

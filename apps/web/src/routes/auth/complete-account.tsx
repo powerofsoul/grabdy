@@ -24,8 +24,12 @@ interface SearchParams {
   token?: string;
 }
 
-const passwordSchema = contract.auth.completeAccount.body.pick({ password: true });
-type PasswordFormData = z.infer<typeof passwordSchema>;
+const formSchema = contract.auth.completeAccount.body.pick({
+  password: true,
+  firstName: true,
+  lastName: true,
+});
+type FormData = z.infer<typeof formSchema>;
 
 export const Route = createFileRoute('/auth/complete-account')({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
@@ -42,7 +46,6 @@ function CompleteAccountPage() {
   const [isVerifying, setIsVerifying] = useState(true);
   const [inviteData, setInviteData] = useState<{
     email: string;
-    name: string;
     orgName: string;
   } | null>(null);
 
@@ -51,8 +54,8 @@ function CompleteAccountPage() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<PasswordFormData>({
-    resolver: zodResolver(passwordSchema),
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     mode: 'onBlur',
   });
 
@@ -81,12 +84,17 @@ function CompleteAccountPage() {
     verify();
   }, [token, setError]);
 
-  const onSubmit = async (data: PasswordFormData) => {
+  const onSubmit = async (data: FormData) => {
     if (!token) return;
 
     try {
       const res = await api.auth.completeAccount({
-        body: { token, password: data.password },
+        body: {
+          token,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+        },
       });
 
       if (res.status === 200) {
@@ -95,7 +103,9 @@ function CompleteAccountPage() {
         setError('root', { message: res.body.error });
       }
     } catch (err) {
-      setError('root', { message: err instanceof Error ? err.message : 'Failed to complete account setup' });
+      setError('root', {
+        message: err instanceof Error ? err.message : 'Failed to complete account setup',
+      });
     }
   };
 
@@ -112,12 +122,10 @@ function CompleteAccountPage() {
   if (!inviteData) {
     return (
       <AuthLayout title="Invalid Invitation" showBack={false}>
-        <Alert severity="error">{errors.root?.message ?? 'This invitation link is invalid or has expired.'}</Alert>
-        <Button
-          variant="text"
-          onClick={() => navigate({ to: '/auth/login' })}
-          sx={{ mt: 2 }}
-        >
+        <Alert severity="error">
+          {errors.root?.message ?? 'This invitation link is invalid or has expired.'}
+        </Alert>
+        <Button variant="text" onClick={() => navigate({ to: '/auth/login' })} sx={{ mt: 2 }}>
           Go to login
         </Button>
       </AuthLayout>
@@ -143,21 +151,26 @@ function CompleteAccountPage() {
           </Alert>
         )}
 
-        <TextField
-          label="Your Name"
-          fullWidth
-          value={inviteData.name}
-          disabled
-          sx={{ mb: 2 }}
-        />
+        <TextField label="Email" fullWidth value={inviteData.email} disabled sx={{ mb: 2 }} />
 
-        <TextField
-          label="Email"
-          fullWidth
-          value={inviteData.email}
-          disabled
-          sx={{ mb: 2 }}
-        />
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <TextField
+            {...register('firstName')}
+            label="First Name"
+            fullWidth
+            autoComplete="given-name"
+            error={!!errors.firstName}
+            helperText={errors.firstName?.message}
+          />
+          <TextField
+            {...register('lastName')}
+            label="Last Name"
+            fullWidth
+            autoComplete="family-name"
+            error={!!errors.lastName}
+            helperText={errors.lastName?.message}
+          />
+        </Box>
 
         <TextField
           {...register('password')}
@@ -184,7 +197,11 @@ function CompleteAccountPage() {
                   tabIndex={-1}
                   sx={{ color: 'text.disabled' }}
                 >
-                  {showPassword ? <EyeSlashIcon size={20} weight="light" color="currentColor" /> : <EyeIcon size={20} weight="light" color="currentColor" />}
+                  {showPassword ? (
+                    <EyeSlashIcon size={20} weight="light" color="currentColor" />
+                  ) : (
+                    <EyeIcon size={20} weight="light" color="currentColor" />
+                  )}
                 </IconButton>
               </InputAdornment>
             ),

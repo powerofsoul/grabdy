@@ -19,7 +19,8 @@ export interface JwtMembership {
 export interface JwtPayloadShape {
   sub: DbId<'User'>;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   memberships: JwtMembership[];
   iat: number;
 }
@@ -31,7 +32,8 @@ export interface JwtPayloadShape {
 export const jwtPayloadSchema: z.ZodType<JwtPayloadShape> = z.object({
   sub: dbIdSchema('User'),
   email: z.string(),
-  name: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
   memberships: z.array(
     z.object({
       id: dbIdSchema('OrgMembership'),

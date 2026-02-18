@@ -12,6 +12,12 @@ import { DashboardPage } from '@/components/ui/DashboardPage';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
+const profileSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+});
+type ProfileFormData = z.infer<typeof profileSchema>;
+
 const settingsSchema = contract.orgs.update.body.required();
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
@@ -20,8 +26,18 @@ export const Route = createFileRoute('/dashboard/settings')({
 });
 
 function SettingsPage() {
-  const { selectedOrgId } = useAuth();
+  const { user, selectedOrgId, refetch } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+
+  const {
+    register: registerProfile,
+    handleSubmit: handleSubmitProfile,
+    formState: { errors: profileErrors, isSubmitting: isSubmittingProfile },
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    mode: 'onBlur',
+    values: user ? { firstName: user.firstName, lastName: user.lastName } : undefined,
+  });
 
   const {
     register,
@@ -52,6 +68,22 @@ function SettingsPage() {
     fetchData();
   }, [selectedOrgId, reset]);
 
+  const onProfileSubmit = async (data: ProfileFormData) => {
+    try {
+      const res = await api.auth.updateProfile({
+        body: { firstName: data.firstName.trim(), lastName: data.lastName.trim() },
+      });
+      if (res.status === 200) {
+        await refetch();
+        toast.success('Profile updated');
+      } else if (res.status === 400) {
+        toast.error(res.body.error);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update profile');
+    }
+  };
+
   const onSubmit = async (data: SettingsFormData) => {
     if (!selectedOrgId) return;
 
@@ -72,6 +104,36 @@ function SettingsPage() {
 
   return (
     <DashboardPage title="Settings" maxWidth={700}>
+      <Box
+        component="form"
+        onSubmit={handleSubmitProfile(onProfileSubmit)}
+        noValidate
+        sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 6 }}
+      >
+        <Typography variant="subtitle1">Profile</Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField
+            {...registerProfile('firstName')}
+            label="First Name"
+            error={!!profileErrors.firstName}
+            helperText={profileErrors.firstName?.message}
+            fullWidth
+          />
+          <TextField
+            {...registerProfile('lastName')}
+            label="Last Name"
+            error={!!profileErrors.lastName}
+            helperText={profileErrors.lastName?.message}
+            fullWidth
+          />
+        </Box>
+        <Box>
+          <Button type="submit" variant="contained" disabled={isSubmittingProfile}>
+            {isSubmittingProfile ? 'Saving...' : 'Save Profile'}
+          </Button>
+        </Box>
+      </Box>
+
       <Box
         component="form"
         onSubmit={handleSubmit(onSubmit)}

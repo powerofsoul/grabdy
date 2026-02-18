@@ -70,7 +70,8 @@ export interface OrgMembershipData {
 export interface UserData {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   status: UserStatus;
   memberships: OrgMembershipData[];
 }
@@ -115,13 +116,15 @@ export class AuthService {
   private generateToken(user: {
     id: DbId<'User'>;
     email: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     memberships: JwtMembership[];
   }): string {
     const payload: Omit<JwtPayload, 'iat'> = {
       sub: user.id,
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       memberships: user.memberships,
     };
 
@@ -139,7 +142,7 @@ export class AuthService {
   async getCurrentUser(userId: DbId<'User'>): Promise<UserData | null> {
     const user = await this.db.kysely
       .selectFrom('auth.users')
-      .select(['id', 'email', 'name', 'status'])
+      .select(['id', 'email', 'first_name', 'last_name', 'status'])
       .where('id', '=', userId)
       .executeTakeFirst();
 
@@ -150,7 +153,8 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
-      name: user.name,
+      firstName: user.first_name,
+      lastName: user.last_name,
       status: user.status,
       memberships,
     };
@@ -159,7 +163,8 @@ export class AuthService {
   async register(
     email: string,
     password: string,
-    name: string
+    firstName: string,
+    lastName: string
   ): Promise<{ user: UserData; token: string }> {
     const normalizedEmail = email.toLowerCase();
 
@@ -183,7 +188,8 @@ export class AuthService {
         .values({
           id: packId('User', GLOBAL_ORG),
           email: normalizedEmail,
-          name,
+          first_name: firstName,
+          last_name: lastName,
           password_hash: passwordHash,
           email_verified: false,
           updated_at: new Date(),
@@ -195,7 +201,7 @@ export class AuthService {
       const newOrg = await trx
         .insertInto('org.orgs')
         .values({
-          name: `${name}'s Organization`,
+          name: `${firstName}'s Organization`,
           updated_at: new Date(),
         })
         .returningAll()
@@ -219,18 +225,20 @@ export class AuthService {
     const jwtToken = this.generateToken({
       id: result.user.id,
       email: result.user.email,
-      name: result.user.name,
+      firstName: result.user.first_name,
+      lastName: result.user.last_name,
       memberships: toJwtMemberships(memberships),
     });
 
-    await this.emailService.sendWelcomeEmail(result.user.email, result.user.name);
-    this.notificationService.notifyNewSignup(result.user.email, result.user.name, 'email');
+    await this.emailService.sendWelcomeEmail(result.user.email, result.user.first_name);
+    this.notificationService.notifyNewSignup(result.user.email, result.user.first_name, 'email');
 
     return {
       user: {
         id: result.user.id,
         email: result.user.email,
-        name: result.user.name,
+        firstName: result.user.first_name,
+        lastName: result.user.last_name,
         status: result.user.status,
         memberships,
       },
@@ -259,12 +267,13 @@ export class AuthService {
       throw new BadRequestException('Please use your work email');
     }
 
-    const name = payload.name || email.split('@')[0];
+    const firstName = payload.given_name || email.split('@')[0];
+    const lastName = payload.family_name || '';
 
     // 1. Look up by google_id (stable across email changes)
     const byGoogleId = await this.db.kysely
       .selectFrom('auth.users')
-      .select(['id', 'email', 'name', 'status'])
+      .select(['id', 'email', 'first_name', 'last_name', 'status'])
       .where('google_id', '=', googleId)
       .executeTakeFirst();
 
@@ -273,7 +282,8 @@ export class AuthService {
       const token = this.generateToken({
         id: byGoogleId.id,
         email: byGoogleId.email,
-        name: byGoogleId.name,
+        firstName: byGoogleId.first_name,
+        lastName: byGoogleId.last_name,
         memberships: toJwtMemberships(memberships),
       });
 
@@ -281,7 +291,8 @@ export class AuthService {
         user: {
           id: byGoogleId.id,
           email: byGoogleId.email,
-          name: byGoogleId.name,
+          firstName: byGoogleId.first_name,
+          lastName: byGoogleId.last_name,
           status: byGoogleId.status,
           memberships,
         },
@@ -292,7 +303,7 @@ export class AuthService {
     // 2. Fall back to email match — link google_id to existing account
     const byEmail = await this.db.kysely
       .selectFrom('auth.users')
-      .select(['id', 'email', 'name', 'status'])
+      .select(['id', 'email', 'first_name', 'last_name', 'status'])
       .where('email', '=', email)
       .executeTakeFirst();
 
@@ -307,7 +318,8 @@ export class AuthService {
       const token = this.generateToken({
         id: byEmail.id,
         email: byEmail.email,
-        name: byEmail.name,
+        firstName: byEmail.first_name,
+        lastName: byEmail.last_name,
         memberships: toJwtMemberships(memberships),
       });
 
@@ -315,7 +327,8 @@ export class AuthService {
         user: {
           id: byEmail.id,
           email: byEmail.email,
-          name: byEmail.name,
+          firstName: byEmail.first_name,
+          lastName: byEmail.last_name,
           status: byEmail.status,
           memberships,
         },
@@ -330,7 +343,8 @@ export class AuthService {
         .values({
           id: packId('User', GLOBAL_ORG),
           email,
-          name,
+          first_name: firstName,
+          last_name: lastName,
           password_hash: null,
           google_id: googleId,
           email_verified: true,
@@ -342,7 +356,7 @@ export class AuthService {
       const newOrg = await trx
         .insertInto('org.orgs')
         .values({
-          name: `${name}'s Organization`,
+          name: `${firstName}'s Organization`,
           updated_at: new Date(),
         })
         .returningAll()
@@ -365,18 +379,20 @@ export class AuthService {
     const jwtToken = this.generateToken({
       id: result.user.id,
       email: result.user.email,
-      name: result.user.name,
+      firstName: result.user.first_name,
+      lastName: result.user.last_name,
       memberships: toJwtMemberships(memberships),
     });
 
-    await this.emailService.sendWelcomeEmail(result.user.email, result.user.name);
-    this.notificationService.notifyNewSignup(result.user.email, result.user.name, 'google');
+    await this.emailService.sendWelcomeEmail(result.user.email, result.user.first_name);
+    this.notificationService.notifyNewSignup(result.user.email, result.user.first_name, 'google');
 
     return {
       user: {
         id: result.user.id,
         email: result.user.email,
-        name: result.user.name,
+        firstName: result.user.first_name,
+        lastName: result.user.last_name,
         status: result.user.status,
         memberships,
       },
@@ -387,7 +403,7 @@ export class AuthService {
   async login(email: string, password: string): Promise<{ user: UserData; token: string }> {
     const user = await this.db.kysely
       .selectFrom('auth.users')
-      .select(['id', 'email', 'name', 'status', 'password_hash'])
+      .select(['id', 'email', 'first_name', 'last_name', 'status', 'password_hash'])
       .where('email', '=', email.toLowerCase())
       .executeTakeFirst();
 
@@ -404,7 +420,8 @@ export class AuthService {
     const token = this.generateToken({
       id: user.id,
       email: user.email,
-      name: user.name,
+      firstName: user.first_name,
+      lastName: user.last_name,
       memberships: toJwtMemberships(memberships),
     });
 
@@ -412,7 +429,8 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        firstName: user.first_name,
+        lastName: user.last_name,
         status: user.status,
         memberships,
       },
@@ -423,7 +441,7 @@ export class AuthService {
   async forgotPassword(email: string): Promise<void> {
     const user = await this.db.kysely
       .selectFrom('auth.users')
-      .select(['id', 'name'])
+      .select(['id', 'first_name'])
       .where('email', '=', email.toLowerCase())
       .executeTakeFirst();
 
@@ -453,7 +471,7 @@ export class AuthService {
       })
       .execute();
 
-    await this.emailService.sendPasswordResetOTP(email, user.name, otp);
+    await this.emailService.sendPasswordResetOTP(email, user.first_name, otp);
   }
 
   async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
@@ -498,13 +516,12 @@ export class AuthService {
     });
   }
 
-  async verifySetupToken(token: string): Promise<{ email: string; name: string; orgName: string }> {
+  async verifySetupToken(token: string): Promise<{ email: string; orgName: string }> {
     const invitation = await this.db.kysely
       .selectFrom('org.org_invitations')
       .innerJoin('org.orgs', 'org.orgs.id', 'org.org_invitations.org_id')
       .select([
         'org.org_invitations.email',
-        'org.org_invitations.name',
         'org.org_invitations.expires_at',
         'org.orgs.name as org_name',
       ])
@@ -521,14 +538,15 @@ export class AuthService {
 
     return {
       email: invitation.email,
-      name: invitation.name,
       orgName: invitation.org_name,
     };
   }
 
   async completeAccount(
     token: string,
-    password: string
+    password: string,
+    firstName: string,
+    lastName: string
   ): Promise<{ user: UserData; token: string }> {
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
@@ -552,7 +570,8 @@ export class AuthService {
         .values({
           id: packId('User', GLOBAL_ORG),
           email: invitation.email,
-          name: invitation.name,
+          first_name: firstName,
+          last_name: lastName,
           password_hash: passwordHash,
           email_verified: true,
           updated_at: new Date(),
@@ -579,7 +598,8 @@ export class AuthService {
     const jwtToken = this.generateToken({
       id: result.id,
       email: result.email,
-      name: result.name,
+      firstName: result.first_name,
+      lastName: result.last_name,
       memberships: toJwtMemberships(memberships),
     });
 
@@ -587,7 +607,8 @@ export class AuthService {
       user: {
         id: result.id,
         email: result.email,
-        name: result.name,
+        firstName: result.first_name,
+        lastName: result.last_name,
         status: result.status,
         memberships,
       },
@@ -595,12 +616,46 @@ export class AuthService {
     };
   }
 
+  async updateProfile(
+    userId: DbId<'User'>,
+    data: { firstName?: string; lastName?: string }
+  ): Promise<{ user: UserData; token: string }> {
+    let query = this.db.kysely
+      .updateTable('auth.users')
+      .set('updated_at', new Date())
+      .where('id', '=', userId);
+
+    if (data.firstName !== undefined) {
+      query = query.set('first_name', data.firstName);
+    }
+    if (data.lastName !== undefined) {
+      query = query.set('last_name', data.lastName);
+    }
+
+    await query.execute();
+
+    const user = await this.getCurrentUser(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const token = this.generateToken({
+      id: userId,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      memberships: toJwtMemberships(user.memberships),
+    });
+
+    return { user, token };
+  }
+
   async refreshToken(
     currentPayload: JwtPayload
   ): Promise<{ user: UserData; token: string } | null> {
     const user = await this.db.kysely
       .selectFrom('auth.users')
-      .select(['id', 'email', 'name', 'status'])
+      .select(['id', 'email', 'first_name', 'last_name', 'status'])
       .where('id', '=', currentPayload.sub)
       .executeTakeFirst();
 
@@ -612,7 +667,8 @@ export class AuthService {
     const token = this.generateToken({
       id: user.id,
       email: user.email,
-      name: user.name,
+      firstName: user.first_name,
+      lastName: user.last_name,
       memberships: jwtMemberships,
     });
 
@@ -620,7 +676,8 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        firstName: user.first_name,
+        lastName: user.last_name,
         status: user.status,
         memberships,
       },

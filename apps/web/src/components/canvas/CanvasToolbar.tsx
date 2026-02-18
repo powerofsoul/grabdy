@@ -46,7 +46,9 @@ export function CanvasToolbar({ onStartPlacement }: CanvasToolbarProps) {
         component: { id: componentId, ...template },
         sources: [],
         metadata: {
-          createdBy: user ? { userId: user.id, name: user.name } : 'ai',
+          createdBy: user
+            ? { userId: user.id, name: `${user.firstName} ${user.lastName}`.trim() }
+            : 'ai',
           locked: false,
           tags: [],
         },

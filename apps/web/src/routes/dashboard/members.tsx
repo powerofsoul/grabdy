@@ -31,14 +31,14 @@ interface Member {
   orgId: string;
   roles: string[];
   email?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   createdAt: string;
 }
 
 interface PendingInvitation {
   id: string;
   email: string;
-  name: string;
   roles: string[];
   inviteLink: string;
   expiresAt: string | null;
@@ -70,7 +70,9 @@ function MembersPage() {
       }
 
       if (isOwner) {
-        const invitationsRes = await api.orgs.listPendingInvitations({ params: { orgId: selectedOrgId } });
+        const invitationsRes = await api.orgs.listPendingInvitations({
+          params: { orgId: selectedOrgId },
+        });
         if (invitationsRes.status === 200) {
           setInvitations(invitationsRes.body.data);
         }
@@ -151,10 +153,9 @@ function MembersPage() {
   };
 
   const openInviteDrawer = () => {
-    pushDrawer(
-      (onClose) => <InviteMemberDrawer onClose={onClose} onInvited={fetchData} />,
-      { title: 'Invite Member' },
-    );
+    pushDrawer((onClose) => <InviteMemberDrawer onClose={onClose} onInvited={fetchData} />, {
+      title: 'Invite Member',
+    });
   };
 
   if (isLoading) {
@@ -172,13 +173,16 @@ function MembersPage() {
       title="Members"
       actions={
         isOwner ? (
-          <Button variant="contained" startIcon={<PlusIcon size={18} weight="light" color="currentColor" />} onClick={openInviteDrawer}>
+          <Button
+            variant="contained"
+            startIcon={<PlusIcon size={18} weight="light" color="currentColor" />}
+            onClick={openInviteDrawer}
+          >
             Invite Member
           </Button>
         ) : undefined
       }
     >
-
       <MainTable
         data={members}
         headerNames={{
@@ -189,13 +193,13 @@ function MembersPage() {
           actions: '',
         }}
         columnWidths={{ actions: 80 }}
-        rowTitle={(m) => m.name ?? 'Unknown'}
+        rowTitle={(m) => `${m.firstName ?? ''} ${m.lastName ?? ''}`.trim() || 'Unknown'}
         keyExtractor={(m) => m.id}
         renderItems={{
           name: (m) => (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="body2" fontWeight={500}>
-                {m.name ?? 'Unknown'}
+                {`${m.firstName ?? ''} ${m.lastName ?? ''}`.trim() || 'Unknown'}
               </Typography>
               {isCurrentUser(m) && (
                 <Chip label="You" size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
@@ -280,17 +284,15 @@ function MembersPage() {
           <MainTable
             data={invitations}
             headerNames={{
-              name: 'Name',
               email: 'Email',
               role: 'Role',
               expires: 'Expires',
               actions: '',
             }}
             columnWidths={{ actions: 120 }}
-            rowTitle={(inv) => inv.name}
+            rowTitle={(inv) => inv.email}
             keyExtractor={(inv) => inv.id}
             renderItems={{
-              name: (inv) => inv.name,
               email: (inv) => (
                 <Typography variant="body2" color="text.secondary">
                   {inv.email}
@@ -353,7 +355,7 @@ function MembersPage() {
       <ConfirmDialog
         open={!!removeTarget}
         title="Remove Member"
-        message={`Are you sure you want to remove ${removeTarget?.name ?? removeTarget?.email ?? 'this member'} from the organization?`}
+        message={`Are you sure you want to remove ${removeTarget?.firstName ? `${removeTarget.firstName} ${removeTarget.lastName ?? ''}`.trim() : (removeTarget?.email ?? 'this member')} from the organization?`}
         confirmLabel="Remove"
         onConfirm={handleRemoveMember}
         onCancel={() => setRemoveTarget(null)}

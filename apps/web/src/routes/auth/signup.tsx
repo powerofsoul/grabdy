@@ -24,7 +24,8 @@ import { useAuth } from '@/context/AuthContext';
 
 const signupSchema = z
   .object({
-    name: z.string().min(1, 'Name is required'),
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
     email: workEmailSchema,
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
@@ -81,7 +82,7 @@ function SignupPage() {
     setServerError('');
     try {
       setAuthInProgress(true);
-      await signup(data.email, data.password, data.name);
+      await signup(data.email, data.password, data.firstName, data.lastName);
     } catch (err) {
       setAuthInProgress(false);
       setServerError(err instanceof Error ? err.message : 'Signup failed');
@@ -132,24 +133,35 @@ function SignupPage() {
           </Alert>
         )}
 
-        <TextField
-          {...register('name')}
-          label="Name"
-          type="text"
-          placeholder="Your name"
-          fullWidth
-          autoComplete="name"
-          error={!!errors.name}
-          helperText={errors.name?.message}
-          sx={{ mb: 2 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
-                <UserIcon size={20} weight="light" color="currentColor" />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <TextField
+            {...register('firstName')}
+            label="First Name"
+            type="text"
+            placeholder="First name"
+            fullWidth
+            autoComplete="given-name"
+            error={!!errors.firstName}
+            helperText={errors.firstName?.message}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
+                  <UserIcon size={20} weight="light" color="currentColor" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            {...register('lastName')}
+            label="Last Name"
+            type="text"
+            placeholder="Last name"
+            fullWidth
+            autoComplete="family-name"
+            error={!!errors.lastName}
+            helperText={errors.lastName?.message}
+          />
+        </Box>
 
         <TextField
           {...register('email')}

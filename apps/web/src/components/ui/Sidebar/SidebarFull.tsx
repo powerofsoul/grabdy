@@ -192,13 +192,8 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
 
-  const initials = user?.name
-    ? user.name
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
+  const initials = user?.firstName
+    ? `${user.firstName[0]}${user.lastName?.[0] ?? ''}`.toUpperCase()
     : '?';
 
   return (
@@ -414,7 +409,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 sx={{ fontSize: 13, fontWeight: 500, color: 'text.primary', lineHeight: 1.3 }}
                 noWrap
               >
-                {user.name}
+                {`${user.firstName} ${user.lastName}`.trim()}
               </Typography>
               <Typography sx={{ fontSize: 11, color: alpha(ct, 0.4), lineHeight: 1.3 }} noWrap>
                 {user.email}

@@ -15,7 +15,8 @@ export class UsersService {
       .select([
         'auth.users.id',
         'auth.users.email',
-        'auth.users.name',
+        'auth.users.first_name',
+        'auth.users.last_name',
         'org.org_memberships.roles',
         'org.org_memberships.created_at',
       ])
@@ -25,7 +26,8 @@ export class UsersService {
     return memberships.map((m) => ({
       id: m.id,
       email: m.email,
-      name: m.name,
+      firstName: m.first_name,
+      lastName: m.last_name,
       roles: m.roles,
       createdAt: m.created_at,
     }));

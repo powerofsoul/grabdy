@@ -14,14 +14,14 @@ import { AdminApiKeyGuard } from './admin-api-key.guard';
 
 interface CreateAccountBody {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   password: string;
   orgName?: string;
 }
 
 interface InviteMemberBody {
   email: string;
-  name: string;
   roles: OrgRole[];
 }
 
@@ -40,7 +40,7 @@ export class AdminController {
    */
   @Post('create-account')
   async createAccount(@Body() body: CreateAccountBody) {
-    const { email, name, password, orgName } = body;
+    const { email, firstName, lastName, password, orgName } = body;
     const normalizedEmail = email.toLowerCase();
 
     const existing = await this.db.kysely
@@ -61,7 +61,8 @@ export class AdminController {
         .values({
           id: packId('User', GLOBAL_ORG),
           email: normalizedEmail,
-          name,
+          first_name: firstName,
+          last_name: lastName,
           password_hash: passwordHash,
           email_verified: true,
           updated_at: new Date(),
@@ -72,7 +73,7 @@ export class AdminController {
       const newOrg = await trx
         .insertInto('org.orgs')
         .values({
-          name: orgName ?? `${name}'s Organization`,
+          name: orgName ?? `${firstName}'s Organization`,
           updated_at: new Date(),
         })
         .returningAll()
@@ -97,7 +98,8 @@ export class AdminController {
       data: {
         userId: result.user.id,
         email: result.user.email,
-        name: result.user.name,
+        firstName: result.user.first_name,
+        lastName: result.user.last_name,
         orgId: result.org.id,
         orgName: result.org.name,
         membershipId: result.membership.id,
@@ -114,7 +116,7 @@ export class AdminController {
     @Param('orgId', new ZodValidationPipe(dbIdSchema('Org'))) orgId: DbId<'Org'>,
     @Body() body: InviteMemberBody
   ) {
-    const { email, name, roles } = body;
+    const { email, roles } = body;
     const normalizedEmail = email.toLowerCase();
 
     // Check org exists
@@ -170,7 +172,6 @@ export class AdminController {
       .values({
         id: packId('OrgInvitation', orgId),
         email: normalizedEmail,
-        name,
         roles,
         token,
         expires_at: expiresAt,
@@ -178,7 +179,7 @@ export class AdminController {
       })
       .execute();
 
-    await this.emailService.sendOrgInviteEmail(normalizedEmail, name, org.name, token);
+    await this.emailService.sendOrgInviteEmail(normalizedEmail, org.name, token);
 
     return {
       success: true,

@@ -97,7 +97,7 @@ export class OrgsService {
     };
   }
 
-  async inviteMember(orgId: DbId<'Org'>, data: { email: string; name: string; roles: OrgRole[] }) {
+  async inviteMember(orgId: DbId<'Org'>, data: { email: string; roles: OrgRole[] }) {
     const org = await this.findById(orgId);
     const normalizedEmail = data.email.toLowerCase();
 
@@ -135,7 +135,6 @@ export class OrgsService {
       return {
         id: membership.id,
         email: normalizedEmail,
-        name: data.name,
         roles: data.roles,
         inviteLink: '',
         expiresAt: null,
@@ -152,7 +151,6 @@ export class OrgsService {
       .values({
         id: packId('OrgInvitation', orgId),
         email: normalizedEmail,
-        name: data.name,
         roles: data.roles,
         token,
         expires_at: expiresAt,
@@ -161,12 +159,11 @@ export class OrgsService {
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    await this.emailService.sendOrgInviteEmail(normalizedEmail, data.name, org.name, token);
+    await this.emailService.sendOrgInviteEmail(normalizedEmail, org.name, token);
 
     return {
       id: invitation.id,
       email: invitation.email,
-      name: invitation.name,
       roles: invitation.roles,
       inviteLink: authLinks.completeAccount(token),
       expiresAt: invitation.expires_at,
@@ -185,7 +182,8 @@ export class OrgsService {
         'org.org_memberships.roles',
         'org.org_memberships.created_at',
         'auth.users.email',
-        'auth.users.name',
+        'auth.users.first_name',
+        'auth.users.last_name',
       ])
       .where('org.org_memberships.org_id', '=', orgId)
       .execute();
@@ -197,21 +195,21 @@ export class OrgsService {
       roles: m.roles,
       createdAt: m.created_at,
       email: m.email,
-      name: m.name,
+      firstName: m.first_name,
+      lastName: m.last_name,
     }));
   }
 
   async getPendingInvitations(orgId: DbId<'Org'>) {
     const invitations = await this.db.kysely
       .selectFrom('org.org_invitations')
-      .select(['id', 'email', 'name', 'roles', 'token', 'expires_at', 'created_at'])
+      .select(['id', 'email', 'roles', 'token', 'expires_at', 'created_at'])
       .where('org_id', '=', orgId)
       .execute();
 
     return invitations.map((inv) => ({
       id: inv.id,
       email: inv.email,
-      name: inv.name,
       roles: inv.roles,
       inviteLink: authLinks.completeAccount(inv.token),
       expiresAt: inv.expires_at,
@@ -247,7 +245,8 @@ export class OrgsService {
         'org.org_memberships.roles',
         'org.org_memberships.created_at',
         'auth.users.email',
-        'auth.users.name',
+        'auth.users.first_name',
+        'auth.users.last_name',
       ])
       .where('org.org_memberships.id', '=', memberId)
       .where('org.org_memberships.org_id', '=', orgId)
@@ -294,7 +293,8 @@ export class OrgsService {
       roles: updated.roles,
       createdAt: updated.created_at,
       email: membership.email,
-      name: membership.name,
+      firstName: membership.first_name,
+      lastName: membership.last_name,
     };
   }
 

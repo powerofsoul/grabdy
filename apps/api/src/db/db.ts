@@ -52,7 +52,11 @@ type ChunkMeta =
   | { type: 'IMAGE' }
   | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthor: string }
   | { type: 'LINEAR'; linearIssueId: string; linearCommentId: string | null }
-  | { type: 'GITHUB'; githubItemType: 'issue' | 'pull_request' | 'discussion'; githubCommentId: string | null };
+  | {
+      type: 'GITHUB';
+      githubItemType: 'issue' | 'pull_request' | 'discussion';
+      githubCommentId: string | null;
+    };
 
 // ---------------------------------------------------------------------------
 // Database interface — maps schema.table names to their column types
@@ -62,7 +66,8 @@ export interface DB {
   'auth.users': {
     id: Generated<DbId<'User'>>;
     email: string;
-    name: string;
+    first_name: string;
+    last_name: string;
     password_hash: string | null;
     google_id: string | null;
     email_verified: Generated<boolean>;
@@ -101,7 +106,6 @@ export interface DB {
     id: Generated<DbId<'OrgInvitation'>>;
     org_id: DbId<'Org'>;
     email: string;
-    name: string;
     roles: ('OWNER' | 'ADMIN' | 'MEMBER')[];
     token: string;
     expires_at: Timestamp;
@@ -124,7 +128,17 @@ export interface DB {
     mime_type: string;
     file_size: number;
     storage_path: string;
-    type: 'PDF' | 'CSV' | 'DOCX' | 'TXT' | 'JSON' | 'XLSX' | 'IMAGE' | 'SLACK' | 'LINEAR' | 'GITHUB';
+    type:
+      | 'PDF'
+      | 'CSV'
+      | 'DOCX'
+      | 'TXT'
+      | 'JSON'
+      | 'XLSX'
+      | 'IMAGE'
+      | 'SLACK'
+      | 'LINEAR'
+      | 'GITHUB';
     status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED'>;
     summary: string | null;
     page_count: number | null;

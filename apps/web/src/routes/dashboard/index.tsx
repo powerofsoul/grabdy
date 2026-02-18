@@ -53,9 +53,7 @@ function QuickAction({
           '&:hover': { borderColor: ct },
         }}
       >
-        <Typography sx={{ fontSize: '0.875rem', color: 'text.primary' }}>
-          {label}
-        </Typography>
+        <Typography sx={{ fontSize: '0.875rem', color: 'text.primary' }}>{label}</Typography>
         <ArrowRightIcon size={14} weight="light" color="currentColor" />
       </Box>
     </Link>
@@ -81,9 +79,7 @@ function StepAction({ label, to }: { label: string; to: string }) {
           '&:hover': { borderColor: ct },
         }}
       >
-        <Typography sx={{ fontSize: '0.875rem', color: 'text.primary' }}>
-          {label}
-        </Typography>
+        <Typography sx={{ fontSize: '0.875rem', color: 'text.primary' }}>{label}</Typography>
         <ArrowRightIcon size={14} weight="light" color="currentColor" />
       </Box>
     </Link>
@@ -227,9 +223,7 @@ function HowItWorksStep({ title, description }: { title: string; description: st
       >
         {title}
       </Typography>
-      <Typography sx={{ fontSize: '0.8125rem', color: 'text.disabled' }}>
-        {description}
-      </Typography>
+      <Typography sx={{ fontSize: '0.8125rem', color: 'text.disabled' }}>{description}</Typography>
     </Box>
   );
 }
@@ -445,7 +439,7 @@ function DashboardIndex() {
 
   return (
     <DashboardPage
-      title={`Welcome back, ${user?.name?.split(' ')[0] ?? ''}`}
+      title={`Welcome back, ${user?.firstName ?? ''}`}
       subtitle={
         isSetupComplete
           ? "Here's what's happening in your workspace"

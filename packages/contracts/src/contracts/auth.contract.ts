@@ -18,7 +18,8 @@ const userStatus = z.enum(['ACTIVE', 'INACTIVE']);
 const user = z.object({
   id: dbIdSchema('User'),
   email: z.string(),
-  name: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
   status: userStatus,
   memberships: z.array(membership),
 });
@@ -31,7 +32,8 @@ export const authContract = c.router(
       body: z.object({
         email: workEmailSchema,
         password: z.string().min(8, 'Password must be at least 8 characters'),
-        name: z.string().min(1, 'Name is required'),
+        firstName: z.string().min(1, 'First name is required'),
+        lastName: z.string().min(1, 'Last name is required'),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: user }),
@@ -92,6 +94,22 @@ export const authContract = c.router(
         400: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
+    updateProfile: {
+      method: 'PATCH',
+      path: '/profile',
+      body: z
+        .object({
+          firstName: z.string().min(1, 'First name is required').optional(),
+          lastName: z.string().min(1, 'Last name is required').optional(),
+        })
+        .refine((data) => data.firstName !== undefined || data.lastName !== undefined, {
+          message: 'At least one field must be provided',
+        }),
+      responses: {
+        200: z.object({ success: z.literal(true), data: user }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
     me: {
       method: 'GET',
       path: '/me',
@@ -109,7 +127,6 @@ export const authContract = c.router(
           success: z.literal(true),
           data: z.object({
             email: z.string(),
-            name: z.string(),
             orgName: z.string(),
           }),
         }),
@@ -122,6 +139,8 @@ export const authContract = c.router(
       body: z.object({
         token: z.string(),
         password: z.string().min(8, 'Password must be at least 8 characters'),
+        firstName: z.string().min(1, 'First name is required'),
+        lastName: z.string().min(1, 'Last name is required'),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: user }),

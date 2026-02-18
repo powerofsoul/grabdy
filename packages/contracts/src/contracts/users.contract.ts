@@ -7,7 +7,8 @@ const c = initContract();
 const userSchema = z.object({
   id: dbIdSchema('User'),
   email: z.string(),
-  name: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
   roles: z.array(z.string()),
   createdAt: z.string(),
 });
