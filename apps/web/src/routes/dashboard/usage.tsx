@@ -173,11 +173,7 @@ function UsagePage() {
       actions={
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Period</InputLabel>
-          <Select
-            value={days}
-            label="Period"
-            onChange={(e) => setDays(e.target.value as number)}
-          >
+          <Select value={days} label="Period" onChange={(e) => setDays(e.target.value as number)}>
             <MenuItem value={7}>Last 7 days</MenuItem>
             <MenuItem value={30}>Last 30 days</MenuItem>
             <MenuItem value={90}>Last 90 days</MenuItem>
@@ -185,7 +181,6 @@ function UsagePage() {
         </FormControl>
       }
     >
-
       {loading && <LinearProgress sx={{ mb: 2 }} />}
 
       {data && (

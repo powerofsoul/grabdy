@@ -54,10 +54,15 @@ function McpPage() {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <Card>
           <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="subtitle2">
-                Server URL
-              </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 1.5,
+              }}
+            >
+              <Typography variant="subtitle2">Server URL</Typography>
               <CopyButton text={mcpUrl} />
             </Box>
             <Box
@@ -76,15 +81,21 @@ function McpPage() {
 
         <Card>
           <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="subtitle2">
-                Claude Desktop / Claude Code (stdio)
-              </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 1.5,
+              }}
+            >
+              <Typography variant="subtitle2">Claude Desktop / Claude Code (stdio)</Typography>
               <CopyButton text={stdioConfig} />
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Add this to your Claude Desktop config (claude_desktop_config.json) or Claude Code project
-              config (.mcp.json). Replace {'<YOUR_API_KEY>'} with your API key from the Keys page.
+              Add this to your Claude Desktop config (claude_desktop_config.json) or Claude Code
+              project config (.mcp.json). Replace {'<YOUR_API_KEY>'} with your API key from the Keys
+              page.
             </Typography>
             <Box
               component="pre"
@@ -105,15 +116,20 @@ function McpPage() {
 
         <Card>
           <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="subtitle2">
-                Cursor / Other MCP Clients (HTTP)
-              </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 1.5,
+              }}
+            >
+              <Typography variant="subtitle2">Cursor / Other MCP Clients (HTTP)</Typography>
               <CopyButton text={httpConfig} />
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              For clients that support HTTP-based MCP servers directly.
-              Replace {'<YOUR_API_KEY>'} with your API key from the Keys page.
+              For clients that support HTTP-based MCP servers directly. Replace {'<YOUR_API_KEY>'}{' '}
+              with your API key from the Keys page.
             </Typography>
             <Box
               component="pre"
@@ -143,8 +159,8 @@ function McpPage() {
                   search
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Search across your uploaded data for relevant content.
-                  Accepts a query string, optional collectionIds array, and optional limit.
+                  Search across your uploaded data for relevant content. Accepts a query string,
+                  optional collectionIds array, and optional limit.
                 </Typography>
               </Box>
               <Box>

@@ -14,8 +14,8 @@ export function WelcomeEmail({ name, loginUrl }: WelcomeEmailProps) {
 
       <Text style={sharedStyles.text}>Hi {name},</Text>
       <Text style={sharedStyles.text}>
-        Your Grabdy account is now ready. You can log in and start uploading documents,
-        searching your data, and building integrations.
+        Your Grabdy account is now ready. You can log in and start uploading documents, searching
+        your data, and building integrations.
       </Text>
 
       <Button style={sharedStyles.button} href={loginUrl}>

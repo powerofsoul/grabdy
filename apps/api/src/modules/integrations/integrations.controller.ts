@@ -185,7 +185,10 @@ export class IntegrationsController {
         };
       }
 
-      const connection = await this.integrationsService.getConnection(params.orgId, params.provider);
+      const connection = await this.integrationsService.getConnection(
+        params.orgId,
+        params.provider
+      );
       if (!connection) {
         return {
           status: 404 as const,

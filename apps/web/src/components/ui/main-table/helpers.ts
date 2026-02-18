@@ -20,7 +20,9 @@ export function isValidSortColumn<C extends string>(
 }
 
 /** Type guard to check if response body is a success response with paginated data */
-export function isSuccessBody<T>(body: unknown): body is { success: true; data: PaginatedResponse<T> } {
+export function isSuccessBody<T>(
+  body: unknown
+): body is { success: true; data: PaginatedResponse<T> } {
   if (typeof body !== 'object' || body === null) return false;
   if (!('success' in body) || body.success !== true) return false;
   if (!('data' in body)) return false;

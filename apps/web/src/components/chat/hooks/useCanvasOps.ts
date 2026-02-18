@@ -18,122 +18,171 @@ interface UseCanvasOpsParams {
 
 export function useCanvasOps({ activeThreadId, ensureThread, canvasActions }: UseCanvasOpsParams) {
   const { selectedOrgId } = useAuth();
-  const { canvasState, applyUpdate, removeCard, moveCard, resizeCard, reorderCard, updateCardTitle, updateEdges } = canvasActions;
+  const {
+    canvasState,
+    applyUpdate,
+    removeCard,
+    moveCard,
+    resizeCard,
+    reorderCard,
+    updateCardTitle,
+    updateEdges,
+  } = canvasActions;
 
   const handleDeleteCard = useCallback(
     (cardId: NonDbId<'CanvasCard'>) => {
       removeCard(cardId);
       if (selectedOrgId && activeThreadId) {
-        api.chat.deleteCanvasCard({
-          params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
-          body: {},
-        }).catch(() => { toast.error('Failed to save changes'); });
+        api.chat
+          .deleteCanvasCard({
+            params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
+            body: {},
+          })
+          .catch(() => {
+            toast.error('Failed to save changes');
+          });
       }
     },
-    [removeCard, selectedOrgId, activeThreadId],
+    [removeCard, selectedOrgId, activeThreadId]
   );
 
   const handleMoveCard = useCallback(
     (cardId: NonDbId<'CanvasCard'>, position: { x: number; y: number }) => {
       moveCard(cardId, position);
       if (!selectedOrgId || !activeThreadId) return;
-      api.chat.moveCanvasCard({
-        params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
-        body: { position },
-      }).catch(() => { toast.error('Failed to save changes'); });
+      api.chat
+        .moveCanvasCard({
+          params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
+          body: { position },
+        })
+        .catch(() => {
+          toast.error('Failed to save changes');
+        });
     },
-    [moveCard, selectedOrgId, activeThreadId],
+    [moveCard, selectedOrgId, activeThreadId]
   );
 
   const handleResizeCard = useCallback(
     (cardId: NonDbId<'CanvasCard'>, width: number) => {
       resizeCard(cardId, width);
       if (!selectedOrgId || !activeThreadId) return;
-      api.chat.moveCanvasCard({
-        params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
-        body: { width },
-      }).catch(() => { toast.error('Failed to save changes'); });
+      api.chat
+        .moveCanvasCard({
+          params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
+          body: { width },
+        })
+        .catch(() => {
+          toast.error('Failed to save changes');
+        });
     },
-    [resizeCard, selectedOrgId, activeThreadId],
+    [resizeCard, selectedOrgId, activeThreadId]
   );
 
   const handleReorderCard = useCallback(
     (cardId: NonDbId<'CanvasCard'>, direction: 'front' | 'back') => {
       const zIndex = reorderCard(cardId, direction);
       if (!selectedOrgId || !activeThreadId) return;
-      api.chat.moveCanvasCard({
-        params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
-        body: { zIndex },
-      }).catch(() => { toast.error('Failed to save changes'); });
+      api.chat
+        .moveCanvasCard({
+          params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
+          body: { zIndex },
+        })
+        .catch(() => {
+          toast.error('Failed to save changes');
+        });
     },
-    [reorderCard, selectedOrgId, activeThreadId],
+    [reorderCard, selectedOrgId, activeThreadId]
   );
 
   const handleEdgesChange = useCallback(
     (newEdges: CanvasEdge[]) => {
       updateEdges(newEdges);
       if (selectedOrgId && activeThreadId) {
-        api.chat.updateCanvasEdges({
-          params: { orgId: selectedOrgId, threadId: activeThreadId },
-          body: { edges: newEdges },
-        }).catch(() => { toast.error('Failed to save changes'); });
+        api.chat
+          .updateCanvasEdges({
+            params: { orgId: selectedOrgId, threadId: activeThreadId },
+            body: { edges: newEdges },
+          })
+          .catch(() => {
+            toast.error('Failed to save changes');
+          });
       }
     },
-    [updateEdges, selectedOrgId, activeThreadId],
+    [updateEdges, selectedOrgId, activeThreadId]
   );
 
   const handleAddEdge = useCallback(
     (edge: CanvasEdge) => {
       updateEdges([...(canvasState.edges ?? []), edge]);
       if (selectedOrgId && activeThreadId) {
-        api.chat.addCanvasEdge({
-          params: { orgId: selectedOrgId, threadId: activeThreadId },
-          body: { edge },
-        }).catch(() => { toast.error('Failed to save changes'); });
+        api.chat
+          .addCanvasEdge({
+            params: { orgId: selectedOrgId, threadId: activeThreadId },
+            body: { edge },
+          })
+          .catch(() => {
+            toast.error('Failed to save changes');
+          });
       }
     },
-    [canvasState.edges, updateEdges, selectedOrgId, activeThreadId],
+    [canvasState.edges, updateEdges, selectedOrgId, activeThreadId]
   );
 
   const handleDeleteEdge = useCallback(
     (edgeId: NonDbId<'CanvasEdge'>) => {
       updateEdges((canvasState.edges ?? []).filter((e) => e.id !== edgeId));
       if (selectedOrgId && activeThreadId) {
-        api.chat.deleteCanvasEdge({
-          params: { orgId: selectedOrgId, threadId: activeThreadId, edgeId },
-          body: {},
-        }).catch(() => { toast.error('Failed to save changes'); });
+        api.chat
+          .deleteCanvasEdge({
+            params: { orgId: selectedOrgId, threadId: activeThreadId, edgeId },
+            body: {},
+          })
+          .catch(() => {
+            toast.error('Failed to save changes');
+          });
       }
     },
-    [canvasState.edges, updateEdges, selectedOrgId, activeThreadId],
+    [canvasState.edges, updateEdges, selectedOrgId, activeThreadId]
   );
 
   const handleComponentEdit = useCallback(
-    (cardId: NonDbId<'CanvasCard'>, componentId: NonDbId<'CanvasComponent'>, data: Record<string, unknown>) => {
+    (
+      cardId: NonDbId<'CanvasCard'>,
+      componentId: NonDbId<'CanvasComponent'>,
+      data: Record<string, unknown>
+    ) => {
       applyUpdate({
         results: [{ op: 'update_component', cardId, componentId, data }],
       });
       if (selectedOrgId && activeThreadId) {
-        api.chat.updateCanvasComponent({
-          params: { orgId: selectedOrgId, threadId: activeThreadId, cardId, componentId },
-          body: { data },
-        }).catch(() => { toast.error('Failed to save changes'); });
+        api.chat
+          .updateCanvasComponent({
+            params: { orgId: selectedOrgId, threadId: activeThreadId, cardId, componentId },
+            body: { data },
+          })
+          .catch(() => {
+            toast.error('Failed to save changes');
+          });
       }
     },
-    [applyUpdate, selectedOrgId, activeThreadId],
+    [applyUpdate, selectedOrgId, activeThreadId]
   );
 
   const handleTitleEdit = useCallback(
     (cardId: NonDbId<'CanvasCard'>, title: string) => {
       updateCardTitle(cardId, title);
       if (selectedOrgId && activeThreadId) {
-        api.chat.moveCanvasCard({
-          params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
-          body: { title },
-        }).catch(() => { toast.error('Failed to save changes'); });
+        api.chat
+          .moveCanvasCard({
+            params: { orgId: selectedOrgId, threadId: activeThreadId, cardId },
+            body: { title },
+          })
+          .catch(() => {
+            toast.error('Failed to save changes');
+          });
       }
     },
-    [updateCardTitle, selectedOrgId, activeThreadId],
+    [updateCardTitle, selectedOrgId, activeThreadId]
   );
 
   const handleAddCard = useCallback(
@@ -143,14 +192,18 @@ export function useCanvasOps({ activeThreadId, ensureThread, canvasActions }: Us
       applyUpdate({
         results: [{ op: 'add_card', cards: [properCard] }],
       });
-      ensureThread().then((threadId) =>
-        api.chat.addCanvasCard({
-          params: { orgId: selectedOrgId, threadId },
-          body: { card: properCard },
-        }),
-      ).catch(() => { toast.error('Failed to save changes'); });
+      ensureThread()
+        .then((threadId) =>
+          api.chat.addCanvasCard({
+            params: { orgId: selectedOrgId, threadId },
+            body: { card: properCard },
+          })
+        )
+        .catch(() => {
+          toast.error('Failed to save changes');
+        });
     },
-    [applyUpdate, selectedOrgId, ensureThread],
+    [applyUpdate, selectedOrgId, ensureThread]
   );
 
   return {

@@ -11,7 +11,14 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { ChartBarIcon, ChartLineIcon, ChartPieIcon, PlusIcon, TrashIcon, XIcon } from '@phosphor-icons/react';
+import {
+  ChartBarIcon,
+  ChartLineIcon,
+  ChartPieIcon,
+  PlusIcon,
+  TrashIcon,
+  XIcon,
+} from '@phosphor-icons/react';
 import {
   Bar,
   BarChart,
@@ -77,7 +84,7 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
   const handleRemoveLabel = (index: number) => {
     setDraftLabels((prev) => prev.filter((_, i) => i !== index));
     setDraftDatasets((prev) =>
-      prev.map((ds) => ({ ...ds, data: ds.data.filter((_, i) => i !== index) })),
+      prev.map((ds) => ({ ...ds, data: ds.data.filter((_, i) => i !== index) }))
     );
   };
 
@@ -105,14 +112,12 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
   };
 
   const handleDatasetLabelChange = (dsIndex: number, label: string) => {
-    setDraftDatasets((prev) =>
-      prev.map((ds, i) => (i === dsIndex ? { ...ds, label } : ds)),
-    );
+    setDraftDatasets((prev) => prev.map((ds, i) => (i === dsIndex ? { ...ds, label } : ds)));
   };
 
   const handleDatasetColorChange = (dsIndex: number, color: string) => {
     setDraftDatasets((prev) =>
-      prev.map((ds, i) => (i === dsIndex ? { ...ds, color: color || undefined } : ds)),
+      prev.map((ds, i) => (i === dsIndex ? { ...ds, color: color || undefined } : ds))
     );
   };
 
@@ -132,25 +137,49 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
       >
         {/* Chart type selector */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>Type</Typography>
+          <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>
+            Type
+          </Typography>
           <ToggleButtonGroup
             value={draftChartType}
             exclusive
-            onChange={(_, v) => { if (v) setDraftChartType(v); }}
+            onChange={(_, v) => {
+              if (v) setDraftChartType(v);
+            }}
             size="small"
             sx={{ '& .MuiToggleButton-root': { px: 1, py: 0.25 } }}
           >
-            <ToggleButton value="bar"><Tooltip title="Bar"><ChartBarIcon size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
-            <ToggleButton value="line"><Tooltip title="Line"><ChartLineIcon size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
-            <ToggleButton value="pie"><Tooltip title="Pie"><ChartPieIcon size={14} weight="light" color="currentColor" /></Tooltip></ToggleButton>
+            <ToggleButton value="bar">
+              <Tooltip title="Bar">
+                <ChartBarIcon size={14} weight="light" color="currentColor" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="line">
+              <Tooltip title="Line">
+                <ChartLineIcon size={14} weight="light" color="currentColor" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="pie">
+              <Tooltip title="Pie">
+                <ChartPieIcon size={14} weight="light" color="currentColor" />
+              </Tooltip>
+            </ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
         {/* Labels (XIcon-axis categories) */}
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>Labels</Typography>
-            <IconButton size="small" onClick={handleAddLabel} sx={{ width: 20, height: 20, color: 'primary.main' }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>
+              Labels
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={handleAddLabel}
+              sx={{ width: 20, height: 20, color: 'primary.main' }}
+            >
               <PlusIcon size={12} weight="light" color="currentColor" />
             </IconButton>
           </Box>
@@ -167,7 +196,12 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
                   <IconButton
                     size="small"
                     onClick={() => handleRemoveLabel(i)}
-                    sx={{ width: 16, height: 16, p: 0, color: alpha(theme.palette.text.primary, 0.3) }}
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      p: 0,
+                      color: alpha(theme.palette.text.primary, 0.3),
+                    }}
                   >
                     <XIcon size={10} weight="light" color="currentColor" />
                   </IconButton>
@@ -179,28 +213,57 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
 
         {/* Datasets (series) */}
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>Series</Typography>
-            <IconButton size="small" onClick={handleAddDataset} sx={{ width: 20, height: 20, color: 'primary.main' }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>
+              Series
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={handleAddDataset}
+              sx={{ width: 20, height: 20, color: 'primary.main' }}
+            >
               <PlusIcon size={12} weight="light" color="currentColor" />
             </IconButton>
           </Box>
           {draftDatasets.map((ds, di) => (
-            <Box key={di} sx={{ mb: 1, p: 0.75, border: '1px solid', borderColor: alpha(theme.palette.text.primary, 0.08), borderRadius: 1 }}>
+            <Box
+              key={di}
+              sx={{
+                mb: 1,
+                p: 0.75,
+                border: '1px solid',
+                borderColor: alpha(theme.palette.text.primary, 0.08),
+                borderRadius: 1,
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                 <TextField
                   size="small"
                   value={ds.label}
                   onChange={(e) => handleDatasetLabelChange(di, e.target.value)}
                   placeholder="Series name"
-                  sx={{ flex: 1, '& .MuiInputBase-input': { fontSize: 11, py: 0.25, px: 0.5, fontWeight: 600 } }}
+                  sx={{
+                    flex: 1,
+                    '& .MuiInputBase-input': { fontSize: 11, py: 0.25, px: 0.5, fontWeight: 600 },
+                  }}
                 />
                 <Box
                   component="input"
                   type="color"
                   value={ds.color ?? COLORS[di % COLORS.length]}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleDatasetColorChange(di, e.target.value)}
-                  sx={{ width: 24, height: 24, border: 'none', p: 0, cursor: 'pointer', borderRadius: 0.5 }}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleDatasetColorChange(di, e.target.value)
+                  }
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    border: 'none',
+                    p: 0,
+                    cursor: 'pointer',
+                    borderRadius: 0.5,
+                  }}
                 />
                 {draftDatasets.length > 1 && (
                   <IconButton
@@ -221,7 +284,10 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
                       type="number"
                       value={ds.data[li] ?? 0}
                       onChange={(e) => handleDataChange(di, li, parseFloat(e.target.value) || 0)}
-                      sx={{ width: 64, '& .MuiInputBase-input': { fontSize: 11, py: 0.2, px: 0.5 } }}
+                      sx={{
+                        width: 64,
+                        '& .MuiInputBase-input': { fontSize: 11, py: 0.2, px: 0.5 },
+                      }}
                     />
                   </Box>
                 ))}
@@ -243,7 +309,15 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
       return (
         <ResponsiveContainer width="100%" height={200}>
           <PieChart>
-            <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
+            <Pie
+              data={pieData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={70}
+              label
+            >
               {pieData.map((_, i) => (
                 <Cell key={i} fill={data.datasets[0]?.color ?? COLORS[i % COLORS.length]} />
               ))}
@@ -284,23 +358,13 @@ export function ChartComponent({ data, onSave }: ChartComponentProps) {
                 dot={false}
               />
             ) : (
-              <Bar
-                key={ds.label}
-                dataKey={ds.label}
-                fill={ds.color ?? COLORS[i % COLORS.length]}
-              />
-            ),
+              <Bar key={ds.label} dataKey={ds.label} fill={ds.color ?? COLORS[i % COLORS.length]} />
+            )
           )}
         </ChartType>
       </ResponsiveContainer>
     );
   };
 
-  return (
-    <Box
-      sx={{ position: 'relative' }}
-    >
-      {renderChart()}
-    </Box>
-  );
+  return <Box sx={{ position: 'relative' }}>{renderChart()}</Box>;
 }

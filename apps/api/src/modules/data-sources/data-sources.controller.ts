@@ -25,10 +25,7 @@ export class DataSourcesController {
   @OrgAccess(dataSourcesContract.upload, { params: ['orgId'] })
   @TsRestHandler(dataSourcesContract.upload)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }))
-  async upload(
-    @CurrentUser() user: JwtPayload,
-    @UploadedFile() file: Express.Multer.File
-  ) {
+  async upload(@CurrentUser() user: JwtPayload, @UploadedFile() file: Express.Multer.File) {
     return tsRestHandler(dataSourcesContract.upload, async ({ params, body }) => {
       try {
         if (!file) {
@@ -44,15 +41,12 @@ export class DataSourcesController {
           ? body.collectionId.replace(/^"|"$/g, '')
           : undefined;
 
-        const dataSource = await this.dataSourcesService.upload(
-          params.orgId,
-          user.sub,
-          file,
-          {
-            name: body.name ? body.name.replace(/^"|"$/g, '') : undefined,
-            collectionId: rawCollectionId ? dbIdSchema('Collection').parse(rawCollectionId) : undefined,
-          }
-        );
+        const dataSource = await this.dataSourcesService.upload(params.orgId, user.sub, file, {
+          name: body.name ? body.name.replace(/^"|"$/g, '') : undefined,
+          collectionId: rawCollectionId
+            ? dbIdSchema('Collection').parse(rawCollectionId)
+            : undefined,
+        });
 
         return {
           status: 200 as const,
@@ -87,10 +81,7 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.list)
   async list() {
     return tsRestHandler(dataSourcesContract.list, async ({ params, query }) => {
-      const dataSources = await this.dataSourcesService.list(
-        params.orgId,
-        query.collectionId
-      );
+      const dataSources = await this.dataSourcesService.list(params.orgId, query.collectionId);
       return {
         status: 200 as const,
         body: {
@@ -181,7 +172,11 @@ export class DataSourcesController {
   async rename() {
     return tsRestHandler(dataSourcesContract.rename, async ({ params, body }) => {
       try {
-        const dataSource = await this.dataSourcesService.rename(params.orgId, params.id, body.title);
+        const dataSource = await this.dataSourcesService.rename(
+          params.orgId,
+          params.id,
+          body.title
+        );
         return {
           status: 200 as const,
           body: {
@@ -244,13 +239,25 @@ export class DataSourcesController {
   async serveFile(
     @Param('orgNum') orgNum: string,
     @Param('filename') filename: string,
-    @Res() res: Response,
+    @Res() res: Response
   ) {
     try {
       const key = `${orgNum}/${filename}`;
       const buffer = await this.dataSourcesService.getFileBuffer(key);
       const ext = filename.split('.').pop()?.toLowerCase() ?? '';
-      type ServableExt = 'pdf' | 'csv' | 'txt' | 'json' | 'docx' | 'xlsx' | 'xls' | 'png' | 'jpg' | 'jpeg' | 'webp' | 'gif';
+      type ServableExt =
+        | 'pdf'
+        | 'csv'
+        | 'txt'
+        | 'json'
+        | 'docx'
+        | 'xlsx'
+        | 'xls'
+        | 'png'
+        | 'jpg'
+        | 'jpeg'
+        | 'webp'
+        | 'gif';
       const mimeMap: Record<ServableExt, string> = {
         pdf: 'application/pdf',
         csv: 'text/csv',

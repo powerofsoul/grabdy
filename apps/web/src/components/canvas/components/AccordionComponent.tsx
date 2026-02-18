@@ -69,7 +69,11 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
 
   if (isEditing) {
     return (
-      <Box className="nodrag nowheel nopan" onKeyDown={handleKeyDown} sx={{ p: 1.5, outline: 'none' }}>
+      <Box
+        className="nodrag nowheel nopan"
+        onKeyDown={handleKeyDown}
+        sx={{ p: 1.5, outline: 'none' }}
+      >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {draftSections.map((section, i) => (
             <Box key={i}>
@@ -115,9 +119,7 @@ export function AccordionComponent({ data, onSave }: AccordionComponentProps) {
   }
 
   return (
-    <Box
-      sx={{ p: 1, position: 'relative' }}
-    >
+    <Box sx={{ p: 1, position: 'relative' }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         {data.sections.map((section, i) => {
           const isOpen = openSections[i] ?? false;

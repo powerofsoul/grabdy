@@ -106,7 +106,14 @@ function EditorToolbar({ editor }: { editor: Editor }) {
         </IconButton>
       </Tooltip>
 
-      <Box sx={{ width: '1px', height: 18, bgcolor: alpha(theme.palette.text.primary, 0.12), mx: 0.25 }} />
+      <Box
+        sx={{
+          width: '1px',
+          height: 18,
+          bgcolor: alpha(theme.palette.text.primary, 0.12),
+          mx: 0.25,
+        }}
+      />
 
       <Tooltip title="Heading 1">
         <IconButton
@@ -136,7 +143,14 @@ function EditorToolbar({ editor }: { editor: Editor }) {
         </IconButton>
       </Tooltip>
 
-      <Box sx={{ width: '1px', height: 18, bgcolor: alpha(theme.palette.text.primary, 0.12), mx: 0.25 }} />
+      <Box
+        sx={{
+          width: '1px',
+          height: 18,
+          bgcolor: alpha(theme.palette.text.primary, 0.12),
+          mx: 0.25,
+        }}
+      />
 
       <Tooltip title="Bullet list">
         <IconButton
@@ -195,11 +209,7 @@ export function CanvasEditor({
   const theme = useTheme();
 
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder }),
-      Markdown,
-    ],
+    extensions: [StarterKit, Placeholder.configure({ placeholder }), Markdown],
     content,
     autofocus: autoFocus ? 'end' : false,
     editorProps: {
@@ -224,7 +234,9 @@ export function CanvasEditor({
       contentRef.current = getEditorMarkdown(editor);
     };
     editor.on('update', handler);
-    return () => { editor.off('update', handler); };
+    return () => {
+      editor.off('update', handler);
+    };
   }, [editor, contentRef]);
 
   if (!editor) return null;

@@ -110,7 +110,6 @@ function CollectionsPage() {
         </Button>
       }
     >
-
       {collections.length === 0 ? (
         <EmptyState
           icon={<FolderOpenIcon size={48} weight="light" color="currentColor" />}
@@ -213,11 +212,7 @@ function CollectionsPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleCreate}
-            disabled={isCreating || !name.trim()}
-          >
+          <Button variant="contained" onClick={handleCreate} disabled={isCreating || !name.trim()}>
             {isCreating ? 'Creating...' : 'Create'}
           </Button>
         </DialogActions>

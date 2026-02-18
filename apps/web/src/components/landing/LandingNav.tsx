@@ -1,4 +1,14 @@
-import { alpha, AppBar, Box, Button, Container, Toolbar, Typography, useScrollTrigger, useTheme } from '@mui/material';
+import {
+  alpha,
+  AppBar,
+  Box,
+  Button,
+  Container,
+  Toolbar,
+  Typography,
+  useScrollTrigger,
+  useTheme,
+} from '@mui/material';
 import { Link } from '@tanstack/react-router';
 
 import { Logo } from '../ui/Logo';
@@ -28,9 +38,7 @@ export function LandingNav() {
       position="sticky"
       elevation={0}
       sx={{
-        bgcolor: trigger
-          ? alpha(theme.palette.background.paper, 0.8)
-          : 'transparent',
+        bgcolor: trigger ? alpha(theme.palette.background.paper, 0.8) : 'transparent',
         backdropFilter: trigger ? 'blur(12px)' : 'none',
         borderBottom: trigger ? '1px solid' : 'none',
         borderColor: 'divider',
@@ -79,10 +87,7 @@ export function LandingNav() {
               </Button>
             </Link>
             <Link to="/auth/signup" style={{ textDecoration: 'none' }}>
-              <Button
-                variant="contained"
-                size="small"
-              >
+              <Button variant="contained" size="small">
                 Get Started
               </Button>
             </Link>

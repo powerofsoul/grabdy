@@ -41,7 +41,6 @@ export function CTASection() {
         bgcolor: 'background.default',
       }}
     >
-
       <Container maxWidth="sm" sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <Typography
           className="cta-title"
@@ -66,7 +65,16 @@ export function CTASection() {
           Teams from startups to enterprises already use Grabdy.
         </Typography>
 
-        <Box className="cta-button" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'center', gap: 2, mb: 2 }}>
+        <Box
+          className="cta-button"
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'center',
+            gap: 2,
+            mb: 2,
+          }}
+        >
           <Link to="/auth/signup" style={{ textDecoration: 'none' }}>
             <Button
               variant="contained"
@@ -83,7 +91,10 @@ export function CTASection() {
           </Link>
         </Box>
 
-        <Box className="cta-note" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+        <Box
+          className="cta-note"
+          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}
+        >
           <Typography
             component="a"
             href="mailto:hello@grabdy.com"

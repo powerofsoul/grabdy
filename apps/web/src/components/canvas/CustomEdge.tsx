@@ -2,12 +2,7 @@ import { useCallback, useState } from 'react';
 
 import { alpha, Box, IconButton, Popover, Tooltip, Typography, useTheme } from '@mui/material';
 import { TrashIcon } from '@phosphor-icons/react';
-import {
-  BaseEdge,
-  type EdgeProps,
-  getBezierPath,
-  useReactFlow,
-} from '@xyflow/react';
+import { BaseEdge, type EdgeProps, getBezierPath, useReactFlow } from '@xyflow/react';
 
 const STROKE_OPTIONS = [2, 3, 4, 6] as const;
 
@@ -55,15 +50,21 @@ export function CustomEdge({
     setAnchorEl(null);
   }, []);
 
-  const updateEdgeData = useCallback((newData: Record<string, unknown>) => {
-    if (typeof data?.onEdgeDataChange === 'function') {
-      data.onEdgeDataChange(newData);
-    }
-  }, [data]);
+  const updateEdgeData = useCallback(
+    (newData: Record<string, unknown>) => {
+      if (typeof data?.onEdgeDataChange === 'function') {
+        data.onEdgeDataChange(newData);
+      }
+    },
+    [data]
+  );
 
-  const handleStrokeChange = useCallback((width: number) => {
-    updateEdgeData({ strokeWidth: width });
-  }, [updateEdgeData]);
+  const handleStrokeChange = useCallback(
+    (width: number) => {
+      updateEdgeData({ strokeWidth: width });
+    },
+    [updateEdgeData]
+  );
 
   const handleDelete = useCallback(() => {
     setAnchorEl(null);
@@ -117,7 +118,13 @@ export function CustomEdge({
 
       {/* Popover for editing edge properties */}
       {open && (
-        <foreignObject x={labelX - 1} y={labelY - 1} width={2} height={2} style={{ overflow: 'visible' }}>
+        <foreignObject
+          x={labelX - 1}
+          y={labelY - 1}
+          width={2}
+          height={2}
+          style={{ overflow: 'visible' }}
+        >
           <Popover
             open
             onClose={handleClose}
@@ -153,8 +160,10 @@ export function CustomEdge({
                     justifyContent: 'center',
                     cursor: 'pointer',
                     border: '1px solid',
-                    borderColor: strokeWidth === w ? 'primary.main' : alpha(theme.palette.text.primary, 0.12),
-                    bgcolor: strokeWidth === w ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
+                    borderColor:
+                      strokeWidth === w ? 'primary.main' : alpha(theme.palette.text.primary, 0.12),
+                    bgcolor:
+                      strokeWidth === w ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
                     '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.06) },
                   }}
                 >
@@ -178,7 +187,10 @@ export function CustomEdge({
                   onClick={handleDelete}
                   sx={{
                     color: alpha(theme.palette.text.primary, 0.4),
-                    '&:hover': { color: 'error.main', bgcolor: alpha(theme.palette.error.main, 0.08) },
+                    '&:hover': {
+                      color: 'error.main',
+                      bgcolor: alpha(theme.palette.error.main, 0.08),
+                    },
                   }}
                 >
                   <TrashIcon size={14} weight="light" color="currentColor" />

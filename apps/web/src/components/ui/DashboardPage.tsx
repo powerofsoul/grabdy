@@ -1,6 +1,14 @@
 import { type ReactNode } from 'react';
 
-import { alpha, Box, IconButton, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import {
+  alpha,
+  Box,
+  IconButton,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import { ArrowLeftIcon, ListIcon } from '@phosphor-icons/react';
 import { useRouter } from '@tanstack/react-router';
 
@@ -33,9 +41,8 @@ export function DashboardPage({
   const isMobile = useMediaQuery('(max-width:767px)');
   const { toggle: toggleMobileSidebar } = useMobileSidebar();
 
-  const contentMaxWidth = maxWidth !== undefined
-    ? maxWidth || undefined
-    : { xs: '100%', lg: 960, xl: 1120 };
+  const contentMaxWidth =
+    maxWidth !== undefined ? maxWidth || undefined : { xs: '100%', lg: 960, xl: 1120 };
 
   return (
     <Box
@@ -134,9 +141,7 @@ export function DashboardPage({
 
             {/* Mobile actions row below */}
             {isMobile && actions && (
-              <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
-                {actions}
-              </Box>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>{actions}</Box>
             )}
           </Box>
         </Box>
@@ -156,9 +161,7 @@ export function DashboardPage({
             pt: { xs: 1, md: '12px' },
           }}
         >
-          <Box sx={{ maxWidth: contentMaxWidth, mx: 'auto', width: '100%' }}>
-            {children}
-          </Box>
+          <Box sx={{ maxWidth: contentMaxWidth, mx: 'auto', width: '100%' }}>{children}</Box>
         </Box>
       )}
     </Box>

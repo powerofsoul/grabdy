@@ -44,7 +44,10 @@ export function TagCloudComponent({ data, onSave }: TagCloudComponentProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {

@@ -32,7 +32,12 @@ export function ProgressComponent({ data, onSave }: ProgressComponentProps) {
   const height = SIZE_MAP[data.size] ?? SIZE_MAP.md;
 
   const handleSave = useCallback(() => {
-    onSave?.({ ...data, value: parseFloat(draftValue) || 0, max: parseFloat(draftMax) || 100, label: draftLabel });
+    onSave?.({
+      ...data,
+      value: parseFloat(draftValue) || 0,
+      max: parseFloat(draftMax) || 100,
+      label: draftLabel,
+    });
     setIsEditing(false);
   }, [data, draftValue, draftMax, draftLabel, onSave]);
 
@@ -48,8 +53,14 @@ export function ProgressComponent({ data, onSave }: ProgressComponentProps) {
   });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') { handleSave(); endEdit(); }
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Enter') {
+      handleSave();
+      endEdit();
+    }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -93,17 +104,21 @@ export function ProgressComponent({ data, onSave }: ProgressComponentProps) {
   }
 
   return (
-    <Box
-      sx={{ p: 1.5, position: 'relative' }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 0.5 }}>
+    <Box sx={{ p: 1.5, position: 'relative' }}>
+      <Box
+        sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 0.5 }}
+      >
         <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{data.label}</Typography>
         {data.showPercent && (
-          <Typography sx={{ fontSize: 11, fontWeight: 600, color: barColor }}>{percent}%</Typography>
+          <Typography sx={{ fontSize: 11, fontWeight: 600, color: barColor }}>
+            {percent}%
+          </Typography>
         )}
       </Box>
       {data.sublabel && (
-        <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 0.5 }}>{data.sublabel}</Typography>
+        <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 0.5 }}>
+          {data.sublabel}
+        </Typography>
       )}
       <Box
         sx={{

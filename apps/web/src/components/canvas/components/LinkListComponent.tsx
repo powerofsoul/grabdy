@@ -36,9 +36,7 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
   });
 
   const handleLinkChange = (index: number, field: string, value: string) => {
-    setDraftLinks((prev) =>
-      prev.map((l, i) => (i === index ? { ...l, [field]: value } : l)),
-    );
+    setDraftLinks((prev) => prev.map((l, i) => (i === index ? { ...l, [field]: value } : l)));
   };
 
   const handleAddLink = () => {
@@ -50,7 +48,10 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -114,7 +115,12 @@ export function LinkListComponent({ data, onSave }: LinkListComponentProps) {
         {data.links.map((link, i) => (
           <Box key={i} sx={{ py: 0.25 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <ArrowSquareOutIcon size={12} weight="light" color={theme.palette.primary.main} style={{ flexShrink: 0 }} />
+              <ArrowSquareOutIcon
+                size={12}
+                weight="light"
+                color={theme.palette.primary.main}
+                style={{ flexShrink: 0 }}
+              />
               <Link
                 href={link.url}
                 target="_blank"

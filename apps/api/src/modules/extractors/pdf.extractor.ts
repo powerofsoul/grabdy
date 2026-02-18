@@ -51,20 +51,16 @@ export class PdfExtractor {
         const currentPage = pageNum;
         return pageData
           .getTextContent()
-          .then(
-            (textContent: {
-              items: Array<{ str: string; transform?: number[] }>;
-            }) => {
-              const text = textContent.items
-                .map((item: { str: string }) => item.str)
-                .join(' ')
-                .trim();
-              if (text.length > 0) {
-                pages.push({ page: currentPage, text: text + '\n' });
-              }
-              return text;
+          .then((textContent: { items: Array<{ str: string; transform?: number[] }> }) => {
+            const text = textContent.items
+              .map((item: { str: string }) => item.str)
+              .join(' ')
+              .trim();
+            if (text.length > 0) {
+              pages.push({ page: currentPage, text: text + '\n' });
             }
-          );
+            return text;
+          });
       },
     };
 
@@ -150,7 +146,13 @@ export class PdfExtractor {
       const group: unknown[] = args[0];
       if (!Array.isArray(group)) return null;
       for (const entry of group) {
-        if (entry && typeof entry === 'object' && 'data' in entry && 'width' in entry && 'height' in entry) {
+        if (
+          entry &&
+          typeof entry === 'object' &&
+          'data' in entry &&
+          'width' in entry &&
+          'height' in entry
+        ) {
           return entry;
         }
       }

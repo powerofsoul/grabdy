@@ -35,10 +35,7 @@ export interface DrawerOptions {
 }
 
 interface DrawerContextValue {
-  pushDrawer: (
-    render: (onClose: () => void) => ReactNode,
-    options?: DrawerOptions,
-  ) => void;
+  pushDrawer: (render: (onClose: () => void) => ReactNode, options?: DrawerOptions) => void;
   popDrawer: () => void;
   closeAllDrawers: () => void;
   drawerCount: number;
@@ -67,10 +64,7 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
   const [drawerStack, setDrawerStack] = useState<DrawerStackItem[]>([]);
 
   const pushDrawer = useCallback(
-    (
-      render: (onClose: () => void) => ReactNode,
-      options?: DrawerOptions,
-    ) => {
+    (render: (onClose: () => void) => ReactNode, options?: DrawerOptions) => {
       const id = `drawer-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       setDrawerStack((prev) => [
         ...prev,

@@ -58,7 +58,7 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
   const handleDeleteColumn = (colIndex: number) => {
     setDraftItems((prev) => prev.filter((_, i) => i !== colIndex));
     setDraftAttrs((prev) =>
-      prev.map((a) => ({ ...a, values: a.values.filter((_, i) => i !== colIndex) })),
+      prev.map((a) => ({ ...a, values: a.values.filter((_, i) => i !== colIndex) }))
     );
   };
 
@@ -71,16 +71,15 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
     return (
-      <Box
-        className="nodrag nowheel nopan"
-        onKeyDown={handleKeyDown}
-        sx={{ outline: 'none' }}
-      >
+      <Box className="nodrag nowheel nopan" onKeyDown={handleKeyDown} sx={{ outline: 'none' }}>
         <TableContainer sx={{ maxHeight: 300 }}>
           <Table size="small" stickyHeader>
             <TableHead>
@@ -93,14 +92,27 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                         size="small"
                         value={item}
                         onChange={(e) =>
-                          setDraftItems((prev) => prev.map((it, j) => (j === i ? e.target.value : it)))
+                          setDraftItems((prev) =>
+                            prev.map((it, j) => (j === i ? e.target.value : it))
+                          )
                         }
-                        sx={{ '& .MuiInputBase-input': { fontSize: 11, py: 0.25, px: 0.5, fontWeight: 600 } }}
+                        sx={{
+                          '& .MuiInputBase-input': {
+                            fontSize: 11,
+                            py: 0.25,
+                            px: 0.5,
+                            fontWeight: 600,
+                          },
+                        }}
                       />
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteColumn(i)}
-                        sx={{ width: 16, height: 16, color: alpha(theme.palette.text.primary, 0.25) }}
+                        sx={{
+                          width: 16,
+                          height: 16,
+                          color: alpha(theme.palette.text.primary, 0.25),
+                        }}
                       >
                         <TrashIcon size={10} weight="light" color="currentColor" />
                       </IconButton>
@@ -108,7 +120,11 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                   </TableCell>
                 ))}
                 <TableCell sx={{ p: 0.5, width: 30 }}>
-                  <IconButton size="small" onClick={handleAddColumn} sx={{ width: 20, height: 20, color: 'primary.main' }}>
+                  <IconButton
+                    size="small"
+                    onClick={handleAddColumn}
+                    sx={{ width: 20, height: 20, color: 'primary.main' }}
+                  >
                     <PlusIcon size={12} weight="light" color="currentColor" />
                   </IconButton>
                 </TableCell>
@@ -124,7 +140,7 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                         value={attr.name}
                         onChange={(e) =>
                           setDraftAttrs((prev) =>
-                            prev.map((a, j) => (j === ai ? { ...a, name: e.target.value } : a)),
+                            prev.map((a, j) => (j === ai ? { ...a, name: e.target.value } : a))
                           )
                         }
                         sx={{ '& .MuiInputBase-input': { fontSize: 11, py: 0.25, px: 0.5 } }}
@@ -132,7 +148,11 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteRow(ai)}
-                        sx={{ width: 16, height: 16, color: alpha(theme.palette.text.primary, 0.25) }}
+                        sx={{
+                          width: 16,
+                          height: 16,
+                          color: alpha(theme.palette.text.primary, 0.25),
+                        }}
                       >
                         <TrashIcon size={10} weight="light" color="currentColor" />
                       </IconButton>
@@ -147,9 +167,12 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                           setDraftAttrs((prev) =>
                             prev.map((a, j) =>
                               j === ai
-                                ? { ...a, values: a.values.map((v, k) => (k === vi ? e.target.value : v)) }
-                                : a,
-                            ),
+                                ? {
+                                    ...a,
+                                    values: a.values.map((v, k) => (k === vi ? e.target.value : v)),
+                                  }
+                                : a
+                            )
                           )
                         }
                         sx={{ '& .MuiInputBase-input': { fontSize: 11, py: 0.25, px: 0.5 } }}
@@ -172,9 +195,7 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
   }
 
   return (
-    <Box
-      sx={{ position: 'relative' }}
-    >
+    <Box sx={{ position: 'relative' }}>
       <TableContainer sx={{ maxHeight: 300 }}>
         <Table size="small" stickyHeader>
           <TableHead>
@@ -197,12 +218,13 @@ export function ComparisonComponent({ data, onSave }: ComparisonComponentProps) 
                   const isBest =
                     data.highlightBest &&
                     attr.values.length > 1 &&
-                    val === attr.values.reduce((a, b) => {
-                      const na = parseFloat(a);
-                      const nb = parseFloat(b);
-                      if (!isNaN(na) && !isNaN(nb)) return na > nb ? a : b;
-                      return a;
-                    });
+                    val ===
+                      attr.values.reduce((a, b) => {
+                        const na = parseFloat(a);
+                        const nb = parseFloat(b);
+                        if (!isNaN(na) && !isNaN(nb)) return na > nb ? a : b;
+                        return a;
+                      });
 
                   return (
                     <TableCell

@@ -25,7 +25,8 @@ export const MessageRow = memo(
     const displayContent = parsed ? parsed.text : message.content;
 
     // Merge: explicit thinkingTexts (from done callback) take priority, else use parsed
-    const thinkingTexts = message.thinkingTexts ?? (parsed?.thinkingTexts.length ? parsed.thinkingTexts : undefined);
+    const thinkingTexts =
+      message.thinkingTexts ?? (parsed?.thinkingTexts.length ? parsed.thinkingTexts : undefined);
     const sources = message.sources ?? (parsed?.sources.length ? parsed.sources : undefined);
 
     const hasThinking = thinkingTexts && thinkingTexts.length > 0;
@@ -58,11 +59,13 @@ export const MessageRow = memo(
               >
                 Thinking
               </Typography>
-              {!message.isStreaming && hasThinking && (
-                showThinkingContent
-                  ? <CaretDownIcon size={10} style={{ opacity: 0.4 }} />
-                  : <CaretRightIcon size={10} style={{ opacity: 0.4 }} />
-              )}
+              {!message.isStreaming &&
+                hasThinking &&
+                (showThinkingContent ? (
+                  <CaretDownIcon size={10} style={{ opacity: 0.4 }} />
+                ) : (
+                  <CaretRightIcon size={10} style={{ opacity: 0.4 }} />
+                ))}
               {message.isStreaming && (
                 <Box sx={{ display: 'flex', gap: '3px', ml: 0.25 }}>
                   {[0, 1, 2].map((d) => (
@@ -138,17 +141,12 @@ export const MessageRow = memo(
               }}
             >
               {isUser ? (
-                <Typography
-                  sx={{ fontSize: '0.82rem', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}
-                >
+                <Typography sx={{ fontSize: '0.82rem', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                   {message.content}
                 </Typography>
               ) : (
                 <Box sx={markdownStyles}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeHighlight]}
-                  >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                     {displayContent}
                   </ReactMarkdown>
                 </Box>

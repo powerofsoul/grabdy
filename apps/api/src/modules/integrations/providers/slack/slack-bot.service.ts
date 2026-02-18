@@ -233,7 +233,9 @@ export class SlackBotService {
         };
 
         void this.botQueue.add('channel_joined', jobData);
-        this.logger.log(`Queued channel_joined job for org ${conn.orgId} in channel ${slackChannelId}`);
+        this.logger.log(
+          `Queued channel_joined job for org ${conn.orgId} in channel ${slackChannelId}`
+        );
       }
     }
   }

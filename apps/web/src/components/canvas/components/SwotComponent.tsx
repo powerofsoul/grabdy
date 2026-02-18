@@ -64,7 +64,10 @@ export function SwotComponent({ data, onSave }: SwotComponentProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -77,7 +80,9 @@ export function SwotComponent({ data, onSave }: SwotComponentProps) {
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
           {QUADRANTS.map(({ key, label }) => (
             <Box key={key}>
-              <Typography sx={{ fontSize: 10, fontWeight: 700, mb: 0.5, textTransform: 'uppercase' }}>
+              <Typography
+                sx={{ fontSize: 10, fontWeight: 700, mb: 0.5, textTransform: 'uppercase' }}
+              >
                 {label}
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -99,7 +104,11 @@ export function SwotComponent({ data, onSave }: SwotComponentProps) {
                     </IconButton>
                   </Box>
                 ))}
-                <IconButton size="small" onClick={() => handleAddItem(key)} sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleAddItem(key)}
+                  sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}
+                >
                   <PlusIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
               </Box>
@@ -111,9 +120,7 @@ export function SwotComponent({ data, onSave }: SwotComponentProps) {
   }
 
   return (
-    <Box
-      sx={{ position: 'relative' }}
-    >
+    <Box sx={{ position: 'relative' }}>
       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
         {QUADRANTS.map(({ key, label, paletteKey }, qi) => {
           const color = theme.palette[paletteKey].main;

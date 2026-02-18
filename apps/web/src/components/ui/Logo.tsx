@@ -10,10 +10,7 @@ export function Logo({ size = 'md' }: LogoProps) {
 
   return (
     <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-      <Typography
-        variant="h5"
-        sx={{ fontSize, color: 'text.primary' }}
-      >
+      <Typography variant="h5" sx={{ fontSize, color: 'text.primary' }}>
         grabdy.
       </Typography>
     </Link>

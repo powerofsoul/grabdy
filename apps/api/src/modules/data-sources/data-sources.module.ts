@@ -10,11 +10,7 @@ import { DataSourcesController } from './data-sources.controller';
 import { DataSourcesService } from './data-sources.service';
 
 @Module({
-  imports: [
-    StorageModule,
-    ExtractorsModule,
-    BullModule.registerQueue({ name: DATA_SOURCE_QUEUE }),
-  ],
+  imports: [StorageModule, ExtractorsModule, BullModule.registerQueue({ name: DATA_SOURCE_QUEUE })],
   controllers: [DataSourcesController],
   providers: [DataSourcesService, DataSourceProcessor],
   exports: [DataSourcesService],

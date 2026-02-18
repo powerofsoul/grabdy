@@ -4,7 +4,12 @@ import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
 import type { Card, CardMetadata, CardSource } from '@grabdy/contracts';
 import { chatSourceSchema, type ChatSource } from '@grabdy/contracts';
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { DotsSixVerticalIcon, PencilSimpleIcon, SparkleIcon, TrashIcon } from '@phosphor-icons/react';
+import {
+  DotsSixVerticalIcon,
+  PencilSimpleIcon,
+  SparkleIcon,
+  TrashIcon,
+} from '@phosphor-icons/react';
 import { Handle, NodeResizeControl, Position, useStore } from '@xyflow/react';
 
 import { SourceChips } from '../chat/components/source-chips';
@@ -26,7 +31,11 @@ interface CardNodeData extends Record<string, unknown> {
   style?: { backgroundColor?: string; borderColor?: string };
   metadata?: CardMetadata;
   onDelete?: () => void;
-  onComponentEdit?: (cardId: NonDbId<'CanvasCard'>, componentId: NonDbId<'CanvasComponent'>, data: Record<string, unknown>) => void;
+  onComponentEdit?: (
+    cardId: NonDbId<'CanvasCard'>,
+    componentId: NonDbId<'CanvasComponent'>,
+    data: Record<string, unknown>
+  ) => void;
   onTitleEdit?: (cardId: string, title: string) => void;
   onResize?: (cardId: string, width: number) => void;
 }
@@ -79,11 +88,14 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
     editTriggerRef.current = trigger;
   }, []);
 
-  const enterEdit = useCallback((saveRef: React.RefObject<() => void>, discardRef: React.RefObject<() => void>) => {
-    activeSaveRef.current = saveRef;
-    activeDiscardRef.current = discardRef;
-    setIsEditing(true);
-  }, []);
+  const enterEdit = useCallback(
+    (saveRef: React.RefObject<() => void>, discardRef: React.RefObject<() => void>) => {
+      activeSaveRef.current = saveRef;
+      activeDiscardRef.current = discardRef;
+      setIsEditing(true);
+    },
+    []
+  );
 
   const exitEdit = useCallback(() => {
     activeSaveRef.current = null;
@@ -93,7 +105,7 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
 
   const editContextValue = useMemo(
     () => ({ isEditing, enterEdit, exitEdit, setEditTrigger }),
-    [isEditing, enterEdit, exitEdit, setEditTrigger],
+    [isEditing, enterEdit, exitEdit, setEditTrigger]
   );
 
   // Bump z-index of the ReactFlow node wrapper when editing so card appears above others
@@ -103,7 +115,9 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
     if (!(nodeEl instanceof HTMLElement)) return;
     const prev = nodeEl.style.zIndex;
     nodeEl.style.zIndex = '1000';
-    return () => { nodeEl.style.zIndex = prev; };
+    return () => {
+      nodeEl.style.zIndex = prev;
+    };
   }, [isEditing]);
 
   // Click outside the card to save (ignore MUI portals like Select/Popover)
@@ -113,7 +127,9 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
       if (!(e.target instanceof HTMLElement)) return;
       if (cardRef.current && !cardRef.current.contains(e.target)) {
         // MUI renders Select/Popover/Menu in portals — don't treat those as "outside"
-        const inPortal = e.target.closest('.MuiPopover-root, .MuiPopper-root, .MuiModal-root, .MuiMenu-root');
+        const inPortal = e.target.closest(
+          '.MuiPopover-root, .MuiPopper-root, .MuiModal-root, .MuiMenu-root'
+        );
         if (inPortal) return;
         activeSaveRef.current?.current?.();
         exitEdit();
@@ -289,7 +305,12 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
             }}
             className="resize-handle-icon"
           >
-            <path d="M11 1L1 11M11 5L5 11M11 9L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path
+              d="M11 1L1 11M11 5L5 11M11 9L9 11"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
         </NodeResizeControl>
 
@@ -332,11 +353,11 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                 }}
               >
                 <SparkleIcon size={14} weight="light" color="currentColor" />
-                <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1 }}>
-                  AI
-                </Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1 }}>AI</Typography>
               </Box>
-              <Box sx={{ width: '1px', height: 20, bgcolor: alpha(theme.palette.text.primary, 0.12) }} />
+              <Box
+                sx={{ width: '1px', height: 20, bgcolor: alpha(theme.palette.text.primary, 0.12) }}
+              />
             </>
           )}
 
@@ -354,7 +375,10 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                       width: 30,
                       height: 30,
                       color: alpha(theme.palette.text.primary, 0.5),
-                      '&:hover': { color: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.08) },
+                      '&:hover': {
+                        color: 'primary.main',
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      },
                     }}
                   >
                     <PencilSimpleIcon size={15} weight="light" color="currentColor" />
@@ -370,7 +394,10 @@ function CardNodeInner({ data }: { data: CardNodeData }) {
                       width: 30,
                       height: 30,
                       color: alpha(theme.palette.text.primary, 0.5),
-                      '&:hover': { color: 'error.main', bgcolor: alpha(theme.palette.error.main, 0.08) },
+                      '&:hover': {
+                        color: 'error.main',
+                        bgcolor: alpha(theme.palette.error.main, 0.08),
+                      },
                     }}
                   >
                     <TrashIcon size={15} weight="light" color="currentColor" />

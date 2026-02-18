@@ -6,7 +6,7 @@ import type { FileStorage } from './file-storage.interface';
 export class LocalFileStorage implements FileStorage {
   constructor(
     private readonly basePath: string,
-    private readonly baseUrl: string,
+    private readonly baseUrl: string
   ) {}
 
   async put(key: string, body: Buffer, _contentType: string): Promise<void> {

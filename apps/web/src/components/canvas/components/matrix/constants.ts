@@ -7,7 +7,10 @@ interface QuadrantData {
   bottomRight: string[];
 }
 
-export const QUADRANT_PALETTE_KEYS: Record<keyof QuadrantData, 'info' | 'success' | 'warning' | 'error'> = {
+export const QUADRANT_PALETTE_KEYS: Record<
+  keyof QuadrantData,
+  'info' | 'success' | 'warning' | 'error'
+> = {
   topLeft: 'info',
   topRight: 'success',
   bottomLeft: 'warning',

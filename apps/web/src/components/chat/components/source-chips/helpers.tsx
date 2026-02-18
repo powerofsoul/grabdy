@@ -34,7 +34,7 @@ export function getFileIcon(name: string): IconComponent {
 
 export function groupSources(
   sources: ChatSource[],
-  FileIcon: React.ComponentType<{ name: string; size: number }>,
+  FileIcon: React.ComponentType<{ name: string; size: number }>
 ): SourceGroup[] {
   const groups = new Map<SourceGroupType, ChatSource[]>();
 
@@ -63,9 +63,10 @@ export function groupSources(
 
       result.push({
         type: 'UPLOAD',
-        label: items.length === 1
-          ? `${items[0].dataSourceName}${formatLocation(items[0])}`
-          : pluralize(items.length, 'document'),
+        label:
+          items.length === 1
+            ? `${items[0].dataSourceName}${formatLocation(items[0])}`
+            : pluralize(items.length, 'document'),
         icon,
         count: items.length,
         sources: items,

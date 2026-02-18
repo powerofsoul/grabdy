@@ -35,14 +35,19 @@ export function Footer() {
           {/* Logo + tagline */}
           <Box>
             <Logo />
-            <Typography sx={{ mt: 0.75, fontSize: '0.78rem', color: 'text.secondary', maxWidth: 280 }}>
+            <Typography
+              sx={{ mt: 0.75, fontSize: '0.78rem', color: 'text.secondary', maxWidth: 280 }}
+            >
               Smart document retrieval for teams that move fast.
             </Typography>
           </Box>
 
           {/* Product column */}
           <Box>
-            <Typography variant="overline" sx={{ color: 'text.primary', mb: 1.5, display: 'block' }}>
+            <Typography
+              variant="overline"
+              sx={{ color: 'text.primary', mb: 1.5, display: 'block' }}
+            >
               Product
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -60,7 +65,10 @@ export function Footer() {
 
           {/* Company column */}
           <Box>
-            <Typography variant="overline" sx={{ color: 'text.primary', mb: 1.5, display: 'block' }}>
+            <Typography
+              variant="overline"
+              sx={{ color: 'text.primary', mb: 1.5, display: 'block' }}
+            >
               Company
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

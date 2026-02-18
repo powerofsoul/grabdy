@@ -27,7 +27,8 @@ const TIERS = [
     price: 'Beta',
     priceSuffix: '',
     badge: 'Free during beta',
-    description: 'Everything you need to get started. Free while we\u2019re in beta\u00a0\u2014\u00a0no credit card required.',
+    description:
+      'Everything you need to get started. Free while we\u2019re in beta\u00a0\u2014\u00a0no credit card required.',
     cta: 'Get started',
     ctaVariant: 'contained',
     comingSoon: false,
@@ -53,7 +54,8 @@ const TIERS = [
     price: 'Custom',
     priceSuffix: '',
     badge: 'Coming soon',
-    description: 'For growing teams that need higher limits, priority support, and advanced integrations.',
+    description:
+      'For growing teams that need higher limits, priority support, and advanced integrations.',
     cta: 'Get started',
     ctaVariant: 'outlined',
     comingSoon: true,
@@ -79,7 +81,8 @@ const TIERS = [
     price: 'Custom',
     priceSuffix: '',
     badge: null,
-    description: 'Dedicated infrastructure, custom integrations, SLA, and hands-on onboarding for your team.',
+    description:
+      'Dedicated infrastructure, custom integrations, SLA, and hands-on onboarding for your team.',
     cta: 'Talk to us',
     ctaVariant: 'outlined',
     comingSoon: false,
@@ -230,7 +233,11 @@ export function PricingSection() {
       });
 
       tl.from('.pricing-title', { y: 30, opacity: 0, duration: 0.6 });
-      tl.from('.pricing-card', { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }, '-=0.3');
+      tl.from(
+        '.pricing-card',
+        { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
+        '-=0.3'
+      );
       tl.from('.pricing-note', { opacity: 0, duration: 0.3 }, '-=0.1');
     }, sectionRef);
 

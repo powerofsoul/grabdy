@@ -30,14 +30,20 @@ export class ChatController {
   @TsRestHandler(chatContract.chat)
   async chat(
     @CurrentMembership() membership: JwtMembership,
-    @CurrentUser('sub') userId: DbId<'User'>,
+    @CurrentUser('sub') userId: DbId<'User'>
   ) {
     return tsRestHandler(chatContract.chat, async ({ params, body }) => {
       try {
-        const result = await this.chatService.chat(params.orgId, membership.id, userId, body.message, {
-          threadId: body.threadId,
-          collectionId: body.collectionId,
-        });
+        const result = await this.chatService.chat(
+          params.orgId,
+          membership.id,
+          userId,
+          body.message,
+          {
+            threadId: body.threadId,
+            collectionId: body.collectionId,
+          }
+        );
 
         return {
           status: 200 as const,
@@ -151,7 +157,7 @@ export class ChatController {
         const thread = await this.chatService.renameThread(
           params.orgId,
           params.threadId,
-          body.title,
+          body.title
         );
 
         return {
@@ -224,7 +230,7 @@ export class ChatController {
         params.threadId,
         params.cardId,
         params.componentId,
-        body.data,
+        body.data
       );
       return { status: 200 as const, body: { success: true as const } };
     });
@@ -247,7 +253,7 @@ export class ChatController {
     @CurrentMembership() membership: JwtMembership,
     @CurrentUser('sub') userId: DbId<'User'>,
     @Body(new ZodValidationPipe(streamChatBodySchema)) body: StreamChatBody,
-    @Res() res: Response,
+    @Res() res: Response
   ) {
     try {
       const result = await this.chatService.streamChat(orgId, membership.id, userId, body.message, {
@@ -276,12 +282,12 @@ export class ChatController {
         } else if (part.type === 'tool-call') {
           const payload = part.payload;
           this.logger.log(
-            `[stream] Tool call: ${payload.toolName} at +${Date.now() - streamStart}ms`,
+            `[stream] Tool call: ${payload.toolName} at +${Date.now() - streamStart}ms`
           );
         } else if (part.type === 'tool-result') {
           const payload = part.payload;
           this.logger.log(
-            `[stream] Tool result: ${payload.toolName} at +${Date.now() - streamStart}ms`,
+            `[stream] Tool result: ${payload.toolName} at +${Date.now() - streamStart}ms`
           );
           if (CANVAS_TOOL_NAME_SET.has(payload.toolName)) {
             res.write(
@@ -290,12 +296,12 @@ export class ChatController {
                 tool: payload.toolName,
                 args: payload.args,
                 result: payload.result,
-              })}\n`,
+              })}\n`
             );
           }
         } else if (part.type === 'step-finish') {
           this.logger.log(
-            `[stream] Step finished at +${Date.now() - streamStart}ms (${textChunks} text chunks so far)`,
+            `[stream] Step finished at +${Date.now() - streamStart}ms (${textChunks} text chunks so far)`
           );
         } else {
           this.logger.debug(`[stream] ${part.type} at +${Date.now() - streamStart}ms`);
@@ -303,14 +309,14 @@ export class ChatController {
       }
 
       this.logger.log(
-        `[stream] Complete at +${Date.now() - streamStart}ms, ${textChunks} text chunks total`,
+        `[stream] Complete at +${Date.now() - streamStart}ms, ${textChunks} text chunks total`
       );
 
       res.write(
         `8:${JSON.stringify({
           type: 'done',
           threadId: result.threadId,
-        })}\n`,
+        })}\n`
       );
 
       res.end();

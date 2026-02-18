@@ -48,7 +48,10 @@ export function KeyValueComponent({ data, onSave }: KeyValueComponentProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -113,9 +116,7 @@ export function KeyValueComponent({ data, onSave }: KeyValueComponentProps) {
             >
               {pair.key}:
             </Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.primary' }}>
-              {pair.value}
-            </Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.primary' }}>{pair.value}</Typography>
           </Box>
         ))}
       </Box>

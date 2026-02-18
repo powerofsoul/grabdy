@@ -20,7 +20,11 @@ export function CopyButton({ text, size = 16 }: CopyButtonProps) {
   return (
     <Tooltip title={copied ? 'Copied!' : 'CopyIcon'}>
       <IconButton onClick={handleCopy} size="small" sx={{ color: 'text.secondary' }}>
-        {copied ? <CheckIcon size={size} weight="light" color="currentColor" /> : <CopyIcon size={size} weight="light" color="currentColor" />}
+        {copied ? (
+          <CheckIcon size={size} weight="light" color="currentColor" />
+        ) : (
+          <CopyIcon size={size} weight="light" color="currentColor" />
+        )}
       </IconButton>
     </Tooltip>
   );

@@ -32,9 +32,7 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
   });
 
   const handleColumnTitleChange = (colIndex: number, title: string) => {
-    setDraftColumns((prev) =>
-      prev.map((col, i) => (i === colIndex ? { ...col, title } : col)),
-    );
+    setDraftColumns((prev) => prev.map((col, i) => (i === colIndex ? { ...col, title } : col)));
   };
 
   const handleItemChange = (colIndex: number, itemIndex: number, value: string) => {
@@ -42,24 +40,22 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
       prev.map((col, i) =>
         i === colIndex
           ? { ...col, items: col.items.map((item, j) => (j === itemIndex ? value : item)) }
-          : col,
-      ),
+          : col
+      )
     );
   };
 
   const handleAddItem = (colIndex: number) => {
     setDraftColumns((prev) =>
-      prev.map((col, i) =>
-        i === colIndex ? { ...col, items: [...col.items, ''] } : col,
-      ),
+      prev.map((col, i) => (i === colIndex ? { ...col, items: [...col.items, ''] } : col))
     );
   };
 
   const handleDeleteItem = (colIndex: number, itemIndex: number) => {
     setDraftColumns((prev) =>
       prev.map((col, i) =>
-        i === colIndex ? { ...col, items: col.items.filter((_, j) => j !== itemIndex) } : col,
-      ),
+        i === colIndex ? { ...col, items: col.items.filter((_, j) => j !== itemIndex) } : col
+      )
     );
   };
 
@@ -72,7 +68,10 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -92,7 +91,9 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
                   value={col.title}
                   onChange={(e) => handleColumnTitleChange(ci, e.target.value)}
                   placeholder="Column title"
-                  sx={{ '& .MuiInputBase-input': { fontSize: 12, fontWeight: 600, py: 0.25, px: 0.5 } }}
+                  sx={{
+                    '& .MuiInputBase-input': { fontSize: 12, fontWeight: 600, py: 0.25, px: 0.5 },
+                  }}
                 />
                 <IconButton
                   size="small"
@@ -125,7 +126,12 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
                 <IconButton
                   size="small"
                   onClick={() => handleAddItem(ci)}
-                  sx={{ width: 20, height: 20, color: alpha(theme.palette.primary.main, 0.6), alignSelf: 'flex-start' }}
+                  sx={{
+                    width: 20,
+                    height: 20,
+                    color: alpha(theme.palette.primary.main, 0.6),
+                    alignSelf: 'flex-start',
+                  }}
                 >
                   <PlusIcon size={12} weight="light" color="currentColor" />
                 </IconButton>
@@ -143,9 +149,7 @@ export function KanbanComponent({ data, onSave }: KanbanComponentProps) {
   }
 
   return (
-    <Box
-      sx={{ position: 'relative' }}
-    >
+    <Box sx={{ position: 'relative' }}>
       <Box
         sx={{
           display: 'grid',

@@ -1,4 +1,13 @@
-import { alpha, Box, ListItemIcon, ListItemText, MenuItem, MenuList, Popover, useTheme } from '@mui/material';
+import {
+  alpha,
+  Box,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  MenuList,
+  Popover,
+  useTheme,
+} from '@mui/material';
 import { ArrowLineDownIcon, ArrowLineUpIcon, CopyIcon, TrashIcon } from '@phosphor-icons/react';
 
 interface CanvasContextMenuProps {
@@ -33,7 +42,9 @@ export function CanvasContextMenu({
       open={anchorPosition !== null}
       onClose={onClose}
       anchorReference="anchorPosition"
-      anchorPosition={anchorPosition ? { top: anchorPosition.y, left: anchorPosition.x } : undefined}
+      anchorPosition={
+        anchorPosition ? { top: anchorPosition.y, left: anchorPosition.x } : undefined
+      }
       slotProps={{
         paper: {
           sx: {
@@ -47,38 +58,79 @@ export function CanvasContextMenu({
       }}
     >
       <MenuList dense sx={{ py: 0.5 }}>
-        <MenuItem onClick={() => { onDuplicate(); onClose(); }} sx={itemSx}>
-          <ListItemIcon><CopyIcon size={14} weight="light" color="currentColor" /></ListItemIcon>
+        <MenuItem
+          onClick={() => {
+            onDuplicate();
+            onClose();
+          }}
+          sx={itemSx}
+        >
+          <ListItemIcon>
+            <CopyIcon size={14} weight="light" color="currentColor" />
+          </ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: 13 }}>Duplicate</ListItemText>
         </MenuItem>
 
         {(onBringToFront || onSendToBack) && (
-          <Box sx={{ my: 0.5, borderTop: '1px solid', borderColor: alpha(theme.palette.text.primary, 0.08) }} />
+          <Box
+            sx={{
+              my: 0.5,
+              borderTop: '1px solid',
+              borderColor: alpha(theme.palette.text.primary, 0.08),
+            }}
+          />
         )}
         {onBringToFront && (
-          <MenuItem onClick={() => { onBringToFront(); onClose(); }} sx={itemSx}>
-            <ListItemIcon><ArrowLineUpIcon size={14} weight="light" color="currentColor" /></ListItemIcon>
+          <MenuItem
+            onClick={() => {
+              onBringToFront();
+              onClose();
+            }}
+            sx={itemSx}
+          >
+            <ListItemIcon>
+              <ArrowLineUpIcon size={14} weight="light" color="currentColor" />
+            </ListItemIcon>
             <ListItemText primaryTypographyProps={{ fontSize: 13 }}>Bring to Front</ListItemText>
           </MenuItem>
         )}
         {onSendToBack && (
-          <MenuItem onClick={() => { onSendToBack(); onClose(); }} sx={itemSx}>
-            <ListItemIcon><ArrowLineDownIcon size={14} weight="light" color="currentColor" /></ListItemIcon>
+          <MenuItem
+            onClick={() => {
+              onSendToBack();
+              onClose();
+            }}
+            sx={itemSx}
+          >
+            <ListItemIcon>
+              <ArrowLineDownIcon size={14} weight="light" color="currentColor" />
+            </ListItemIcon>
             <ListItemText primaryTypographyProps={{ fontSize: 13 }}>Send to Back</ListItemText>
           </MenuItem>
         )}
 
-        <Box sx={{ my: 0.5, borderTop: '1px solid', borderColor: alpha(theme.palette.text.primary, 0.08) }} />
+        <Box
+          sx={{
+            my: 0.5,
+            borderTop: '1px solid',
+            borderColor: alpha(theme.palette.text.primary, 0.08),
+          }}
+        />
 
         <MenuItem
-          onClick={() => { onDelete(); onClose(); }}
+          onClick={() => {
+            onDelete();
+            onClose();
+          }}
           sx={{
             ...itemSx,
             color: 'error.main',
             '& .MuiListItemIcon-root': { minWidth: 28, color: 'inherit' },
           }}
         >
-          <ListItemIcon><TrashIcon size={14} weight="light" color="currentColor" /></ListItemIcon>
+          <ListItemIcon>
+            <TrashIcon size={14} weight="light" color="currentColor" />
+          </ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: 13 }}>Delete</ListItemText>
         </MenuItem>
       </MenuList>

@@ -11,7 +11,7 @@ export class AgentStorageProvider implements OnModuleInit {
 
   constructor(
     @InjectEnv('databaseUrl') private readonly databaseUrl: string,
-    @InjectEnv('nodeEnv') private readonly nodeEnv: string,
+    @InjectEnv('nodeEnv') private readonly nodeEnv: string
   ) {}
 
   async onModuleInit() {

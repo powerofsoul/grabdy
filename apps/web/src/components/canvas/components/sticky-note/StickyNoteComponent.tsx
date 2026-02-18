@@ -66,7 +66,10 @@ export function StickyNoteComponent({ data, onSave }: StickyNoteComponentProps) 
           {COLOR_OPTIONS.map((c) => (
             <Box
               key={c}
-              onClick={(e) => { e.stopPropagation(); setDraftColor(c); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDraftColor(c);
+              }}
               sx={{
                 width: 18,
                 height: 18,
@@ -74,7 +77,8 @@ export function StickyNoteComponent({ data, onSave }: StickyNoteComponentProps) 
                 bgcolor: COLOR_MAP[c],
                 cursor: 'pointer',
                 border: c === draftColor ? '2px solid' : '1px solid',
-                borderColor: c === draftColor ? 'primary.main' : alpha(theme.palette.common.black, 0.15),
+                borderColor:
+                  c === draftColor ? 'primary.main' : alpha(theme.palette.common.black, 0.15),
                 transition: 'border-color 150ms ease',
               }}
             />

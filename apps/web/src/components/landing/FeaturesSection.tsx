@@ -19,8 +19,10 @@ const HERO_FEATURES = [
   {
     icon: FileTextIcon,
     title: 'Cites real sources',
-    description: 'Every response links back to the exact file, page, and passage. No hallucinated answers.',
-    proof: 'Searching manually: hope for the best. Grabdy: direct link to file, page, and paragraph.',
+    description:
+      'Every response links back to the exact file, page, and passage. No hallucinated answers.',
+    proof:
+      'Searching manually: hope for the best. Grabdy: direct link to file, page, and paragraph.',
     colorKey: 'primary',
   },
   {
@@ -68,10 +70,7 @@ function FeatureCard({ feature, large }: { feature: Feature; large?: boolean }) 
       <Box sx={{ mb: 2, color: 'text.primary' }}>
         <Icon size={large ? 26 : 22} weight="light" color="currentColor" />
       </Box>
-      <Typography
-        variant={large ? 'h5' : 'h6'}
-        sx={{ mb: 1 }}
-      >
+      <Typography variant={large ? 'h5' : 'h6'} sx={{ mb: 1 }}>
         {feature.title}
       </Typography>
       <Typography
@@ -107,8 +106,16 @@ export function FeaturesSection() {
       });
 
       tl.from('.features-title', { y: 30, opacity: 0, duration: 0.6 });
-      tl.from('.feature-hero-card', { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }, '-=0.3');
-      tl.from('.feature-secondary-card', { y: 25, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }, '-=0.2');
+      tl.from(
+        '.feature-hero-card',
+        { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
+        '-=0.3'
+      );
+      tl.from(
+        '.feature-secondary-card',
+        { y: 25, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
+        '-=0.2'
+      );
     }, sectionRef);
 
     return () => ctx.revert();

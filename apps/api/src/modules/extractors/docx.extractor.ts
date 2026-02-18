@@ -136,7 +136,9 @@ export class DocxExtractor {
       try {
         images = await this.extractImages(zip);
       } catch (err) {
-        this.logger.warn(`DOCX image extraction failed: ${err instanceof Error ? err.message : err}`);
+        this.logger.warn(
+          `DOCX image extraction failed: ${err instanceof Error ? err.message : err}`
+        );
       }
     }
 
@@ -148,7 +150,9 @@ export class DocxExtractor {
     };
   }
 
-  private async extractImages(zip: InstanceType<typeof import('jszip')>): Promise<ExtractedImage[]> {
+  private async extractImages(
+    zip: InstanceType<typeof import('jszip')>
+  ): Promise<ExtractedImage[]> {
     const images: ExtractedImage[] = [];
 
     const mediaFolder = zip.folder('word/media');

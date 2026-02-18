@@ -4,7 +4,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Footer } from '@/components/landing/Footer';
 import { LandingNav } from '@/components/landing/LandingNav';
 
-
 export const Route = createFileRoute('/terms')({
   component: TermsPage,
 });
@@ -30,8 +29,8 @@ function TermsPage() {
           2. Service Description
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
-          Grabdy provides document ingestion, embedding, and semantic retrieval services via API
-          and web interface. We process your documents to enable AI-powered search and chat
+          Grabdy provides document ingestion, embedding, and semantic retrieval services via API and
+          web interface. We process your documents to enable AI-powered search and chat
           functionality.
         </Typography>
 
@@ -57,9 +56,8 @@ function TermsPage() {
           5. Limitation of Liability
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
-          Grabdy is provided &quot;as is&quot; without warranties of any kind. We are not liable
-          for any indirect, incidental, or consequential damages arising from the use of our
-          service.
+          Grabdy is provided &quot;as is&quot; without warranties of any kind. We are not liable for
+          any indirect, incidental, or consequential damages arising from the use of our service.
         </Typography>
 
         <Typography variant="h5" sx={{ mb: 2, mt: 4 }}>

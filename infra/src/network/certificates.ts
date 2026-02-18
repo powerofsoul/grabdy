@@ -34,7 +34,7 @@ const frontendCert = new aws.acm.Certificate(
     subjectAlternativeNames: [`www.${Env.domain}`],
     validationMethod: 'DNS',
   },
-  { provider: usEast1 },
+  { provider: usEast1 }
 );
 
 // Create a validation record for each unique domain on the cert
@@ -71,7 +71,7 @@ const frontendCertWaiter = new aws.acm.CertificateValidation(
     certificateArn: frontendCert.arn,
     validationRecordFqdns: [frontendValidation0.fqdn, frontendValidation1.fqdn],
   },
-  { provider: usEast1 },
+  { provider: usEast1 }
 );
 
 export const apiCertArn = apiCertWaiter.certificateArn;

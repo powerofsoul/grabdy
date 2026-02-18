@@ -23,7 +23,10 @@ export class XlsxExtractor {
       const lines = csv.split('\n');
       // First non-empty line is the header row with column names
       const headerLine = lines.find((l: string) => l.trim().length > 0) ?? '';
-      const columns = headerLine.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+      const columns = headerLine
+        .split(',')
+        .map((c: string) => c.trim())
+        .filter((c: string) => c.length > 0);
 
       const rows = lines
         .map((line: string, i: number) => ({ row: i + 1, text: line }))

@@ -20,7 +20,10 @@ export class TextExtractor {
     const lines = text.split('\n');
     // First non-empty line is the header row with column names
     const headerLine = lines.find((l) => l.trim().length > 0) ?? '';
-    const columns = headerLine.split(',').map((c) => c.trim()).filter((c) => c.length > 0);
+    const columns = headerLine
+      .split(',')
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0);
 
     const rows: SheetRow[] = lines
       .map((line, i) => ({ row: i + 1, text: line }))

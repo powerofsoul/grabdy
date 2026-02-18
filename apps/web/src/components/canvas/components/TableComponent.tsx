@@ -82,17 +82,16 @@ export function TableComponent({ data, onSave }: TableComponentProps) {
   const handleDeleteColumn = (colIndex: number) => {
     const colKey = draftColumns[colIndex].key;
     setDraftColumns((prev) => prev.filter((_, i) => i !== colIndex));
-    setDraftRows((prev) => prev.map((row) => {
-      return Object.fromEntries(Object.entries(row).filter(([k]) => k !== colKey));
-    }));
+    setDraftRows((prev) =>
+      prev.map((row) => {
+        return Object.fromEntries(Object.entries(row).filter(([k]) => k !== colKey));
+      })
+    );
   };
 
   if (isEditing) {
     return (
-      <Box
-        className="nodrag nowheel nopan"
-        sx={{ outline: 'none' }}
-      >
+      <Box className="nodrag nowheel nopan" sx={{ outline: 'none' }}>
         <TableContainer sx={{ maxHeight: 350 }}>
           <Table size="small" stickyHeader>
             <TableHead>
@@ -104,13 +103,25 @@ export function TableComponent({ data, onSave }: TableComponentProps) {
                         size="small"
                         value={col.label}
                         onChange={(e) => handleColumnLabelChange(ci, e.target.value)}
-                        sx={{ '& .MuiInputBase-input': { fontSize: 11, fontWeight: 600, py: 0.25, px: 0.5 } }}
+                        sx={{
+                          '& .MuiInputBase-input': {
+                            fontSize: 11,
+                            fontWeight: 600,
+                            py: 0.25,
+                            px: 0.5,
+                          },
+                        }}
                       />
                       {draftColumns.length > 1 && (
                         <IconButton
                           size="small"
                           onClick={() => handleDeleteColumn(ci)}
-                          sx={{ width: 16, height: 16, p: 0, color: alpha(theme.palette.text.primary, 0.25) }}
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            p: 0,
+                            color: alpha(theme.palette.text.primary, 0.25),
+                          }}
                         >
                           <XIcon size={10} weight="light" color="currentColor" />
                         </IconButton>

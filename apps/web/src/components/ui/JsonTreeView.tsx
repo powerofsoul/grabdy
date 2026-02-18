@@ -14,28 +14,40 @@ function JsonNode({ keyName, value, depth }: { keyName?: string; value: unknown;
   const renderValue = () => {
     if (value === null) {
       return (
-        <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.secondary' }}>
+        <Typography
+          component="span"
+          sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.secondary' }}
+        >
           null
         </Typography>
       );
     }
     if (typeof value === 'boolean') {
       return (
-        <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'info.main' }}>
+        <Typography
+          component="span"
+          sx={{ fontSize: 12, fontFamily: 'monospace', color: 'info.main' }}
+        >
           {value ? 'true' : 'false'}
         </Typography>
       );
     }
     if (typeof value === 'number') {
       return (
-        <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'warning.main' }}>
+        <Typography
+          component="span"
+          sx={{ fontSize: 12, fontFamily: 'monospace', color: 'warning.main' }}
+        >
           {String(value)}
         </Typography>
       );
     }
     if (typeof value === 'string') {
       return (
-        <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'success.main' }}>
+        <Typography
+          component="span"
+          sx={{ fontSize: 12, fontFamily: 'monospace', color: 'success.main' }}
+        >
           &quot;{value}&quot;
         </Typography>
       );
@@ -48,10 +60,16 @@ function JsonNode({ keyName, value, depth }: { keyName?: string; value: unknown;
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pl: depth * 1.5 }}>
         {keyName !== undefined && (
           <>
-            <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'primary.main', fontWeight: 600 }}>
+            <Typography
+              component="span"
+              sx={{ fontSize: 12, fontFamily: 'monospace', color: 'primary.main', fontWeight: 600 }}
+            >
               {keyName}
             </Typography>
-            <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.secondary' }}>
+            <Typography
+              component="span"
+              sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.secondary' }}
+            >
               :
             </Typography>
           </>
@@ -62,7 +80,7 @@ function JsonNode({ keyName, value, depth }: { keyName?: string; value: unknown;
   }
 
   const entries = isArray
-    ? (value).map((v, i) => ({ key: String(i), value: v }))
+    ? value.map((v, i) => ({ key: String(i), value: v }))
     : Object.entries(value).map(([k, v]) => ({ key: k, value: v }));
 
   const bracketOpen = isArray ? '[' : '{';
@@ -89,19 +107,31 @@ function JsonNode({ keyName, value, depth }: { keyName?: string; value: unknown;
         )}
         {keyName !== undefined && (
           <>
-            <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'primary.main', fontWeight: 600 }}>
+            <Typography
+              component="span"
+              sx={{ fontSize: 12, fontFamily: 'monospace', color: 'primary.main', fontWeight: 600 }}
+            >
               {keyName}
             </Typography>
-            <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.secondary', mr: 0.5 }}>
+            <Typography
+              component="span"
+              sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.secondary', mr: 0.5 }}
+            >
               :
             </Typography>
           </>
         )}
-        <Typography component="span" sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.secondary' }}>
+        <Typography
+          component="span"
+          sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.secondary' }}
+        >
           {bracketOpen}
         </Typography>
         {collapsed && (
-          <Typography component="span" sx={{ fontSize: 11, fontFamily: 'monospace', color: 'text.secondary' }}>
+          <Typography
+            component="span"
+            sx={{ fontSize: 11, fontFamily: 'monospace', color: 'text.secondary' }}
+          >
             {entries.length} {entries.length === 1 ? 'item' : 'items'} {bracketClose}
           </Typography>
         )}

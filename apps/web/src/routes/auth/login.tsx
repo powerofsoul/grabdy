@@ -182,20 +182,18 @@ function LoginPage() {
           <Link to="/auth/forgot-password" style={{ textDecoration: 'none' }}>
             <Typography
               variant="body2"
-              sx={{ color: 'text.secondary', fontSize: '0.875rem', '&:hover': { color: 'text.primary' } }}
+              sx={{
+                color: 'text.secondary',
+                fontSize: '0.875rem',
+                '&:hover': { color: 'text.primary' },
+              }}
             >
               Forgot password?
             </Typography>
           </Link>
         </Box>
 
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          disabled={busy}
-          sx={{ py: 1.5, mb: 3 }}
-        >
+        <Button type="submit" fullWidth variant="contained" disabled={busy} sx={{ py: 1.5, mb: 3 }}>
           {busy && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
           Sign in
         </Button>

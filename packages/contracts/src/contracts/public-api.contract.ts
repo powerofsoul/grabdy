@@ -40,7 +40,10 @@ export const publicApiErrorSchema = z.object({
 
 export const searchBodySchema = z.object({
   query: z.string().min(1).describe('The search query'),
-  collectionIds: z.array(dbIdSchema('Collection')).optional().describe('Limit search to specific collections'),
+  collectionIds: z
+    .array(dbIdSchema('Collection'))
+    .optional()
+    .describe('Limit search to specific collections'),
   topK: z.number().min(1).max(50).default(10).describe('Number of results to return (default: 10)'),
 });
 
@@ -54,8 +57,16 @@ export const searchResponseSchema = z.object({
 
 export const queryBodySchema = z.object({
   query: z.string().min(1).describe('The question or search query'),
-  collectionIds: z.array(dbIdSchema('Collection')).optional().describe('Limit search to specific collections'),
-  topK: z.number().min(1).max(50).default(10).describe('Number of source chunks to retrieve (default: 10)'),
+  collectionIds: z
+    .array(dbIdSchema('Collection'))
+    .optional()
+    .describe('Limit search to specific collections'),
+  topK: z
+    .number()
+    .min(1)
+    .max(50)
+    .default(10)
+    .describe('Number of source chunks to retrieve (default: 10)'),
 });
 
 export const queryResponseSchema = z.object({
@@ -64,11 +75,13 @@ export const queryResponseSchema = z.object({
     answer: z.string().describe('AI-generated answer based on the retrieved sources'),
     sources: z.array(publicSourceSchema).describe('Source chunks used to generate the answer'),
     model: z.string().describe('The model used to generate the answer'),
-    usage: z.object({
-      promptTokens: z.number().describe('Number of input tokens'),
-      completionTokens: z.number().describe('Number of output tokens'),
-      totalTokens: z.number().describe('Total tokens used'),
-    }).describe('Token usage for this request'),
+    usage: z
+      .object({
+        promptTokens: z.number().describe('Number of input tokens'),
+        completionTokens: z.number().describe('Number of output tokens'),
+        totalTokens: z.number().describe('Total tokens used'),
+      })
+      .describe('Token usage for this request'),
   }),
 });
 

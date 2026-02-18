@@ -1,11 +1,46 @@
 import type { ReactNode } from 'react';
 
 export const LANGUAGES = [
-  '', 'bash', 'c', 'cpp', 'csharp', 'css', 'dart', 'diff', 'dockerfile',
-  'elixir', 'erlang', 'go', 'graphql', 'haskell', 'html', 'java',
-  'javascript', 'json', 'kotlin', 'lua', 'makefile', 'markdown', 'nginx',
-  'perl', 'php', 'python', 'r', 'ruby', 'rust', 'scala', 'scss', 'shell',
-  'sql', 'swift', 'terraform', 'toml', 'typescript', 'xml', 'yaml', 'zig',
+  '',
+  'bash',
+  'c',
+  'cpp',
+  'csharp',
+  'css',
+  'dart',
+  'diff',
+  'dockerfile',
+  'elixir',
+  'erlang',
+  'go',
+  'graphql',
+  'haskell',
+  'html',
+  'java',
+  'javascript',
+  'json',
+  'kotlin',
+  'lua',
+  'makefile',
+  'markdown',
+  'nginx',
+  'perl',
+  'php',
+  'python',
+  'r',
+  'ruby',
+  'rust',
+  'scala',
+  'scss',
+  'shell',
+  'sql',
+  'swift',
+  'terraform',
+  'toml',
+  'typescript',
+  'xml',
+  'yaml',
+  'zig',
 ] as const;
 
 export interface HastNode {
@@ -26,7 +61,11 @@ export function hastToReact(node: HastNode, key?: number): ReactNode {
       ? classNames.filter((c): c is string => typeof c === 'string').join(' ')
       : undefined;
     const children = node.children?.map((child, i) => hastToReact(child, i));
-    return <span key={key} className={className}>{children}</span>;
+    return (
+      <span key={key} className={className}>
+        {children}
+      </span>
+    );
   }
   if (node.type === 'root' && node.children) {
     return <>{node.children.map((child, i) => hastToReact(child, i))}</>;

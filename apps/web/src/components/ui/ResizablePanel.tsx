@@ -32,7 +32,12 @@ interface ResizablePanelProps {
 }
 
 /** Read initial size from localStorage synchronously to avoid layout flash */
-function getInitialSize(storageKey: string, defaultSize: number, minSize: number, maxSize: number): number {
+function getInitialSize(
+  storageKey: string,
+  defaultSize: number,
+  minSize: number,
+  maxSize: number
+): number {
   try {
     const stored = localStorage.getItem(storageKey);
     if (stored) {
@@ -164,7 +169,7 @@ export function ResizablePanel({
       document.addEventListener('touchend', handleEnd);
       document.addEventListener('touchcancel', handleEnd);
     },
-    [direction, resizeFrom, minSize, maxSize, storageKey, onResizeEnd],
+    [direction, resizeFrom, minSize, maxSize, storageKey, onResizeEnd]
   );
 
   const handleMouseDown = useCallback(
@@ -172,7 +177,7 @@ export function ResizablePanel({
       e.preventDefault();
       startResize(direction === 'horizontal' ? e.clientX : e.clientY);
     },
-    [direction, startResize],
+    [direction, startResize]
   );
 
   const handleTouchStart = useCallback(
@@ -181,7 +186,7 @@ export function ResizablePanel({
         startResize(direction === 'horizontal' ? e.touches[0].clientX : e.touches[0].clientY);
       }
     },
-    [direction, startResize],
+    [direction, startResize]
   );
 
   // Don't render anything if hidden

@@ -17,7 +17,7 @@ export const MODEL_INFO = {
     provider: 'OpenAI',
     contextWindow: 1047576,
     maxOutput: 32768,
-    pricing: { inputPerMillion: 0.30, outputPerMillion: 1.25 },
+    pricing: { inputPerMillion: 0.3, outputPerMillion: 1.25 },
   },
   'openai/gpt-4o-mini': {
     label: 'GPT-4o Mini',

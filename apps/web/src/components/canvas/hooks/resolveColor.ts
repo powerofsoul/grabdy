@@ -5,9 +5,25 @@
  */
 
 const CSS_COLOR_NAMES = [
-  'red', 'pink', 'purple', 'blue', 'lightblue', 'cyan', 'teal',
-  'green', 'lightgreen', 'lime', 'yellow', 'amber', 'orange',
-  'brown', 'grey', 'gray', 'black', 'white', 'indigo',
+  'red',
+  'pink',
+  'purple',
+  'blue',
+  'lightblue',
+  'cyan',
+  'teal',
+  'green',
+  'lightgreen',
+  'lime',
+  'yellow',
+  'amber',
+  'orange',
+  'brown',
+  'grey',
+  'gray',
+  'black',
+  'white',
+  'indigo',
 ] as const;
 
 type CssColorName = (typeof CSS_COLOR_NAMES)[number];

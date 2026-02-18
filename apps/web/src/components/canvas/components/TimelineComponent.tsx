@@ -1,7 +1,22 @@
 import { useCallback, useState } from 'react';
 
-import { alpha, Box, IconButton, MenuItem, Select, TextField, Typography, useTheme } from '@mui/material';
-import { CheckCircleIcon, CircleIcon, PlusIcon, RadioButtonIcon, TrashIcon } from '@phosphor-icons/react';
+import {
+  alpha,
+  Box,
+  IconButton,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import {
+  CheckCircleIcon,
+  CircleIcon,
+  PlusIcon,
+  RadioButtonIcon,
+  TrashIcon,
+} from '@phosphor-icons/react';
 
 import { useEditMode } from '../hooks/useEditMode';
 
@@ -50,9 +65,7 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
   });
 
   const handleEventChange = (index: number, field: string, value: string) => {
-    setDraftEvents((prev) =>
-      prev.map((e, i) => (i === index ? { ...e, [field]: value } : e)),
-    );
+    setDraftEvents((prev) => prev.map((e, i) => (i === index ? { ...e, [field]: value } : e)));
   };
 
   const handleAddEvent = () => {
@@ -65,10 +78,7 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
 
   if (isEditing) {
     return (
-      <Box
-        className="nodrag nowheel nopan"
-        sx={{ p: 1.5, outline: 'none' }}
-      >
+      <Box className="nodrag nowheel nopan" sx={{ p: 1.5, outline: 'none' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {draftEvents.map((event, i) => (
             <Box key={i} sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -129,9 +139,7 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
   }
 
   return (
-    <Box
-      sx={{ p: 1.5, position: 'relative' }}
-    >
+    <Box sx={{ p: 1.5, position: 'relative' }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         {data.events.map((event, i) => {
           const color =
@@ -147,14 +155,24 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
 
           return (
             <Box key={i} sx={{ display: 'flex', gap: 1.25 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 16 }}>
-                <StatusIcon size={16} weight="light" color={color} fill={event.status === 'completed' ? color : 'transparent'} />
+              <Box
+                sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 16 }}
+              >
+                <StatusIcon
+                  size={16}
+                  weight="light"
+                  color={color}
+                  fill={event.status === 'completed' ? color : 'transparent'}
+                />
                 {!isLast && (
                   <Box
                     sx={{
                       width: 2,
                       flex: 1,
-                      bgcolor: event.status === 'completed' ? color : alpha(theme.palette.text.primary, 0.1),
+                      bgcolor:
+                        event.status === 'completed'
+                          ? color
+                          : alpha(theme.palette.text.primary, 0.1),
                       my: 0.25,
                     }}
                   />
@@ -172,11 +190,15 @@ export function TimelineComponent({ data, onSave }: TimelineComponentProps) {
                     {event.title}
                   </Typography>
                   {event.date && (
-                    <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>{event.date}</Typography>
+                    <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>
+                      {event.date}
+                    </Typography>
                   )}
                 </Box>
                 {event.description && (
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25, lineHeight: 1.4 }}>
+                  <Typography
+                    sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25, lineHeight: 1.4 }}
+                  >
                     {event.description}
                   </Typography>
                 )}

@@ -34,9 +34,7 @@ export function FunnelComponent({ data, onSave }: FunnelComponentProps) {
   });
 
   const handleStepChange = (index: number, field: 'label' | 'value', val: string) => {
-    setDraftSteps((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, [field]: val } : s)),
-    );
+    setDraftSteps((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: val } : s)));
   };
 
   const handleAddStep = () => {
@@ -56,11 +54,7 @@ export function FunnelComponent({ data, onSave }: FunnelComponentProps) {
 
   if (isEditing) {
     return (
-      <Box
-        className="nodrag nowheel nopan"
-        onKeyDown={handleKeyDown}
-        sx={{ p: 1.5 }}
-      >
+      <Box className="nodrag nowheel nopan" onKeyDown={handleKeyDown} sx={{ p: 1.5 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {draftSteps.map((step, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
@@ -100,9 +94,7 @@ export function FunnelComponent({ data, onSave }: FunnelComponentProps) {
   }
 
   return (
-    <Box
-      sx={{ p: 1.5, position: 'relative' }}
-    >
+    <Box sx={{ p: 1.5, position: 'relative' }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {data.steps.map((step, i) => {
           const widthPercent = maxValue > 0 ? (step.value / maxValue) * 100 : 0;

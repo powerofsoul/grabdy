@@ -3,9 +3,18 @@ import { BookOpenIcon, QuestionIcon, SparkleIcon } from '@phosphor-icons/react';
 
 import svg3 from '@/assets/watermarks/svg-3.svg';
 const STARTER_PROMPTS = [
-  { label: 'What do I have in my library?', icon: <BookOpenIcon size={14} weight="light" color="currentColor" /> },
-  { label: 'Summarize my latest uploads', icon: <SparkleIcon size={14} weight="light" color="currentColor" /> },
-  { label: 'Help me find a needle in the haystack', icon: <QuestionIcon size={14} weight="light" color="currentColor" /> },
+  {
+    label: 'What do I have in my library?',
+    icon: <BookOpenIcon size={14} weight="light" color="currentColor" />,
+  },
+  {
+    label: 'Summarize my latest uploads',
+    icon: <SparkleIcon size={14} weight="light" color="currentColor" />,
+  },
+  {
+    label: 'Help me find a needle in the haystack',
+    icon: <QuestionIcon size={14} weight="light" color="currentColor" />,
+  },
 ];
 
 interface ChatEmptyStateProps {
@@ -42,14 +51,8 @@ export function ChatEmptyState({ onPromptClick }: ChatEmptyStateProps) {
         }}
       />
 
-      <Typography
-        variant="h4"
-      >
-        Your documents await
-      </Typography>
-      <Typography
-        sx={{ color: alpha(ct, 0.4), fontSize: 14, mb: 1.5 }}
-      >
+      <Typography variant="h4">Your documents await</Typography>
+      <Typography sx={{ color: alpha(ct, 0.4), fontSize: 14, mb: 1.5 }}>
         Ask anything — they don&apos;t bite.
       </Typography>
 
@@ -81,12 +84,8 @@ export function ChatEmptyState({ onPromptClick }: ChatEmptyStateProps) {
               },
             }}
           >
-            <Box sx={{ display: 'flex', color: alpha(ct, 0.35) }}>
-              {prompt.icon}
-            </Box>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-              {prompt.label}
-            </Typography>
+            <Box sx={{ display: 'flex', color: alpha(ct, 0.35) }}>{prompt.icon}</Box>
+            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{prompt.label}</Typography>
           </Box>
         ))}
       </Box>

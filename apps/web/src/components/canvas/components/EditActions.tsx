@@ -31,7 +31,6 @@ export function EditActions({ onDiscard, onSave }: EditActionsProps) {
           px: 1,
           py: 0,
           fontSize: 11,
-
         }}
       >
         Save

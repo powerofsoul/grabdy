@@ -34,9 +34,7 @@ export function buildOpenApiDocument() {
         '```',
       ].join('\n'),
     },
-    servers: [
-      { url: '/', description: 'Current server' },
-    ],
+    servers: [{ url: '/', description: 'Current server' }],
     security: [{ BearerAuth: [] }],
     components: {
       securitySchemes: {

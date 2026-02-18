@@ -52,7 +52,7 @@ export type NonDbId<T extends NonTableIdName> = Tagged<string, T>;
  */
 export function packNonDbId<T extends NonTableIdName>(
   entityType: T,
-  orgId: DbId<'Org'>,
+  orgId: DbId<'Org'>
 ): NonDbId<T> {
   const orgNumericId = extractOrgNumericId(orgId);
   const buf = new Uint8Array(16);
@@ -90,7 +90,7 @@ export function nonDbIdSchema<T extends NonTableIdName>(entityType: T) {
         const entityByte = parseInt(hex.slice(20, 22), 16);
         return entityByte === expectedCode;
       },
-      { message: `Expected ${entityType} ID` },
+      { message: `Expected ${entityType} ID` }
     )
     .transform((s) => s as NonDbId<T>);
 }

@@ -31,7 +31,10 @@ import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
-import { canPreview, DocumentPreviewDrawer } from '@/components/chat/components/DocumentPreviewDrawer';
+import {
+  canPreview,
+  DocumentPreviewDrawer,
+} from '@/components/chat/components/DocumentPreviewDrawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -309,7 +312,7 @@ function CollectionDetailPage() {
     if (!parsed.success) return;
     pushDrawer(
       (onClose) => <DocumentPreviewDrawer onClose={onClose} dataSourceId={parsed.data} />,
-      { title: ds.title, mode: 'dialog', maxWidth: 'lg' },
+      { title: ds.title, mode: 'dialog', maxWidth: 'lg' }
     );
   };
 
@@ -335,7 +338,7 @@ function CollectionDetailPage() {
   const handleRename = (ds: DataSource) => {
     pushDrawer(
       (onClose) => <RenameDrawer onClose={onClose} dataSource={ds} onRenamed={fetchData} />,
-      { title: 'Rename File' },
+      { title: 'Rename File' }
     );
   };
 
@@ -403,10 +406,14 @@ function CollectionDetailPage() {
             defaultDirection: 'desc',
             getSortValue: (item, col) => {
               switch (col) {
-                case 'name': return item.title.toLowerCase();
-                case 'uploaded': return new Date(item.createdAt).getTime();
-                case 'size': return item.fileSize;
-                default: return '';
+                case 'name':
+                  return item.title.toLowerCase();
+                case 'uploaded':
+                  return new Date(item.createdAt).getTime();
+                case 'size':
+                  return item.fileSize;
+                default:
+                  return '';
               }
             },
           }}
@@ -438,7 +445,10 @@ function CollectionDetailPage() {
                   <Tooltip title="Preview">
                     <IconButton
                       size="small"
-                      onClick={(e) => { e.stopPropagation(); handlePreview(ds); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePreview(ds);
+                      }}
                     >
                       <EyeIcon size={16} weight="light" />
                     </IconButton>
@@ -447,7 +457,10 @@ function CollectionDetailPage() {
                   <Tooltip title="Download">
                     <IconButton
                       size="small"
-                      onClick={(e) => { e.stopPropagation(); handleDownload(ds); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownload(ds);
+                      }}
                     >
                       <DownloadSimpleIcon size={16} weight="light" />
                     </IconButton>
@@ -456,7 +469,10 @@ function CollectionDetailPage() {
                 <Tooltip title="Rename">
                   <IconButton
                     size="small"
-                    onClick={(e) => { e.stopPropagation(); handleRename(ds); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRename(ds);
+                    }}
                   >
                     <PencilSimpleIcon size={16} weight="light" />
                   </IconButton>
@@ -464,7 +480,10 @@ function CollectionDetailPage() {
                 <Tooltip title="Reprocess">
                   <IconButton
                     size="small"
-                    onClick={(e) => { e.stopPropagation(); handleReprocess(ds); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleReprocess(ds);
+                    }}
                     disabled={ds.status === 'PROCESSING'}
                   >
                     <ArrowsClockwiseIcon size={16} weight="light" />
@@ -473,7 +492,10 @@ function CollectionDetailPage() {
                 <Tooltip title="Delete">
                   <IconButton
                     size="small"
-                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(ds); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(ds);
+                    }}
                     sx={{ color: 'error.main' }}
                   >
                     <TrashIcon size={16} weight="light" />

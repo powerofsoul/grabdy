@@ -31,7 +31,7 @@ const aiComponentSchema = z.object({
         url: z.string().optional(),
         dataSourceId: z.string().optional(),
         chunkId: z.string().optional(),
-      }),
+      })
     )
     .optional(),
 });
@@ -63,7 +63,9 @@ const aiCardSchema = z.object({
     .optional(),
   metadata: z
     .object({
-      createdBy: z.union([z.literal('ai'), z.object({ id: z.string(), name: z.string() })]).default('ai'),
+      createdBy: z
+        .union([z.literal('ai'), z.object({ id: z.string(), name: z.string() })])
+        .default('ai'),
       locked: z.boolean().default(false),
       tags: z.array(z.string()).default([]),
       aiNotes: z.string().optional(),
@@ -112,21 +114,30 @@ function resolveCardId(id: string, idMap: Map<string, string>): ResolveResult {
   const mapped = idMap.get(id);
   if (mapped) return { ok: true, id: mapped };
   if (cardIdValidator.safeParse(id).success) return { ok: true, id };
-  return { ok: false, error: `Invalid card ID "${id}" — not a placeholder from this batch and not a valid server ID` };
+  return {
+    ok: false,
+    error: `Invalid card ID "${id}" — not a placeholder from this batch and not a valid server ID`,
+  };
 }
 
 function resolveEdgeId(id: string, idMap: Map<string, string>): ResolveResult {
   const mapped = idMap.get(id);
   if (mapped) return { ok: true, id: mapped };
   if (edgeIdValidator.safeParse(id).success) return { ok: true, id };
-  return { ok: false, error: `Invalid edge ID "${id}" — not a placeholder from this batch and not a valid server ID` };
+  return {
+    ok: false,
+    error: `Invalid edge ID "${id}" — not a placeholder from this batch and not a valid server ID`,
+  };
 }
 
 function resolveComponentId(id: string, idMap: Map<string, string>): ResolveResult {
   const mapped = idMap.get(id);
   if (mapped) return { ok: true, id: mapped };
   if (componentIdValidator.safeParse(id).success) return { ok: true, id };
-  return { ok: false, error: `Invalid component ID "${id}" — not a placeholder from this batch and not a valid server ID` };
+  return {
+    ok: false,
+    error: `Invalid component ID "${id}" — not a placeholder from this batch and not a valid server ID`,
+  };
 }
 
 @Injectable()
@@ -144,7 +155,9 @@ export class CanvasTools {
       description:
         'Apply one or more canvas operations in a single batch. Use placeholder IDs for new cards/edges — the server replaces them with real IDs. Later operations in the same batch can reference placeholder IDs from earlier operations.',
       inputSchema: z.object({
-        operations: z.array(canvasOpInputSchema).describe('Ordered array of canvas operations to apply'),
+        operations: z
+          .array(canvasOpInputSchema)
+          .describe('Ordered array of canvas operations to apply'),
       }),
       execute: async (input) => {
         const idMap = new Map<string, string>();
@@ -161,12 +174,16 @@ export class CanvasTools {
         // Parse results through the schema to get properly branded types
         const batchOps = results.map((r) => batchInnerOpSchema.parse(r));
 
-        await queue.add('batch', {
-          type: 'batch',
-          threadId,
-          orgId,
-          operations: batchOps,
-        }, { attempts: 1 });
+        await queue.add(
+          'batch',
+          {
+            type: 'batch',
+            threadId,
+            orgId,
+            operations: batchOps,
+          },
+          { attempts: 1 }
+        );
 
         return { results };
       },
@@ -182,7 +199,7 @@ function processOp(
   op: CanvasOpInput,
   orgId: DbId<'Org'>,
   idMap: Map<string, string>,
-  logger: Logger,
+  logger: Logger
 ): Record<string, unknown> {
   switch (op.op) {
     case 'add_card': {
@@ -203,7 +220,9 @@ function processOp(
       const parsed = cardSchema.safeParse(rawCard);
       if (!parsed.success) {
         logger.warn(`[canvas_update:add_card] Validation failed: ${parsed.error.message}`);
-        return { error: `Invalid card data: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}` };
+        return {
+          error: `Invalid card data: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`,
+        };
       }
 
       return { op: 'add_card', cards: [parsed.data] };
@@ -216,14 +235,25 @@ function processOp(
     case 'move_card': {
       const resolved = resolveCardId(op.cardId, idMap);
       if (!resolved.ok) return { error: resolved.error };
-      return { op: 'move_card', cardId: resolved.id, position: op.position, width: op.width, height: op.height };
+      return {
+        op: 'move_card',
+        cardId: resolved.id,
+        position: op.position,
+        width: op.width,
+        height: op.height,
+      };
     }
     case 'update_component': {
       const resolvedCard = resolveCardId(op.cardId, idMap);
       if (!resolvedCard.ok) return { error: resolvedCard.error };
       const resolvedComp = resolveComponentId(op.componentId, idMap);
       if (!resolvedComp.ok) return { error: resolvedComp.error };
-      return { op: 'update_component', cardId: resolvedCard.id, componentId: resolvedComp.id, data: op.data };
+      return {
+        op: 'update_component',
+        cardId: resolvedCard.id,
+        componentId: resolvedComp.id,
+        data: op.data,
+      };
     }
     case 'add_edge': {
       const edgeId = packNonDbId('CanvasEdge', orgId);
@@ -244,7 +274,9 @@ function processOp(
       const parsed = canvasEdgeSchema.safeParse(rawEdge);
       if (!parsed.success) {
         logger.warn(`[canvas_update:add_edge] Validation failed: ${parsed.error.message}`);
-        return { error: `Invalid edge data: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}` };
+        return {
+          error: `Invalid edge data: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`,
+        };
       }
 
       return { op: 'add_edge', edge: parsed.data };
@@ -256,4 +288,3 @@ function processOp(
     }
   }
 }
-

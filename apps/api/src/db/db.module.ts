@@ -27,7 +27,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @InjectEnv('databaseUrl') databaseUrl: string,
-    @InjectEnv('nodeEnv') nodeEnv: string,
+    @InjectEnv('nodeEnv') nodeEnv: string
   ) {
     this.pool = new Pool({
       connectionString: databaseUrl,

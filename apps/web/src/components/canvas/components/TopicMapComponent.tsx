@@ -33,7 +33,9 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
 
   const { endEdit } = useEditMode(handleSave, handleCancel, () => {
     setDraftTopic(data.centralTopic);
-    setDraftBranches(data.branches.map((b) => ({ ...b, children: b.children ? [...b.children] : [] })));
+    setDraftBranches(
+      data.branches.map((b) => ({ ...b, children: b.children ? [...b.children] : [] }))
+    );
     setIsEditing(true);
   });
 
@@ -58,16 +60,14 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
       prev.map((b, i) =>
         i === branchIndex
           ? { ...b, children: (b.children ?? []).map((c, j) => (j === childIndex ? value : c)) }
-          : b,
-      ),
+          : b
+      )
     );
   };
 
   const handleAddChild = (branchIndex: number) => {
     setDraftBranches((prev) =>
-      prev.map((b, i) =>
-        i === branchIndex ? { ...b, children: [...(b.children ?? []), ''] } : b,
-      ),
+      prev.map((b, i) => (i === branchIndex ? { ...b, children: [...(b.children ?? []), ''] } : b))
     );
   };
 
@@ -76,8 +76,8 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
       prev.map((b, i) =>
         i === branchIndex
           ? { ...b, children: (b.children ?? []).filter((_, j) => j !== childIndex) }
-          : b,
-      ),
+          : b
+      )
     );
   };
 
@@ -90,11 +90,7 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
 
   if (isEditing) {
     return (
-      <Box
-        className="nodrag nowheel nopan"
-        onKeyDown={handleKeyDown}
-        sx={{ p: 1.5 }}
-      >
+      <Box className="nodrag nowheel nopan" onKeyDown={handleKeyDown} sx={{ p: 1.5 }}>
         <TextField
           size="small"
           fullWidth
@@ -104,7 +100,12 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
           placeholder="Central topic"
           sx={{
             mb: 1.5,
-            '& .MuiInputBase-input': { fontSize: 14, fontWeight: 700, textAlign: 'center', py: 0.75 },
+            '& .MuiInputBase-input': {
+              fontSize: 14,
+              fontWeight: 700,
+              textAlign: 'center',
+              py: 0.75,
+            },
           }}
         />
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -125,12 +126,19 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
                   value={branch.label}
                   onChange={(e) => handleBranchLabelChange(i, e.target.value)}
                   placeholder="Category name"
-                  sx={{ '& .MuiInputBase-input': { fontSize: 13, fontWeight: 600, py: 0.5, px: 0.75 } }}
+                  sx={{
+                    '& .MuiInputBase-input': { fontSize: 13, fontWeight: 600, py: 0.5, px: 0.75 },
+                  }}
                 />
                 <IconButton
                   size="small"
                   onClick={() => handleDeleteBranch(i)}
-                  sx={{ width: 28, height: 28, color: alpha(theme.palette.error.main, 0.5), '&:hover': { color: 'error.main' } }}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    color: alpha(theme.palette.error.main, 0.5),
+                    '&:hover': { color: 'error.main' },
+                  }}
                 >
                   <TrashIcon size={15} weight="light" color="currentColor" />
                 </IconButton>
@@ -158,12 +166,24 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
                       onChange={(e) => handleChildChange(i, j, e.target.value)}
                       placeholder="Item"
                       slotProps={{ input: { disableUnderline: true } }}
-                      sx={{ '& .MuiInputBase-input': { fontSize: 12, py: 0, px: 0.25, width: Math.max(40, child.length * 7) } }}
+                      sx={{
+                        '& .MuiInputBase-input': {
+                          fontSize: 12,
+                          py: 0,
+                          px: 0.25,
+                          width: Math.max(40, child.length * 7),
+                        },
+                      }}
                     />
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteChild(i, j)}
-                      sx={{ width: 20, height: 20, color: alpha(theme.palette.text.primary, 0.3), '&:hover': { color: 'error.main' } }}
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        color: alpha(theme.palette.text.primary, 0.3),
+                        '&:hover': { color: 'error.main' },
+                      }}
                     >
                       <TrashIcon size={12} weight="light" color="currentColor" />
                     </IconButton>
@@ -201,7 +221,10 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
             borderStyle: 'dashed',
             color: alpha(theme.palette.primary.main, 0.7),
             borderColor: alpha(theme.palette.primary.main, 0.3),
-            '&:hover': { borderColor: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.04) },
+            '&:hover': {
+              borderColor: 'primary.main',
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+            },
           }}
         >
           Add category
@@ -211,9 +234,7 @@ export function TopicMapComponent({ data, onSave }: TopicMapComponentProps) {
   }
 
   return (
-    <Box
-      sx={{ p: 1.5, position: 'relative' }}
-    >
+    <Box sx={{ p: 1.5, position: 'relative' }}>
       <Typography
         sx={{
           fontSize: 14,

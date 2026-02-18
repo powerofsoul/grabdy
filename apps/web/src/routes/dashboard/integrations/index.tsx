@@ -26,11 +26,13 @@ export const Route = createFileRoute('/dashboard/integrations/')({
   validateSearch: integrationsSearchSchema,
 });
 
-const ALLOWED_PROVIDERS: readonly string[] = ['SLACK', 'LINEAR', 'GITHUB'] satisfies readonly IntegrationProvider[];
+const ALLOWED_PROVIDERS: readonly string[] = [
+  'SLACK',
+  'LINEAR',
+  'GITHUB',
+] satisfies readonly IntegrationProvider[];
 
-function isAvailableProvider(
-  provider: ProviderKey
-): provider is IntegrationProvider {
+function isAvailableProvider(provider: ProviderKey): provider is IntegrationProvider {
   return ALLOWED_PROVIDERS.includes(provider);
 }
 
@@ -63,41 +65,50 @@ function IntegrationsPage() {
     fetchConnections();
   }, [fetchConnections]);
 
-  const handleConnect = useCallback(async (provider: ProviderKey) => {
-    if (!selectedOrgId || !isAvailableProvider(provider)) return;
-    try {
-      const res = await api.integrations.connect({
-        params: { orgId: selectedOrgId, provider },
-      });
-      if (res.status === 200) {
-        window.location.href = res.body.data.redirectUrl;
+  const handleConnect = useCallback(
+    async (provider: ProviderKey) => {
+      if (!selectedOrgId || !isAvailableProvider(provider)) return;
+      try {
+        const res = await api.integrations.connect({
+          params: { orgId: selectedOrgId, provider },
+        });
+        if (res.status === 200) {
+          window.location.href = res.body.data.redirectUrl;
+        }
+      } catch {
+        toast.error('Failed to start connection');
       }
-    } catch {
-      toast.error('Failed to start connection');
-    }
-  }, [selectedOrgId]);
+    },
+    [selectedOrgId]
+  );
 
-  const openDrawer = useCallback((connection: ConnectionSummary) => {
-    pushDrawer(
-      (onClose) => (
-        <ConnectionDetailDrawer
-          onClose={onClose}
-          provider={connection.provider}
-          status={connection.status}
-          lastSyncedAt={connection.lastSyncedAt}
-          externalAccountName={connection.externalAccountName}
-          syncScheduleLabel={connection.syncScheduleLabel}
-          onRefresh={fetchConnections}
-          onConnect={handleConnect}
-        />
-      ),
-      { title: 'Connection Details', mode: 'drawer', width: 480 }
-    );
-  }, [pushDrawer, fetchConnections, handleConnect]);
+  const openDrawer = useCallback(
+    (connection: ConnectionSummary) => {
+      pushDrawer(
+        (onClose) => (
+          <ConnectionDetailDrawer
+            onClose={onClose}
+            provider={connection.provider}
+            status={connection.status}
+            lastSyncedAt={connection.lastSyncedAt}
+            externalAccountName={connection.externalAccountName}
+            syncScheduleLabel={connection.syncScheduleLabel}
+            onRefresh={fetchConnections}
+            onConnect={handleConnect}
+          />
+        ),
+        { title: 'Connection Details', mode: 'drawer', width: 480 }
+      );
+    },
+    [pushDrawer, fetchConnections, handleConnect]
+  );
 
-  const handleManage = useCallback((_provider: IntegrationProvider, connection: ConnectionSummary) => {
-    openDrawer(connection);
-  }, [openDrawer]);
+  const handleManage = useCallback(
+    (_provider: IntegrationProvider, connection: ConnectionSummary) => {
+      openDrawer(connection);
+    },
+    [openDrawer]
+  );
 
   useEffect(() => {
     if (error) {

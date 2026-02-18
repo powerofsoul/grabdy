@@ -11,5 +11,10 @@ export const COLOR_MAP: Record<StickyNoteColor, string> = {
 };
 
 export const COLOR_OPTIONS = [
-  'yellow', 'pink', 'blue', 'green', 'purple', 'orange',
+  'yellow',
+  'pink',
+  'blue',
+  'green',
+  'purple',
+  'orange',
 ] as const satisfies readonly StickyNoteColor[];

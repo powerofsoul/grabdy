@@ -16,18 +16,25 @@ import basicAuth from 'express-basic-auth';
 
 import { env } from './config/env.config';
 import { buildOpenApiDocument } from './config/openapi';
-import { CANVAS_OPS_QUEUE, DATA_SOURCE_QUEUE, INTEGRATION_SYNC_QUEUE, SLACK_BOT_QUEUE } from './modules/queue/queue.constants';
+import {
+  CANVAS_OPS_QUEUE,
+  DATA_SOURCE_QUEUE,
+  INTEGRATION_SYNC_QUEUE,
+  SLACK_BOT_QUEUE,
+} from './modules/queue/queue.constants';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const server = express();
-  server.use(express.json({
-    limit: '5mb',
-    verify: (req, _res, buf) => {
-      // Preserve raw body for webhook signature verification (Slack, etc.)
-      Object.assign(req, { rawBody: buf.toString('utf-8') });
-    },
-  }));
+  server.use(
+    express.json({
+      limit: '5mb',
+      verify: (req, _res, buf) => {
+        // Preserve raw body for webhook signature verification (Slack, etc.)
+        Object.assign(req, { rawBody: buf.toString('utf-8') });
+      },
+    })
+  );
 
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 

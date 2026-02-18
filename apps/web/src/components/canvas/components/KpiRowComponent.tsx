@@ -41,9 +41,7 @@ export function KpiRowComponent({ data, onSave }: KpiRowComponentProps) {
   });
 
   const handleMetricChange = (index: number, field: 'value' | 'label', val: string) => {
-    setDraftMetrics((prev) =>
-      prev.map((m, i) => (i === index ? { ...m, [field]: val } : m)),
-    );
+    setDraftMetrics((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: val } : m)));
   };
 
   const handleAddMetric = () => {
@@ -56,10 +54,7 @@ export function KpiRowComponent({ data, onSave }: KpiRowComponentProps) {
 
   if (isEditing) {
     return (
-      <Box
-        className="nodrag nowheel nopan"
-        sx={{ p: 1.5, outline: 'none' }}
-      >
+      <Box className="nodrag nowheel nopan" sx={{ p: 1.5, outline: 'none' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {draftMetrics.map((m, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
@@ -130,9 +125,7 @@ export function KpiRowComponent({ data, onSave }: KpiRowComponentProps) {
               borderColor: alpha(theme.palette.text.primary, 0.08),
             }}
           >
-            <Typography
-              sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 500, mb: 0.25 }}
-            >
+            <Typography sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 500, mb: 0.25 }}>
               {metric.label}
             </Typography>
             <Typography
@@ -154,7 +147,15 @@ export function KpiRowComponent({ data, onSave }: KpiRowComponentProps) {
               )}
             </Typography>
             {metric.trend && (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.25, mt: 0.25 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0.25,
+                  mt: 0.25,
+                }}
+              >
                 <TrendIcon size={12} weight="light" color={trendColor} />
                 <Typography sx={{ fontSize: 11, color: alpha(trendColor, 0.9), fontWeight: 500 }}>
                   {metric.trend.value}

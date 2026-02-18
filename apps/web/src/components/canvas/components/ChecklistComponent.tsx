@@ -30,11 +30,11 @@ export function ChecklistComponent({ data, onSave }: ChecklistComponentProps) {
     (index: number) => {
       if (!onSave) return;
       const updated = data.items.map((item, i) =>
-        i === index ? { ...item, checked: !item.checked } : item,
+        i === index ? { ...item, checked: !item.checked } : item
       );
       onSave({ ...data, items: updated });
     },
-    [data, onSave],
+    [data, onSave]
   );
 
   const handleSave = useCallback(() => {
@@ -65,10 +65,7 @@ export function ChecklistComponent({ data, onSave }: ChecklistComponentProps) {
 
   if (isEditing) {
     return (
-      <Box
-        className="nodrag nowheel nopan"
-        sx={{ p: 1.5, outline: 'none' }}
-      >
+      <Box className="nodrag nowheel nopan" sx={{ p: 1.5, outline: 'none' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {draftItems.map((item, i) => (
             <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

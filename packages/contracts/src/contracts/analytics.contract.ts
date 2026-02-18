@@ -75,5 +75,5 @@ export const analyticsContract = c.router(
       },
     },
   },
-  { pathPrefix: '' },
+  { pathPrefix: '' }
 );

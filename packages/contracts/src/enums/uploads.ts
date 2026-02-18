@@ -43,9 +43,7 @@ export type UploadsMime = (typeof UPLOADS_FILE_TYPES)[number]['mime'];
 export type UploadsExt = (typeof UPLOADS_FILE_TYPES)[number]['ext'];
 
 /** Set of accepted MIME types for upload validation */
-export const UPLOADS_MIMES: ReadonlySet<string> = new Set(
-  UPLOADS_FILE_TYPES.map((f) => f.mime)
-);
+export const UPLOADS_MIMES: ReadonlySet<string> = new Set(UPLOADS_FILE_TYPES.map((f) => f.mime));
 
 /** Comma-separated extensions for HTML file input accept attribute */
 export const UPLOADS_EXTENSIONS = UPLOADS_FILE_TYPES.map((f) => `.${f.ext}`).join(',');

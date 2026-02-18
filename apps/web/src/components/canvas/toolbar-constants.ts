@@ -195,11 +195,7 @@ export const COMPONENT_TEMPLATES = {
   tag_cloud: {
     type: 'tag_cloud' as const,
     data: {
-      tags: [
-        { label: 'TagIcon 1' },
-        { label: 'TagIcon 2' },
-        { label: 'TagIcon 3' },
-      ],
+      tags: [{ label: 'TagIcon 1' }, { label: 'TagIcon 2' }, { label: 'TagIcon 3' }],
     },
   },
   accordion: {
@@ -317,4 +313,11 @@ export const SECONDARY_ITEMS: ToolbarItem[] = [
 ];
 
 export const SMALL_TYPES = new Set<string>(['progress', 'number', 'header']);
-export const WIDE_TYPES = new Set<string>(['kpi_row', 'comparison', 'swot', 'table', 'kanban', 'matrix']);
+export const WIDE_TYPES = new Set<string>([
+  'kpi_row',
+  'comparison',
+  'swot',
+  'table',
+  'kanban',
+  'matrix',
+]);

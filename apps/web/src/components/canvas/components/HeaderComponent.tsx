@@ -40,8 +40,14 @@ export function HeaderComponent({ data, onSave }: HeaderComponentProps) {
   });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') { handleSave(); endEdit(); }
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Enter') {
+      handleSave();
+      endEdit();
+    }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   return (
@@ -57,7 +63,15 @@ export function HeaderComponent({ data, onSave }: HeaderComponentProps) {
           placeholder="Title"
           onClick={(e) => e.stopPropagation()}
           className="nodrag nowheel nopan"
-          sx={{ '& .MuiInputBase-input': { fontSize: 20, fontWeight: 700, py: 0.5, px: 0.5, textAlign: align } }}
+          sx={{
+            '& .MuiInputBase-input': {
+              fontSize: 20,
+              fontWeight: 700,
+              py: 0.5,
+              px: 0.5,
+              textAlign: align,
+            },
+          }}
         />
       ) : (
         <Typography
@@ -83,7 +97,10 @@ export function HeaderComponent({ data, onSave }: HeaderComponentProps) {
           placeholder="Subtitle (optional)"
           onClick={(e) => e.stopPropagation()}
           className="nodrag nowheel nopan"
-          sx={{ mt: 0.5, '& .MuiInputBase-input': { fontSize: 13, py: 0.25, px: 0.5, textAlign: align } }}
+          sx={{
+            mt: 0.5,
+            '& .MuiInputBase-input': { fontSize: 13, py: 0.25, px: 0.5, textAlign: align },
+          }}
         />
       ) : (
         <Typography
@@ -95,7 +112,12 @@ export function HeaderComponent({ data, onSave }: HeaderComponentProps) {
             borderRadius: 0.5,
           }}
         >
-          {data.subtitle ?? (onSave ? <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Add subtitle...</span> : '')}
+          {data.subtitle ??
+            (onSave ? (
+              <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Add subtitle...</span>
+            ) : (
+              ''
+            ))}
         </Typography>
       )}
     </Box>

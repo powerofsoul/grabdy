@@ -1,11 +1,22 @@
 import type { IntegrationProvider } from '@grabdy/contracts';
 import { formatDistanceToNow } from 'date-fns';
 import { alpha, Box, Button, Typography, useTheme } from '@mui/material';
-import { CaretRightIcon, CheckIcon, PauseIcon, PlugsConnectedIcon, WarningCircleIcon } from '@phosphor-icons/react';
+import {
+  CaretRightIcon,
+  CheckIcon,
+  PauseIcon,
+  PlugsConnectedIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react';
 
 import type { ConnectionSummary } from './IntegrationGrid';
 import type { ProviderKey } from './ProviderIcon';
-import { getProviderDescription, getProviderDetails, getProviderLabel, ProviderIcon } from './ProviderIcon';
+import {
+  getProviderDescription,
+  getProviderDetails,
+  getProviderLabel,
+  ProviderIcon,
+} from './ProviderIcon';
 
 interface IntegrationCardProps {
   provider: ProviderKey;
@@ -14,7 +25,12 @@ interface IntegrationCardProps {
   onManage?: (provider: IntegrationProvider, connection: ConnectionSummary) => void;
 }
 
-export function IntegrationCard({ provider, connection, onConnect, onManage }: IntegrationCardProps) {
+export function IntegrationCard({
+  provider,
+  connection,
+  onConnect,
+  onManage,
+}: IntegrationCardProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const isDisconnected = connection?.status === 'DISCONNECTED';
@@ -28,7 +44,9 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
         role="button"
         tabIndex={0}
         onClick={() => onManage?.(connection.provider, connection)}
-        onKeyDown={(e) => { if (e.key === 'Enter') onManage?.(connection.provider, connection); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onManage?.(connection.provider, connection);
+        }}
         sx={{
           border: '1px solid',
           borderColor: alpha(ct, 0.12),
@@ -44,11 +62,21 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
           '&:focus-visible': { outline: `2px solid ${ct}`, outlineOffset: 2 },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            mb: 1.5,
+          }}
+        >
           <ProviderIcon provider={provider} size={24} />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <PlugsConnectedIcon size={12} weight="light" color={theme.palette.text.disabled} />
-            <Typography variant="caption" sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1, color: 'text.disabled' }}>
+            <Typography
+              variant="caption"
+              sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1, color: 'text.disabled' }}
+            >
               Disconnected
             </Typography>
           </Box>
@@ -61,7 +89,15 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
           </Typography>
         )}
 
-        <Box sx={{ mt: 'auto', pt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            mt: 'auto',
+            pt: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
             Data still available
           </Typography>
@@ -77,12 +113,12 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
         role="button"
         tabIndex={0}
         onClick={() => onManage?.(connection.provider, connection)}
-        onKeyDown={(e) => { if (e.key === 'Enter') onManage?.(connection.provider, connection); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onManage?.(connection.provider, connection);
+        }}
         sx={{
           border: '1px solid',
-          borderColor: isError
-            ? alpha(theme.palette.error.main, 0.4)
-            : alpha(ct, 0.12),
+          borderColor: isError ? alpha(theme.palette.error.main, 0.4) : alpha(ct, 0.12),
           borderLeft: `3px solid ${
             isError
               ? theme.palette.error.main
@@ -107,7 +143,14 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
         }}
       >
         {/* Top row: Icon + Status */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            mb: 1.5,
+          }}
+        >
           <ProviderIcon provider={provider} size={24} />
           <Box
             sx={{
@@ -117,19 +160,19 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
             }}
           >
             {isActive && <CheckIcon size={12} weight="light" color={theme.palette.success.main} />}
-            {isError && <WarningCircleIcon size={12} weight="light" color={theme.palette.error.main} />}
-            {connection.status === 'PAUSED' && <PauseIcon size={12} weight="light" color={theme.palette.warning.main} />}
+            {isError && (
+              <WarningCircleIcon size={12} weight="light" color={theme.palette.error.main} />
+            )}
+            {connection.status === 'PAUSED' && (
+              <PauseIcon size={12} weight="light" color={theme.palette.warning.main} />
+            )}
             <Typography
               variant="caption"
               sx={{
                 fontSize: 11,
                 fontWeight: 600,
                 lineHeight: 1,
-                color: isError
-                  ? 'error.main'
-                  : isActive
-                    ? 'success.main'
-                    : 'warning.main',
+                color: isError ? 'error.main' : isActive ? 'success.main' : 'warning.main',
               }}
             >
               {isActive ? 'Connected' : isError ? 'Error' : 'Paused'}
@@ -138,9 +181,7 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
         </Box>
 
         {/* Middle: Name + account name */}
-        <Typography variant="subtitle1">
-          {getProviderLabel(provider)}
-        </Typography>
+        <Typography variant="subtitle1">{getProviderLabel(provider)}</Typography>
         {connection.externalAccountName && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, lineHeight: 1.4 }}>
             {connection.externalAccountName}
@@ -148,7 +189,15 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
         )}
 
         {/* Bottom row: Sync time + chevron */}
-        <Box sx={{ mt: 'auto', pt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            mt: 'auto',
+            pt: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
             {connection.lastSyncedAt
               ? `Synced ${formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true })}`
@@ -177,13 +226,14 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
       </Box>
 
       {/* Name + description + details */}
-      <Typography variant="subtitle1">
-        {getProviderLabel(provider)}
-      </Typography>
+      <Typography variant="subtitle1">{getProviderLabel(provider)}</Typography>
       <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, lineHeight: 1.4 }}>
         {getProviderDescription(provider)}
       </Typography>
-      <Typography variant="caption" sx={{ mt: 0.5, lineHeight: 1.4, fontSize: 12, color: 'text.secondary' }}>
+      <Typography
+        variant="caption"
+        sx={{ mt: 0.5, lineHeight: 1.4, fontSize: 12, color: 'text.secondary' }}
+      >
         {getProviderDetails(provider)}
       </Typography>
 
@@ -204,7 +254,10 @@ export function IntegrationCard({ provider, connection, onConnect, onManage }: I
             Connect
           </Button>
         ) : (
-          <Typography variant="caption" sx={{ fontSize: 12, fontStyle: 'italic', color: 'text.disabled' }}>
+          <Typography
+            variant="caption"
+            sx={{ fontSize: 12, fontStyle: 'italic', color: 'text.disabled' }}
+          >
             Coming soon
           </Typography>
         )}

@@ -35,7 +35,10 @@ export function BookmarkComponent({ data, onSave }: BookmarkComponentProps) {
   });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -52,7 +55,15 @@ export function BookmarkComponent({ data, onSave }: BookmarkComponentProps) {
           borderRadius: 'inherit',
         }}
       >
-        <Box sx={{ width: 3, alignSelf: 'stretch', flexShrink: 0, bgcolor: theme.palette.primary.main, borderRadius: 1 }} />
+        <Box
+          sx={{
+            width: 3,
+            alignSelf: 'stretch',
+            flexShrink: 0,
+            bgcolor: theme.palette.primary.main,
+            borderRadius: 1,
+          }}
+        />
         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <TextField
             size="small"
@@ -89,7 +100,15 @@ export function BookmarkComponent({ data, onSave }: BookmarkComponentProps) {
         borderRadius: 'inherit',
       }}
     >
-      <Box sx={{ width: 3, alignSelf: 'stretch', flexShrink: 0, bgcolor: theme.palette.primary.main, borderRadius: 1 }} />
+      <Box
+        sx={{
+          width: 3,
+          alignSelf: 'stretch',
+          flexShrink: 0,
+          bgcolor: theme.palette.primary.main,
+          borderRadius: 1,
+        }}
+      />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography
           sx={{
@@ -108,7 +127,8 @@ export function BookmarkComponent({ data, onSave }: BookmarkComponentProps) {
             borderRadius: 0.5,
           }}
         >
-          {data.note ?? (onSave ? <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Add note...</span> : '')}
+          {data.note ??
+            (onSave ? <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Add note...</span> : '')}
         </Typography>
       </Box>
     </Box>

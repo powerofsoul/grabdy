@@ -10,12 +10,14 @@ import type { CanvasOpName } from './processors/canvas-ops.types';
 const CANVAS_OP_PROMPTS = {
   add_card: '{ "op": "add_card", "card": { "id": "my-card-1", ... } }',
   remove_card: '{ "op": "remove_card", "cardId": "<server-id>" }',
-  move_card: '{ "op": "move_card", "cardId": "<server-id>", "position": ..., "width": ..., "height": ... }',
-  update_component: '{ "op": "update_component", "cardId": "<server-id>", "componentId": "<server-id>", "data": { ... } }',
-  add_edge: '{ "op": "add_edge", "edge": { "id": "my-edge-1", "source": "...", "target": "...", "label": "..." } }',
+  move_card:
+    '{ "op": "move_card", "cardId": "<server-id>", "position": ..., "width": ..., "height": ... }',
+  update_component:
+    '{ "op": "update_component", "cardId": "<server-id>", "componentId": "<server-id>", "data": { ... } }',
+  add_edge:
+    '{ "op": "add_edge", "edge": { "id": "my-edge-1", "source": "...", "target": "...", "label": "..." } }',
   remove_edge: '{ "op": "remove_edge", "edgeId": "<server-id>" }',
 } satisfies Record<CanvasOpName, string>;
-
 
 const CARD_GAP = 20;
 const DEFAULT_CARD_W = 400;
@@ -153,7 +155,9 @@ canvas_update — apply all canvas changes in a single call.
 Input: { "operations": [...] } — an ordered array of operations.
 
 Operations:
-${Object.values(CANVAS_OP_PROMPTS).map((ex) => `- ${ex}`).join('\n')}
+${Object.values(CANVAS_OP_PROMPTS)
+  .map((ex) => `- ${ex}`)
+  .join('\n')}
 
 ${generateComponentPrompt()}
 

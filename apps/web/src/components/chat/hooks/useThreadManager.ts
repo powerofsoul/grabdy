@@ -40,7 +40,7 @@ export function useThreadManager({
     : undefined;
 
   const [activeThreadId, setActiveThreadId] = useState<DbId<'ChatThread'> | undefined>(
-    parsedInitialThreadId?.success ? parsedInitialThreadId.data : undefined,
+    parsedInitialThreadId?.success ? parsedInitialThreadId.data : undefined
   );
   const [isLoadingThreads, setIsLoadingThreads] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -52,7 +52,9 @@ export function useThreadManager({
   // Keep activeThreadId in a ref so ensureThread can read the latest value
   // without needing it as a useCallback dependency (avoids stale closures).
   const activeThreadIdRef = useRef(activeThreadId);
-  useEffect(() => { activeThreadIdRef.current = activeThreadId; }, [activeThreadId]);
+  useEffect(() => {
+    activeThreadIdRef.current = activeThreadId;
+  }, [activeThreadId]);
 
   const fetchThreads = useCallback(async () => {
     if (!selectedOrgId) return;
@@ -107,7 +109,7 @@ export function useThreadManager({
                 thinkingTexts: blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
                 sources: apiSources ?? (blocks.sources.length > 0 ? blocks.sources : undefined),
               };
-            }),
+            })
           );
           onLoadCanvas(res.body.data.canvasState);
         }
@@ -117,7 +119,7 @@ export function useThreadManager({
         setIsLoadingMessages(false);
       }
     },
-    [selectedOrgId, onLoadMessages, onLoadCanvas],
+    [selectedOrgId, onLoadMessages, onLoadCanvas]
   );
 
   // Load initial thread from URL on mount, clear on org switch
@@ -148,21 +150,24 @@ export function useThreadManager({
 
     if (!selectedOrgId) throw new Error('No org selected');
 
-    const promise = api.chat.createThread({
-      params: { orgId: selectedOrgId },
-      body: {},
-    }).then((res) => {
-      if (res.status === 200) {
-        const id = res.body.data.id;
-        setActiveThreadId(id);
-        activeThreadIdRef.current = id;
-        fetchThreads();
-        return id;
-      }
-      throw new Error('Failed to create thread');
-    }).finally(() => {
-      pendingCreateRef.current = null;
-    });
+    const promise = api.chat
+      .createThread({
+        params: { orgId: selectedOrgId },
+        body: {},
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          const id = res.body.data.id;
+          setActiveThreadId(id);
+          activeThreadIdRef.current = id;
+          fetchThreads();
+          return id;
+        }
+        throw new Error('Failed to create thread');
+      })
+      .finally(() => {
+        pendingCreateRef.current = null;
+      });
 
     pendingCreateRef.current = promise;
     return promise;

@@ -4,7 +4,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Footer } from '@/components/landing/Footer';
 import { LandingNav } from '@/components/landing/LandingNav';
 
-
 export const Route = createFileRoute('/privacy')({
   component: PrivacyPage,
 });

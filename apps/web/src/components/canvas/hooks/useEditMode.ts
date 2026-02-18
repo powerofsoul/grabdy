@@ -4,7 +4,10 @@ interface EditModeContextValue {
   /** Whether any component in this card is currently being edited */
   isEditing: boolean;
   /** Register as the active editor. Provide save/discard refs that always point to current functions. */
-  enterEdit: (saveRef: React.RefObject<() => void>, discardRef: React.RefObject<() => void>) => void;
+  enterEdit: (
+    saveRef: React.RefObject<() => void>,
+    discardRef: React.RefObject<() => void>
+  ) => void;
   /** Unregister the active editor */
   exitEdit: () => void;
   /** Set the edit trigger callback that the card toolbar invokes */
@@ -34,13 +37,23 @@ export function useEditMode(onSave: () => void, onDiscard: () => void, onEdit?: 
   const saveRef = useRef(onSave);
   const discardRef = useRef(onDiscard);
   const editRef = useRef(onEdit);
-  useEffect(() => { saveRef.current = onSave; }, [onSave]);
-  useEffect(() => { discardRef.current = onDiscard; }, [onDiscard]);
-  useEffect(() => { editRef.current = onEdit; }, [onEdit]);
+  useEffect(() => {
+    saveRef.current = onSave;
+  }, [onSave]);
+  useEffect(() => {
+    discardRef.current = onDiscard;
+  }, [onDiscard]);
+  useEffect(() => {
+    editRef.current = onEdit;
+  }, [onEdit]);
 
   // Stable wrappers that read from refs
-  const stableSaveRef = useRef(() => { saveRef.current(); });
-  const stableDiscardRef = useRef(() => { discardRef.current(); });
+  const stableSaveRef = useRef(() => {
+    saveRef.current();
+  });
+  const stableDiscardRef = useRef(() => {
+    discardRef.current();
+  });
 
   const startEdit = useCallback(() => {
     ctx.enterEdit(stableSaveRef, stableDiscardRef);
@@ -56,7 +69,9 @@ export function useEditMode(onSave: () => void, onDiscard: () => void, onEdit?: 
       editRef.current?.();
       ctx.enterEdit(stableSaveRef, stableDiscardRef);
     });
-    return () => { ctx.setEditTrigger(null); };
+    return () => {
+      ctx.setEditTrigger(null);
+    };
   }, [ctx]);
 
   return useMemo(() => ({ startEdit, endEdit }), [startEdit, endEdit]);

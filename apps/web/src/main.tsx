@@ -29,22 +29,22 @@ createRoot(rootEl).render(
           <ErrorBoundary>
             <AuthProvider>
               <DrawerProvider>
-              <Toaster
-                position="top-right"
-                closeButton
-                toastOptions={{
-                  style: {
-                    borderRadius: '0',
-                    boxShadow: 'none',
-                    border: '1px solid var(--border-color)',
-                    fontFamily: '"Inter", "SF Pro", system-ui, sans-serif',
-                    fontSize: '0.84rem',
-                    backgroundColor: 'var(--bg)',
-                    color: 'var(--text)',
-                  },
-                }}
-              />
-              <App />
+                <Toaster
+                  position="top-right"
+                  closeButton
+                  toastOptions={{
+                    style: {
+                      borderRadius: '0',
+                      boxShadow: 'none',
+                      border: '1px solid var(--border-color)',
+                      fontFamily: '"Inter", "SF Pro", system-ui, sans-serif',
+                      fontSize: '0.84rem',
+                      backgroundColor: 'var(--bg)',
+                      color: 'var(--text)',
+                    },
+                  }}
+                />
+                <App />
               </DrawerProvider>
             </AuthProvider>
           </ErrorBoundary>

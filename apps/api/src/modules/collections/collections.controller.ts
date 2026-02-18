@@ -68,7 +68,10 @@ export class CollectionsController {
   async get() {
     return tsRestHandler(collectionsContract.get, async ({ params }) => {
       try {
-        const collection = await this.collectionsService.findById(params.orgId, params.collectionId);
+        const collection = await this.collectionsService.findById(
+          params.orgId,
+          params.collectionId
+        );
         return {
           status: 200 as const,
           body: {

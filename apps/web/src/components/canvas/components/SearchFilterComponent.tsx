@@ -24,12 +24,22 @@ export function SearchFilterComponent({ data }: SearchFilterComponentProps) {
           mb: 1,
         }}
       >
-        <MagnifyingGlassIcon size={14} weight="light" color="currentColor" style={{ opacity: 0.5 }} />
+        <MagnifyingGlassIcon
+          size={14}
+          weight="light"
+          color="currentColor"
+          style={{ opacity: 0.5 }}
+        />
         <Typography sx={{ fontSize: 12 }}>{data.query}</Typography>
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
         {data.filters.map((filter, i) => (
-          <Chip key={i} label={`${filter.label}: ${filter.value}`} size="small" sx={{ fontSize: 11 }} />
+          <Chip
+            key={i}
+            label={`${filter.label}: ${filter.value}`}
+            size="small"
+            sx={{ fontSize: 11 }}
+          />
         ))}
       </Box>
     </Box>

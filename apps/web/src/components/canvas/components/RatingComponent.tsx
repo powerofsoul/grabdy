@@ -38,8 +38,14 @@ export function RatingComponent({ data, onSave }: RatingComponentProps) {
   });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') { handleSave(); endEdit(); }
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Enter') {
+      handleSave();
+      endEdit();
+    }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -53,7 +59,7 @@ export function RatingComponent({ data, onSave }: RatingComponentProps) {
                 value={item.label}
                 onChange={(e) =>
                   setDraftItems((prev) =>
-                    prev.map((it, j) => (j === i ? { ...it, label: e.target.value } : it)),
+                    prev.map((it, j) => (j === i ? { ...it, label: e.target.value } : it))
                   )
                 }
                 onKeyDown={handleKeyDown}
@@ -66,8 +72,8 @@ export function RatingComponent({ data, onSave }: RatingComponentProps) {
                 onChange={(e) =>
                   setDraftItems((prev) =>
                     prev.map((it, j) =>
-                      j === i ? { ...it, value: parseFloat(e.target.value) || 0 } : it,
-                    ),
+                      j === i ? { ...it, value: parseFloat(e.target.value) || 0 } : it
+                    )
                   )
                 }
                 onKeyDown={handleKeyDown}
@@ -84,7 +90,7 @@ export function RatingComponent({ data, onSave }: RatingComponentProps) {
   const handleClickRating = (itemIndex: number, newValue: number) => {
     if (!onSave) return;
     const updatedItems = data.items.map((it, j) =>
-      j === itemIndex ? { ...it, value: newValue } : it,
+      j === itemIndex ? { ...it, value: newValue } : it
     );
     onSave({ ...data, items: updatedItems });
   };
@@ -165,9 +171,7 @@ export function RatingComponent({ data, onSave }: RatingComponentProps) {
   };
 
   return (
-    <Box
-      sx={{ p: 1.5, position: 'relative' }}
-    >
+    <Box sx={{ p: 1.5, position: 'relative' }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
         {data.items.map((item, i) => (
           <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

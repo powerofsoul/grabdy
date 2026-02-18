@@ -58,7 +58,13 @@ export const api = initClient(contract, {
 export type CanvasOpResult =
   | { op: 'add_card'; cards: Card[] }
   | { op: 'remove_card'; cardId: string }
-  | { op: 'move_card'; cardId: string; position?: { x: number; y: number }; width?: number; height?: number }
+  | {
+      op: 'move_card';
+      cardId: string;
+      position?: { x: number; y: number };
+      width?: number;
+      height?: number;
+    }
   | { op: 'update_component'; cardId: string; componentId: string; data: Record<string, unknown> }
   | { op: 'add_edge'; edge: CanvasEdge }
   | { op: 'remove_edge'; edgeId: string };
@@ -100,7 +106,9 @@ function parseOpResult(r: unknown): CanvasOpResult | null {
     case 'remove_card':
       return { op: 'remove_card', cardId: String(r['cardId'] ?? '') };
     case 'move_card': {
-      const pos = isRecord(r['position']) ? { x: Number(r['position']['x']), y: Number(r['position']['y']) } : undefined;
+      const pos = isRecord(r['position'])
+        ? { x: Number(r['position']['x']), y: Number(r['position']['y']) }
+        : undefined;
       return {
         op: 'move_card',
         cardId: String(r['cardId'] ?? ''),
@@ -143,7 +151,7 @@ function toCanvasUpdate(tool: string, _args: unknown, result: unknown): CanvasUp
 export async function streamChat(
   orgId: string,
   body: { message: string; threadId?: string; collectionId?: string },
-  callbacks: StreamCallbacks,
+  callbacks: StreamCallbacks
 ): Promise<void> {
   const response = await fetch(`${baseUrl}/orgs/${orgId}/chat/stream`, {
     method: 'POST',
@@ -201,7 +209,11 @@ export async function streamChat(
               callbacks.onDone({
                 threadId: metadata.threadId,
               });
-            } else if (metadata.type === 'canvas_update' && callbacks.onCanvasUpdate && metadata.tool) {
+            } else if (
+              metadata.type === 'canvas_update' &&
+              callbacks.onCanvasUpdate &&
+              metadata.tool
+            ) {
               const update = toCanvasUpdate(metadata.tool, metadata.args, metadata.result);
               if (update) {
                 callbacks.onCanvasUpdate(update);

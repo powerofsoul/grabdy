@@ -66,9 +66,7 @@ export function TextComponent({ data, onSave }: TextComponentProps) {
         borderRadius: 1,
       }}
     >
-      {data.icon && (
-        <Typography sx={{ fontSize: 20, mb: 0.5 }}>{data.icon}</Typography>
-      )}
+      {data.icon && <Typography sx={{ fontSize: 20, mb: 0.5 }}>{data.icon}</Typography>}
       <MarkdownContent
         content={data.content}
         fontSize={data.fontSize}

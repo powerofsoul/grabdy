@@ -59,7 +59,10 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -72,7 +75,15 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
           {/* Pros edit */}
           <Box>
-            <Typography sx={{ fontSize: 10, fontWeight: 700, mb: 0.5, textTransform: 'uppercase', color: 'success.main' }}>
+            <Typography
+              sx={{
+                fontSize: 10,
+                fontWeight: 700,
+                mb: 0.5,
+                textTransform: 'uppercase',
+                color: 'success.main',
+              }}
+            >
               Pros
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -95,14 +106,26 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
                   </IconButton>
                 </Box>
               ))}
-              <IconButton size="small" onClick={handleAddPro} sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}>
+              <IconButton
+                size="small"
+                onClick={handleAddPro}
+                sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}
+              >
                 <PlusIcon size={12} weight="light" color="currentColor" />
               </IconButton>
             </Box>
           </Box>
           {/* Cons edit */}
           <Box>
-            <Typography sx={{ fontSize: 10, fontWeight: 700, mb: 0.5, textTransform: 'uppercase', color: 'error.main' }}>
+            <Typography
+              sx={{
+                fontSize: 10,
+                fontWeight: 700,
+                mb: 0.5,
+                textTransform: 'uppercase',
+                color: 'error.main',
+              }}
+            >
               Cons
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -124,7 +147,11 @@ export function ProsConsComponent({ data, onSave }: ProsConsComponentProps) {
                   </IconButton>
                 </Box>
               ))}
-              <IconButton size="small" onClick={handleAddCon} sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}>
+              <IconButton
+                size="small"
+                onClick={handleAddCon}
+                sx={{ width: 20, height: 20, alignSelf: 'flex-start' }}
+              >
                 <PlusIcon size={12} weight="light" color="currentColor" />
               </IconButton>
             </Box>

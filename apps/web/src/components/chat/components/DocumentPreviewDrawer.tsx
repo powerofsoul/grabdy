@@ -2,13 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
 import { UPLOADS_FILE_TYPES } from '@grabdy/contracts';
-import {
-  Box,
-  CircularProgress,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material';
+import { Box, CircularProgress, Tab, Tabs, Typography } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { renderAsync } from 'docx-preview';
 import Papa from 'papaparse';
@@ -20,9 +14,7 @@ import type { DrawerProps } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
 
 /** Mime types that we can preview in-browser — derived from contracts */
-const PREVIEWABLE_MIMES: ReadonlySet<string> = new Set(
-  UPLOADS_FILE_TYPES.map((f) => f.mime),
-);
+const PREVIEWABLE_MIMES: ReadonlySet<string> = new Set(UPLOADS_FILE_TYPES.map((f) => f.mime));
 
 export function canPreview(mimeType: string): boolean {
   return PREVIEWABLE_MIMES.has(mimeType);
@@ -71,7 +63,9 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
               const text = await textRes.text();
               if (!cancelled) setTextContent(text);
             }
-          } catch { /* fall through */ }
+          } catch {
+            /* fall through */
+          }
         }
 
         // CSV
@@ -85,22 +79,32 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
                 setCsvData(result.data);
               }
             }
-          } catch { /* fall through */ }
+          } catch {
+            /* fall through */
+          }
         }
 
         // DOCX / DOC
-        if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || mime === 'application/msword') {
+        if (
+          mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+          mime === 'application/msword'
+        ) {
           try {
             const blobRes = await fetch(url, { credentials: 'include' });
             if (!cancelled && blobRes.ok) {
               const blob = await blobRes.blob();
               if (!cancelled) setDocxBlob(blob);
             }
-          } catch { /* fall through */ }
+          } catch {
+            /* fall through */
+          }
         }
 
         // XLSX
-        if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || mime === 'application/vnd.ms-excel') {
+        if (
+          mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+          mime === 'application/vnd.ms-excel'
+        ) {
           try {
             const blobRes = await fetch(url, { credentials: 'include' });
             if (!cancelled && blobRes.ok) {
@@ -117,7 +121,9 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
                 setXlsxSheets(sheets);
               }
             }
-          } catch { /* fall through */ }
+          } catch {
+            /* fall through */
+          }
         }
       } catch {
         if (!cancelled) setError('Failed to load preview');
@@ -127,7 +133,9 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
     }
 
     fetchPreview();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [selectedOrgId, dataSourceId]);
 
   if (loading) {
@@ -161,7 +169,11 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
   }
 
   // DOCX / DOC
-  if ((data.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || data.mimeType === 'application/msword') && docxBlob) {
+  if (
+    (data.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      data.mimeType === 'application/msword') &&
+    docxBlob
+  ) {
     return <DocxViewer blob={docxBlob} />;
   }
 
@@ -171,7 +183,11 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
   }
 
   // XLSX
-  if ((data.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || data.mimeType === 'application/vnd.ms-excel') && xlsxSheets) {
+  if (
+    (data.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      data.mimeType === 'application/vnd.ms-excel') &&
+    xlsxSheets
+  ) {
     return <XlsxViewer sheets={xlsxSheets} />;
   }
 
@@ -184,7 +200,9 @@ export function DocumentPreviewDrawer({ dataSourceId, page }: DocumentPreviewDra
   if (data.mimeType.startsWith('image/')) {
     return (
       <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
+        <Box
+          sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}
+        >
           <Box
             component="img"
             src={data.url}
@@ -303,7 +321,8 @@ function DocxViewer({ blob }: { blob: Blob }) {
 
 function SpreadsheetViewer({ rows }: { rows: string[][] }) {
   const { columns, gridRows } = useMemo(() => {
-    if (rows.length === 0) return { columns: [] satisfies GridColDef[] as GridColDef[], gridRows: [] };
+    if (rows.length === 0)
+      return { columns: [] satisfies GridColDef[] as GridColDef[], gridRows: [] };
 
     const header = rows[0];
     const body = rows.slice(1);
@@ -379,7 +398,11 @@ function XlsxViewer({ sheets }: { sheets: { name: string; rows: string[][] }[] }
           sx={{ borderBottom: 1, borderColor: 'divider', minHeight: 36 }}
         >
           {sheets.map((sheet, i) => (
-            <Tab key={i} label={sheet.name} sx={{ textTransform: 'none', minHeight: 36, py: 0.5 }} />
+            <Tab
+              key={i}
+              label={sheet.name}
+              sx={{ textTransform: 'none', minHeight: 36, py: 0.5 }}
+            />
           ))}
         </Tabs>
       )}

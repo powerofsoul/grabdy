@@ -2,7 +2,10 @@ import type { CanvasEdge, CanvasState, Card } from '@grabdy/contracts';
 import type { Edge, Node } from '@xyflow/react';
 
 /** Merge partial data into a component while preserving its discriminated union type. */
-export function mergeComponentData<T extends Card['component']>(component: T, data: Record<string, unknown>): T {
+export function mergeComponentData<T extends Card['component']>(
+  component: T,
+  data: Record<string, unknown>
+): T {
   return { ...component, data: { ...component.data, ...data } };
 }
 

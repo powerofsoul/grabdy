@@ -130,13 +130,15 @@ export const dataSourcesContract = c.router(
       responses: {
         200: z.object({
           success: z.literal(true),
-          data: z.array(z.object({
-            id: z.string(),
-            mimeType: z.string(),
-            pageNumber: z.number().nullable(),
-            url: z.string(),
-            aiDescription: z.string().nullable(),
-          })),
+          data: z.array(
+            z.object({
+              id: z.string(),
+              mimeType: z.string(),
+              pageNumber: z.number().nullable(),
+              url: z.string(),
+              aiDescription: z.string().nullable(),
+            })
+          ),
         }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },

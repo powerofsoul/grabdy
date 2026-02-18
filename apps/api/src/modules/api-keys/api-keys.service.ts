@@ -4,7 +4,11 @@ import { type DbId, packId } from '@grabdy/common';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
-import { API_KEY_PREFIX_LENGTH, API_KEY_RANDOM_BYTES, BCRYPT_SALT_ROUNDS } from '../../config/constants';
+import {
+  API_KEY_PREFIX_LENGTH,
+  API_KEY_RANDOM_BYTES,
+  BCRYPT_SALT_ROUNDS,
+} from '../../config/constants';
 import { DbService } from '../../db/db.module';
 
 @Injectable()

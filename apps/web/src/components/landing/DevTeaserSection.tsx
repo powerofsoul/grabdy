@@ -83,8 +83,8 @@ export function DevTeaserSection() {
                 maxWidth: 420,
               }}
             >
-              Two REST endpoints, an MCP server for AI agents, and SDKs
-              for every major language. Ship integrations in an afternoon.
+              Two REST endpoints, an MCP server for AI agents, and SDKs for every major language.
+              Ship integrations in an afternoon.
             </Typography>
           </Box>
 
@@ -117,10 +117,20 @@ export function DevTeaserSection() {
                 const curlMatch = line.match(/^(curl)\s(-X)\s(POST)\s(.+)/);
                 if (curlMatch) {
                   parts.push(
-                    <span key={`${li}-0`} style={{ color: syntaxColors.method, fontWeight: 600 }}>curl</span>,
-                    <span key={`${li}-1`} style={{ color: syntaxColors.text }}> -X </span>,
-                    <span key={`${li}-2`} style={{ color: syntaxColors.method, fontWeight: 600 }}>POST</span>,
-                    <span key={`${li}-3`} style={{ color: syntaxColors.text }}> {curlMatch[4]}</span>,
+                    <span key={`${li}-0`} style={{ color: syntaxColors.method, fontWeight: 600 }}>
+                      curl
+                    </span>,
+                    <span key={`${li}-1`} style={{ color: syntaxColors.text }}>
+                      {' '}
+                      -X{' '}
+                    </span>,
+                    <span key={`${li}-2`} style={{ color: syntaxColors.method, fontWeight: 600 }}>
+                      POST
+                    </span>,
+                    <span key={`${li}-3`} style={{ color: syntaxColors.text }}>
+                      {' '}
+                      {curlMatch[4]}
+                    </span>
                   );
                 } else {
                   // Highlight strings in quotes
@@ -133,13 +143,13 @@ export function DevTeaserSection() {
                       parts.push(
                         <span key={`${li}-${pi++}`} style={{ color: syntaxColors.text }}>
                           {line.slice(last, m.index)}
-                        </span>,
+                        </span>
                       );
                     }
                     parts.push(
                       <span key={`${li}-${pi++}`} style={{ color: syntaxColors.string }}>
                         {m[1]}
-                      </span>,
+                      </span>
                     );
                     last = m.index + m[0].length;
                   }
@@ -147,11 +157,15 @@ export function DevTeaserSection() {
                     parts.push(
                       <span key={`${li}-${pi++}`} style={{ color: syntaxColors.text }}>
                         {line.slice(last)}
-                      </span>,
+                      </span>
                     );
                   }
                   if (parts.length === 0) {
-                    parts.push(<span key={`${li}-0`} style={{ color: syntaxColors.text }}>{line}</span>);
+                    parts.push(
+                      <span key={`${li}-0`} style={{ color: syntaxColors.text }}>
+                        {line}
+                      </span>
+                    );
                   }
                 }
                 if (li < arr.length - 1) parts.push('\n');

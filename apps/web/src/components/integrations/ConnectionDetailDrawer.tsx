@@ -73,14 +73,21 @@ function StatusIcon({ status }: { status: ConnectionStatus }) {
 }
 
 function StatusIndicator({ status }: { status: string }) {
-  if (!isConnectionStatus(status)) return <Typography variant="body2" color="text.secondary">{status}</Typography>;
+  if (!isConnectionStatus(status))
+    return (
+      <Typography variant="body2" color="text.secondary">
+        {status}
+      </Typography>
+    );
 
   const info = STATUS_MAP[status];
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
       <StatusIcon status={status} />
-      <Typography variant="body2" sx={{ fontWeight: 500, color: info.color }}>{info.label}</Typography>
+      <Typography variant="body2" sx={{ fontWeight: 500, color: info.color }}>
+        {info.label}
+      </Typography>
     </Box>
   );
 }
@@ -144,7 +151,9 @@ function ChannelPicker({
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [orgId, provider]);
 
   const filteredResources = useMemo(() => {
@@ -202,13 +211,16 @@ function ChannelPicker({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Typography variant="caption" sx={{
-        fontWeight: 600,
-        fontSize: 11,
-        textTransform: 'uppercase',
-        letterSpacing: '0.06em',
-        color: 'text.secondary',
-      }}>
+      <Typography
+        variant="caption"
+        sx={{
+          fontWeight: 600,
+          fontSize: 11,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: 'text.secondary',
+        }}
+      >
         Channels ({selectedIds.size} selected)
       </Typography>
       <Typography variant="caption" color="text.secondary">
@@ -222,19 +234,26 @@ function ChannelPicker({
         slotProps={{
           input: {
             startAdornment: (
-              <MagnifyingGlassIcon size={16} weight="light" color={theme.palette.text.secondary} style={{ marginRight: 8 }} />
+              <MagnifyingGlassIcon
+                size={16}
+                weight="light"
+                color={theme.palette.text.secondary}
+                style={{ marginRight: 8 }}
+              />
             ),
           },
         }}
         sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
       />
-      <Box sx={{
-        maxHeight: 280,
-        overflow: 'auto',
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: 1.5,
-      }}>
+      <Box
+        sx={{
+          maxHeight: 280,
+          overflow: 'auto',
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 1.5,
+        }}
+      >
         {filteredResources.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
             {search ? 'No channels match your search' : 'No channels found'}
@@ -421,11 +440,14 @@ export function ConnectionDetailDrawer({
       <Divider />
 
       {/* Content */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box
+        sx={{ flex: 1, overflow: 'auto', p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}
+      >
         {isDisconnected ? (
           <Box sx={{ py: 1 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              This integration has been disconnected. Your synced data is still available for search.
+              This integration has been disconnected. Your synced data is still available for
+              search.
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {onConnect && (

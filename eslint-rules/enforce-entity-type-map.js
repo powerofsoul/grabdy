@@ -68,8 +68,7 @@ module.exports = {
           const raw = quasis[i].value.raw;
 
           // ── Check 1: hardcoded numbers in static SQL ──────────────
-          const packUuidPattern =
-            /make_packed_uuid\(\s*(?:NEW\.\w+|\d+)\s*,\s*(\d+)\s*\)/g;
+          const packUuidPattern = /make_packed_uuid\(\s*(?:NEW\.\w+|\d+)\s*,\s*(\d+)\s*\)/g;
           let match;
           while ((match = packUuidPattern.exec(raw)) !== null) {
             context.report({
@@ -79,8 +78,7 @@ module.exports = {
             });
           }
 
-          const extractPattern =
-            /extract_entity_type\([^)]+\)\s*=\s*(\d+)/g;
+          const extractPattern = /extract_entity_type\([^)]+\)\s*=\s*(\d+)/g;
           while ((match = extractPattern.exec(raw)) !== null) {
             context.report({
               node: quasis[i],

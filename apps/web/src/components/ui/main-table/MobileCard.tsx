@@ -72,7 +72,11 @@ export function MobileCard<T>({
           {interaction.expandable && (
             <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
               <IconButton size="small" sx={{ p: 0.5, flexShrink: 0 }}>
-                {isExpanded ? <CaretUpIcon size={18} weight="light" color="currentColor" /> : <CaretDownIcon size={18} weight="light" color="currentColor" />}
+                {isExpanded ? (
+                  <CaretUpIcon size={18} weight="light" color="currentColor" />
+                ) : (
+                  <CaretDownIcon size={18} weight="light" color="currentColor" />
+                )}
               </IconButton>
             </Tooltip>
           )}

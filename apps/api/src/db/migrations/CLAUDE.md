@@ -27,6 +27,7 @@ FKs to global tables (users, auth_tokens) do NOT need org checks.
 `chk_<table>_<fk_column_without_id_suffix>_org`
 
 Examples:
+
 - `chk_chunks_data_source_org` for `data_source_id` on chunks
 - `chk_chat_threads_collection_org` for `collection_id` on chat_threads
 - `chk_usage_logs_api_key_org` for `api_key_id` on usage_logs

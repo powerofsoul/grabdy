@@ -15,7 +15,11 @@ export function ThemeToggle({ collapsed }: { collapsed?: boolean }) {
   if (collapsed) {
     return (
       <IconButton size="small" onClick={toggle} sx={{ color: 'text.secondary' }}>
-        {isDark ? <MoonIcon size={20} weight="light" color="currentColor" /> : <SunIcon size={20} weight="light" color="currentColor" />}
+        {isDark ? (
+          <MoonIcon size={20} weight="light" color="currentColor" />
+        ) : (
+          <SunIcon size={20} weight="light" color="currentColor" />
+        )}
       </IconButton>
     );
   }
@@ -32,10 +36,12 @@ export function ThemeToggle({ collapsed }: { collapsed?: boolean }) {
         '&:hover': { color: 'text.primary' },
       }}
     >
-      {isDark ? <MoonIcon size={18} weight="light" color="currentColor" /> : <SunIcon size={18} weight="light" color="currentColor" />}
-      <Typography sx={{ fontSize: '0.82rem' }}>
-        {isDark ? 'Dark' : 'Light'}
-      </Typography>
+      {isDark ? (
+        <MoonIcon size={18} weight="light" color="currentColor" />
+      ) : (
+        <SunIcon size={18} weight="light" color="currentColor" />
+      )}
+      <Typography sx={{ fontSize: '0.82rem' }}>{isDark ? 'Dark' : 'Light'}</Typography>
     </Box>
   );
 }

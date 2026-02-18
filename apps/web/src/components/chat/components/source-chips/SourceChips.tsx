@@ -21,7 +21,7 @@ export function SourceChips({ sources }: SourceChipsProps) {
       }
       setExpandedType((prev) => (prev === group.type ? null : group.type));
     },
-    [openSource],
+    [openSource]
   );
 
   return (

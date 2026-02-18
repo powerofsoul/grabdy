@@ -41,8 +41,14 @@ export function ImageComponent({ data, onSave }: ImageComponentProps) {
   });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') { handleSave(); endEdit(); }
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Enter') {
+      handleSave();
+      endEdit();
+    }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -75,9 +81,7 @@ export function ImageComponent({ data, onSave }: ImageComponentProps) {
   }
 
   return (
-    <Box
-      sx={{ position: 'relative' }}
-    >
+    <Box sx={{ position: 'relative' }}>
       {hasError ? (
         <Box
           sx={{
@@ -91,8 +95,14 @@ export function ImageComponent({ data, onSave }: ImageComponentProps) {
             borderRadius: `${data.borderRadius ?? 0}px`,
           }}
         >
-          <ImageBrokenIcon size={24} weight="light" color={alpha(theme.palette.text.primary, 0.2)} />
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>Image failed to load</Typography>
+          <ImageBrokenIcon
+            size={24}
+            weight="light"
+            color={alpha(theme.palette.text.primary, 0.2)}
+          />
+          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+            Image failed to load
+          </Typography>
         </Box>
       ) : (
         <Box

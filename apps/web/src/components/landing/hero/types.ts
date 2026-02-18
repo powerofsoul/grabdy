@@ -1,4 +1,14 @@
-export type HeroCardId = 'hub' | 'market' | 'competitors' | 'swot' | 'metrics' | 'channels' | 'risks' | 'recommendations' | 'roadmap' | 'summary';
+export type HeroCardId =
+  | 'hub'
+  | 'market'
+  | 'competitors'
+  | 'swot'
+  | 'metrics'
+  | 'channels'
+  | 'risks'
+  | 'recommendations'
+  | 'roadmap'
+  | 'summary';
 
 export type SourceType = 'slack' | 'gdrive' | 'linear' | 'file';
 

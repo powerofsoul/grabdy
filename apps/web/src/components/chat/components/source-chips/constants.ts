@@ -1,5 +1,8 @@
 import type { IntegrationProvider, UploadsExt } from '@grabdy/contracts';
-import { IntegrationProvider as IntegrationProviderEnum, UPLOADS_FILE_TYPES } from '@grabdy/contracts';
+import {
+  IntegrationProvider as IntegrationProviderEnum,
+  UPLOADS_FILE_TYPES,
+} from '@grabdy/contracts';
 import {
   FileCsvIcon,
   FileDocIcon,
@@ -20,12 +23,10 @@ export const SOURCE_NOUN: Record<IntegrationProvider, string> = {
 
 /** Integration providers (everything except UPLOAD) -- derived from the enum */
 export const INTEGRATION_SOURCE_TYPES: ReadonlySet<string> = new Set(
-  Object.values(IntegrationProviderEnum),
+  Object.values(IntegrationProviderEnum)
 );
 
-export const FILE_EXTS: ReadonlySet<string> = new Set(
-  UPLOADS_FILE_TYPES.map((f) => f.ext),
-);
+export const FILE_EXTS: ReadonlySet<string> = new Set(UPLOADS_FILE_TYPES.map((f) => f.ext));
 
 export const ICON_BY_EXT: Record<UploadsExt, IconComponent> = {
   pdf: FilePdfIcon,

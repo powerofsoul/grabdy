@@ -49,7 +49,10 @@ export function useChatStream({
             onText: (text) => {
               if (!receivedFirstChunk) {
                 receivedFirstChunk = true;
-                setMessages((prev) => [...prev, { role: 'assistant', content: text, isStreaming: true }]);
+                setMessages((prev) => [
+                  ...prev,
+                  { role: 'assistant', content: text, isStreaming: true },
+                ]);
               } else {
                 setMessages((prev) => {
                   const updated = [...prev];
@@ -82,7 +85,8 @@ export function useChatStream({
                   updated[updated.length - 1] = {
                     ...last,
                     content: blocks.text,
-                    thinkingTexts: blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
+                    thinkingTexts:
+                      blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
                     sources: blocks.sources.length > 0 ? blocks.sources : undefined,
                     isStreaming: false,
                   };
@@ -98,7 +102,7 @@ export function useChatStream({
                 setMessages((prev) => prev.slice(0, -1));
               }
             },
-          },
+          }
         );
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to send message');
@@ -106,7 +110,15 @@ export function useChatStream({
         setIsStreaming(false);
       }
     },
-    [selectedOrgId, isStreaming, fetchThreads, onCanvasUpdate, setActiveThreadId, setMessages, ensureThread],
+    [
+      selectedOrgId,
+      isStreaming,
+      fetchThreads,
+      onCanvasUpdate,
+      setActiveThreadId,
+      setMessages,
+      ensureThread,
+    ]
   );
 
   return {

@@ -79,7 +79,7 @@ new command.local.Command(
     `,
     triggers: [Date.now().toString()],
   },
-  { dependsOn: [buildFrontend] },
+  { dependsOn: [buildFrontend] }
 );
 
 // Stack outputs

@@ -42,7 +42,8 @@ export function SourceItem({ source, onOpen }: SourceItemProps) {
           maxWidth: 200,
         }}
       >
-        {source.dataSourceName}{formatLocation(source)}
+        {source.dataSourceName}
+        {formatLocation(source)}
       </Typography>
       {hasUrl && (
         <ArrowSquareOutIcon size={9} weight="light" style={{ flexShrink: 0, opacity: 0.4 }} />

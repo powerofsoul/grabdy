@@ -42,7 +42,10 @@ export function QuoteComponent({ data, onSave }: QuoteComponentProps) {
   });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   return (
@@ -54,13 +57,24 @@ export function QuoteComponent({ data, onSave }: QuoteComponentProps) {
         borderRadius: 'inherit',
       }}
     >
-      <Box sx={{ width: 3, alignSelf: 'stretch', flexShrink: 0, bgcolor: accentColor, borderRadius: 1 }} />
+      <Box
+        sx={{
+          width: 3,
+          alignSelf: 'stretch',
+          flexShrink: 0,
+          bgcolor: accentColor,
+          borderRadius: 1,
+        }}
+      />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         {isEditing ? (
           <CanvasEditor
             content={data.text}
             contentRef={contentRef}
-            onCancel={() => { handleCancel(); endEdit(); }}
+            onCancel={() => {
+              handleCancel();
+              endEdit();
+            }}
             fontSize={13}
             placeholder="Quote text..."
           />
@@ -92,7 +106,13 @@ export function QuoteComponent({ data, onSave }: QuoteComponentProps) {
               borderRadius: 0.5,
             }}
           >
-            {data.source ? `— ${data.source}` : onSave ? <span style={{ fontStyle: 'italic', opacity: 0.5 }}>— Add source...</span> : ''}
+            {data.source ? (
+              `— ${data.source}`
+            ) : onSave ? (
+              <span style={{ fontStyle: 'italic', opacity: 0.5 }}>— Add source...</span>
+            ) : (
+              ''
+            )}
           </Typography>
         )}
       </Box>

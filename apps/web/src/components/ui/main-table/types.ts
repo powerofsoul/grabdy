@@ -108,20 +108,17 @@ interface InternalBaseProps<T, K extends Record<string, string>> {
 }
 
 /** Data mode props for internal use */
-interface InternalDataProps<T, K extends Record<string, string>> extends InternalBaseProps<
-  T,
-  K
-> {
+interface InternalDataProps<T, K extends Record<string, string>> extends InternalBaseProps<T, K> {
   data: T[];
   sorting?: ClientSortingConfig<T, keyof K & string>;
   endpoint?: never;
 }
 
 /** Endpoint mode props for internal use */
-interface InternalEndpointProps<
+interface InternalEndpointProps<T, K extends Record<string, string>> extends InternalBaseProps<
   T,
-  K extends Record<string, string>,
-> extends InternalBaseProps<T, K> {
+  K
+> {
   endpoint: unknown;
   endpointParams: Record<string, unknown>;
   queryKey: readonly unknown[];

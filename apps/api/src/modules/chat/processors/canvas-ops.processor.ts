@@ -33,7 +33,9 @@ function applyInnerOp(state: CanvasState, innerOp: BatchInnerOp): void {
       const idx = state.cards.findIndex((c) => c.id === innerOp.cardId);
       if (idx === -1) throw notFound('Card not found');
       state.cards.splice(idx, 1);
-      state.edges = state.edges.filter((e) => e.source !== innerOp.cardId && e.target !== innerOp.cardId);
+      state.edges = state.edges.filter(
+        (e) => e.source !== innerOp.cardId && e.target !== innerOp.cardId
+      );
       break;
     }
     case 'move_card': {

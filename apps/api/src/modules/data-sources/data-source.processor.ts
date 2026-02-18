@@ -377,7 +377,10 @@ export class DataSourceProcessor extends WorkerHost {
     this.logger.log(`Stored ${images.length} extracted images for ${dataSourceId}`);
   }
 
-  private async extractContent(storagePath: string, mimeType: UploadsMime): Promise<ExtractionResult> {
+  private async extractContent(
+    storagePath: string,
+    mimeType: UploadsMime
+  ): Promise<ExtractionResult> {
     switch (mimeType) {
       case 'application/pdf':
         return this.pdfExtractor.extract(storagePath);

@@ -53,9 +53,16 @@ const githubChunkMetaSchema = z.object({
 });
 
 export const chunkMetaSchema = z.discriminatedUnion('type', [
-  pdfChunkMetaSchema, docxChunkMetaSchema, xlsxChunkMetaSchema,
-  csvChunkMetaSchema, txtChunkMetaSchema, jsonChunkMetaSchema, imageChunkMetaSchema,
-  slackChunkMetaSchema, linearChunkMetaSchema, githubChunkMetaSchema,
+  pdfChunkMetaSchema,
+  docxChunkMetaSchema,
+  xlsxChunkMetaSchema,
+  csvChunkMetaSchema,
+  txtChunkMetaSchema,
+  jsonChunkMetaSchema,
+  imageChunkMetaSchema,
+  slackChunkMetaSchema,
+  linearChunkMetaSchema,
+  githubChunkMetaSchema,
 ]);
 
 export type ChunkMeta = z.infer<typeof chunkMetaSchema>;
@@ -65,10 +72,11 @@ export const chunkMetaTypeEnum = dataSourceTypeEnum;
 export type ChunkMetaType = z.infer<typeof chunkMetaTypeEnum>;
 
 // Compile-time: ChunkMeta['type'] must exactly match DataSourceType
-type _AssertChunkMetaExhaustive =
-  [DataSourceType] extends [ChunkMeta['type']]
-    ? [ChunkMeta['type']] extends [DataSourceType] ? true : never
-    : never;
+type _AssertChunkMetaExhaustive = [DataSourceType] extends [ChunkMeta['type']]
+  ? [ChunkMeta['type']] extends [DataSourceType]
+    ? true
+    : never
+  : never;
 const _chunkMetaCheck: _AssertChunkMetaExhaustive = true;
 void _chunkMetaCheck;
 

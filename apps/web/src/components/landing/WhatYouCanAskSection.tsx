@@ -4,7 +4,14 @@ import { Box, Container, Typography } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import { BRAND_LOGOS, GmailLogo, GoogleDriveLogo, LinearLogo, NotionLogo, SlackLogo } from './IntegrationLogos';
+import {
+  BRAND_LOGOS,
+  GmailLogo,
+  GoogleDriveLogo,
+  LinearLogo,
+  NotionLogo,
+  SlackLogo,
+} from './IntegrationLogos';
 
 import { FONT_SERIF } from '@/theme';
 
@@ -25,7 +32,8 @@ const QUERY_CARDS = [
       { Logo: SlackLogo, name: 'Slack' },
       { Logo: GoogleDriveLogo, name: 'Google Drive' },
     ],
-    preview: 'The team agreed on a 15% increase for Pro plans, effective March 1. Decision in #product on Jan 12.',
+    preview:
+      'The team agreed on a 15% increase for Pro plans, effective March 1. Decision in #product on Jan 12.',
   },
   {
     question: 'Show me all open blockers for the launch',
@@ -33,7 +41,8 @@ const QUERY_CARDS = [
       { Logo: LinearLogo, name: 'Linear' },
       { Logo: SlackLogo, name: 'Slack' },
     ],
-    preview: '3 blockers remain: auth migration (ENG-341), staging DNS (ENG-355), and copy review (ENG-360).',
+    preview:
+      '3 blockers remain: auth migration (ENG-341), staging DNS (ENG-355), and copy review (ENG-360).',
   },
   {
     question: 'Summarize last quarter\u2019s customer feedback',
@@ -41,14 +50,14 @@ const QUERY_CARDS = [
       { Logo: GmailLogo, name: 'Gmail' },
       { Logo: NotionLogo, name: 'Notion' },
     ],
-    preview: 'Top themes: onboarding speed (34%), pricing clarity (22%), and mobile experience (18%).',
+    preview:
+      'Top themes: onboarding speed (34%), pricing clarity (22%), and mobile experience (18%).',
   },
   {
     question: 'What does our refund policy say about digital products?',
-    sources: [
-      { Logo: GoogleDriveLogo, name: 'Google Drive' },
-    ],
-    preview: 'Digital product refunds are processed within 5\u20137 business days. 30-day window from purchase.',
+    sources: [{ Logo: GoogleDriveLogo, name: 'Google Drive' }],
+    preview:
+      'Digital product refunds are processed within 5\u20137 business days. 30-day window from purchase.',
   },
 ] satisfies ReadonlyArray<QueryCard>;
 
@@ -65,7 +74,11 @@ export function WhatYouCanAskSection() {
       });
 
       tl.from('.wyca-title', { y: 30, opacity: 0, duration: 0.6 });
-      tl.from('.wyca-card', { y: 25, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }, '-=0.3');
+      tl.from(
+        '.wyca-card',
+        { y: 25, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
+        '-=0.3'
+      );
       tl.from('.wyca-logos', { opacity: 0, duration: 0.5 }, '-=0.2');
     }, sectionRef);
 
@@ -136,10 +149,7 @@ export function WhatYouCanAskSection() {
               {/* Source icons */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                 {card.sources.map((src) => (
-                  <Box
-                    key={src.name}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-                  >
+                  <Box key={src.name} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <src.Logo size={16} />
                     <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
                       {src.name}
@@ -175,7 +185,16 @@ export function WhatYouCanAskSection() {
         >
           <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
             {BRAND_LOGOS.map((brand) => (
-              <Box key={brand.name} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, opacity: 0.7 }}>
+              <Box
+                key={brand.name}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  opacity: 0.7,
+                }}
+              >
                 <brand.Logo size={28} />
                 <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
                   {brand.name}

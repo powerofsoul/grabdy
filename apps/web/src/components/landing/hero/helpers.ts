@@ -1,7 +1,12 @@
 import { NODE_H, NODE_W } from './constants';
 import type { HeroCardId } from './types';
 
-export function edgePath(pos: Record<HeroCardId, { x: number; y: number }>, from: HeroCardId, to: HeroCardId, heights?: Partial<Record<HeroCardId, number>>): string {
+export function edgePath(
+  pos: Record<HeroCardId, { x: number; y: number }>,
+  from: HeroCardId,
+  to: HeroCardId,
+  heights?: Partial<Record<HeroCardId, number>>
+): string {
   const f = pos[from];
   const t = pos[to];
   if (!f || !t) return '';

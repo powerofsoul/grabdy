@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type NonDbId, nonDbIdSchema, packNonDbId } from '@grabdy/common';
 import type { CanvasEdge, Card } from '@grabdy/contracts';
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { ArrowsInIcon,ArrowsOutIcon, BrainIcon } from '@phosphor-icons/react';
+import { ArrowsInIcon, ArrowsOutIcon, BrainIcon } from '@phosphor-icons/react';
 import {
   Background,
   BackgroundVariant,
@@ -41,7 +41,7 @@ import { CustomEdge } from './CustomEdge';
  */
 function bestHandles(
   sourceNode: Node,
-  targetNode: Node,
+  targetNode: Node
 ): { sourceHandle: string; targetHandle: string } {
   const sw = sourceNode.measured?.width ?? sourceNode.width ?? 400;
   const sh = sourceNode.measured?.height ?? sourceNode.height ?? 300;
@@ -83,7 +83,11 @@ interface CanvasProps {
   onEdgesChange: (edges: CanvasEdge[]) => void;
   onAddEdge?: (edge: CanvasEdge) => void;
   onDeleteEdge?: (edgeId: NonDbId<'CanvasEdge'>) => void;
-  onComponentEdit?: (cardId: NonDbId<'CanvasCard'>, componentId: NonDbId<'CanvasComponent'>, data: Record<string, unknown>) => void;
+  onComponentEdit?: (
+    cardId: NonDbId<'CanvasCard'>,
+    componentId: NonDbId<'CanvasComponent'>,
+    data: Record<string, unknown>
+  ) => void;
   onTitleEdit?: (cardId: NonDbId<'CanvasCard'>, title: string) => void;
   onResizeCard?: (cardId: NonDbId<'CanvasCard'>, width: number) => void;
   onReorderCard?: (cardId: NonDbId<'CanvasCard'>, direction: 'front' | 'back') => void;
@@ -138,12 +142,11 @@ export function Canvas({
           onComponentEdit,
           onTitleEdit,
           onResize: onResizeCard
-            ? (cardId: string, width: number) =>
-                onResizeCard(parseCardId(cardId), width)
+            ? (cardId: string, width: number) => onResizeCard(parseCardId(cardId), width)
             : undefined,
         },
       })),
-    [externalNodes, onDeleteCard, onComponentEdit, onTitleEdit, onResizeCard],
+    [externalNodes, onDeleteCard, onComponentEdit, onTitleEdit, onResizeCard]
   );
 
   // ReactFlow manages local node state (smooth dragging)
@@ -161,7 +164,8 @@ export function Canvas({
   }, [externalEdges, setLocalEdges]);
 
   // Inject onEdgeDataChange callback ref (set after handleEdgeDataChange is defined)
-  const edgeDataChangeRef = useRef<(edgeId: NonDbId<'CanvasEdge'>, data: Record<string, unknown>) => void>();
+  const edgeDataChangeRef =
+    useRef<(edgeId: NonDbId<'CanvasEdge'>, data: Record<string, unknown>) => void>();
 
   // Debounce edge saves to backend
   const edgeSaveTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -186,7 +190,7 @@ export function Canvas({
         const exists = prev.some(
           (e) =>
             (e.source === connection.source && e.target === connection.target) ||
-            (e.source === connection.target && e.target === connection.source),
+            (e.source === connection.target && e.target === connection.source)
         );
         if (exists) return prev;
 
@@ -218,7 +222,7 @@ export function Canvas({
         return [...prev, newEdge];
       });
     },
-    [onEdgesChangeProp, onAddEdge, setLocalEdges, edgesToCanvasEdges, selectedOrgId],
+    [onEdgesChangeProp, onAddEdge, setLocalEdges, edgesToCanvasEdges, selectedOrgId]
   );
 
   const onLocalEdgesChange: OnEdgesChange = useCallback(
@@ -241,7 +245,7 @@ export function Canvas({
         }
       }
     },
-    [handleEdgesChange, onEdgesChangeProp, onDeleteEdge, setLocalEdges, edgesToCanvasEdges],
+    [handleEdgesChange, onEdgesChangeProp, onDeleteEdge, setLocalEdges, edgesToCanvasEdges]
   );
 
   // Called by CustomEdge when arrow/stroke properties change
@@ -249,7 +253,7 @@ export function Canvas({
     (edgeId: NonDbId<'CanvasEdge'>, newData: Record<string, unknown>) => {
       setLocalEdges((prev) => {
         const updated = prev.map((e) =>
-          e.id === edgeId ? { ...e, data: { ...e.data, ...newData } } : e,
+          e.id === edgeId ? { ...e, data: { ...e.data, ...newData } } : e
         );
         clearTimeout(edgeSaveTimer.current);
         edgeSaveTimer.current = setTimeout(() => {
@@ -258,10 +262,12 @@ export function Canvas({
         return updated;
       });
     },
-    [onEdgesChangeProp, setLocalEdges, edgesToCanvasEdges],
+    [onEdgesChangeProp, setLocalEdges, edgesToCanvasEdges]
   );
 
-  useEffect(() => { edgeDataChangeRef.current = handleEdgeDataChange; }, [handleEdgeDataChange]);
+  useEffect(() => {
+    edgeDataChangeRef.current = handleEdgeDataChange;
+  }, [handleEdgeDataChange]);
 
   // Compute best handles + inject callbacks into edge data
   const edgesWithCallbacks = useMemo((): Edge[] => {
@@ -269,7 +275,10 @@ export function Canvas({
     return localEdges.map((edge) => {
       const sourceNode = nodeMap.get(edge.source);
       const targetNode = nodeMap.get(edge.target);
-      const handles = sourceNode && targetNode ? bestHandles(sourceNode, targetNode) : { sourceHandle: 'right', targetHandle: 'left' };
+      const handles =
+        sourceNode && targetNode
+          ? bestHandles(sourceNode, targetNode)
+          : { sourceHandle: 'right', targetHandle: 'left' };
       return {
         ...edge,
         sourceHandle: handles.sourceHandle,
@@ -284,12 +293,15 @@ export function Canvas({
     });
   }, [localEdges, nodes]);
 
-  const handleInit = useCallback((instance: ReactFlowInstance) => {
-    reactFlowRef.current = instance;
-    if (externalNodes.length > 0) {
-      instance.fitView(FIT_VIEW_OPTIONS);
-    }
-  }, [externalNodes.length]);
+  const handleInit = useCallback(
+    (instance: ReactFlowInstance) => {
+      reactFlowRef.current = instance;
+      if (externalNodes.length > 0) {
+        instance.fitView(FIT_VIEW_OPTIONS);
+      }
+    },
+    [externalNodes.length]
+  );
 
   // Auto-fit when first nodes appear (0 → N transition)
   useEffect(() => {
@@ -306,25 +318,25 @@ export function Canvas({
     (_event, node) => {
       onMoveCard(parseCardId(node.id), node.position);
     },
-    [onMoveCard],
+    [onMoveCard]
   );
 
   // Right-click context menu on nodes
-  const handleNodeContextMenu: NodeMouseHandler = useCallback(
-    (event, node) => {
-      event.preventDefault();
-      setContextMenu({ nodeId: node.id, x: event.clientX, y: event.clientY });
-    },
-    [],
-  );
+  const handleNodeContextMenu: NodeMouseHandler = useCallback((event, node) => {
+    event.preventDefault();
+    setContextMenu({ nodeId: node.id, x: event.clientX, y: event.clientY });
+  }, []);
 
   // Prevent default context menu on canvas pane + cancel placement
-  const handlePaneContextMenu = useCallback((event: MouseEvent | React.MouseEvent) => {
-    event.preventDefault();
-    if (pendingCard) {
-      setPendingCard(null);
-    }
-  }, [pendingCard]);
+  const handlePaneContextMenu = useCallback(
+    (event: MouseEvent | React.MouseEvent) => {
+      event.preventDefault();
+      if (pendingCard) {
+        setPendingCard(null);
+      }
+    },
+    [pendingCard]
+  );
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
@@ -366,7 +378,7 @@ export function Canvas({
         setGhostZoom(reactFlowRef.current.getZoom());
       }
     },
-    [pendingCard],
+    [pendingCard]
   );
 
   const handlePaneClick = useCallback(
@@ -374,11 +386,14 @@ export function Canvas({
       if (!pendingCard || !onAddCard || !reactFlowRef.current) return;
       event.stopPropagation();
       const width = pendingCard.width ?? 400;
-      const flowPos = reactFlowRef.current.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      const flowPos = reactFlowRef.current.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
       onAddCard({ ...pendingCard, position: { x: flowPos.x - width / 2, y: flowPos.y } });
       setPendingCard(null);
     },
-    [pendingCard, onAddCard],
+    [pendingCard, onAddCard]
   );
 
   // Escape key cancels placement
@@ -405,9 +420,10 @@ export function Canvas({
         width: '100%',
         height: '100%',
         cursor: isPlacing ? 'crosshair' : undefined,
-        bgcolor: theme.palette.mode === 'dark'
-          ? alpha(theme.palette.background.default, 0.6)
-          : alpha(theme.palette.text.primary, 0.02),
+        bgcolor:
+          theme.palette.mode === 'dark'
+            ? alpha(theme.palette.background.default, 0.6)
+            : alpha(theme.palette.text.primary, 0.02),
       }}
       onMouseMove={handleMouseMove}
     >
@@ -467,10 +483,23 @@ export function Canvas({
               }}
             >
               <BrainIcon size={48} weight="light" color={alpha(theme.palette.text.primary, 0.12)} />
-              <Typography sx={{ fontSize: 16, fontWeight: 500, color: alpha(theme.palette.text.primary, 0.22), mt: 1 }}>
+              <Typography
+                sx={{
+                  fontSize: 16,
+                  fontWeight: 500,
+                  color: alpha(theme.palette.text.primary, 0.22),
+                  mt: 1,
+                }}
+              >
                 Nothing here yet
               </Typography>
-              <Typography sx={{ fontSize: 13, color: alpha(theme.palette.text.primary, 0.14), lineHeight: 1.6 }}>
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  color: alpha(theme.palette.text.primary, 0.14),
+                  lineHeight: 1.6,
+                }}
+              >
                 Ask something in the chat and cards will appear here
               </Typography>
             </Box>
@@ -495,7 +524,11 @@ export function Canvas({
                   height: 32,
                 }}
               >
-                {isMaximized ? <ArrowsInIcon size={16} weight="light" color="currentColor" /> : <ArrowsOutIcon size={16} weight="light" color="currentColor" />}
+                {isMaximized ? (
+                  <ArrowsInIcon size={16} weight="light" color="currentColor" />
+                ) : (
+                  <ArrowsOutIcon size={16} weight="light" color="currentColor" />
+                )}
               </IconButton>
             </Tooltip>
           </Panel>

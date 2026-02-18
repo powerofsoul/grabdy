@@ -2,7 +2,12 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
-import { AiCallerType, AiRequestType, CHUNK_META_DESCRIPTIONS, EMBEDDING_MODEL } from '@grabdy/contracts';
+import {
+  AiCallerType,
+  AiRequestType,
+  CHUNK_META_DESCRIPTIONS,
+  EMBEDDING_MODEL,
+} from '@grabdy/contracts';
 import { createTool } from '@mastra/core/tools';
 import { embed } from 'ai';
 import { sql } from 'kysely';

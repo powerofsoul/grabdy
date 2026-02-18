@@ -10,19 +10,7 @@ import { XlsxExtractor } from './xlsx.extractor';
 
 @Module({
   imports: [StorageModule],
-  providers: [
-    PdfExtractor,
-    DocxExtractor,
-    TextExtractor,
-    XlsxExtractor,
-    ImageExtractor,
-  ],
-  exports: [
-    PdfExtractor,
-    DocxExtractor,
-    TextExtractor,
-    XlsxExtractor,
-    ImageExtractor,
-  ],
+  providers: [PdfExtractor, DocxExtractor, TextExtractor, XlsxExtractor, ImageExtractor],
+  exports: [PdfExtractor, DocxExtractor, TextExtractor, XlsxExtractor, ImageExtractor],
 })
 export class ExtractorsModule {}

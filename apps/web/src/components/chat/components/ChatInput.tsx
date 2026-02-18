@@ -59,7 +59,7 @@ export function ChatInput({
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend]
   );
 
   const hasInput = input.trim().length > 0;

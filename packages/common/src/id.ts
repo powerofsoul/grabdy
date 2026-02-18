@@ -65,7 +65,7 @@ export const ENTITY_TYPE_MAP = {
 } as const satisfies Record<EntityIdName, number>;
 
 const ENTITY_TYPE_REVERSE: Record<number, EntityIdName> = Object.fromEntries(
-  Object.entries(ENTITY_TYPE_MAP).map(([k, v]) => [v, k]),
+  Object.entries(ENTITY_TYPE_MAP).map(([k, v]) => [v, k])
 ) as Record<number, EntityIdName>;
 
 // ── DbId<T> ──────────────────────────────────────────────────────────────
@@ -98,8 +98,7 @@ export const GLOBAL_ORG = 0 as OrgNumericId;
 // ── UUID format ──────────────────────────────────────────────────────────
 
 /** Regex matching a standard UUID (8-4-4-4-12 hex string). */
-export const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ── packId ───────────────────────────────────────────────────────────────
 
@@ -135,7 +134,7 @@ export function bytesToUuid(bytes: Uint8Array): string {
  */
 export function packId<T extends TableIdName>(
   entityType: T,
-  org: DbId<'Org'> | OrgNumericId,
+  org: DbId<'Org'> | OrgNumericId
 ): DbId<T> {
   const buf = new Uint8Array(16);
   const view = new DataView(buf.buffer);
@@ -193,18 +192,12 @@ export function idsShareOrg(a: string, b: string): boolean {
 }
 
 /** Returns true if the packed UUID belongs to the given org. */
-export function idBelongsToOrg(
-  id: string,
-  orgNumericId: OrgNumericId,
-): boolean {
+export function idBelongsToOrg(id: string, orgNumericId: OrgNumericId): boolean {
   return extractOrgNumericId(id) === orgNumericId;
 }
 
 /** Returns true if the packed UUID has the expected entity type byte. */
-export function isEntityType<T extends EntityIdName>(
-  id: string,
-  expected: T,
-): boolean {
+export function isEntityType<T extends EntityIdName>(id: string, expected: T): boolean {
   const hex = stripHyphens(id);
   const entityByte = parseInt(hex.slice(20, 22), 16);
   return entityByte === ENTITY_TYPE_MAP[expected];
@@ -227,7 +220,7 @@ export function dbIdSchema<T extends TableIdName>(entityType: T) {
         const entityByte = parseInt(hex.slice(20, 22), 16);
         return entityByte === expectedCode;
       },
-      { message: `Expected ${entityType} ID` },
+      { message: `Expected ${entityType} ID` }
     )
     .transform((s) => s as DbId<T>);
 }

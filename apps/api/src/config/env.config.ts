@@ -66,7 +66,6 @@ export const env = {
   slackClientSecret: requiredInProd('SLACK_CLIENT_SECRET', ''),
   slackSigningSecret: requiredInProd('SLACK_SIGNING_SECRET', ''),
 
-
   // Linear
   linearClientId: requiredInProd('LINEAR_CLIENT_ID', ''),
   linearClientSecret: requiredInProd('LINEAR_CLIENT_SECRET', ''),

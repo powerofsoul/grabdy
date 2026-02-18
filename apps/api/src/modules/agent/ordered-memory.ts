@@ -9,7 +9,10 @@ export class OrderedMemory extends Memory {
     super(config);
   }
 
-  override async saveMessages({ messages, memoryConfig }: {
+  override async saveMessages({
+    messages,
+    memoryConfig,
+  }: {
     messages: MastraDBMessage[];
     memoryConfig?: MemoryConfig | undefined;
   }): Promise<{

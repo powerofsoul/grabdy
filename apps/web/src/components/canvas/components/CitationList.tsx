@@ -29,7 +29,9 @@ export function CitationList({ citations }: CitationListProps) {
           <Box
             key={i}
             component={isClickable ? 'a' : 'span'}
-            {...(isClickable ? { href: citation.url, target: '_blank', rel: 'noopener noreferrer' } : {})}
+            {...(isClickable
+              ? { href: citation.url, target: '_blank', rel: 'noopener noreferrer' }
+              : {})}
             sx={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -44,12 +46,14 @@ export function CitationList({ citations }: CitationListProps) {
               textDecoration: 'none',
               cursor: isClickable ? 'pointer' : 'default',
               transition: 'background-color 120ms ease',
-              '&:hover': isClickable
-                ? { bgcolor: alpha(theme.palette.primary.main, 0.12) }
-                : {},
+              '&:hover': isClickable ? { bgcolor: alpha(theme.palette.primary.main, 0.12) } : {},
             }}
           >
-            {isClickable ? <ArrowSquareOutIcon size={9} weight="light" color="currentColor" /> : <FileTextIcon size={9} weight="light" color="currentColor" />}
+            {isClickable ? (
+              <ArrowSquareOutIcon size={9} weight="light" color="currentColor" />
+            ) : (
+              <FileTextIcon size={9} weight="light" color="currentColor" />
+            )}
             <Typography component="span" sx={{ fontSize: 10, fontWeight: 500, color: 'inherit' }}>
               {citation.label}
             </Typography>

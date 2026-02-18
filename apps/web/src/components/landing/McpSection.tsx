@@ -59,10 +59,7 @@ export function McpSection() {
   } satisfies React.CSSProperties;
 
   return (
-    <Box
-      ref={sectionRef}
-      sx={{ py: { xs: 8, md: 10 }, bgcolor: 'background.default' }}
-    >
+    <Box ref={sectionRef} sx={{ py: { xs: 8, md: 10 }, bgcolor: 'background.default' }}>
       <Container maxWidth="lg">
         {/* Heading */}
         <Box className="mcp-heading" sx={{ mb: { xs: 4, md: 5 }, maxWidth: 560 }}>
@@ -89,9 +86,9 @@ export function McpSection() {
               lineHeight: 1.7,
             }}
           >
-            Connect Claude, Cursor, or any MCP-compatible agent to your
-            company knowledge in one config block. Ask a question — the AI
-            searches every source you've connected and answers with citations.
+            Connect Claude, Cursor, or any MCP-compatible agent to your company knowledge in one
+            config block. Ask a question — the AI searches every source you've connected and answers
+            with citations.
           </Typography>
         </Box>
 
@@ -119,8 +116,21 @@ export function McpSection() {
               flexDirection: 'column',
             }}
           >
-            <TitleBar label="claude_desktop_config.json" borderColor={codeBorderSubtle} textColor={codeTextDim} />
-            <pre style={{ ...monoStyle, margin: 0, padding: '20px', whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1 }}>
+            <TitleBar
+              label="claude_desktop_config.json"
+              borderColor={codeBorderSubtle}
+              textColor={codeTextDim}
+            />
+            <pre
+              style={{
+                ...monoStyle,
+                margin: 0,
+                padding: '20px',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+                flex: 1,
+              }}
+            >
               {renderJson(MCP_CONFIG, syntaxColors)}
             </pre>
           </Box>
@@ -144,7 +154,16 @@ export function McpSection() {
             <Box sx={{ p: '20px', flex: 1 }}>
               {/* User prompt */}
               <Box sx={{ display: 'flex', gap: 1, mb: 2.5 }}>
-                <span style={{ ...monoStyle, color: syntaxColors.method, fontWeight: 600, flexShrink: 0 }}>{'>'}</span>
+                <span
+                  style={{
+                    ...monoStyle,
+                    color: syntaxColors.method,
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                >
+                  {'>'}
+                </span>
                 <span style={{ ...monoStyle, color: syntaxColors.text }}>
                   What&apos;s our refund policy for enterprise customers?
                 </span>
@@ -173,10 +192,12 @@ export function McpSection() {
                 </span>
                 <Box sx={{ mt: 1.5 }}>
                   <span style={{ ...monoStyle, color: syntaxColors.text, display: 'block' }}>
-                    Enterprise customers get a <span style={{ color: syntaxColors.key }}>full refund within 30 days</span>.
+                    Enterprise customers get a{' '}
+                    <span style={{ color: syntaxColors.key }}>full refund within 30 days</span>.
                   </span>
                   <span style={{ ...monoStyle, color: syntaxColors.text, display: 'block' }}>
-                    After 30 days, refunds are <span style={{ color: syntaxColors.key }}>prorated based on usage</span>,
+                    After 30 days, refunds are{' '}
+                    <span style={{ color: syntaxColors.key }}>prorated based on usage</span>,
                   </span>
                   <span style={{ ...monoStyle, color: syntaxColors.text, display: 'block' }}>
                     minus a 5% processing fee per the Q4 amendment.
@@ -185,8 +206,18 @@ export function McpSection() {
               </Box>
 
               {/* Sources */}
-              <Box sx={{ pl: '18px', borderTop: '1px solid', borderColor: codeBorderSubtle, pt: 1.5 }}>
-                <span style={{ ...monoStyle, fontSize: '0.7rem', color: codeTextMuted, display: 'block', marginBottom: 4 }}>
+              <Box
+                sx={{ pl: '18px', borderTop: '1px solid', borderColor: codeBorderSubtle, pt: 1.5 }}
+              >
+                <span
+                  style={{
+                    ...monoStyle,
+                    fontSize: '0.7rem',
+                    color: codeTextMuted,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
+                >
                   Sources
                 </span>
                 {[
@@ -194,7 +225,10 @@ export function McpSection() {
                   { icon: '💬', name: '#legal-updates', detail: 'Mar 14' },
                   { icon: '📋', name: 'LEGAL-248', detail: 'Linear' },
                 ].map((s) => (
-                  <Box key={s.name} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+                  <Box
+                    key={s.name}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}
+                  >
                     <span style={{ fontSize: '0.7rem' }}>{s.icon}</span>
                     <span style={{ ...monoStyle, fontSize: '0.72rem', color: syntaxColors.string }}>
                       {s.name}
@@ -215,7 +249,15 @@ export function McpSection() {
 
 /* ── Helpers ── */
 
-function TitleBar({ label, borderColor, textColor }: { label: string; borderColor: string; textColor: string }) {
+function TitleBar({
+  label,
+  borderColor,
+  textColor,
+}: {
+  label: string;
+  borderColor: string;
+  textColor: string;
+}) {
   return (
     <Box
       sx={{
@@ -259,18 +301,20 @@ function renderJson(code: string, colors: SyntaxColors) {
         parts.push(
           <span key={`${li}-${pi++}`} style={{ color: colors.text }}>
             {line.slice(last, m.index)}
-          </span>,
+          </span>
         );
       }
       const isKey = m[2] === ':';
       parts.push(
         <span key={`${li}-${pi++}`} style={{ color: isKey ? colors.key : colors.string }}>
           {m[1]}
-        </span>,
+        </span>
       );
       if (isKey) {
         parts.push(
-          <span key={`${li}-${pi++}`} style={{ color: colors.text }}>:</span>,
+          <span key={`${li}-${pi++}`} style={{ color: colors.text }}>
+            :
+          </span>
         );
       }
       last = m.index + m[0].length;
@@ -280,12 +324,14 @@ function renderJson(code: string, colors: SyntaxColors) {
       parts.push(
         <span key={`${li}-${pi++}`} style={{ color: colors.text }}>
           {line.slice(last)}
-        </span>,
+        </span>
       );
     }
     if (parts.length === 0) {
       parts.push(
-        <span key={`${li}-0`} style={{ color: colors.text }}>{line}</span>,
+        <span key={`${li}-0`} style={{ color: colors.text }}>
+          {line}
+        </span>
       );
     }
     if (li < arr.length - 1) parts.push('\n');

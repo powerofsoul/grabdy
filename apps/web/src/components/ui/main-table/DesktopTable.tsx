@@ -156,7 +156,11 @@ export function DesktopTable<T>({
                       <TableCell sx={{ py: 1, px: 1, width: 48 }}>
                         <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
                           <IconButton size="small" sx={{ p: 0.5 }}>
-                            {isExpanded ? <CaretUpIcon size={16} weight="light" color="currentColor" /> : <CaretDownIcon size={16} weight="light" color="currentColor" />}
+                            {isExpanded ? (
+                              <CaretUpIcon size={16} weight="light" color="currentColor" />
+                            ) : (
+                              <CaretDownIcon size={16} weight="light" color="currentColor" />
+                            )}
                           </IconButton>
                         </Tooltip>
                       </TableCell>
@@ -177,9 +181,7 @@ export function DesktopTable<T>({
                     <TableRow>
                       <TableCell colSpan={columnCount} sx={{ p: 0 }}>
                         <Collapse in={isExpanded}>
-                          <Box sx={{ p: 2 }}>
-                            {interaction.expandable.renderExpanded(item)}
-                          </Box>
+                          <Box sx={{ p: 2 }}>{interaction.expandable.renderExpanded(item)}</Box>
                         </Collapse>
                       </TableCell>
                     </TableRow>

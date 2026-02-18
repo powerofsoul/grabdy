@@ -1,6 +1,15 @@
 import { useCallback, useState } from 'react';
 
-import { alpha, Box, IconButton, MenuItem, Select, TextField, Typography, useTheme } from '@mui/material';
+import {
+  alpha,
+  Box,
+  IconButton,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../../hooks/useEditMode';
@@ -53,7 +62,7 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
 
   const handleItemChange = (index: number, field: string, value: string) => {
     setDraftItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
   };
 
@@ -66,7 +75,10 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { handleCancel(); endEdit(); }
+    if (e.key === 'Escape') {
+      handleCancel();
+      endEdit();
+    }
   };
 
   if (isEditing) {
@@ -149,14 +161,24 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
 
             return (
               <Box key={i} sx={{ display: 'flex', gap: 1.25 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 16 }}>
-                  <StatusIcon size={16} weight="light" color={color} fill={item.status === 'success' ? color : 'transparent'} />
+                <Box
+                  sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 16 }}
+                >
+                  <StatusIcon
+                    size={16}
+                    weight="light"
+                    color={color}
+                    fill={item.status === 'success' ? color : 'transparent'}
+                  />
                   {!isLast && (
                     <Box
                       sx={{
                         width: 2,
                         flex: 1,
-                        bgcolor: item.status === 'success' ? color : alpha(theme.palette.text.primary, 0.1),
+                        bgcolor:
+                          item.status === 'success'
+                            ? color
+                            : alpha(theme.palette.text.primary, 0.1),
                         my: 0.25,
                       }}
                     />
@@ -174,11 +196,15 @@ export function StatusListComponent({ data, variant = 'list', onSave }: StatusLi
                       {item.label}
                     </Typography>
                     {item.date && (
-                      <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>{item.date}</Typography>
+                      <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>
+                        {item.date}
+                      </Typography>
                     )}
                   </Box>
                   {item.description && (
-                    <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25, lineHeight: 1.4 }}>
+                    <Typography
+                      sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25, lineHeight: 1.4 }}
+                    >
                       {item.description}
                     </Typography>
                   )}

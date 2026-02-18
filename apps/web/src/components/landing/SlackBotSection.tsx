@@ -47,10 +47,7 @@ export function SlackBotSection() {
   }, []);
 
   return (
-    <Box
-      ref={sectionRef}
-      sx={{ py: { xs: 8, md: 10 }, bgcolor: 'background.default' }}
-    >
+    <Box ref={sectionRef} sx={{ py: { xs: 8, md: 10 }, bgcolor: 'background.default' }}>
       <Container maxWidth="lg">
         {/* Heading */}
         <Box className="slack-heading" sx={{ mb: { xs: 4, md: 5 }, maxWidth: 560 }}>
@@ -77,9 +74,8 @@ export function SlackBotSection() {
               lineHeight: 1.7,
             }}
           >
-            Your team already lives in Slack. @mention Grabdy in any channel and
-            get cited answers from every source you&apos;ve connected. No
-            tab-switching, no context lost.
+            Your team already lives in Slack. @mention Grabdy in any channel and get cited answers
+            from every source you&apos;ve connected. No tab-switching, no context lost.
           </Typography>
         </Box>
 
@@ -110,7 +106,9 @@ export function SlackBotSection() {
             }}
           >
             {/* Workspace name */}
-            <Box sx={{ px: { xs: 1, md: 2 }, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{ px: { xs: 1, md: 2 }, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+            >
               <SlackLogo size={20} />
               <Typography
                 sx={{
@@ -128,7 +126,12 @@ export function SlackBotSection() {
             {/* Channel list */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
               <SidebarChannel name="general" textColor={alpha(codeText, 0.45)} />
-              <SidebarChannel name="product-team" textColor={codeText} activeBg={alpha(codeText, 0.1)} active />
+              <SidebarChannel
+                name="product-team"
+                textColor={codeText}
+                activeBg={alpha(codeText, 0.1)}
+                active
+              />
               <SidebarChannel name="engineering" textColor={alpha(codeText, 0.45)} />
               <SidebarChannel name="design" textColor={alpha(codeText, 0.45)} />
             </Box>
@@ -240,8 +243,8 @@ export function SlackBotSection() {
                       }}
                     >
                       @Grabdy
-                    </Box>
-                    {' '}What was decided about the Q2 pricing changes for enterprise tier?
+                    </Box>{' '}
+                    What was decided about the Q2 pricing changes for enterprise tier?
                   </Typography>
                 </Box>
               </Box>
@@ -333,11 +336,10 @@ export function SlackBotSection() {
                       mb: 1.5,
                     }}
                   >
-                    Based on the Q2 Pricing Review and the discussion in #pricing-team:
-                    enterprise tier pricing will increase from $89/seat to $99/seat,
-                    effective July 1st. Existing annual contracts are grandfathered at
-                    the current rate through renewal. A 15% volume discount now applies
-                    to teams over 200 seats.
+                    Based on the Q2 Pricing Review and the discussion in #pricing-team: enterprise
+                    tier pricing will increase from $89/seat to $99/seat, effective July 1st.
+                    Existing annual contracts are grandfathered at the current rate through renewal.
+                    A 15% volume discount now applies to teams over 200 seats.
                   </Typography>
 
                   {/* Sources */}
@@ -358,8 +360,10 @@ export function SlackBotSection() {
                         }}
                       >
                         {'— '}
-                        <Box component="span" sx={{ color: linkColor }}>{s.name}</Box>
-                        {' '}{s.detail}
+                        <Box component="span" sx={{ color: linkColor }}>
+                          {s.name}
+                        </Box>{' '}
+                        {s.detail}
                       </Typography>
                     ))}
                   </Box>
