@@ -21,9 +21,31 @@
 const EXCEPTIONS = new Set([]);
 
 /** Names containing these substrings before Id/Ids are third-party identifiers, not our packed UUIDs */
-const EXTERNAL_PATTERNS = ['externalId', 'ExternalId', 'externalIds', 'ExternalIds', 'slackChannelId', 'SlackChannelId', 'slackBotUserId', 'SlackBotUserId', 'linearIssueId', 'LinearIssueId', 'linearCommentId', 'LinearCommentId', 'linearClientId', 'LinearClientId', 'githubInstallationId', 'GithubInstallationId', 'githubCommentId', 'GithubCommentId', 'githubAppId', 'GithubAppId', 'installationId', 'InstallationId'];
-
-
+const EXTERNAL_PATTERNS = [
+  'externalId',
+  'ExternalId',
+  'externalIds',
+  'ExternalIds',
+  'slackChannelId',
+  'SlackChannelId',
+  'slackBotUserId',
+  'SlackBotUserId',
+  'linearIssueId',
+  'LinearIssueId',
+  'linearCommentId',
+  'LinearCommentId',
+  'linearClientId',
+  'LinearClientId',
+  'githubInstallationId',
+  'GithubInstallationId',
+  'githubCommentId',
+  'GithubCommentId',
+  'githubAppId',
+  'GithubAppId',
+  'installationId',
+  'InstallationId',
+  'googleClientId',
+];
 
 /**
  * Check if a type annotation node contains "DbId" or "NonDbId" somewhere.
@@ -36,7 +58,12 @@ function containsBrandedId(node) {
   if (node.type === 'TSTypeReference') {
     const typeName = node.typeName;
     if (typeName?.type === 'Identifier') {
-      if (typeName.name === 'DbId' || typeName.name === 'NonDbId' || typeName.name === 'OrgNumericId') return true;
+      if (
+        typeName.name === 'DbId' ||
+        typeName.name === 'NonDbId' ||
+        typeName.name === 'OrgNumericId'
+      )
+        return true;
     }
     // Check type parameters (e.g. Generated<DbId<'User'>>)
     if (node.typeArguments?.params) {
@@ -127,8 +154,7 @@ const rule = {
   meta: {
     type: 'problem',
     docs: {
-      description:
-        'Enforce DbId branded type for all identifiers ending with "Id" or "Ids"',
+      description: 'Enforce DbId branded type for all identifiers ending with "Id" or "Ids"',
     },
     messages: {
       requireDbId:
