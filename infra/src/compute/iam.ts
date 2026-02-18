@@ -1,7 +1,12 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
+import { dbSecretArn } from '../data/database';
+import { kmsKey } from '../secrets/kms';
 import { uploadsBucket } from '../storage/buckets';
+
+// Re-export so ecs.ts can import from here as before
+export { kmsKey };
 
 // ECS task execution role — pulls images from ECR, writes logs
 export const executionRole = new aws.iam.Role('grabdy-exec-role', {
@@ -32,6 +37,27 @@ new aws.iam.RolePolicy('grabdy-task-policy', {
         Effect: 'Allow',
         Action: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
         Resource: [uploadsBucket.arn, pulumi.interpolate`${uploadsBucket.arn}/*`],
+      },
+      // SSM Parameter Store — fetch all secrets under /grabdy/prod/
+      {
+        Effect: 'Allow',
+        Action: ['ssm:GetParametersByPath'],
+        Resource: [
+          pulumi.interpolate`arn:aws:ssm:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:parameter/grabdy/prod`,
+          pulumi.interpolate`arn:aws:ssm:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:parameter/grabdy/prod/*`,
+        ],
+      },
+      // Secrets Manager — read RDS-managed master password
+      {
+        Effect: 'Allow',
+        Action: ['secretsmanager:GetSecretValue'],
+        Resource: [dbSecretArn],
+      },
+      // KMS — decrypt SSM SecureString parameters, RDS secret, and manage data encryption keys
+      {
+        Effect: 'Allow',
+        Action: ['kms:Encrypt', 'kms:Decrypt', 'kms:GenerateDataKey'],
+        Resource: [kmsKey.arn],
       },
     ],
   }),

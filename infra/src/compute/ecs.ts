@@ -4,12 +4,11 @@ import * as pulumi from '@pulumi/pulumi';
 
 import { Env } from '../env';
 import { cacheHost, cachePort } from '../data/cache';
-import { databaseUrl } from '../data/database';
+import { db, dbSecretArn } from '../data/database';
 import { apiCertArn } from '../network/certificates';
 import { albSg, apiSg, vpc } from '../network/vpc';
-import { uploadsBucket } from '../storage/buckets';
 import { imageUri } from './ecr';
-import { executionRole, taskRole } from './iam';
+import { executionRole, kmsKey, taskRole } from './iam';
 
 const cluster = new aws.ecs.Cluster('grabdy-cluster', {
   settings: [{ name: 'containerInsights', value: 'disabled' }],
@@ -77,45 +76,23 @@ const logGroup = new aws.cloudwatch.LogGroup('grabdy-api-logs', {
   retentionInDays: 14,
 });
 
-// Environment variables
+// Environment variables — only non-sensitive values.
+// All secrets are fetched from SSM Parameter Store at app startup.
 const environment = [
   { name: 'NODE_ENV', value: 'production' },
   { name: 'API_PORT', value: '4000' },
   { name: 'API_URL', value: pulumi.interpolate`https://${Env.apiDomain}` },
-  { name: 'DATABASE_URL', value: databaseUrl },
+  { name: 'FRONTEND_URL', value: `https://${Env.domain}` },
+  { name: 'AWS_REGION', value: Env.region.name },
   { name: 'REDIS_HOST', value: cacheHost },
   { name: 'REDIS_PORT', value: cachePort },
-  { name: 'JWT_SECRET', value: Env.jwtSecret },
-  { name: 'OPENAI_API_KEY', value: Env.openaiApiKey },
-  { name: 'FRONTEND_URL', value: `https://${Env.domain}` },
-  { name: 'ADMIN_API_KEY', value: Env.adminApiKey },
-  { name: 'BULL_BOARD_USERNAME', value: Env.bullBoardUsername },
-  { name: 'BULL_BOARD_PASSWORD', value: Env.bullBoardPassword },
-  { name: 'INTEGRATION_ENCRYPTION_KEY', value: Env.integrationEncryptionKey },
-  { name: 'S3_UPLOADS_BUCKET', value: uploadsBucket.bucket },
-  { name: 'AWS_REGION', value: Env.region.name },
   { name: 'SMTP_HOST', value: Env.smtpHost },
   { name: 'SMTP_PORT', value: Env.smtpPort },
-  { name: 'SMTP_USER', value: Env.smtpUser },
-  { name: 'SMTP_PASS', value: Env.smtpPass },
   { name: 'EMAIL_FROM', value: Env.emailFrom },
-
-  { name: 'SLACK_CLIENT_ID', value: Env.slackClientId },
-  { name: 'SLACK_CLIENT_SECRET', value: Env.slackClientSecret },
-  { name: 'SLACK_SIGNING_SECRET', value: Env.slackSigningSecret },
-
-  { name: 'LINEAR_CLIENT_ID', value: Env.linearClientId },
-  { name: 'LINEAR_CLIENT_SECRET', value: Env.linearClientSecret },
-  { name: 'LINEAR_WEBHOOK_SECRET', value: Env.linearWebhookSecret },
-
-  { name: 'GITHUB_APP_ID', value: Env.githubAppId },
-  { name: 'GITHUB_APP_SLUG', value: Env.githubAppSlug },
-  { name: 'GITHUB_PRIVATE_KEY', value: Env.githubPrivateKey },
-  { name: 'GITHUB_WEBHOOK_SECRET', value: Env.githubWebhookSecret },
-
-  { name: 'GOOGLE_CLIENT_ID', value: Env.googleClientId },
-
-  { name: 'SLACK_WEBHOOK_URL', value: Env.slackWebhookUrl },
+  { name: 'SSM_PREFIX', value: '/grabdy/prod' },
+  { name: 'KMS_KEY_ARN', value: kmsKey.arn },
+  { name: 'DB_SECRET_ARN', value: dbSecretArn },
+  { name: 'DB_ENDPOINT', value: db.endpoint },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
 // Task definition

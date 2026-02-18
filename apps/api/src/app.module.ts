@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { EncryptionModule } from './common/encryption/encryption.module';
 import { ApiKeyModule } from './common/guards/api-key.module';
 import { AuthGuard } from './common/guards/auth.guard';
 import { OrgAccessGuard } from './common/guards/org-access.guard';
@@ -46,6 +47,7 @@ import { UsersModule } from './modules/users/users.module';
   imports: [
     EnvModule,
     DbModule,
+    EncryptionModule,
     ApiKeyModule,
     ThrottlerModule.forRoot([
       {

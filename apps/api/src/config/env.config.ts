@@ -55,11 +55,8 @@ export const env = {
   bullBoardUsername: requiredInProd('BULL_BOARD_USERNAME', 'admin'),
   bullBoardPassword: requiredInProd('BULL_BOARD_PASSWORD', 'admin'),
 
-  // Integration encryption
-  integrationEncryptionKey: requiredInProd(
-    'INTEGRATION_ENCRYPTION_KEY',
-    'dev-encryption-key-32chars-paddd'
-  ),
+  // Integration encryption (local dev only — prod uses KMS)
+  integrationEncryptionKey: process.env.INTEGRATION_ENCRYPTION_KEY || 'dev-encryption-key-32chars-paddd',
 
   // Slack
   slackClientId: requiredInProd('SLACK_CLIENT_ID', ''),
@@ -82,6 +79,9 @@ export const env = {
 
   // Slack internal notifications
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
+
+  // KMS (resource identifier, not a secret)
+  kmsKeyArn: process.env.KMS_KEY_ARN || '',
 } as const;
 
 type EnvKey = keyof typeof env;

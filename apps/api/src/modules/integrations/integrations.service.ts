@@ -7,6 +7,7 @@ import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '@grabdy
 import { Queue } from 'bullmq';
 import { sql } from 'kysely';
 
+import { EncryptionService } from '../../common/encryption/encryption.service';
 import { DbService } from '../../db/db.module';
 import { INTEGRATION_SYNC_QUEUE } from '../queue/queue.constants';
 
@@ -17,7 +18,6 @@ import {
   type ProviderData,
   type WebhookEvent,
 } from './connector.interface';
-import { TokenEncryptionService } from './token-encryption.service';
 
 interface CreateConnectionParams {
   orgId: DbId<'Org'>;
@@ -45,7 +45,7 @@ export class IntegrationsService {
 
   constructor(
     private db: DbService,
-    private tokenEncryption: TokenEncryptionService,
+    private encryption: EncryptionService,
     private providerRegistry: ProviderRegistry,
     @InjectQueue(INTEGRATION_SYNC_QUEUE) private syncQueue: Queue
   ) {}
@@ -85,8 +85,8 @@ export class IntegrationsService {
 
     return {
       ...row,
-      access_token: this.tokenEncryption.decrypt(row.access_token),
-      refresh_token: row.refresh_token ? this.tokenEncryption.decrypt(row.refresh_token) : null,
+      access_token: await this.encryption.decrypt(row.access_token),
+      refresh_token: row.refresh_token ? await this.encryption.decrypt(row.refresh_token) : null,
     };
   }
 
@@ -111,8 +111,8 @@ export class IntegrationsService {
 
     return {
       ...row,
-      access_token: this.tokenEncryption.decrypt(row.access_token),
-      refresh_token: row.refresh_token ? this.tokenEncryption.decrypt(row.refresh_token) : null,
+      access_token: await this.encryption.decrypt(row.access_token),
+      refresh_token: row.refresh_token ? await this.encryption.decrypt(row.refresh_token) : null,
     };
   }
 
@@ -124,9 +124,9 @@ export class IntegrationsService {
       .values({
         id,
         provider: params.provider,
-        access_token: this.tokenEncryption.encrypt(params.tokens.accessToken),
+        access_token: await this.encryption.encrypt(params.tokens.accessToken),
         refresh_token: params.tokens.refreshToken
-          ? this.tokenEncryption.encrypt(params.tokens.refreshToken)
+          ? await this.encryption.encrypt(params.tokens.refreshToken)
           : null,
         token_expires_at: params.tokens.expiresAt,
         scopes: params.tokens.scopes,
@@ -153,12 +153,12 @@ export class IntegrationsService {
       query = query.set('status', updates.status);
     }
     if (updates.accessToken !== undefined) {
-      query = query.set('access_token', this.tokenEncryption.encrypt(updates.accessToken));
+      query = query.set('access_token', await this.encryption.encrypt(updates.accessToken));
     }
     if (updates.refreshToken !== undefined) {
       query = query.set(
         'refresh_token',
-        updates.refreshToken ? this.tokenEncryption.encrypt(updates.refreshToken) : null
+        updates.refreshToken ? await this.encryption.encrypt(updates.refreshToken) : null
       );
     }
     if (updates.tokenExpiresAt !== undefined) {

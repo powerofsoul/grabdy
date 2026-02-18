@@ -5,7 +5,11 @@ import { FileMigrationProvider, Kysely, Migrator, PostgresDialect, sql } from 'k
 import * as path from 'path';
 import { Pool } from 'pg';
 
+import { loadSsmParameters } from '../config/ssm';
+
 async function createDb() {
+  // Populate process.env from SSM + Secrets Manager (no-op in dev)
+  await loadSsmParameters();
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error('DATABASE_URL environment variable is required');

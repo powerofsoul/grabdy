@@ -1,7 +1,6 @@
 import * as aws from '@pulumi/aws';
-import * as pulumi from '@pulumi/pulumi';
 
-import { Env } from '../env';
+import { kmsKey } from '../secrets/kms';
 import { dbSg, vpc } from '../network/vpc';
 
 const subnetGroup = new aws.rds.SubnetGroup('grabdy-db-subnet', {
@@ -19,7 +18,8 @@ export const db = new aws.rds.Instance('grabdy-db', {
 
   dbName: 'grabdy',
   username: 'grabdy',
-  password: Env.dbPassword,
+  manageMasterUserPassword: true,
+  masterUserSecretKmsKeyId: kmsKey.keyId,
 
   dbSubnetGroupName: subnetGroup.name,
   vpcSecurityGroupIds: [dbSg.id],
@@ -34,4 +34,9 @@ export const db = new aws.rds.Instance('grabdy-db', {
   performanceInsightsRetentionPeriod: 7,
 });
 
-export const databaseUrl = pulumi.interpolate`postgresql://grabdy:${Env.dbPassword}@${db.endpoint}/grabdy`;
+/** ARN of the Secrets Manager secret containing the RDS master password. */
+export const dbSecretArn = db.masterUserSecrets.apply((secrets) => {
+  // During preview or before RDS update completes, secrets may be empty
+  if (!secrets || secrets.length === 0) return '';
+  return secrets[0].secretArn;
+});

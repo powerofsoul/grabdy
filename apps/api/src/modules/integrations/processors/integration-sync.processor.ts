@@ -17,7 +17,6 @@ import {
 } from '../connector.interface';
 import { IntegrationsService } from '../integrations.service';
 import { ProviderRegistry } from '../providers/provider-registry';
-import { TokenEncryptionService } from '../token-encryption.service';
 
 export interface IntegrationSyncJobData {
   connectionId: DbId<'Connection'>;
@@ -54,7 +53,6 @@ export class IntegrationSyncProcessor extends WorkerHost {
   constructor(
     private db: DbService,
     private providerRegistry: ProviderRegistry,
-    private tokenEncryption: TokenEncryptionService,
     private integrationsService: IntegrationsService,
     @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue
   ) {

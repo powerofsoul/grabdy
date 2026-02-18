@@ -20,7 +20,6 @@ import { SlackBotService } from './providers/slack/slack-bot.service';
 import { INTEGRATIONS_REDIS } from './integrations.constants';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
-import { TokenEncryptionService } from './token-encryption.service';
 
 @Module({
   imports: [
@@ -41,7 +40,6 @@ import { TokenEncryptionService } from './token-encryption.service';
         }),
     },
     IntegrationsService,
-    TokenEncryptionService,
     ProviderRegistry,
     SlackBotService,
     SlackConnector,
