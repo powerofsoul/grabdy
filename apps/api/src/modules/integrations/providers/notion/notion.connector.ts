@@ -36,7 +36,7 @@ const notionTokenResponseSchema = z.object({
 export class NotionConnector extends IntegrationConnector<'NOTION'> {
   readonly provider = IntegrationProvider.NOTION;
   readonly rateLimits: RateLimitConfig = { maxRequestsPerMinute: 180, maxRequestsPerHour: 10000 };
-  readonly syncSchedule = null; // Webhook-driven
+  readonly syncSchedule = { every: 3_600_000 }; // Hourly safety net for missed webhooks
 
   private readonly logger = new Logger(NotionConnector.name);
 
