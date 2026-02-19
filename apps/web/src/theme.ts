@@ -532,7 +532,6 @@ export function createAppTheme(mode: PaletteMode) {
         styleOverrides: {
           paper: {
             boxShadow: 'none',
-            borderLeft: `1px solid ${t.border}`,
             backgroundImage: 'none',
             backgroundColor: t.bg,
           },

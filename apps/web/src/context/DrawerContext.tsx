@@ -169,8 +169,10 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
             sx={{
               zIndex: drawerZ,
               '& .MuiDrawer-paper': {
-                width: item.width ?? { xs: '100%', sm: 480, md: 560 },
-                borderLeft: '1px solid',
+                width: item.width ?? { xs: '100vw', sm: 480, md: 560 },
+                maxWidth: '100vw',
+                boxSizing: 'border-box',
+                borderLeft: { xs: 'none', sm: '1px solid' },
                 borderColor: 'grey.900',
               },
             }}
