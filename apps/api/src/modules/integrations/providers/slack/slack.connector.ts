@@ -15,10 +15,10 @@ import {
   type WebhookEvent,
   type WebhookHandlerResult,
 } from '../../connector.interface';
-import { getInitialSyncSlackTs } from '../../integrations.constants';
 
-import type { SlackProviderData } from './slack.types';
 import { SlackBotService } from './slack-bot.service';
+import type { SlackProviderData } from './slack.types';
+import { SlackChannelWebhook } from './webhooks/channel.webhook';
 
 const SLACK_AUTH_URL = 'https://slack.com/oauth/v2/authorize';
 const SLACK_TOKEN_URL = 'https://slack.com/api/oauth.v2.access';
@@ -64,40 +64,6 @@ interface SlackConversationsListResponse {
   response_metadata?: {
     next_cursor?: string;
   };
-}
-
-interface SlackMessage {
-  type: string;
-  user?: string;
-  text?: string;
-  ts?: string;
-  bot_id?: string;
-}
-
-interface SlackConversationsHistoryResponse {
-  ok: boolean;
-  error?: string;
-  messages?: SlackMessage[];
-  has_more?: boolean;
-  response_metadata?: {
-    next_cursor?: string;
-  };
-}
-
-function formatSlackTs(ts: string | undefined): string {
-  if (!ts) return '';
-  const date = new Date(parseFloat(ts) * 1000);
-  return date
-    .toISOString()
-    .replace('T', ' ')
-    .replace(/\.\d+Z$/, ' UTC');
-}
-
-function formatSlackMessage(msg: SlackMessage): string {
-  const time = formatSlackTs(msg.ts);
-  const user = msg.user ?? 'unknown';
-  const text = msg.text ?? '';
-  return `[${time}] ${user}: ${text}`;
 }
 
 @Injectable()
@@ -178,7 +144,8 @@ The user sees one message that evolves from "searching..." → "digging deeper..
     @InjectEnv('slackClientId') private readonly oauthClient: string,
     @InjectEnv('slackClientSecret') private readonly clientSecret: string,
     @InjectEnv('slackSigningSecret') private readonly signingSecret: string,
-    private readonly slackBotService: SlackBotService
+    private readonly slackBotService: SlackBotService,
+    private readonly channelWebhook: SlackChannelWebhook
   ) {
     super();
   }
@@ -253,6 +220,8 @@ The user sees one message that evolves from "searching..." → "digging deeper..
     };
   }
 
+  // ---- Webhooks ------------------------------------------------------------
+
   handleWebhookRequest(
     headers: Record<string, string>,
     body: unknown,
@@ -292,144 +261,28 @@ The user sees one message that evolves from "searching..." → "digging deeper..
   ): WebhookEvent | null {
     if (!body || typeof body !== 'object') return null;
 
-    // Verify Slack signature
-    const timestamp = headers['x-slack-request-timestamp'];
-    const signature = headers['x-slack-signature'];
+    if (!this.verifySignature(headers, rawBody ?? JSON.stringify(body))) return null;
 
-    if (!timestamp || !signature) return null;
-
-    // Prevent replay attacks (5 min window)
-    const now = Math.floor(Date.now() / 1000);
-    const ts = parseInt(timestamp, 10);
-    if (isNaN(ts) || Math.abs(now - ts) > 300) return null;
-
-    const bodyString = rawBody ?? (typeof body === 'string' ? body : JSON.stringify(body));
-    const sigBasestring = `v0:${timestamp}:${bodyString}`;
-    const expectedSignature = `v0=${createHmac('sha256', this.signingSecret).update(sigBasestring).digest('hex')}`;
-
-    // Timing-safe comparison
-    const sigBuffer = Buffer.from(signature);
-    const expectedBuffer = Buffer.from(expectedSignature);
-    if (sigBuffer.length !== expectedBuffer.length || !timingSafeEqual(sigBuffer, expectedBuffer)) {
-      this.logger.warn('Slack webhook signature verification failed');
-      return null;
-    }
-
-    // Parse the event payload
-    if (!('event' in body)) return null;
-    const event = (body satisfies object) && 'event' in body ? body.event : undefined;
-    if (!event || typeof event !== 'object') return null;
-
-    const eventType = 'type' in event ? event.type : undefined;
-    const channelId =
-      'channel' in event && typeof event.channel === 'string' ? event.channel : undefined;
-
-    if (!channelId) return null;
-
-    let action: WebhookEvent['action'];
-    if (eventType === 'message') {
-      // Check for subtypes
-      const subtype = 'subtype' in event ? event.subtype : undefined;
-      if (subtype === 'message_deleted') {
-        action = 'deleted';
-      } else if (subtype === 'message_changed') {
-        action = 'updated';
-      } else {
-        action = 'created';
-      }
-    } else {
-      return null;
-    }
-
-    return {
-      action,
-      externalId: channelId,
-    };
+    return this.channelWebhook.extractEvent(body);
   }
 
-  async sync(accessToken: string, providerData: SlackProviderData): Promise<SyncResult> {
-    const existingTimestamps = providerData.channelTimestamps;
-    const teamDomain = providerData.teamDomain;
+  // ---- Sync ----------------------------------------------------------------
 
+  async sync(accessToken: string, providerData: SlackProviderData): Promise<SyncResult> {
     // Auto-join selected channels before fetching messages
     const selectedIds = providerData.selectedChannelIds ?? [];
     for (const channelId of selectedIds) {
       await this.joinChannel(accessToken, channelId);
     }
 
-    // Fetch all non-archived channels the bot is a member of
-    const channels = await this.fetchChannels(accessToken);
-    const items: SyncedItem[] = [];
-    const newTimestamps: Record<string, string> = {};
-
-    for (const channel of channels) {
-      const cursorTs = existingTimestamps[channel.id] ?? getInitialSyncSlackTs();
-
-      // Quick check: are there new messages since last sync?
-      const { messages: newMessages, latestTs } = await this.fetchChannelMessages(
-        accessToken,
-        channel.id,
-        cursorTs,
-        providerData.slackBotUserId
-      );
-
-      if (newMessages.length === 0) {
-        // No changes — preserve existing timestamp
-        if (existingTimestamps[channel.id]) {
-          newTimestamps[channel.id] = existingTimestamps[channel.id];
-        }
-        continue;
-      }
-
-      // On initial sync (no saved timestamp), newMessages already contains everything from lookback.
-      // On subsequent syncs, re-fetch from the lookback window to rebuild the full data source.
-      const isInitialSync = !existingTimestamps[channel.id];
-      const { messages: allMessages } = isInitialSync
-        ? { messages: newMessages }
-        : await this.fetchChannelMessages(accessToken, channel.id, getInitialSyncSlackTs(), providerData.slackBotUserId);
-
-      const messages = allMessages.map((msg) => {
-        const ts = msg.ts ?? '';
-        return {
-          content: formatSlackMessage(msg),
-          metadata: {
-            type: 'SLACK' as const,
-            slackChannelId: channel.id,
-            slackMessageTs: ts,
-            slackAuthor: msg.user ?? 'unknown',
-          },
-          sourceUrl:
-            teamDomain && ts
-              ? `https://${teamDomain}.slack.com/archives/${channel.id}/p${ts.replace('.', '')}`
-              : `https://slack.com/app_redirect?channel=${channel.id}`,
-        };
-      });
-      const content = messages.map((m) => m.content).join('\n');
-
-      items.push({
-        externalId: channel.id,
-        title: `#${channel.name}`,
-        content,
-        messages,
-        sourceUrl: teamDomain
-          ? `https://${teamDomain}.slack.com/archives/${channel.id}`
-          : `https://slack.com/app_redirect?channel=${channel.id}`,
-        metadata: {
-          channelId: channel.id,
-          channelName: channel.name,
-          messageCount: allMessages.length,
-        },
-      });
-
-      newTimestamps[channel.id] = latestTs || cursorTs;
-    }
+    const result = await this.channelWebhook.fetchUpdatedItems(accessToken, providerData);
 
     return {
-      items,
+      items: result.items,
       deletedExternalIds: [],
       updatedProviderData: {
         ...providerData,
-        channelTimestamps: newTimestamps,
+        channelTimestamps: result.newTimestamps,
       },
       hasMore: false,
     };
@@ -468,6 +321,8 @@ The user sees one message that evolves from "searching..." → "digging deeper..
       selected: selectedIds.has(ch.id),
     }));
   }
+
+  // ---- Private: channel management ----------------------------------------
 
   private async joinChannel(accessToken: string, slackChannelId: string): Promise<void> {
     const response = await fetch(`${SLACK_API_URL}/conversations.join`, {
@@ -519,100 +374,25 @@ The user sees one message that evolves from "searching..." → "digging deeper..
     return channels;
   }
 
-  private async fetchChannels(accessToken: string): Promise<SlackChannel[]> {
-    const channels: SlackChannel[] = [];
-    let nextCursor: string | undefined;
+  // ---- Private: signature verification ------------------------------------
 
-    do {
-      const params = new URLSearchParams({
-        types: 'public_channel',
-        exclude_archived: 'true',
-        limit: '200',
-      });
-      if (nextCursor) {
-        params.set('cursor', nextCursor);
-      }
+  private verifySignature(headers: Record<string, string>, bodyString: string): boolean {
+    const timestamp = headers['x-slack-request-timestamp'];
+    const signature = headers['x-slack-signature'];
 
-      const response = await fetch(`${SLACK_API_URL}/conversations.list?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+    if (!timestamp || !signature) return false;
 
-      const data: SlackConversationsListResponse = await response.json();
+    // Prevent replay attacks (5 min window)
+    const now = Math.floor(Date.now() / 1000);
+    const ts = parseInt(timestamp, 10);
+    if (isNaN(ts) || Math.abs(now - ts) > 300) return false;
 
-      if (!data.ok) {
-        throw new Error(`Slack conversations.list error: ${data.error ?? 'Unknown error'}`);
-      }
+    const sigBasestring = `v0:${timestamp}:${bodyString}`;
+    const expectedSignature = `v0=${createHmac('sha256', this.signingSecret).update(sigBasestring).digest('hex')}`;
 
-      if (data.channels) {
-        for (const ch of data.channels) {
-          if (ch.is_member) {
-            channels.push(ch);
-          }
-        }
-      }
-
-      nextCursor = data.response_metadata?.next_cursor || undefined;
-    } while (nextCursor);
-
-    return channels;
-  }
-
-  async fetchChannelMessages(
-    accessToken: string,
-    channel: string,
-    oldestTs: string,
-    slackBotUserId?: string
-  ): Promise<{ messages: SlackMessage[]; latestTs: string | undefined }> {
-    const allMessages: SlackMessage[] = [];
-    let cursor: string | undefined;
-
-    do {
-      const params = new URLSearchParams({
-        channel,
-        limit: '200',
-      });
-      if (oldestTs !== '0') {
-        params.set('oldest', oldestTs);
-      }
-      if (cursor) {
-        params.set('cursor', cursor);
-      }
-
-      const response = await fetch(`${SLACK_API_URL}/conversations.history?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-
-      const data: SlackConversationsHistoryResponse = await response.json();
-
-      if (!data.ok) {
-        this.logger.warn(
-          `Slack conversations.history error for ${channel}: ${data.error ?? 'Unknown'}`
-        );
-        break;
-      }
-
-      const messages = data.messages ?? [];
-      // Skip bot messages (including our own replies) to avoid indexing generated content.
-      // Also skip messages that @mention the bot — these are questions directed at us,
-      // not organic channel knowledge. Indexing them would pollute search results.
-      const botMentionPattern = slackBotUserId ? `<@${slackBotUserId}>` : null;
-      allMessages.push(
-        ...messages.filter(
-          (m) => !m.bot_id && (!botMentionPattern || !m.text?.includes(botMentionPattern))
-        )
-      );
-
-      cursor = data.has_more ? data.response_metadata?.next_cursor || undefined : undefined;
-    } while (cursor);
-
-    // Find the latest timestamp among fetched messages
-    let latestTs: string | undefined;
-    for (const msg of allMessages) {
-      if (msg.ts && (!latestTs || msg.ts > latestTs)) {
-        latestTs = msg.ts;
-      }
-    }
-
-    return { messages: allMessages, latestTs };
+    // Timing-safe comparison
+    const sigBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+    return sigBuffer.length === expectedBuffer.length && timingSafeEqual(sigBuffer, expectedBuffer);
   }
 }

@@ -15,6 +15,7 @@ import { IntegrationsService } from '../../integrations.service';
 
 import { SlackConnector } from './slack.connector';
 import type { SlackBotJobData } from './slack-bot.service';
+import { SlackChannelWebhook } from './webhooks/channel.webhook';
 
 const SLACK_API_URL = 'https://slack.com/api';
 
@@ -50,6 +51,7 @@ export class SlackBotProcessor extends WorkerHost {
     private readonly slackReplyTool: SlackReplyTool,
     private readonly integrationsService: IntegrationsService,
     private readonly slackConnector: SlackConnector,
+    private readonly channelWebhook: SlackChannelWebhook,
     private readonly db: DbService,
     @InjectQueue(DATA_SOURCE_QUEUE) private readonly dataSourceQueue: Queue
   ) {
@@ -164,7 +166,7 @@ export class SlackBotProcessor extends WorkerHost {
       const channelName = await this.fetchChannelName(connection.access_token, slackChannelId);
 
       // Fetch full channel history
-      const { messages } = await this.slackConnector.fetchChannelMessages(
+      const { messages } = await this.channelWebhook.fetchChannelMessages(
         connection.access_token,
         slackChannelId,
         '0', // From the beginning

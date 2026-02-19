@@ -2,9 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { IntegrationProvider } from '@grabdy/contracts';
-import { LinearClient, PaginationOrderBy } from '@linear/sdk';
+import { LinearClient } from '@linear/sdk';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { z } from 'zod';
 
 import { InjectEnv } from '../../../../config/env.config';
 import {
@@ -20,220 +19,11 @@ import {
 import { getInitialSyncSince } from '../../integrations.constants';
 
 import type { LinearProviderData } from './linear.types';
+import { LinearIssueWebhook } from './webhooks/issue.webhook';
 
 const LINEAR_AUTH_URL = 'https://linear.app/oauth/authorize';
 const LINEAR_TOKEN_URL = 'https://api.linear.app/oauth/token';
 const LINEAR_SCOPES = 'read';
-
-const linearWebhookBodySchema = z.object({
-  action: z.string().optional(),
-  type: z.string().optional(),
-  data: z
-    .object({
-      id: z.string().optional(),
-      issueId: z.string().optional(),
-    })
-    .optional(),
-  url: z.string().optional(),
-});
-
-function formatLinearDate(iso: string): string {
-  return new Date(iso)
-    .toISOString()
-    .replace('T', ' ')
-    .replace(/\.\d+Z$/, ' UTC');
-}
-
-interface IssueFields {
-  id: string;
-  identifier: string;
-  title: string;
-  description: string | undefined;
-  url: string;
-  updatedAt: Date;
-  priority: number;
-  priorityLabel: string;
-  state: { name: string } | undefined;
-  assignee: { name: string } | undefined;
-  team: { name: string } | undefined;
-  labels: { nodes: Array<{ name: string }> };
-  parent: { identifier: string; title: string } | undefined;
-  children: {
-    nodes: Array<{ identifier: string; title: string; state: { name: string } | undefined }>;
-  };
-  comments: {
-    nodes: Array<{
-      id: string;
-      body: string;
-      user: { name: string } | undefined;
-      createdAt: Date;
-      url: string;
-    }>;
-  };
-}
-
-function buildIssueContextHeader(issue: IssueFields): string {
-  const lines: string[] = [];
-
-  lines.push(`Issue ${issue.identifier}: ${issue.title}`);
-
-  const statusParts: string[] = [];
-  if (issue.state) statusParts.push(`Status: ${issue.state.name}`);
-  if (issue.priorityLabel) statusParts.push(`Priority: ${issue.priorityLabel}`);
-  if (issue.assignee) statusParts.push(`Assignee: ${issue.assignee.name}`);
-  if (issue.team) statusParts.push(`Team: ${issue.team.name}`);
-  if (statusParts.length > 0) lines.push(statusParts.join(' | '));
-
-  const labelNames = issue.labels.nodes.map((l) => l.name);
-  if (labelNames.length > 0) lines.push(`Labels: ${labelNames.join(', ')}`);
-
-  if (issue.parent) {
-    lines.push(`Parent: ${issue.parent.identifier} ${issue.parent.title}`);
-  }
-
-  if (issue.children.nodes.length > 0) {
-    const childParts = issue.children.nodes.map(
-      (c) => `${c.identifier} ${c.title}${c.state ? ` (${c.state.name})` : ''}`
-    );
-    lines.push(`Sub-issues: ${childParts.join(', ')}`);
-  }
-
-  return lines.join('\n');
-}
-
-function buildCommentContextLine(issue: IssueFields): string {
-  const parts = [`Comment on ${issue.identifier} (${issue.title})`];
-  if (issue.state) parts.push(issue.state.name);
-  if (issue.priorityLabel) parts.push(issue.priorityLabel);
-  return parts.join(' | ');
-}
-
-function buildSyncedItemFromIssue(issue: IssueFields): SyncedItem {
-  const messages: SyncedItem['messages'] = [];
-  const contextHeader = buildIssueContextHeader(issue);
-
-  // Issue description (or header-only) as first message
-  const descriptionContent = issue.description
-    ? `${contextHeader}\n\n${issue.description}`
-    : contextHeader;
-
-  messages.push({
-    content: descriptionContent,
-    metadata: {
-      type: 'LINEAR' as const,
-      linearIssueId: issue.id,
-      linearCommentId: null,
-    },
-    sourceUrl: issue.url,
-  });
-
-  // Each comment as a separate message with context line
-  const commentContext = buildCommentContextLine(issue);
-  for (const comment of issue.comments.nodes) {
-    const author = comment.user?.name ?? 'Unknown';
-    const time = formatLinearDate(comment.createdAt.toISOString());
-    messages.push({
-      content: `${commentContext}\n[${time}] ${author}: ${comment.body}`,
-      metadata: {
-        type: 'LINEAR' as const,
-        linearIssueId: issue.id,
-        linearCommentId: comment.id,
-      },
-      sourceUrl: comment.url,
-    });
-  }
-
-  const content = messages.map((m) => m.content).join('\n\n');
-  const labelNames = issue.labels.nodes.map((l) => l.name);
-
-  return {
-    externalId: issue.id,
-    title: `[${issue.identifier}] ${issue.title}`,
-    content,
-    messages,
-    sourceUrl: issue.url,
-    metadata: {
-      linearIssueId: issue.id,
-      identifier: issue.identifier,
-      commentCount: issue.comments.nodes.length,
-      status: issue.state?.name ?? null,
-      priority: issue.priorityLabel || null,
-      assignee: issue.assignee?.name ?? null,
-      team: issue.team?.name ?? null,
-      labels: labelNames.length > 0 ? labelNames : null,
-    },
-  };
-}
-
-async function fetchIssueWithRelations(
-  client: LinearClient,
-  linearIssueId: string
-): Promise<IssueFields | null> {
-  const issue = await client.issue(linearIssueId);
-  if (!issue) return null;
-
-  const [
-    stateResult,
-    assigneeResult,
-    teamResult,
-    labelsResult,
-    parentResult,
-    childrenResult,
-    commentsResult,
-  ] = await Promise.all([
-    issue.state,
-    issue.assignee,
-    issue.team,
-    issue.labels(),
-    issue.parent,
-    issue.children(),
-    issue.comments(),
-  ]);
-
-  const commentNodes = await Promise.all(
-    commentsResult.nodes.map(async (c) => {
-      const user = await c.user;
-      return {
-        id: c.id,
-        body: c.body,
-        user: user ? { name: user.name } : undefined,
-        createdAt: c.createdAt,
-        url: c.url,
-      };
-    })
-  );
-
-  const childNodes = await Promise.all(
-    childrenResult.nodes.map(async (child) => {
-      const childState = await child.state;
-      return {
-        identifier: child.identifier,
-        title: child.title,
-        state: childState ? { name: childState.name } : undefined,
-      };
-    })
-  );
-
-  return {
-    id: issue.id,
-    identifier: issue.identifier,
-    title: issue.title,
-    description: issue.description ?? undefined,
-    url: issue.url,
-    updatedAt: issue.updatedAt,
-    priority: issue.priority,
-    priorityLabel: issue.priorityLabel,
-    state: stateResult ? { name: stateResult.name } : undefined,
-    assignee: assigneeResult ? { name: assigneeResult.name } : undefined,
-    team: teamResult ? { name: teamResult.name } : undefined,
-    labels: { nodes: labelsResult.nodes.map((l) => ({ name: l.name })) },
-    parent: parentResult
-      ? { identifier: parentResult.identifier, title: parentResult.title }
-      : undefined,
-    children: { nodes: childNodes },
-    comments: { nodes: commentNodes },
-  };
-}
 
 @Injectable()
 export class LinearConnector extends IntegrationConnector<'LINEAR'> {
@@ -249,7 +39,8 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
   constructor(
     @InjectEnv('linearClientId') private readonly linearClientId: string,
     @InjectEnv('linearClientSecret') private readonly linearClientSecret: string,
-    @InjectEnv('linearWebhookSecret') private readonly linearWebhookSecret: string
+    @InjectEnv('linearWebhookSecret') private readonly linearWebhookSecret: string,
+    private readonly issueWebhook: LinearIssueWebhook
   ) {
     super();
   }
@@ -308,6 +99,8 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     };
   }
 
+  // ---- Webhooks ------------------------------------------------------------
+
   parseWebhook(
     headers: Record<string, string>,
     body: unknown,
@@ -330,30 +123,7 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
       return null;
     }
 
-    const parsed = linearWebhookBodySchema.safeParse(body);
-    if (!parsed.success) return null;
-
-    const typedPayload = parsed.data;
-    const actionStr = typedPayload.action;
-    const typeStr = typedPayload.type;
-
-    let action: WebhookEvent['action'];
-    if (actionStr === 'create') action = 'created';
-    else if (actionStr === 'update') action = 'updated';
-    else if (actionStr === 'remove') action = 'deleted';
-    else return null;
-
-    // For comments, the relevant external ID is the parent issue
-    let externalId: string | undefined;
-    if (typeStr === 'Comment') {
-      externalId = typedPayload.data?.issueId;
-    } else if (typeStr === 'Issue') {
-      externalId = typedPayload.data?.id;
-    }
-
-    if (!externalId) return null;
-
-    return { action, externalId };
+    return this.issueWebhook.extractEvent(body);
   }
 
   handleWebhookRequest(
@@ -381,50 +151,28 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     return { response: { ok: true }, syncConnections };
   }
 
+  // ---- Sync ----------------------------------------------------------------
+
   async sync(accessToken: string, providerData: LinearProviderData): Promise<SyncResult> {
     const client = new LinearClient({ accessToken });
-    const lastIssueSyncedAt = providerData.lastIssueSyncedAt;
+    const sinceCursor = providerData.lastIssueSyncedAt ?? getInitialSyncSince();
 
-    const sinceCursor = lastIssueSyncedAt ?? getInitialSyncSince();
-    const filter = { updatedAt: { gt: new Date(sinceCursor) } };
-
-    const issuesConnection = await client.issues({
-      first: 50,
-      orderBy: PaginationOrderBy.UpdatedAt,
-      filter,
-    });
-
-    const items: SyncedItem[] = [];
-    let maxUpdatedAt = lastIssueSyncedAt;
-
-    for (const issue of issuesConnection.nodes) {
-      const fields = await fetchIssueWithRelations(client, issue.id);
-      if (!fields) continue;
-
-      items.push(buildSyncedItemFromIssue(fields));
-
-      const updatedAtStr = fields.updatedAt.toISOString();
-      if (!maxUpdatedAt || updatedAtStr > maxUpdatedAt) {
-        maxUpdatedAt = updatedAtStr;
-      }
-    }
-
-    const hasMore = issuesConnection.pageInfo.hasNextPage;
+    const result = await this.issueWebhook.fetchUpdatedItems(client, sinceCursor);
 
     return {
-      items,
+      items: result.items,
       deletedExternalIds: [],
       updatedProviderData: {
         ...providerData,
-        lastIssueSyncedAt: maxUpdatedAt,
+        lastIssueSyncedAt: result.maxUpdatedAt ?? providerData.lastIssueSyncedAt,
       },
-      hasMore,
+      hasMore: result.hasMore,
     };
   }
 
   async processWebhookItem(
     accessToken: string,
-    providerData: LinearProviderData,
+    _providerData: LinearProviderData,
     event: WebhookEvent
   ): Promise<{ item: SyncedItem | null; deletedExternalId: string | null }> {
     if (event.action === 'deleted') {
@@ -432,13 +180,13 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     }
 
     const client = new LinearClient({ accessToken });
-    const fields = await fetchIssueWithRelations(client, event.externalId);
-    if (!fields) {
+    const item = await this.issueWebhook.fetchItem(client, event.externalId);
+    if (!item) {
       this.logger.warn(`Could not fetch Linear issue ${event.externalId} for webhook sync`);
       return { item: null, deletedExternalId: null };
     }
 
-    return { item: buildSyncedItemFromIssue(fields), deletedExternalId: null };
+    return { item, deletedExternalId: null };
   }
 
   buildInitialProviderData(
