@@ -17,7 +17,7 @@ import { McpTools } from './mcp.tools';
       name: 'grabdy',
       version: '1.0.0',
       transport: McpTransportType.STREAMABLE_HTTP,
-      apiPrefix: 'api/v1',
+      apiPrefix: 'v1',
       mcpEndpoint: 'mcp',
       guards: [ApiKeyGuard],
       decorators: [Public()],
