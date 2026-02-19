@@ -109,15 +109,44 @@ export class SlackConnector extends IntegrationConnector<'SLACK'> {
   };
   readonly syncSchedule = { every: 3_600_000 }; // 1 hour
 
-  readonly botInstructions = `You are a Slack bot. Answer concisely. Do a single search and stop.
+  readonly botInstructions = `You are a Slack bot. Be helpful and conversational but brief — this is Slack, not a document.
 
-Use Slack mrkdwn only: *bold*, _italic_, \`code\`, > quotes. Do NOT use markdown **bold**, # headings, or [links](url).
+Keep answers under 2000 characters. For complex topics, give the key insight and offer to elaborate.
 
-MANDATORY source citation rules:
-- For Slack sources: quote the relevant text with > and link to the original message using <sourceUrl|text>. Attribute the author using <@slackAuthor> (the user ID from chunk metadata).
-  Example: > <https://team.slack.com/archives/C123/p456|we shipped v2 on Monday> — <@U0ABC123>
-- For file sources: include a clickable link using <sourceUrl|dataSourceName> plus metadata details (page number, sheet name, row, etc).
-  Example: — <https://app.grabdy.com/preview/abc|Report.pdf> p.3`;
+Use 1-2 searches, max 3 for complex multi-part questions.
+
+Use Slack mrkdwn only: *bold*, _italic_, \`code\`, > quotes, • bullets. Do NOT use markdown **bold**, # headings, or [links](url).
+
+Do NOT mention confidence scores, relevance levels, or "limited matches". Just answer naturally.
+
+Do NOT start with preamble like "Here's what I found about...", "Based on the knowledge base...", or "I found reports about...". Jump straight into the answer.
+
+## Answer format
+
+Write a short, conversational summary that directly answers the question. Then add a blank line and list sources as numbered references grouped by type.
+
+Source format rules:
+- If there is only ONE source of a given type, use just the type name: Slack, Linear, PDF, Notion, etc. Only add numbers (Slack 1, Slack 2) when there are MULTIPLE sources of the same type.
+- For Slack sources: link to the message and attribute the author. Format: \`<sourceUrl|Slack>\` — <@slackAuthor> (or \`<sourceUrl|Slack 1>\` if multiple)
+- For other sources: link using sourceUrl. Format: \`<sourceUrl|Linear>\` (add page/sheet/row details if available)
+- If no sourceUrl is available, just write the name without a link.
+- Keep the link display text SHORT (e.g. "Slack", "Linear 2", "PDF"). Never put long text or quotes inside the <url|text> link.
+
+Example answer:
+Users have reported they can't access the chat feature. A workaround is to type /doctor which fixes it for 10 minutes.
+
+<https://team.slack.com/archives/C123/p456|Slack> — <@U0ABC>
+<https://linear.app/team/GRA-7|Linear>
+
+## Replying
+
+You MUST use the slack_reply tool to respond. Do NOT output a plain text answer.
+
+1. IMMEDIATELY call slack_reply with a brief status (e.g. ":mag: Looking that up...")
+2. Do your rag-search(es)
+3. Call slack_reply again with your complete answer — this updates the same message
+
+The user sees one message that evolves from "searching..." to the final answer.`;
 
   private readonly logger = new Logger(SlackConnector.name);
 
@@ -316,7 +345,8 @@ MANDATORY source citation rules:
       const { messages: newMessages, latestTs } = await this.fetchChannelMessages(
         accessToken,
         channel.id,
-        cursorTs
+        cursorTs,
+        providerData.slackBotUserId
       );
 
       if (newMessages.length === 0) {
@@ -332,7 +362,7 @@ MANDATORY source citation rules:
       const isInitialSync = !existingTimestamps[channel.id];
       const { messages: allMessages } = isInitialSync
         ? { messages: newMessages }
-        : await this.fetchChannelMessages(accessToken, channel.id, getInitialSyncSlackTs());
+        : await this.fetchChannelMessages(accessToken, channel.id, getInitialSyncSlackTs(), providerData.slackBotUserId);
 
       const messages = allMessages.map((msg) => {
         const ts = msg.ts ?? '';
@@ -506,7 +536,8 @@ MANDATORY source citation rules:
   async fetchChannelMessages(
     accessToken: string,
     channel: string,
-    oldestTs: string
+    oldestTs: string,
+    slackBotUserId?: string
   ): Promise<{ messages: SlackMessage[]; latestTs: string | undefined }> {
     const allMessages: SlackMessage[] = [];
     let cursor: string | undefined;
@@ -537,8 +568,15 @@ MANDATORY source citation rules:
       }
 
       const messages = data.messages ?? [];
-      // Skip bot messages (including our own replies) to avoid indexing generated content
-      allMessages.push(...messages.filter((m) => !m.bot_id));
+      // Skip bot messages (including our own replies) to avoid indexing generated content.
+      // Also skip messages that @mention the bot — these are questions directed at us,
+      // not organic channel knowledge. Indexing them would pollute search results.
+      const botMentionPattern = slackBotUserId ? `<@${slackBotUserId}>` : null;
+      allMessages.push(
+        ...messages.filter(
+          (m) => !m.bot_id && (!botMentionPattern || !m.text?.includes(botMentionPattern))
+        )
+      );
 
       cursor = data.has_more ? data.response_metadata?.next_cursor || undefined : undefined;
     } while (cursor);

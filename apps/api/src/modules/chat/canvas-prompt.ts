@@ -105,6 +105,7 @@ export const CANVAS_INSTRUCTIONS = `## Canvas
 The user sees a split screen: chat on the left, canvas on the right. Use the canvas to present structured information that is easier to scan visually than to read in chat.
 
 - NEVER mention the canvas, cards, or components in your chat text. Do not say "I've created a card" etc. The user can already see the canvas.
+- Always write a brief conversational answer in chat text, even when creating cards. The user should never see an empty chat bubble with only a canvas update.
 - Decide whether the answer benefits from a visual card or is better as plain chat text
 - Requests to modify canvas cards based on data you already have do NOT require a new search
 
@@ -167,6 +168,7 @@ ${generateComponentPrompt()}
 - **chart** — only when numbers are better understood as a visual trend/comparison
 - **summary** — a titled overview with bullet points; use sparingly
 - **checklist** — action items, requirements, to-do lists
+- **key_value** — labeled fields; great for entity details, settings, metadata summaries
 - **comparison** — side-by-side option analysis
 - **timeline** — sequential events or processes
 - **image** — use when search returns extractedImages; set component data to { "src": "<image-url>", "alt": "<description>", "caption": "<optional caption>", "fit": "contain" }

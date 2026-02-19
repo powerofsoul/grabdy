@@ -13,6 +13,8 @@ import type { ExtractionResult } from './extractor.interface';
 
 const IMAGE_ANALYSIS_PROMPT = `Analyze this image and provide:
 1. A detailed description of the image content (2-4 sentences). Include what the image shows, any charts/graphs/diagrams, data presented, and key visual elements.
+   - If the image is a chart or graph, describe the axes, data trends, and key values.
+   - If the image is a table, list column headers and notable data points.
 2. A list of relevant tags (comma-separated, 3-8 tags). Tags should describe the content type, subject matter, and key themes.
 3. Any visible text in the image (OCR). If no text is visible, write "None".
 

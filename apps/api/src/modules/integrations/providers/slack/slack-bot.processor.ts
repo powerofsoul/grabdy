@@ -7,6 +7,7 @@ import { Job, Queue } from 'bullmq';
 
 import { DbService } from '../../../../db/db.module';
 import { AgentFactory } from '../../../agent/services/agent.factory';
+import { SlackReplyTool } from '../../../agent/tools/slack-reply.tool';
 import type { DataSourceJobData } from '../../../data-sources/data-source.processor';
 import { DATA_SOURCE_QUEUE, SLACK_BOT_QUEUE } from '../../../queue/queue.constants';
 import { parseProviderData } from '../../connector.interface';
@@ -46,6 +47,7 @@ export class SlackBotProcessor extends WorkerHost {
 
   constructor(
     private readonly agentFactory: AgentFactory,
+    private readonly slackReplyTool: SlackReplyTool,
     private readonly integrationsService: IntegrationsService,
     private readonly slackConnector: SlackConnector,
     private readonly db: DbService,
@@ -101,21 +103,25 @@ export class SlackBotProcessor extends WorkerHost {
         prompt = `Previous conversation:\n${threadContext}\n\nCurrent question: ${text}`;
       }
 
+      // Create a slack_reply tool so the agent can post/update messages progressively
+      const slackReplyTool = this.slackReplyTool.create({
+        accessToken: connection.access_token,
+        channel: slackChannelId,
+        threadTs,
+      });
+
       // Create a data agent with all collections, no canvas, and provider-specific instructions
       const agent = this.agentFactory.createDataAgent({
         orgId,
         source: 'SLACK',
         callerType: AiCallerType.SYSTEM,
         instructions: this.slackConnector.botInstructions,
-        maxSteps: 3,
+        tools: [{ slack_reply: slackReplyTool }],
+        maxSteps: 5,
       });
 
-      // Generate answer from knowledge base
-      const result = await agent.generate(prompt);
-      const answer = result.text ?? 'Something went wrong. Please email florin@grabdy.com.';
-
-      // Post reply as a thread message
-      await this.postSlackMessage(connection.access_token, slackChannelId, answer, threadTs);
+      // Generate answer — the agent posts/updates the Slack message via slack_reply tool
+      await agent.generate(prompt);
 
       this.logger.log(`Posted bot reply in channel ${slackChannelId} thread ${threadTs}`);
     } catch (error) {
@@ -148,6 +154,12 @@ export class SlackBotProcessor extends WorkerHost {
     }
 
     try {
+      const joinedProviderData = parseProviderData(connection.provider_data);
+      const botUserId =
+        joinedProviderData.provider === 'SLACK' ? joinedProviderData.slackBotUserId : undefined;
+      const teamDomain =
+        joinedProviderData.provider === 'SLACK' ? joinedProviderData.teamDomain : undefined;
+
       // Fetch channel info for the name
       const channelName = await this.fetchChannelName(connection.access_token, slackChannelId);
 
@@ -155,17 +167,14 @@ export class SlackBotProcessor extends WorkerHost {
       const { messages } = await this.slackConnector.fetchChannelMessages(
         connection.access_token,
         slackChannelId,
-        '0' // From the beginning
+        '0', // From the beginning
+        botUserId
       );
 
       if (messages.length === 0) {
         this.logger.log(`No messages in channel ${slackChannelId}, skipping ingestion`);
         return;
       }
-
-      const joinedProviderData = parseProviderData(connection.provider_data);
-      const teamDomain =
-        joinedProviderData.provider === 'SLACK' ? joinedProviderData.teamDomain : undefined;
 
       const syncedMessages = messages.map((msg) => {
         const time = msg.ts

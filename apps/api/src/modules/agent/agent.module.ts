@@ -9,11 +9,12 @@ import { AgentMemoryService } from './services/memory.service';
 import { AgentStorageProvider } from './services/storage.provider';
 import { CanvasTools } from './tools/canvas-tools';
 import { RagSearchTool } from './tools/rag-search.tool';
+import { SlackReplyTool } from './tools/slack-reply.tool';
 
 @Global()
 @Module({
   imports: [StorageModule, BullModule.registerQueue({ name: CANVAS_OPS_QUEUE })],
-  providers: [AgentStorageProvider, AgentMemoryService, RagSearchTool, CanvasTools, AgentFactory],
-  exports: [AgentMemoryService, AgentFactory, CanvasTools],
+  providers: [AgentStorageProvider, AgentMemoryService, RagSearchTool, SlackReplyTool, CanvasTools, AgentFactory],
+  exports: [AgentMemoryService, AgentFactory, CanvasTools, SlackReplyTool],
 })
 export class AgentModule {}
