@@ -9,6 +9,7 @@ const usageSummarySchema = z.object({
   totalInputTokens: z.number(),
   totalOutputTokens: z.number(),
   totalTokens: z.number(),
+  totalCost: z.number(),
 });
 
 const dailyUsageSchema = z.object({
@@ -17,6 +18,7 @@ const dailyUsageSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   totalTokens: z.number(),
+  cost: z.number(),
 });
 
 const modelBreakdownSchema = z.object({
@@ -26,6 +28,7 @@ const modelBreakdownSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   totalTokens: z.number(),
+  cost: z.number(),
 });
 
 const requestTypeBreakdownSchema = z.object({
@@ -40,6 +43,7 @@ const sourceBreakdownSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   totalTokens: z.number(),
+  cost: z.number(),
 });
 
 const memberBreakdownSchema = z.object({
@@ -49,6 +53,7 @@ const memberBreakdownSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   totalTokens: z.number(),
+  cost: z.number(),
 });
 
 export const analyticsContract = c.router(

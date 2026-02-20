@@ -33,6 +33,7 @@ export class AnalyticsService {
         sql<number>`coalesce(sum(input_tokens), 0)::int`.as('total_input_tokens'),
         sql<number>`coalesce(sum(output_tokens), 0)::int`.as('total_output_tokens'),
         sql<number>`coalesce(sum(total_tokens), 0)::int`.as('total_tokens'),
+        sql<string>`coalesce(sum(cost), 0)`.as('total_cost'),
       ])
       .where('org_id', '=', orgId)
       .where('created_at', '>=', since)
@@ -43,6 +44,7 @@ export class AnalyticsService {
       totalInputTokens: Number(result.total_input_tokens),
       totalOutputTokens: Number(result.total_output_tokens),
       totalTokens: Number(result.total_tokens),
+      totalCost: Number(result.total_cost),
     };
   }
 
@@ -55,6 +57,7 @@ export class AnalyticsService {
         sql<number>`coalesce(sum(input_tokens), 0)::int`.as('input_tokens'),
         sql<number>`coalesce(sum(output_tokens), 0)::int`.as('output_tokens'),
         sql<number>`coalesce(sum(total_tokens), 0)::int`.as('total_tokens'),
+        sql<string>`coalesce(sum(cost), 0)`.as('cost'),
       ])
       .where('org_id', '=', orgId)
       .where('created_at', '>=', since)
@@ -68,6 +71,7 @@ export class AnalyticsService {
       inputTokens: Number(r.input_tokens),
       outputTokens: Number(r.output_tokens),
       totalTokens: Number(r.total_tokens),
+      cost: Number(r.cost),
     }));
   }
 
@@ -81,6 +85,7 @@ export class AnalyticsService {
         sql<number>`coalesce(sum(input_tokens), 0)::int`.as('input_tokens'),
         sql<number>`coalesce(sum(output_tokens), 0)::int`.as('output_tokens'),
         sql<number>`coalesce(sum(total_tokens), 0)::int`.as('total_tokens'),
+        sql<string>`coalesce(sum(cost), 0)`.as('cost'),
       ])
       .where('org_id', '=', orgId)
       .where('created_at', '>=', since)
@@ -95,6 +100,7 @@ export class AnalyticsService {
       inputTokens: Number(r.input_tokens),
       outputTokens: Number(r.output_tokens),
       totalTokens: Number(r.total_tokens),
+      cost: Number(r.cost),
     }));
   }
 
@@ -128,6 +134,7 @@ export class AnalyticsService {
         sql<number>`coalesce(sum(input_tokens), 0)::int`.as('input_tokens'),
         sql<number>`coalesce(sum(output_tokens), 0)::int`.as('output_tokens'),
         sql<number>`coalesce(sum(total_tokens), 0)::int`.as('total_tokens'),
+        sql<string>`coalesce(sum(cost), 0)`.as('cost'),
       ])
       .where('org_id', '=', orgId)
       .where('created_at', '>=', since)
@@ -141,6 +148,7 @@ export class AnalyticsService {
       inputTokens: Number(r.input_tokens),
       outputTokens: Number(r.output_tokens),
       totalTokens: Number(r.total_tokens),
+      cost: Number(r.cost),
     }));
   }
 
@@ -159,6 +167,7 @@ export class AnalyticsService {
           'output_tokens'
         ),
         sql<number>`coalesce(sum(analytics.ai_usage_logs.total_tokens), 0)::int`.as('total_tokens'),
+        sql<string>`coalesce(sum(analytics.ai_usage_logs.cost), 0)`.as('cost'),
       ])
       .where('analytics.ai_usage_logs.org_id', '=', orgId)
       .where('analytics.ai_usage_logs.created_at', '>=', since)
@@ -173,6 +182,7 @@ export class AnalyticsService {
       inputTokens: Number(r.input_tokens),
       outputTokens: Number(r.output_tokens),
       totalTokens: Number(r.total_tokens),
+      cost: Number(r.cost),
     }));
   }
 }
