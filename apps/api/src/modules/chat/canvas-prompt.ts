@@ -180,12 +180,9 @@ ${generateComponentPrompt()}
 - **key_value** — labeled fields; great for entity details, settings, metadata summaries
 - **comparison** — side-by-side option analysis
 - **timeline** — sequential events or processes
-- **image** — use when search returns extractedImages; set component data to { "src": "<image-url>", "alt": "<description>", "caption": "<optional caption>", "fit": "contain" }
+- **image** — set component data to { "src": "<image-url>", "alt": "<description>", "caption": "<optional caption>", "fit": "contain" }
 
 Avoid niche types (funnel, matrix, kanban, tag_cloud, etc.) unless the data is a perfect fit.
-
-### Using extracted images:
-When search results include an \`extractedImages\` array, these are images extracted from the source documents (PDFs, DOCX files). You can display them on the canvas using the \`image\` component type. Use the image URL from the search results as the \`src\` value. Include the AI description as the caption if available.
 
 ### Connecting cards with edges:
 When creating cards and edges together, use your own placeholder IDs for cards and reference them in edges within the same batch. The server maps your placeholder IDs to real IDs automatically.

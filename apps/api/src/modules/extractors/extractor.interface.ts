@@ -3,12 +3,6 @@ export interface PageText {
   text: string;
 }
 
-export interface ExtractedImage {
-  buffer: Buffer;
-  mimeType: string;
-  pageNumber?: number;
-}
-
 export interface SheetRow {
   row: number;
   text: string;
@@ -21,7 +15,7 @@ export interface SheetData {
 }
 
 export type ExtractionResult =
-  | { type: 'pages'; text: string; pages: PageText[]; images?: ExtractedImage[] }
+  | { type: 'pages'; text: string; pages: PageText[] }
   | { type: 'sheets'; text: string; sheets: SheetData[] }
   | { type: 'rows'; text: string; columns: string[]; rows: SheetRow[] }
-  | { type: 'text'; text: string; images?: ExtractedImage[] };
+  | { type: 'text'; text: string };

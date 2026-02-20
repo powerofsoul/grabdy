@@ -3,21 +3,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
 
-import type { ExtractedImage, ExtractionResult, PageText } from './extractor.interface';
-
-const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp']);
-
-const EXT_TO_MIME: Record<'png' | 'jpg' | 'jpeg' | 'gif' | 'webp', string> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-};
-
-function isImageExt(ext: string): ext is keyof typeof EXT_TO_MIME {
-  return IMAGE_EXTENSIONS.has(ext);
-}
+import type { ExtractionResult, PageText } from './extractor.interface';
 
 /**
  * Parse word/document.xml to extract per-page text using Word's rendered page break markers.
@@ -130,54 +116,6 @@ export class DocxExtractor {
 
     const fullText = pages.map((p) => p.text).join('');
 
-    // Extract embedded images from the DOCX zip (not available for legacy .doc)
-    let images: ExtractedImage[] = [];
-    if (zip) {
-      try {
-        images = await this.extractImages(zip);
-      } catch (err) {
-        this.logger.warn(
-          `DOCX image extraction failed: ${err instanceof Error ? err.message : err}`
-        );
-      }
-    }
-
-    return {
-      type: 'pages',
-      text: fullText,
-      pages,
-      images: images.length > 0 ? images : undefined,
-    };
-  }
-
-  private async extractImages(
-    zip: InstanceType<typeof import('jszip')>
-  ): Promise<ExtractedImage[]> {
-    const images: ExtractedImage[] = [];
-
-    const mediaFolder = zip.folder('word/media');
-    if (!mediaFolder) return images;
-
-    const entries: import('jszip').JSZipObject[] = [];
-    mediaFolder.forEach((_relativePath, file) => {
-      entries.push(file);
-    });
-
-    for (const file of entries) {
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-      if (!isImageExt(ext)) continue;
-
-      try {
-        const imgBuffer = Buffer.from(await file.async('nodebuffer'));
-        images.push({
-          buffer: imgBuffer,
-          mimeType: EXT_TO_MIME[ext],
-        });
-      } catch {
-        // Skip individual image failures
-      }
-    }
-
-    return images;
+    return { type: 'pages', text: fullText, pages };
   }
 }

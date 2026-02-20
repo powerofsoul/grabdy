@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import {
@@ -10,20 +10,13 @@ import {
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 
-import { DbService } from '../../../db/db.module';
 import { SearchService } from '../../retrieval/search.service';
-import type { FileStorage } from '../../storage/file-storage.interface';
-import { FILE_STORAGE } from '../../storage/file-storage.interface';
 
 @Injectable()
 export class RagSearchTool {
   private readonly logger = new Logger(RagSearchTool.name);
 
-  constructor(
-    private db: DbService,
-    @Inject(FILE_STORAGE) private storage: FileStorage,
-    private searchService: SearchService
-  ) {}
+  constructor(private searchService: SearchService) {}
 
   create(
     orgId: DbId<'Org'>,
@@ -31,8 +24,6 @@ export class RagSearchTool {
     defaultTopK = 5,
     userId?: DbId<'User'> | null
   ) {
-    const db = this.db;
-    const storage = this.storage;
     const searchService = this.searchService;
 
     const metadataDesc = Object.entries(CHUNK_META_DESCRIPTIONS)
@@ -47,8 +38,6 @@ export class RagSearchTool {
 - dataSourceName: human-readable source name
 - sourceUrl: direct link to the source (use this to create clickable links when citing)
 - metadata: depends on type — ${metadataDesc}
-- extractedImages: image URLs from documents (if any)
-
 Use metadata to give context (page numbers, sheet names, Slack authors, etc.) when citing sources.
 
 You can optionally filter by source type (PDF, SLACK, LINEAR, etc.) or by Slack author name.
@@ -92,37 +81,6 @@ searchMeta.suggestion will tell you if results have low relevance and you should
           expandContext: true,
         });
 
-        // Collect unique data source IDs to query for extracted images
-        const dataSourceIds = [...new Set(results.map((r) => r.dataSourceId))];
-
-        // Query extracted images for matched data sources
-        let extractedImageUrls: Array<{
-          dataSourceId: DbId<'DataSource'>;
-          url: string;
-          pageNumber: number | null;
-          aiDescription: string | null;
-        }> = [];
-
-        if (dataSourceIds.length > 0) {
-          const images = await db.kysely
-            .selectFrom('data.extracted_images')
-            .select(['data_source_id', 'storage_path', 'page_number', 'ai_description'])
-            .where('data_source_id', 'in', dataSourceIds)
-            .where('org_id', '=', orgId)
-            .orderBy('page_number', 'asc')
-            .limit(10)
-            .execute();
-
-          extractedImageUrls = await Promise.all(
-            images.map(async (img) => ({
-              dataSourceId: img.data_source_id,
-              url: await storage.getUrl(img.storage_path),
-              pageNumber: img.page_number,
-              aiDescription: img.ai_description,
-            }))
-          );
-        }
-
         // Compute search meta for agent feedback
         const suggestion =
           results.length === 0
@@ -142,7 +100,6 @@ searchMeta.suggestion will tell you if results have low relevance and you should
             contextBefore: r.contextBefore,
             contextAfter: r.contextAfter,
           })),
-          extractedImages: extractedImageUrls.length > 0 ? extractedImageUrls : undefined,
           searchMeta: {
             queryTimeMs,
             totalResults: results.length,

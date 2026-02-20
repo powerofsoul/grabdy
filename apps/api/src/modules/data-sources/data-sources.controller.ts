@@ -216,25 +216,6 @@ export class DataSourcesController {
     });
   }
 
-  @OrgAccess(dataSourcesContract.listExtractedImages, { params: ['orgId', 'id'] })
-  @TsRestHandler(dataSourcesContract.listExtractedImages)
-  async listExtractedImages() {
-    return tsRestHandler(dataSourcesContract.listExtractedImages, async ({ params }) => {
-      try {
-        const images = await this.dataSourcesService.listExtractedImages(params.orgId, params.id);
-        return {
-          status: 200 as const,
-          body: { success: true as const, data: images },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Data source not found' },
-        };
-      }
-    });
-  }
-
   @Get('/files/:orgNum/:filename')
   async serveFile(
     @Param('orgNum') orgNum: string,
