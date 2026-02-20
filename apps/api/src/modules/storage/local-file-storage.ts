@@ -1,7 +1,7 @@
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import type { FileStorage } from './file-storage.interface';
+import type { FileStorage, TempFileHandle } from './file-storage.interface';
 
 export class LocalFileStorage implements FileStorage {
   constructor(
@@ -18,6 +18,11 @@ export class LocalFileStorage implements FileStorage {
   async get(key: string): Promise<Buffer> {
     const filePath = join(this.basePath, key);
     return readFile(filePath);
+  }
+
+  async getTempPath(key: string): Promise<TempFileHandle> {
+    const filePath = join(this.basePath, key);
+    return { path: filePath, cleanup: async () => {} };
   }
 
   async delete(key: string): Promise<void> {

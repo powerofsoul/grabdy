@@ -26,6 +26,9 @@ RUN turbo build --filter=@grabdy/api
 # Stage 2: Production image
 FROM node:20-slim
 
+RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy only what's needed to run
@@ -41,4 +44,4 @@ COPY --from=builder /app/apps/api/package.json apps/api/
 ENV NODE_ENV=production
 EXPOSE 4000
 
-CMD ["node", "apps/api/dist/main.js"]
+CMD ["node", "--max-old-space-size=3584", "apps/api/dist/main.js"]
