@@ -67,6 +67,15 @@ new aws.iam.RolePolicy('grabdy-task-policy', {
           pulumi.interpolate`arn:aws:bedrock:${aws.getRegionOutput().name}::foundation-model/cohere.rerank-v3-5:0`,
         ],
       },
+      // Bedrock — invoke Claude Haiku for chat (cross-region inference profile + underlying foundation models)
+      {
+        Effect: 'Allow',
+        Action: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+        Resource: [
+          pulumi.interpolate`arn:aws:bedrock:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0`,
+          'arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0',
+        ],
+      },
     ],
   }),
 });
