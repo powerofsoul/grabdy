@@ -33,7 +33,7 @@ export class BaseAgent {
     usageService?: AiUsageService,
     usageConfig?: AgentUsageConfig,
     memory?: Memory,
-    maxSteps = 25,
+    maxSteps = 999,
     languageModel?: MastraModelConfig
   ) {
     this.logger = new Logger(this.constructor.name);

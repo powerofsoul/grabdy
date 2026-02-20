@@ -25,6 +25,8 @@ const BLOCKS: Record<StreamBlock, BlockDefinition> = {
       'Use markdown: `backticks` for code/commands/terms, **bold** for emphasis. NEVER use quotes or italics for technical terms.',
       'Do NOT disclose internal IDs, scores, or raw metadata. Speak like a helpful assistant narrating their work: "Looking for documentation about `!CAL`...", "Found relevant sections, building a summary...".',
       'Do NOT put thinking blocks after your final answer text.',
+      'Thinking blocks are NATURAL LANGUAGE ONLY. NEVER put raw JSON, data structures, tool results, arrays, or objects inside thinking blocks. Summarize findings in plain English.',
+      'NEVER use XML tags (`<thinking>`, `</thinking>`). Always use triple-backtick fences: \\`\\`\\`thinking ... \\`\\`\\`.',
     ],
     example: `\`\`\`${StreamBlock.THINKING}\nSearching for \`!CAL\` command documentation...\n\`\`\`\n\n[tool call]\n\n\`\`\`${StreamBlock.THINKING}\nFound several matches in **Napa Materials** covering \`!CAL\` syntax and built-in functions. Let me search for usage examples too...\n\`\`\`\n\n[tool call]\n\n\`\`\`${StreamBlock.THINKING}\nGot examples of \`!CALC var=expression\` and array operations. Creating cards for the overview and examples...\n\`\`\``,
   },
@@ -49,7 +51,7 @@ export function buildBlockInstructionsPrompt(): string {
     '',
     'You MUST use these special fenced code blocks in your response. The UI extracts and renders them separately — they will NOT appear as code in the chat. Without these blocks, the user gets no feedback while you work and no source attribution.',
     '',
-    '**Format:** Standard markdown fenced code blocks with the block name as the language tag.',
+    '**Format:** Standard markdown fenced code blocks with the block name as the language tag. Open with \\`\\`\\`blockname and close with \\`\\`\\`. NEVER use XML-style tags like `<thinking>`, `</thinking>`, `<sources>`, or `</sources>` — only use triple-backtick fenced code blocks.',
     '',
   ];
 
