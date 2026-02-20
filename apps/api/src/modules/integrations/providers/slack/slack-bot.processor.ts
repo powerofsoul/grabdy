@@ -13,9 +13,9 @@ import { DATA_SOURCE_QUEUE, SLACK_BOT_QUEUE } from '../../../queue/queue.constan
 import { parseProviderData } from '../../connector.interface';
 import { IntegrationsService } from '../../integrations.service';
 
+import { SlackChannelWebhook } from './webhooks/channel.webhook';
 import { SlackConnector } from './slack.connector';
 import type { SlackBotJobData } from './slack-bot.service';
-import { SlackChannelWebhook } from './webhooks/channel.webhook';
 
 const SLACK_API_URL = 'https://slack.com/api';
 
@@ -178,7 +178,15 @@ export class SlackBotProcessor extends WorkerHost {
         return;
       }
 
-      const syncedMessages = messages.map((msg) => {
+      // Expand threads to include replies
+      const expandedMessages = await this.channelWebhook.expandThreads(
+        connection.access_token,
+        slackChannelId,
+        messages,
+        botUserId
+      );
+
+      const syncedMessages = expandedMessages.map((msg) => {
         const time = msg.ts
           ? new Date(parseFloat(msg.ts) * 1000)
               .toISOString()
@@ -194,7 +202,7 @@ export class SlackBotProcessor extends WorkerHost {
             type: 'SLACK' as const,
             slackChannelId: slackChannelId,
             slackMessageTs: ts,
-            slackAuthor: user,
+            slackAuthors: [user],
           },
           sourceUrl:
             teamDomain && ts
@@ -213,6 +221,7 @@ export class SlackBotProcessor extends WorkerHost {
         .select(['id'])
         .where('connection_id', '=', connectionId)
         .where('external_id', '=', externalId)
+        .where('org_id', '=', orgId)
         .executeTakeFirst();
 
       const sourceUrl = teamDomain
@@ -230,11 +239,13 @@ export class SlackBotProcessor extends WorkerHost {
             updated_at: new Date(),
           })
           .where('id', '=', existing.id)
+          .where('org_id', '=', orgId)
           .execute();
 
         await this.db.kysely
           .deleteFrom('data.chunks')
           .where('data_source_id', '=', existing.id)
+          .where('org_id', '=', orgId)
           .execute();
 
         const jobData: DataSourceJobData = {

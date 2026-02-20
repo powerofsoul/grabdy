@@ -101,6 +101,7 @@ export class IntegrationsService {
   }
 
   async getConnectionById(connectionId: DbId<'Connection'>) {
+    // org-safe: system-level lookup by ID for sync processing
     const row = await this.db.kysely
       .selectFrom('integration.connections')
       .selectAll()
@@ -144,6 +145,7 @@ export class IntegrationsService {
   }
 
   async updateConnection(connectionId: DbId<'Connection'>, updates: ConnectionUpdateFields) {
+    // org-safe: system-level update after authenticated lookup
     let query = this.db.kysely
       .updateTable('integration.connections')
       .set('updated_at', new Date())
@@ -194,6 +196,7 @@ export class IntegrationsService {
       .updateTable('integration.connections')
       .set({ status: 'DISCONNECTED', updated_at: new Date() })
       .where('id', '=', connection.id)
+      .where('org_id', '=', orgId)
       .execute();
 
     return true;
@@ -215,11 +218,13 @@ export class IntegrationsService {
     await this.db.kysely
       .deleteFrom('data.data_sources')
       .where('connection_id', '=', connection.id)
+      .where('org_id', '=', orgId)
       .execute();
 
     const result = await this.db.kysely
       .deleteFrom('integration.connections')
       .where('id', '=', connection.id)
+      .where('org_id', '=', orgId)
       .executeTakeFirst();
 
     return Number(result.numDeletedRows) > 0;
@@ -276,6 +281,7 @@ export class IntegrationsService {
   }
 
   async listConnectionsByProvider(provider: IntegrationProvider) {
+    // org-safe: cross-org listing for webhook routing
     const rows = await this.db.kysely
       .selectFrom('integration.connections')
       .select(['id', 'org_id', 'provider_data'])

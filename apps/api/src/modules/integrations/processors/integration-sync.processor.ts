@@ -107,7 +107,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
         // Handle deleted items
         for (const deletedId of result.deletedExternalIds) {
           try {
-            await this.deleteItem(deletedId, connectionId);
+            await this.deleteItem(deletedId, connectionId, orgId);
           } catch (error) {
             const msg = error instanceof Error ? error.message : 'Unknown error';
             this.logger.warn(`Failed to delete item ${deletedId}: ${msg}`);
@@ -175,7 +175,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
       }
 
       if (result.deletedExternalId) {
-        await this.deleteItem(result.deletedExternalId, connectionId);
+        await this.deleteItem(result.deletedExternalId, connectionId, orgId);
       }
 
       await this.integrationsService.updateConnection(connectionId, {
@@ -252,6 +252,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
       .select(['id', 'title'])
       .where('connection_id', '=', connectionId)
       .where('external_id', '=', item.externalId)
+      .where('org_id', '=', orgId)
       .executeTakeFirst();
 
     if (existing) {
@@ -261,17 +262,21 @@ export class IntegrationSyncProcessor extends WorkerHost {
         .set({
           title: item.title,
           source_url: item.sourceUrl,
-          status: 'UPLOADED',
+          status: item.appendOnly ? 'READY' : 'UPLOADED',
           updated_at: new Date(),
         })
         .where('id', '=', existing.id)
+        .where('org_id', '=', orgId)
         .execute();
 
-      // Delete old chunks before re-processing
-      await this.db.kysely
-        .deleteFrom('data.chunks')
-        .where('data_source_id', '=', existing.id)
-        .execute();
+      if (!item.appendOnly) {
+        // Full rebuild: delete old chunks before re-processing
+        await this.db.kysely
+          .deleteFrom('data.chunks')
+          .where('data_source_id', '=', existing.id)
+          .where('org_id', '=', orgId)
+          .execute();
+      }
 
       // Queue for chunking + embedding
       const jobData: DataSourceJobData = {
@@ -283,6 +288,7 @@ export class IntegrationSyncProcessor extends WorkerHost {
         content: item.content,
         messages: item.messages,
         sourceUrl: item.sourceUrl,
+        appendOnly: item.appendOnly,
       };
       await this.dataSourceQueue.add('process', jobData);
     } else {
@@ -323,12 +329,17 @@ export class IntegrationSyncProcessor extends WorkerHost {
     }
   }
 
-  private async deleteItem(externalId: string, connectionId: DbId<'Connection'>): Promise<void> {
+  private async deleteItem(
+    externalId: string,
+    connectionId: DbId<'Connection'>,
+    orgId: DbId<'Org'>
+  ): Promise<void> {
     const existing = await this.db.kysely
       .selectFrom('data.data_sources')
       .select('id')
       .where('connection_id', '=', connectionId)
       .where('external_id', '=', externalId)
+      .where('org_id', '=', orgId)
       .executeTakeFirst();
 
     if (existing) {
@@ -336,9 +347,14 @@ export class IntegrationSyncProcessor extends WorkerHost {
       await this.db.kysely
         .deleteFrom('data.chunks')
         .where('data_source_id', '=', existing.id)
+        .where('org_id', '=', orgId)
         .execute();
 
-      await this.db.kysely.deleteFrom('data.data_sources').where('id', '=', existing.id).execute();
+      await this.db.kysely
+        .deleteFrom('data.data_sources')
+        .where('id', '=', existing.id)
+        .where('org_id', '=', orgId)
+        .execute();
     }
   }
 }

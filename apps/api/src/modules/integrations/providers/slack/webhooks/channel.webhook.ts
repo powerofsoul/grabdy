@@ -26,6 +26,8 @@ interface SlackMessage {
   user?: string;
   text?: string;
   ts?: string;
+  thread_ts?: string;
+  reply_count?: number;
   bot_id?: string;
 }
 
@@ -38,6 +40,19 @@ interface SlackConversationsHistoryResponse {
     next_cursor?: string;
   };
 }
+
+interface SlackConversationsRepliesResponse {
+  ok: boolean;
+  error?: string;
+  messages?: SlackMessage[];
+  has_more?: boolean;
+  response_metadata?: {
+    next_cursor?: string;
+  };
+}
+
+/** Max threads to expand per channel sync to stay within Slack rate limits (Tier 3: ~50 req/min). */
+const MAX_THREAD_FETCHES_PER_CHANNEL = 30;
 
 const SLACK_API_URL = 'https://slack.com/api';
 
@@ -128,19 +143,17 @@ export class SlackChannelWebhook {
         continue;
       }
 
-      // On initial sync (no saved timestamp), newMessages already contains everything from lookback.
-      // On subsequent syncs, re-fetch from the lookback window to rebuild the full data source.
       const isInitialSync = !existingTimestamps[channel.id];
-      const { messages: allMessages } = isInitialSync
-        ? { messages: newMessages }
-        : await this.fetchChannelMessages(
-            accessToken,
-            channel.id,
-            getInitialSyncSlackTs(),
-            providerData.slackBotUserId
-          );
 
-      const messages = allMessages.map((msg) => {
+      // Expand threads: replace thread parents with full thread (parent + replies)
+      const expandedMessages = await this.expandThreads(
+        accessToken,
+        channel.id,
+        newMessages,
+        providerData.slackBotUserId
+      );
+
+      const messages = expandedMessages.map((msg) => {
         const ts = msg.ts ?? '';
         return {
           content: formatSlackMessage(msg),
@@ -148,7 +161,7 @@ export class SlackChannelWebhook {
             type: 'SLACK' as const,
             slackChannelId: channel.id,
             slackMessageTs: ts,
-            slackAuthor: msg.user ?? 'unknown',
+            slackAuthors: [msg.user ?? 'unknown'],
           },
           sourceUrl:
             teamDomain && ts
@@ -169,8 +182,10 @@ export class SlackChannelWebhook {
         metadata: {
           channelId: channel.id,
           channelName: channel.name,
-          messageCount: allMessages.length,
+          messageCount: newMessages.length,
         },
+        // On subsequent syncs, append new chunks without deleting old ones
+        appendOnly: !isInitialSync,
       });
 
       newTimestamps[channel.id] = latestTs || cursorTs;
@@ -274,5 +289,116 @@ export class SlackChannelWebhook {
     }
 
     return { messages: allMessages, latestTs };
+  }
+
+  /**
+   * Expand thread parents into full threads (parent + replies).
+   * Non-threaded messages pass through unchanged. Thread replies are inserted
+   * in chronological order right after their parent, replacing the standalone parent.
+   */
+  async expandThreads(
+    accessToken: string,
+    channelId: string,
+    messages: SlackMessage[],
+    slackBotUserId?: string
+  ): Promise<SlackMessage[]> {
+    // Identify thread parents (messages with replies) — sorted by most replies first
+    const threadParents = messages
+      .filter((m) => m.reply_count && m.reply_count > 0 && m.ts)
+      .sort((a, b) => (b.reply_count ?? 0) - (a.reply_count ?? 0))
+      .slice(0, MAX_THREAD_FETCHES_PER_CHANNEL);
+
+    if (threadParents.length === 0) return messages;
+
+    // Fetch replies sequentially with a minimum gap between requests to stay
+    // within Slack Tier 3 rate limits (~50 req/min). Network latency provides
+    // some natural spacing, but we add 200ms minimum to handle fast responses.
+    const threadRepliesMap = new Map<string, SlackMessage[]>();
+    const MIN_REQUEST_GAP_MS = 200;
+
+    for (const parent of threadParents) {
+      const requestStart = Date.now();
+      const replies = await this.fetchThreadReplies(
+        accessToken,
+        channelId,
+        parent.ts ?? '',
+        slackBotUserId
+      );
+
+      // Filter replies by thread_ts (more resilient than position-based slicing)
+      const threadTs = parent.ts ?? '';
+      const actualReplies = replies.filter((r) => r.ts !== threadTs);
+      if (actualReplies.length > 0) {
+        threadRepliesMap.set(threadTs, actualReplies);
+      }
+
+      // Ensure minimum gap between requests
+      const elapsed = Date.now() - requestStart;
+      if (elapsed < MIN_REQUEST_GAP_MS) {
+        await new Promise((resolve) => setTimeout(resolve, MIN_REQUEST_GAP_MS - elapsed));
+      }
+    }
+
+    // Rebuild message list: for each thread parent, insert replies after it
+    // Thread parents from the bot are already filtered out by fetchChannelMessages,
+    // but guard here too in case messages come from a different source (e.g., channel_joined)
+    const expanded: SlackMessage[] = [];
+    for (const msg of messages) {
+      if (msg.bot_id) continue;
+      expanded.push(msg);
+      const replies = threadRepliesMap.get(msg.ts ?? '');
+      if (replies) {
+        expanded.push(...replies);
+      }
+    }
+
+    return expanded;
+  }
+
+  private async fetchThreadReplies(
+    accessToken: string,
+    channel: string,
+    threadTs: string,
+    slackBotUserId?: string
+  ): Promise<SlackMessage[]> {
+    const allReplies: SlackMessage[] = [];
+    let cursor: string | undefined;
+
+    do {
+      const params = new URLSearchParams({
+        channel,
+        ts: threadTs,
+        limit: '200',
+      });
+      if (cursor) {
+        params.set('cursor', cursor);
+      }
+
+      const response = await fetch(
+        `${SLACK_API_URL}/conversations.replies?${params.toString()}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      const data: SlackConversationsRepliesResponse = await response.json();
+
+      if (!data.ok) {
+        this.logger.warn(
+          `Slack conversations.replies error for thread ${threadTs}: ${data.error ?? 'Unknown'}`
+        );
+        break;
+      }
+
+      const msgs = data.messages ?? [];
+      const botMentionPattern = slackBotUserId ? `<@${slackBotUserId}>` : null;
+      allReplies.push(
+        ...msgs.filter(
+          (m) => !m.bot_id && (!botMentionPattern || !m.text?.includes(botMentionPattern))
+        )
+      );
+
+      cursor = data.has_more ? data.response_metadata?.next_cursor || undefined : undefined;
+    } while (cursor);
+
+    return allReplies;
   }
 }

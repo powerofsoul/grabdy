@@ -106,12 +106,12 @@ Write a short, conversational summary that directly answers the question. Then a
 
 Every answer MUST end with source links. NEVER skip sources. If you used data from a search result, you MUST cite it.
 
-For each search result, the tool returns \`sourceUrl\` and \`metadata\` (with fields like slackAuthor, pages, sheet, linearIssueId, etc.). Use these to build source links.
+For each search result, the tool returns \`sourceUrl\` and \`metadata\` (with fields like slackAuthors, pages, sheet, linearIssueId, etc.). Use these to build source links.
 
 Source format rules:
 - ALWAYS use the \`sourceUrl\` field from search results to create clickable Slack links: \`<sourceUrl|Label>\`
 - If there is only ONE source of a given type, use just the type name: Slack, Linear, PDF, Notion, GitHub, etc. Only add numbers (Slack 1, Slack 2) when there are MULTIPLE sources of the same type.
-- For Slack sources: \`<sourceUrl|Slack>\` — <@slackAuthor> (use the slackAuthor from metadata)
+- For Slack sources: \`<sourceUrl|Slack>\` — mention authors from slackAuthors metadata array
 - For Linear sources: \`<sourceUrl|Linear>\`
 - For PDF/DOCX sources: \`<sourceUrl|PDF>\` (add page info if metadata has pages, e.g. "PDF p.3")
 - For XLSX/CSV sources: \`<sourceUrl|XLSX>\` (add sheet/row info if available)

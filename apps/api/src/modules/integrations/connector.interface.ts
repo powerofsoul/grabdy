@@ -79,6 +79,8 @@ export interface SyncedItem {
   /** URL for the data source (e.g., channel URL). Stored on data_sources, not chunks. */
   sourceUrl: string;
   metadata: Record<string, unknown>;
+  /** When true, new chunks are appended to existing data source without deleting old ones. */
+  appendOnly?: boolean;
 }
 
 export interface SyncResult {
