@@ -48,6 +48,45 @@ const customFetcher = async (args: ApiFetcherArgs) => {
   }
 };
 
+const UPLOAD_TIMEOUT_MS = 300000;
+
+export function uploadDataSource(
+  orgId: string,
+  file: File,
+  collectionId: string,
+  onProgress: (pct: number) => void
+): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${baseUrl}/orgs/${orgId}/data-sources/upload`);
+    xhr.withCredentials = true;
+    xhr.timeout = UPLOAD_TIMEOUT_MS;
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      const data = JSON.parse(xhr.responseText);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve({ status: xhr.status, body: data });
+      } else {
+        reject(new ApiError(xhr.status, data));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Upload failed'));
+    xhr.ontimeout = () => reject(new Error('Upload timed out'));
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('collectionId', collectionId);
+    xhr.send(formData);
+  });
+}
+
 export const api = initClient(contract, {
   baseUrl,
   baseHeaders: {},
@@ -76,7 +115,7 @@ export interface CanvasUpdate {
 interface StreamCallbacks {
   onText: (text: string) => void;
   onTextDone?: () => void;
-  onDone: (metadata: { threadId?: string }) => void;
+  onDone: (metadata: { threadId?: string; durationMs?: number }) => void;
   onCanvasUpdate?: (update: CanvasUpdate) => void;
   onError?: (error: Error) => void;
 }
@@ -85,6 +124,7 @@ const textDeltaSchema = z.string();
 const metadataEventSchema = z.object({
   type: z.string(),
   threadId: z.string().optional(),
+  durationMs: z.number().optional(),
   tool: z.string().optional(),
   args: z.unknown().optional(),
   result: z.unknown().optional(),
@@ -209,6 +249,7 @@ export async function streamChat(
             if (metadata.type === 'done') {
               callbacks.onDone({
                 threadId: metadata.threadId,
+                durationMs: metadata.durationMs,
               });
             } else if (metadata.type === 'text_done') {
               callbacks.onTextDone?.();

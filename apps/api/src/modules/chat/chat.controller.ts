@@ -335,6 +335,7 @@ export class ChatController {
         `8:${JSON.stringify({
           type: 'done',
           threadId: result.threadId,
+          durationMs: Date.now() - streamStart,
         })}\n`
       );
 
