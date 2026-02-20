@@ -138,11 +138,11 @@ export function ChatPanel({
           alignItems: 'center',
           justifyContent: 'center',
           px: 2,
-          gap: 3,
+          gap: 1.5,
           pb: 8,
         }}
       >
-        <ChatEmptyState onPromptClick={chatStream.handleSend} />
+        <ChatEmptyState />
         <Box sx={{ width: '100%', maxWidth: 680 }}>
           <ChatInput onSend={chatStream.handleSend} isStreaming={chatStream.isStreaming} elevated />
         </Box>
