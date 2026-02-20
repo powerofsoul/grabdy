@@ -40,11 +40,18 @@ export const MODEL_INFO = {
     maxOutput: 0,
     pricing: { inputPerMillion: 2.0, outputPerMillion: 0 },
   },
+  'amazon-bedrock/us.anthropic.claude-haiku-4-5-20251001-v1:0': {
+    label: 'Claude Haiku 4.5',
+    provider: 'Bedrock',
+    contextWindow: 200000,
+    maxOutput: 8192,
+    pricing: { inputPerMillion: 0.8, outputPerMillion: 4.0 },
+  },
 } satisfies Record<string, ModelInfo>;
 
 export type ModelId = keyof typeof MODEL_INFO;
 
-export const CHAT_MODEL: ModelId = 'openai/gpt-5-mini';
+export const CHAT_MODEL: ModelId = 'amazon-bedrock/us.anthropic.claude-haiku-4-5-20251001-v1:0';
 export const EMBEDDING_MODEL: ModelId = 'openai/text-embedding-3-small';
 export const RERANK_MODEL: ModelId = 'bedrock/cohere.rerank-v3-5:0';
 export const HYDE_MODEL: ModelId = 'openai/gpt-4o-mini';

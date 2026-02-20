@@ -14,12 +14,14 @@
     "email:dev": "email dev --dir src/modules/email/templates --port 3001"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^4.0.62",
     "@ai-sdk/openai": "^3.0.0",
     "@aws-sdk/client-bedrock-runtime": "^3.994.0",
     "@aws-sdk/client-kms": "^3.992.0",
     "@aws-sdk/client-s3": "^3.989.0",
     "@aws-sdk/client-secrets-manager": "^3.992.0",
     "@aws-sdk/client-ssm": "^3.992.0",
+    "@aws-sdk/credential-providers": "^3.994.0",
     "@aws-sdk/s3-request-presigner": "^3.990.0",
     "@bull-board/api": "^6.16.2",
     "@bull-board/express": "^6.16.2",

@@ -4,6 +4,7 @@ import type { DbId } from '@grabdy/common';
 import type { AiCallerType, AiRequestType, ModelId } from '@grabdy/contracts';
 import type { ToolsInput } from '@mastra/core/agent';
 import { Agent } from '@mastra/core/agent';
+import type { MastraModelConfig } from '@mastra/core/llm';
 import type { Memory } from '@mastra/memory';
 
 import type { AiUsageService, UsageContext } from '../ai/ai-usage.service';
@@ -32,7 +33,8 @@ export class BaseAgent {
     usageService?: AiUsageService,
     usageConfig?: AgentUsageConfig,
     memory?: Memory,
-    maxSteps = 25
+    maxSteps = 25,
+    languageModel?: MastraModelConfig
   ) {
     this.logger = new Logger(this.constructor.name);
     this.usageService = usageService ?? null;
@@ -45,7 +47,7 @@ export class BaseAgent {
       id,
       name,
       instructions,
-      model,
+      model: languageModel ?? model,
       tools,
       ...(memory ? { memory } : {}),
     });
