@@ -3,17 +3,16 @@ import { Inject, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
-import { extractOrgNumericId, packId } from '@grabdy/common';
+import { packId } from '@grabdy/common';
 import {
   AiCallerType,
   AiRequestType,
   type ChunkMeta,
   EMBEDDING_MODEL,
-  SUMMARY_MODEL,
   UPLOADS_MIME_TO_TYPE,
   type UploadsMime,
 } from '@grabdy/contracts';
-import { embedMany, generateText } from 'ai';
+import { embedMany } from 'ai';
 import { Job } from 'bullmq';
 
 import {
@@ -21,18 +20,12 @@ import {
   CHUNK_SIZE_TOKENS,
   EMBEDDING_BATCH_SIZE,
   MIN_CHUNK_SIZE_TOKENS,
-  SUMMARY_INPUT_MAX_LENGTH,
-  SUMMARY_MAX_LENGTH,
-  SUMMARY_TIMEOUT_MS,
 } from '../../config/constants';
-import { splitText } from './chunking/recursive-text-splitter';
-import { countTokens, decodeTokens, encodeTokens } from './chunking/tokenizer';
 import { env } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { AiUsageService } from '../ai/ai-usage.service';
 import { DocxExtractor } from '../extractors/docx.extractor';
 import type {
-  ExtractedImage,
   ExtractionResult,
   PageText,
   SheetData,
@@ -45,6 +38,9 @@ import { XlsxExtractor } from '../extractors/xlsx.extractor';
 import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
+
+import { splitText } from './chunking/recursive-text-splitter';
+import { countTokens, decodeTokens, encodeTokens } from './chunking/tokenizer';
 
 export interface SyncedMessageData {
   content: string;
@@ -135,7 +131,10 @@ function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
     const separator = buffer.length > 0 ? '\n' : '';
     const candidateTokens = countTokens(separator + msg.content);
 
-    if ((bufferTokens + candidateTokens > CHUNK_SIZE_TOKENS || contextChanged) && buffer.length > 0) {
+    if (
+      (bufferTokens + candidateTokens > CHUNK_SIZE_TOKENS || contextChanged) &&
+      buffer.length > 0
+    ) {
       // Flush current buffer as a chunk
       chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
       buffer = '';
@@ -310,7 +309,7 @@ function chunkCsvRows(rows: SheetRow[], columns: string[], sourceUrl: string): C
   return chunks;
 }
 
-@Processor(DATA_SOURCE_QUEUE, { concurrency: 25 })
+@Processor(DATA_SOURCE_QUEUE, { concurrency: 25, lockDuration: 30 * 60 * 1000 })
 export class DataSourceProcessor extends WorkerHost {
   private readonly logger = new Logger(DataSourceProcessor.name);
 
@@ -369,33 +368,26 @@ export class DataSourceProcessor extends WorkerHost {
         fullText = result.text;
         chunks = this.chunksFromResult(result, defaultSourceUrl, mimeType);
         pageCount = result.type === 'pages' ? result.pages.length : null;
-
-        // Store extracted images from documents (PDF, DOCX)
-        if (
-          (result.type === 'pages' || result.type === 'text') &&
-          result.images &&
-          result.images.length > 0
-        ) {
-          await this.storeExtractedImages(result.images, dataSourceId, orgId);
-        }
       }
 
       if (!fullText.trim()) {
         throw new Error('No text content extracted from file');
       }
 
-      // Generate document summary for contextual embeddings
-      // Skip for integration messages (self-contained) and append-only (summary already exists)
-      let summary: string | null = null;
-      const isIntegrationMessages = Boolean(job.data.messages);
-      if (!isIntegrationMessages && !isAppendOnly && countTokens(fullText) > MIN_CHUNK_SIZE_TOKENS) {
-        summary = await this.generateSummary(fullText, orgId);
-      }
-
       this.logger.log(`Split into ${chunks.length} chunks${isAppendOnly ? ' (append)' : ''}`);
 
-      // For append-only, start chunk_index after the last existing chunk
+      // For non-append jobs, delete existing chunks so retries are idempotent
+      // and no orphaned chunks remain from partial previous runs.
+      // For append-only, start chunk_index after the last existing chunk.
       let chunkIndexOffset = 0;
+      if (!isAppendOnly) {
+        await this.db.kysely
+          .deleteFrom('data.chunks')
+          .where('data_source_id', '=', dataSourceId)
+          .where('org_id', '=', orgId)
+          .execute();
+      }
+
       if (isAppendOnly) {
         const maxRow = await this.db.kysely
           .selectFrom('data.chunks')
@@ -412,17 +404,9 @@ export class DataSourceProcessor extends WorkerHost {
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
 
-        // Contextual embeddings: prepend a short topic prefix so embeddings
-        // capture document context without dominating the chunk's own content.
-        // Use only the first sentence of the summary to keep the prefix short (~20-30 words).
-        const summaryPrefix = summary ? summary.split(/\.\s/)[0] + '.' : null;
-        const embeddingValues = batch.map((c) =>
-          summaryPrefix ? `${summaryPrefix}\n---\n${c.content}` : c.content
-        );
-
         const { embeddings, usage: embeddingUsage } = await embedMany({
           model: openai.embedding('text-embedding-3-small'),
-          values: embeddingValues,
+          values: batch.map((c) => c.content),
         });
 
         // Log embedding usage
@@ -462,7 +446,6 @@ export class DataSourceProcessor extends WorkerHost {
         .set({
           status: 'READY',
           page_count: pageCount ?? totalChunks,
-          ...(isAppendOnly ? {} : { summary: summary ?? fullText.slice(0, SUMMARY_MAX_LENGTH) }),
           updated_at: new Date(),
         })
         .where('id', '=', dataSourceId)
@@ -508,77 +491,6 @@ export class DataSourceProcessor extends WorkerHost {
               : { type: 'TXT' };
         return chunkText(result.text, meta, sourceUrl);
       }
-    }
-  }
-
-  private async storeExtractedImages(
-    images: ExtractedImage[],
-    dataSourceId: DbId<'DataSource'>,
-    orgId: DbId<'Org'>
-  ): Promise<void> {
-    for (let i = 0; i < images.length; i++) {
-      const img = images[i];
-      const ext = img.mimeType.split('/')[1] ?? 'png';
-      const storagePath = `${orgId}/extracted/${dataSourceId}/${i}.${ext}`;
-
-      await this.storage.put(storagePath, img.buffer, img.mimeType);
-
-      await this.db.kysely
-        .insertInto('data.extracted_images')
-        .values({
-          id: packId('ExtractedImage', orgId),
-          data_source_id: dataSourceId,
-          storage_path: storagePath,
-          mime_type: img.mimeType,
-          page_number: img.pageNumber ?? null,
-          org_id: orgId,
-        })
-        .execute();
-    }
-
-    this.logger.log(`Stored ${images.length} extracted images for ${dataSourceId}`);
-  }
-
-  private async generateSummary(
-    fullText: string,
-    orgId: DbId<'Org'>
-  ): Promise<string | null> {
-    try {
-      const textForSummary = fullText.slice(0, SUMMARY_INPUT_MAX_LENGTH);
-      const abortController = new AbortController();
-      const timer = setTimeout(() => abortController.abort(), SUMMARY_TIMEOUT_MS);
-
-      let text: string;
-      let usage: { inputTokens?: number; outputTokens?: number };
-      try {
-        const result = await generateText({
-          model: openai('gpt-4o-mini'),
-          maxOutputTokens: 200,
-          abortSignal: abortController.signal,
-          prompt: `Summarize this document in 2-3 sentences for context. Focus on what the document is about and its key topics.\n\n${textForSummary}`,
-        });
-        text = result.text;
-        usage = result.usage;
-      } finally {
-        clearTimeout(timer);
-      }
-
-      // Log usage (fire-and-forget)
-      this.aiUsageService
-        .logUsage(
-          SUMMARY_MODEL,
-          usage.inputTokens ?? 0,
-          usage.outputTokens ?? 0,
-          AiCallerType.SYSTEM,
-          AiRequestType.SUMMARY,
-          { orgId, source: 'SYSTEM' }
-        )
-        .catch((err) => this.logger.error(`Summary generation usage logging failed: ${err}`));
-
-      return text;
-    } catch (error) {
-      this.logger.warn(`Summary generation failed, skipping contextual embeddings: ${error}`);
-      return null;
     }
   }
 

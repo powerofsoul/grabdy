@@ -19,7 +19,7 @@ import {
   CONTEXT_PREVIEW_MAX_LENGTH,
   DEFAULT_SEARCH_LIMIT,
   HYDE_MAX_LENGTH,
-  SUMMARY_TIMEOUT_MS,
+  HYDE_TIMEOUT_MS,
 } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { AiUsageService } from '../ai/ai-usage.service';
@@ -220,7 +220,7 @@ export class SearchService {
     options: SearchOptions
   ): Promise<string | null> {
     const abortController = new AbortController();
-    const timer = setTimeout(() => abortController.abort(), SUMMARY_TIMEOUT_MS);
+    const timer = setTimeout(() => abortController.abort(), HYDE_TIMEOUT_MS);
 
     try {
       let text: string;

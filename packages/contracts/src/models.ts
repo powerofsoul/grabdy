@@ -55,8 +55,6 @@ export const CHAT_MODEL: ModelId = 'amazon-bedrock/us.anthropic.claude-haiku-4-5
 export const EMBEDDING_MODEL: ModelId = 'openai/text-embedding-3-small';
 export const RERANK_MODEL: ModelId = 'bedrock/cohere.rerank-v3-5:0';
 export const HYDE_MODEL: ModelId = 'openai/gpt-4o-mini';
-export const SUMMARY_MODEL: ModelId = 'openai/gpt-4o-mini';
-
 export function calculateCost(model: ModelId, inputTokens: number, outputTokens: number): number {
   const { pricing } = MODEL_INFO[model];
   return (

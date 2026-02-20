@@ -124,18 +124,6 @@ export class DataSourcesService {
       throw new NotFoundException('Data source not found');
     }
 
-    // Delete extracted images from storage
-    const extractedImages = await this.db.kysely
-      .selectFrom('data.extracted_images')
-      .select('storage_path')
-      .where('data_source_id', '=', id)
-      .where('org_id', '=', orgId)
-      .execute();
-
-    for (const img of extractedImages) {
-      await this.storage.delete(img.storage_path);
-    }
-
     // Delete chunks first
     await this.db.kysely
       .deleteFrom('data.chunks')
@@ -143,7 +131,7 @@ export class DataSourcesService {
       .where('org_id', '=', orgId)
       .execute();
 
-    // Delete the record (extracted_images cascade via FK)
+    // Delete the data source record
     await this.db.kysely
       .deleteFrom('data.data_sources')
       .where('id', '=', id)
@@ -195,40 +183,6 @@ export class DataSourcesService {
     };
   }
 
-  async listExtractedImages(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
-    // Verify data source exists and belongs to org
-    const dataSource = await this.db.kysely
-      .selectFrom('data.data_sources')
-      .select('id')
-      .where('id', '=', id)
-      .where('org_id', '=', orgId)
-      .executeTakeFirst();
-
-    if (!dataSource) {
-      throw new NotFoundException('Data source not found');
-    }
-
-    const images = await this.db.kysely
-      .selectFrom('data.extracted_images')
-      .select(['id', 'storage_path', 'mime_type', 'page_number', 'ai_description'])
-      .where('data_source_id', '=', id)
-      .where('org_id', '=', orgId)
-      .orderBy('page_number', 'asc')
-      .execute();
-
-    const results = await Promise.all(
-      images.map(async (img) => ({
-        id: img.id,
-        mimeType: img.mime_type,
-        pageNumber: img.page_number,
-        url: await this.storage.getUrl(img.storage_path),
-        aiDescription: img.ai_description,
-      }))
-    );
-
-    return results;
-  }
-
   async reprocess(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
     const dataSource = await this.db.kysely
       .selectFrom('data.data_sources')
@@ -244,24 +198,6 @@ export class DataSourcesService {
     // Delete existing chunks
     await this.db.kysely
       .deleteFrom('data.chunks')
-      .where('data_source_id', '=', id)
-      .where('org_id', '=', orgId)
-      .execute();
-
-    // Delete extracted images from storage and DB
-    const extractedImages = await this.db.kysely
-      .selectFrom('data.extracted_images')
-      .select('storage_path')
-      .where('data_source_id', '=', id)
-      .where('org_id', '=', orgId)
-      .execute();
-
-    for (const img of extractedImages) {
-      await this.storage.delete(img.storage_path);
-    }
-
-    await this.db.kysely
-      .deleteFrom('data.extracted_images')
       .where('data_source_id', '=', id)
       .where('org_id', '=', orgId)
       .execute();
@@ -298,7 +234,6 @@ export class DataSourcesService {
     file_size: number;
     type: DataSourceType;
     status: DataSourceStatus;
-    summary: string | null;
     page_count: number | null;
     collection_id: DbId<'Collection'> | null;
     org_id: DbId<'Org'>;
@@ -313,7 +248,6 @@ export class DataSourcesService {
       fileSize: ds.file_size,
       type: ds.type,
       status: ds.status,
-      summary: ds.summary,
       pageCount: ds.page_count,
       collectionId: ds.collection_id,
       orgId: ds.org_id,

@@ -148,7 +148,6 @@ export interface DB {
       | 'GITHUB'
       | 'NOTION';
     status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED'>;
-    summary: string | null;
     page_count: number | null;
     collection_id: DbId<'Collection'> | null;
     connection_id: DbId<'Connection'> | null;
@@ -170,17 +169,6 @@ export interface DB {
     tsv: ColumnType<string, never, never>;
     data_source_id: DbId<'DataSource'>;
     collection_id: DbId<'Collection'> | null;
-    created_at: Generated<Timestamp>;
-  };
-
-  'data.extracted_images': {
-    id: Generated<DbId<'ExtractedImage'>>;
-    org_id: DbId<'Org'>;
-    data_source_id: DbId<'DataSource'>;
-    storage_path: string;
-    mime_type: string;
-    page_number: number | null;
-    ai_description: string | null;
     created_at: Generated<Timestamp>;
   };
 

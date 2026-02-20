@@ -30,11 +30,9 @@ export const CHUNK_SIZE_TOKENS = 400;
 export const CHUNK_OVERLAP_TOKENS = 80;
 export const MIN_CHUNK_SIZE_TOKENS = 40;
 export const EMBEDDING_BATCH_SIZE = 100;
-export const SUMMARY_MAX_LENGTH = 500;
-export const SUMMARY_INPUT_MAX_LENGTH = 3000;
-export const SUMMARY_TIMEOUT_MS = 10_000;
 
 // ── Retrieval / Search ──────────────────────────────────────────────
+export const HYDE_TIMEOUT_MS = 10_000;
 export const DEFAULT_SEARCH_LIMIT = 10;
 export const CONTEXT_PREVIEW_MAX_LENGTH = 500;
 export const RERANK_MAX_DOC_LENGTH = 4000;

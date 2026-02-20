@@ -13,7 +13,6 @@ const dataSourceSchema = z.object({
   fileSize: z.number(),
   type: dataSourceTypeEnum,
   status: dataSourceStatusEnum,
-  summary: z.string().nullable(),
   pageCount: z.number().nullable(),
   collectionId: dbIdSchema('Collection').nullable(),
   orgId: dbIdSchema('Org'),
@@ -116,29 +115,6 @@ export const dataSourcesContract = c.router(
             mimeType: z.string(),
             title: z.string(),
           }),
-        }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    listExtractedImages: {
-      method: 'GET',
-      path: '/orgs/:orgId/data-sources/:id/images',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        id: dbIdSchema('DataSource'),
-      }),
-      responses: {
-        200: z.object({
-          success: z.literal(true),
-          data: z.array(
-            z.object({
-              id: z.string(),
-              mimeType: z.string(),
-              pageNumber: z.number().nullable(),
-              url: z.string(),
-              aiDescription: z.string().nullable(),
-            })
-          ),
         }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },

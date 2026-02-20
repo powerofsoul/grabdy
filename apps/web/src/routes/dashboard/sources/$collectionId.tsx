@@ -43,7 +43,7 @@ import { MainTable } from '@/components/ui/main-table';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { useAuth } from '@/context/AuthContext';
 import { type DrawerProps, useDrawer } from '@/context/DrawerContext';
-import { api } from '@/lib/api';
+import { api, uploadDataSource } from '@/lib/api';
 
 interface DataSource {
   id: string;
@@ -53,7 +53,6 @@ interface DataSource {
   status: DataSourceStatus;
   fileSize: number;
   pageCount: number | null;
-  summary: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -186,7 +185,7 @@ function CollectionDetailPage() {
   const [collection, setCollection] = useState<Collection | null>(null);
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [deleteCollectionConfirm, setDeleteCollectionConfirm] = useState(false);
   const [isDeletingCollection, setIsDeletingCollection] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DataSource | null>(null);
@@ -225,16 +224,9 @@ function CollectionDetailPage() {
 
   const handleUpload = async (file: File) => {
     if (!selectedOrgId) return;
-    setIsUploading(true);
+    setUploadProgress(0);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('collectionId', collectionId);
-
-      const res = await api.dataSources.upload({
-        params: { orgId: selectedOrgId },
-        body: { file: formData.get('file'), collectionId },
-      });
+      const res = await uploadDataSource(selectedOrgId, file, collectionId, setUploadProgress);
 
       if (res.status === 200) {
         toast.success('File uploaded');
@@ -243,7 +235,7 @@ function CollectionDetailPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Upload failed');
     } finally {
-      setIsUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -376,7 +368,7 @@ function CollectionDetailPage() {
       )}
 
       <Box sx={{ mb: 3 }}>
-        <FileUpload onFileSelect={handleUpload} disabled={isUploading} />
+        <FileUpload onFileSelect={handleUpload} disabled={uploadProgress !== null} uploadProgress={uploadProgress} />
       </Box>
 
       {dataSources.length === 0 ? (
