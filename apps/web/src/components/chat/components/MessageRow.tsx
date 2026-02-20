@@ -172,6 +172,20 @@ export const MessageRow = memo(
             <SourceChips sources={sources} />
           </Box>
         )}
+
+        {/* Response time */}
+        {!isUser && !message.isStreaming && message.durationMs != null && (
+          <Typography
+            sx={{
+              mt: 0.5,
+              pl: 2,
+              fontSize: '0.65rem',
+              color: 'text.disabled',
+            }}
+          >
+            {(message.durationMs / 1000).toFixed(1)}s
+          </Typography>
+        )}
       </Box>
     );
   },
@@ -181,6 +195,7 @@ export const MessageRow = memo(
     if (prev.message.sources !== next.message.sources) return false;
     if (prev.message.thinkingTexts !== next.message.thinkingTexts) return false;
     if (prev.message.isStreaming !== next.message.isStreaming) return false;
+    if (prev.message.durationMs !== next.message.durationMs) return false;
     return true;
   }
 );

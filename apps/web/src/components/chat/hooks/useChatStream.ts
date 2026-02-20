@@ -113,6 +113,7 @@ export function useChatStream({
                       blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
                     sources: blocks.sources.length > 0 ? blocks.sources : undefined,
                     isStreaming: false,
+                    durationMs: metadata.durationMs,
                   };
                 }
                 return updated;

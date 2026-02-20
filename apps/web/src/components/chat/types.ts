@@ -7,4 +7,5 @@ export interface ChatMessage {
   sources?: ChatSource[];
   thinkingTexts?: string[];
   isStreaming?: boolean;
+  durationMs?: number;
 }
