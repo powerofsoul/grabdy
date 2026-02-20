@@ -1,24 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
 import { dbIdSchema } from '@grabdy/common';
 import {
   AiCallerType,
-  AiRequestType,
   CHAT_MODEL,
   type ChunkMeta,
-  EMBEDDING_MODEL,
+  type MetadataFilter,
 } from '@grabdy/contracts';
 import { chunkMetaSchema } from '@grabdy/contracts';
-import { embed } from 'ai';
-import { sql } from 'kysely';
 import { z } from 'zod';
 
-import { DEFAULT_SEARCH_LIMIT } from '../../config/constants';
-import { DbService } from '../../db/db.module';
 import { AgentFactory } from '../agent/services/agent.factory';
-import { AiUsageService } from '../ai/ai-usage.service';
+import type { SearchResult } from '../retrieval/search.service';
+import { SearchService } from '../retrieval/search.service';
 
 const ragResultItemSchema = z.object({
   dataSourceId: dbIdSchema('DataSource'),
@@ -31,89 +26,37 @@ const ragResultItemSchema = z.object({
 
 const ragResultsSchema = z.object({ results: z.array(z.unknown()) });
 
-interface SearchResult {
-  chunkId: DbId<'Chunk'>;
-  content: string;
-  score: number;
-  metadata: ChunkMeta | null;
-  dataSourceName: string;
-  dataSourceId: DbId<'DataSource'>;
-  sourceUrl: string | null;
-}
-
 @Injectable()
 export class RetrievalService {
   private readonly logger = new Logger(RetrievalService.name);
 
   constructor(
-    private db: DbService,
-    private agentFactory: AgentFactory,
-    private aiUsageService: AiUsageService
+    private searchService: SearchService,
+    private agentFactory: AgentFactory
   ) {}
 
   async query(
     orgId: DbId<'Org'>,
     queryText: string,
-    options: { collectionIds?: DbId<'Collection'>[]; limit?: number }
-  ): Promise<{ results: SearchResult[]; queryTimeMs: number }> {
-    const start = Date.now();
-
-    const { embedding, usage: embedUsage } = await embed({
-      model: openai.embedding('text-embedding-3-small'),
-      value: queryText,
-    });
-
-    // Log embedding usage
-    this.aiUsageService
-      .logUsage(
-        EMBEDDING_MODEL,
-        embedUsage.tokens,
-        0,
-        AiCallerType.SYSTEM,
-        AiRequestType.EMBEDDING,
-        { orgId, source: 'API' }
-      )
-      .catch((err) => this.logger.error(`Query embedding usage logging failed: ${err}`));
-
-    const embeddingStr = `[${embedding.join(',')}]`;
-
-    let query = this.db.kysely
-      .selectFrom('data.chunks')
-      .innerJoin('data.data_sources', 'data.data_sources.id', 'data.chunks.data_source_id')
-      .select([
-        'data.chunks.id as chunk_id',
-        'data.chunks.content',
-        'data.chunks.metadata',
-        'data.chunks.source_url',
-        'data.data_sources.title as data_source_name',
-        'data.data_sources.id as data_source_id',
-        sql<number>`1 - (data.chunks.embedding <=> ${embeddingStr}::vector)`.as('score'),
-      ])
-      .where('data.chunks.org_id', '=', orgId);
-
-    if (options.collectionIds && options.collectionIds.length > 0) {
-      query = query.where('data.chunks.collection_id', 'in', options.collectionIds);
+    options: {
+      collectionIds?: DbId<'Collection'>[];
+      limit?: number;
+      filters?: MetadataFilter[];
+      rerank?: boolean;
+      hyde?: boolean;
+      expandContext?: boolean;
     }
-
-    const results = await query
-      .orderBy(sql`data.chunks.embedding <=> ${embeddingStr}::vector`)
-      .limit(options.limit ?? DEFAULT_SEARCH_LIMIT)
-      .execute();
-
-    const queryTimeMs = Date.now() - start;
-
-    return {
-      results: results.map((r) => ({
-        chunkId: r.chunk_id,
-        content: r.content,
-        score: Number(r.score),
-        metadata: r.metadata,
-        dataSourceName: r.data_source_name,
-        dataSourceId: r.data_source_id,
-        sourceUrl: r.source_url,
-      })),
-      queryTimeMs,
-    };
+  ): Promise<{ results: SearchResult[]; queryTimeMs: number }> {
+    return this.searchService.search(orgId, queryText, {
+      collectionIds: options.collectionIds,
+      limit: options.limit,
+      filters: options.filters,
+      rerank: options.rerank,
+      hyde: options.hyde,
+      expandContext: options.expandContext,
+      callerType: AiCallerType.API_KEY,
+      source: 'API',
+    });
   }
 
   async publicQuery(

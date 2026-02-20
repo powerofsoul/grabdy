@@ -1,20 +1,17 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
 import {
   AiCallerType,
-  AiRequestType,
   CHUNK_META_DESCRIPTIONS,
-  EMBEDDING_MODEL,
+  chunkMetaTypeEnum,
+  type MetadataFilter,
 } from '@grabdy/contracts';
 import { createTool } from '@mastra/core/tools';
-import { embed } from 'ai';
-import { sql } from 'kysely';
 import { z } from 'zod';
 
 import { DbService } from '../../../db/db.module';
-import { AiUsageService } from '../../ai/ai-usage.service';
+import { SearchService } from '../../retrieval/search.service';
 import type { FileStorage } from '../../storage/file-storage.interface';
 import { FILE_STORAGE } from '../../storage/file-storage.interface';
 
@@ -25,7 +22,7 @@ export class RagSearchTool {
   constructor(
     private db: DbService,
     @Inject(FILE_STORAGE) private storage: FileStorage,
-    private aiUsageService: AiUsageService
+    private searchService: SearchService
   ) {}
 
   create(
@@ -36,8 +33,7 @@ export class RagSearchTool {
   ) {
     const db = this.db;
     const storage = this.storage;
-    const aiUsageService = this.aiUsageService;
-    const logger = this.logger;
+    const searchService = this.searchService;
 
     const metadataDesc = Object.entries(CHUNK_META_DESCRIPTIONS)
       .map(([type, shape]) => `${type}: ${shape}`)
@@ -47,62 +43,57 @@ export class RagSearchTool {
       id: 'rag-search',
       description: `Search the knowledge base. Each result includes:
 - content: the matched text
+- contextBefore/contextAfter: surrounding text from adjacent chunks for richer context
 - dataSourceName: human-readable source name
 - sourceUrl: direct link to the source (use this to create clickable links when citing)
 - metadata: depends on type — ${metadataDesc}
 - extractedImages: image URLs from documents (if any)
 
-Use metadata to give context (page numbers, sheet names, Slack authors, etc.) when citing sources.`,
+Use metadata to give context (page numbers, sheet names, Slack authors, etc.) when citing sources.
+
+You can optionally filter by source type (PDF, SLACK, LINEAR, etc.) or by Slack author name.
+
+searchMeta.suggestion will tell you if results have low relevance and you should refine your query.`,
       inputSchema: z.object({
         query: z.string().describe('The search query to find relevant documents'),
         topK: z.number().optional().default(defaultTopK).describe('Number of results to return'),
+        sourceTypes: z
+          .array(chunkMetaTypeEnum)
+          .optional()
+          .describe('Filter by source type: PDF, DOCX, SLACK, LINEAR, GITHUB, NOTION, etc.'),
+        slackAuthor: z
+          .string()
+          .optional()
+          .describe('Filter Slack messages by author name (matches any author in the chunk)'),
       }),
       execute: async (input) => {
-        const { embedding, usage } = await embed({
-          model: openai.embedding('text-embedding-3-small'),
-          value: input.query,
-        });
-
-        // Log embedding usage
-        aiUsageService
-          .logUsage(
-            EMBEDDING_MODEL,
-            usage.tokens,
-            0,
-            AiCallerType.SYSTEM,
-            AiRequestType.EMBEDDING,
-            { orgId, userId, source: 'SYSTEM' }
-          )
-          .catch((err) => logger.error(`RAG embedding usage logging failed: ${err}`));
-
-        const embeddingStr = `[${embedding.join(',')}]`;
-
-        let query = db.kysely
-          .selectFrom('data.chunks')
-          .innerJoin('data.data_sources', 'data.data_sources.id', 'data.chunks.data_source_id')
-          .select([
-            'data.chunks.id as chunk_id',
-            'data.chunks.content',
-            'data.chunks.metadata',
-            'data.data_sources.title as data_source_name',
-            'data.data_sources.id as data_source_id',
-            'data.chunks.source_url',
-            'data.data_sources.collection_id',
-            sql<number>`1 - (data.chunks.embedding <=> ${embeddingStr}::vector)`.as('score'),
-          ])
-          .where('data.chunks.org_id', '=', orgId);
-
-        if (collectionIds && collectionIds.length > 0) {
-          query = query.where('data.chunks.collection_id', 'in', collectionIds);
+        // Build metadata filters from simplified agent params
+        const filters: MetadataFilter[] = [];
+        if (input.sourceTypes && input.sourceTypes.length > 0) {
+          if (input.sourceTypes.length === 1) {
+            filters.push({ field: 'type', operator: 'eq', value: input.sourceTypes[0] });
+          } else {
+            filters.push({ field: 'type', operator: 'in', value: input.sourceTypes });
+          }
+        }
+        if (input.slackAuthor) {
+          filters.push({ field: 'slackAuthors', operator: 'eq', value: input.slackAuthor });
         }
 
-        const results = await query
-          .orderBy(sql`data.chunks.embedding <=> ${embeddingStr}::vector`)
-          .limit(input.topK)
-          .execute();
+        const { results, queryTimeMs } = await searchService.search(orgId, input.query, {
+          collectionIds,
+          limit: input.topK,
+          filters: filters.length > 0 ? filters : undefined,
+          callerType: AiCallerType.SYSTEM,
+          source: 'SYSTEM',
+          userId,
+          rerank: true,
+          hyde: true,
+          expandContext: true,
+        });
 
         // Collect unique data source IDs to query for extracted images
-        const dataSourceIds = [...new Set(results.map((r) => r.data_source_id))];
+        const dataSourceIds = [...new Set(results.map((r) => r.dataSourceId))];
 
         // Query extracted images for matched data sources
         let extractedImageUrls: Array<{
@@ -117,6 +108,7 @@ Use metadata to give context (page numbers, sheet names, Slack authors, etc.) wh
             .selectFrom('data.extracted_images')
             .select(['data_source_id', 'storage_path', 'page_number', 'ai_description'])
             .where('data_source_id', 'in', dataSourceIds)
+            .where('org_id', '=', orgId)
             .orderBy('page_number', 'asc')
             .limit(10)
             .execute();
@@ -131,18 +123,31 @@ Use metadata to give context (page numbers, sheet names, Slack authors, etc.) wh
           );
         }
 
+        // Compute search meta for agent feedback
+        const suggestion =
+          results.length === 0
+            ? 'No results found. Consider searching with different terms or breaking the query into sub-queries.'
+            : null;
+
         return {
           results: results.map((r) => ({
-            chunkId: r.chunk_id,
+            chunkId: r.chunkId,
             content: r.content,
             score: Number(r.score),
             metadata: r.metadata,
-            dataSourceName: r.data_source_name,
-            dataSourceId: r.data_source_id,
-            sourceUrl: r.source_url,
-            collectionId: r.collection_id,
+            dataSourceName: r.dataSourceName,
+            dataSourceId: r.dataSourceId,
+            sourceUrl: r.sourceUrl,
+            collectionId: r.collectionId,
+            contextBefore: r.contextBefore,
+            contextAfter: r.contextAfter,
           })),
           extractedImages: extractedImageUrls.length > 0 ? extractedImageUrls : undefined,
+          searchMeta: {
+            queryTimeMs,
+            totalResults: results.length,
+            suggestion,
+          },
         };
       },
     });
