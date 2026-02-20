@@ -14,15 +14,19 @@ interface BlockDefinition {
 const BLOCKS: Record<StreamBlock, BlockDefinition> = {
   [StreamBlock.THINKING]: {
     purpose:
-      "Narrate your reasoning and actions to the user. The UI renders these as collapsible thinking indicators. This is the user's only feedback that work is happening — without it, they see a blank screen.",
+      "Narrate your reasoning to the user in real time. The UI renders these as a collapsible \"Thinking\" section. This is the user's ONLY feedback that work is happening — without it, they stare at a blank screen. Be verbose and frequent.",
     guidelines: [
-      "Output a thinking block before every tool call to explain what you're about to do and why.",
-      'Output a thinking block between consecutive tool calls to narrate progress or explain next steps.',
-      'Keep each block to 1-2 short, natural sentences.',
-      'Multiple thinking blocks per response are expected.',
+      '**MANDATORY: output thinking blocks FREQUENTLY throughout your response.** The user is watching a live stream — every few seconds without visible progress feels like the app is frozen.',
+      "Output a thinking block BEFORE every tool call: say what you're searching for and why.",
+      'Output a thinking block AFTER every tool result: summarize what you found, how many results, whether they look relevant.',
+      'Output a thinking block BEFORE creating canvas cards: say what cards you plan to create.',
+      'Aim for 3-5 thinking blocks per response. More is better than fewer — the user wants to see your thought process.',
+      'Keep each block to 1-2 natural sentences. Be specific: "Found 4 results about `!CAL` in **Napa Materials**, pages 376-813" — not "Searching...".',
+      'Use markdown: `backticks` for code/commands/terms, **bold** for emphasis. NEVER use quotes or italics for technical terms.',
+      'Do NOT disclose internal IDs, scores, or raw metadata. Speak like a helpful assistant narrating their work: "Looking for documentation about `!CAL`...", "Found relevant sections, building a summary...".',
       'Do NOT put thinking blocks after your final answer text.',
     ],
-    example: `\`\`\`${StreamBlock.THINKING}\nSearching for revenue data in your documents...\n\`\`\``,
+    example: `\`\`\`${StreamBlock.THINKING}\nSearching for \`!CAL\` command documentation...\n\`\`\`\n\n[tool call]\n\n\`\`\`${StreamBlock.THINKING}\nFound several matches in **Napa Materials** covering \`!CAL\` syntax and built-in functions. Let me search for usage examples too...\n\`\`\`\n\n[tool call]\n\n\`\`\`${StreamBlock.THINKING}\nGot examples of \`!CALC var=expression\` and array operations. Creating cards for the overview and examples...\n\`\`\``,
   },
   [StreamBlock.SOURCES]: {
     purpose:
@@ -66,13 +70,13 @@ export function buildBlockInstructionsPrompt(): string {
   lines.push('### Full response example (follow this pattern)');
   lines.push('');
   lines.push(`\`\`\`${StreamBlock.THINKING}`);
-  lines.push('Searching for revenue data in your documents...');
+  lines.push('Searching for **Q4 revenue** data in your documents...');
   lines.push('```');
   lines.push('');
   lines.push('[tool call happens here]');
   lines.push('');
   lines.push(`\`\`\`${StreamBlock.THINKING}`);
-  lines.push('Found some results. Let me also look for the Q3 comparison...');
+  lines.push('Found results in `Q4 Report.pdf`. Let me also search for Q3 data to compare...');
   lines.push('```');
   lines.push('');
   lines.push('[another tool call happens here]');

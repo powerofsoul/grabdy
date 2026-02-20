@@ -94,7 +94,6 @@ type ComponentCategory = keyof typeof CATEGORY_LABELS;
 
 interface ComponentDefinition {
   category: ComponentCategory;
-  description: string;
   usage: string;
   dataSchema: z.ZodType;
 }
@@ -102,415 +101,445 @@ interface ComponentDefinition {
 export const COMPONENT_DEFINITIONS = {
   table: {
     category: 'data',
-    description: '{ columns: [{key, label}], rows: [{...}] }',
     usage: 'use for ANY structured data',
-    dataSchema: z.object({
-      columns: z.array(z.object({ key: z.string(), label: z.string() })),
-      rows: z.array(z.record(z.string(), z.unknown())),
-    }),
+    dataSchema: z
+      .object({
+        columns: z.array(z.object({ key: z.string(), label: z.string() })),
+        rows: z.array(z.record(z.string(), z.unknown())),
+      })
+      .describe('Table with columns and rows. Row keys must match column keys.'),
   },
   chart: {
     category: 'data',
-    description:
-      '{ chartType: "bar"|"line"|"pie", labels: [...], datasets: [{label, data, color?}] }',
     usage: 'use for ANY numbers that can be compared',
-    dataSchema: z.object({
-      chartType: z.enum(['bar', 'line', 'pie']),
-      labels: z.array(z.string()),
-      datasets: z.array(
-        z.object({
-          label: z.string(),
-          data: z.array(z.number()),
-          color: z.string().optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        chartType: z.enum(['bar', 'line', 'pie']),
+        labels: z.array(z.string()),
+        datasets: z.array(
+          z.object({
+            label: z.string(),
+            data: z.array(z.number()),
+            color: z.string().optional(),
+          })
+        ),
+      })
+      .describe('Chart with labeled datasets'),
   },
   kpi_row: {
     category: 'data',
-    description: '{ metrics: [{value, label, unit?, color?, trend?}] }',
     usage: 'row of 2-5 KPIs side by side, great for dashboards',
-    dataSchema: z.object({
-      metrics: z.array(
-        z.object({
-          value: z.union([z.string(), z.number()]),
-          label: z.string(),
-          unit: z.string().optional(),
-          color: z.string().optional(),
-          trend: z
-            .object({
-              direction: z.enum(['up', 'down', 'flat']),
-              value: z.string(),
-            })
-            .optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        metrics: z.array(
+          z.object({
+            value: z.union([z.string(), z.number()]),
+            label: z.string(),
+            unit: z.string().optional(),
+            color: z.string().optional(),
+            trend: z
+              .object({
+                direction: z.enum(['up', 'down', 'flat']),
+                value: z.string(),
+              })
+              .optional(),
+          })
+        ),
+      })
+      .describe('Row of KPI metrics'),
   },
   progress: {
     category: 'data',
-    description: '{ value, max, label, sublabel?, color?, showPercent, size: "sm"|"md"|"lg" }',
     usage: 'progress/completion bar',
-    dataSchema: z.object({
-      value: z.number(),
-      max: z.number().default(100),
-      label: z.string(),
-      sublabel: z.string().optional(),
-      color: z.string().optional(),
-      showPercent: z.boolean().default(true),
-      size: z.enum(['sm', 'md', 'lg']).default('md'),
-    }),
+    dataSchema: z
+      .object({
+        value: z.number(),
+        max: z.number().default(100),
+        label: z.string(),
+        sublabel: z.string().optional(),
+        color: z.string().optional(),
+        showPercent: z.boolean().default(true),
+        size: z.enum(['sm', 'md', 'lg']).default('md'),
+      })
+      .describe('Progress bar'),
   },
   comparison: {
     category: 'data',
-    description: '{ items: ["A","B"], attributes: [{name, values: [...]}], highlightBest }',
     usage: 'side-by-side comparison table',
-    dataSchema: z.object({
-      items: z.array(z.string()),
-      attributes: z.array(
-        z.object({
-          name: z.string(),
-          values: z.array(z.string()),
-        })
-      ),
-      highlightBest: z.boolean().default(false),
-    }),
+    dataSchema: z
+      .object({
+        items: z.array(z.string()),
+        attributes: z.array(
+          z.object({
+            name: z.string(),
+            values: z.array(z.string()),
+          })
+        ),
+        highlightBest: z.boolean().default(false),
+      })
+      .describe('Side-by-side comparison of items across attributes'),
   },
   number: {
     category: 'data',
-    description: '{ value, prefix?, suffix?, color?, size: "sm"|"md"|"lg" }',
     usage: 'single big number display',
-    dataSchema: z.object({
-      value: z.union([z.number(), z.string()]),
-      prefix: z.string().optional(),
-      suffix: z.string().optional(),
-      color: z.string().optional(),
-      size: z.enum(['sm', 'md', 'lg']).default('md'),
-    }),
+    dataSchema: z
+      .object({
+        value: z.union([z.number(), z.string()]),
+        prefix: z.string().optional(),
+        suffix: z.string().optional(),
+        color: z.string().optional(),
+        size: z.enum(['sm', 'md', 'lg']).default('md'),
+      })
+      .describe('Single number display'),
   },
   rating: {
     category: 'data',
-    description: '{ items: [{label, value, max?, color?}], variant: "stars"|"bars"|"dots" }',
     usage: 'rating display with multiple variants',
-    dataSchema: z.object({
-      items: z.array(
-        z.object({
-          label: z.string(),
-          value: z.number(),
-          max: z.number().default(5),
-          color: z.string().optional(),
-        })
-      ),
-      variant: z.enum(['stars', 'bars', 'dots']).default('bars'),
-    }),
+    dataSchema: z
+      .object({
+        items: z.array(
+          z.object({
+            label: z.string(),
+            value: z.number(),
+            max: z.number().default(5),
+            color: z.string().optional(),
+          })
+        ),
+        variant: z.enum(['stars', 'bars', 'dots']).default('bars'),
+      })
+      .describe('Rating display'),
   },
   funnel: {
     category: 'data',
-    description: '{ steps: [{label, value, color?}] }',
     usage: 'funnel/conversion visualization',
-    dataSchema: z.object({
-      steps: z.array(
-        z.object({
-          label: z.string(),
-          value: z.number(),
-          color: z.string().optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        steps: z.array(
+          z.object({
+            label: z.string(),
+            value: z.number(),
+            color: z.string().optional(),
+          })
+        ),
+      })
+      .describe('Funnel visualization'),
   },
   swot: {
     category: 'analysis',
-    description: '{ strengths: [...], weaknesses: [...], opportunities: [...], threats: [...] }',
     usage: '2x2 SWOT grid',
-    dataSchema: z.object({
-      strengths: z.array(z.string()),
-      weaknesses: z.array(z.string()),
-      opportunities: z.array(z.string()),
-      threats: z.array(z.string()),
-    }),
+    dataSchema: z
+      .object({
+        strengths: z.array(z.string()),
+        weaknesses: z.array(z.string()),
+        opportunities: z.array(z.string()),
+        threats: z.array(z.string()),
+      })
+      .describe('SWOT analysis grid'),
   },
   topic_map: {
     category: 'analysis',
-    description: '{ centralTopic, branches: [{label, children?}] }',
     usage: 'mind map for topic overviews',
-    dataSchema: z.object({
-      centralTopic: z.string(),
-      branches: z.array(
-        z.object({
-          label: z.string(),
-          children: z.array(z.string()).optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        centralTopic: z.string(),
+        branches: z.array(
+          z.object({
+            label: z.string(),
+            children: z.array(z.string()).optional(),
+          })
+        ),
+      })
+      .describe('Mind map with central topic and branches'),
   },
   timeline: {
     category: 'analysis',
-    description:
-      '{ events: [{title, description?, date?, status: "completed"|"in_progress"|"pending", color?}] }',
     usage: 'event/process timeline',
-    dataSchema: z.object({
-      events: z.array(
-        z.object({
-          title: z.string(),
-          description: z.string().optional(),
-          date: z.string().optional(),
-          status: z.enum(['completed', 'in_progress', 'pending']).default('pending'),
-          color: z.string().optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        events: z.array(
+          z.object({
+            title: z.string(),
+            description: z.string().optional(),
+            date: z.string().optional(),
+            status: z.enum(['completed', 'in_progress', 'pending']).default('pending'),
+            color: z.string().optional(),
+          })
+        ),
+      })
+      .describe('Timeline of events'),
   },
   checklist: {
     category: 'analysis',
-    description: '{ title?, items: [{label, checked, indent?}], color? }',
     usage: 'actionable checklist with progress',
-    dataSchema: z.object({
-      title: z.string().optional(),
-      items: z.array(
-        z.object({
-          label: z.string(),
-          checked: z.boolean().default(false),
-          indent: z.number().optional(),
-        })
-      ),
-      color: z.string().optional(),
-    }),
+    dataSchema: z
+      .object({
+        title: z.string().optional(),
+        items: z.array(
+          z.object({
+            label: z.string(),
+            checked: z.boolean().default(false),
+            indent: z.number().optional(),
+          })
+        ),
+        color: z.string().optional(),
+      })
+      .describe('Checklist with items'),
   },
   matrix: {
     category: 'analysis',
-    description:
-      '{ labels: {topLeft, topRight, bottomLeft, bottomRight}, quadrants: {topLeft: [...], ...} }',
     usage: '2x2 matrix/quadrant analysis',
-    dataSchema: z.object({
-      labels: z.object({
-        topLeft: z.string(),
-        topRight: z.string(),
-        bottomLeft: z.string(),
-        bottomRight: z.string(),
-      }),
-      quadrants: z.object({
-        topLeft: z.array(z.string()),
-        topRight: z.array(z.string()),
-        bottomLeft: z.array(z.string()),
-        bottomRight: z.array(z.string()),
-      }),
-    }),
+    dataSchema: z
+      .object({
+        labels: z.object({
+          topLeft: z.string(),
+          topRight: z.string(),
+          bottomLeft: z.string(),
+          bottomRight: z.string(),
+        }),
+        quadrants: z.object({
+          topLeft: z.array(z.string()),
+          topRight: z.array(z.string()),
+          bottomLeft: z.array(z.string()),
+          bottomRight: z.array(z.string()),
+        }),
+      })
+      .describe('2x2 matrix analysis'),
   },
   kanban: {
     category: 'analysis',
-    description: '{ columns: [{title, items: [...]}] }',
     usage: 'kanban board for workflow/task tracking',
-    dataSchema: z.object({
-      columns: z.array(z.object({ title: z.string(), items: z.array(z.string()) })),
-    }),
+    dataSchema: z
+      .object({
+        columns: z.array(z.object({ title: z.string(), items: z.array(z.string()) })),
+      })
+      .describe('Kanban board'),
   },
   pros_cons: {
     category: 'analysis',
-    description: '{ pros: [...], cons: [...] }',
     usage: 'pros and cons list',
-    dataSchema: z.object({
-      pros: z.array(z.string()),
-      cons: z.array(z.string()),
-    }),
+    dataSchema: z
+      .object({
+        pros: z.array(z.string()),
+        cons: z.array(z.string()),
+      })
+      .describe('Pros and cons list'),
   },
   status_list: {
     category: 'analysis',
-    description:
-      '{ items: [{label, status: "success"|"warning"|"error"|"info"|"neutral", description?}] }',
     usage: 'status overview list',
-    dataSchema: z.object({
-      items: z.array(
-        z.object({
-          label: z.string(),
-          status: z.enum(['success', 'warning', 'error', 'info', 'neutral']),
-          description: z.string().optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        items: z.array(
+          z.object({
+            label: z.string(),
+            status: z.enum(['success', 'warning', 'error', 'info', 'neutral']),
+            description: z.string().optional(),
+          })
+        ),
+      })
+      .describe('Status list'),
   },
   text: {
     category: 'content',
-    description: '{ content (markdown), fontSize?, color?, align? }',
     usage: 'text block with formatting options',
-    dataSchema: z.object({
-      content: z.string(),
-      fontSize: z.number().optional(),
-      color: z.string().optional(),
-      align: z.enum(['left', 'center', 'right']).optional(),
-    }),
+    dataSchema: z
+      .object({
+        content: z.string(),
+        fontSize: z.number().optional(),
+        color: z.string().optional(),
+        align: z.enum(['left', 'center', 'right']).optional(),
+      })
+      .describe('Text block (content is markdown)'),
   },
   summary: {
     category: 'content',
-    description: '{ content (markdown), icon? }',
     usage: 'key takeaways with optional emoji icon',
-    dataSchema: z.object({
-      content: z.string(),
-      icon: z.string().optional(),
-    }),
+    dataSchema: z
+      .object({
+        content: z.string(),
+        icon: z.string().optional(),
+      })
+      .describe('Summary (content is markdown)'),
   },
   quote: {
     category: 'content',
-    description: '{ text, source?, color? }',
     usage: 'highlighted quote with attribution',
-    dataSchema: z.object({
-      text: z.string(),
-      source: z.string().optional(),
-      color: z.string().optional(),
-    }),
+    dataSchema: z
+      .object({
+        text: z.string(),
+        source: z.string().optional(),
+        color: z.string().optional(),
+      })
+      .describe('Quote with attribution'),
   },
   alert: {
     category: 'content',
-    description: '{ variant: "info"|"success"|"warning"|"error", title?, message, icon? }',
     usage: 'alert/notice box',
-    dataSchema: z.object({
-      variant: z.enum(['info', 'success', 'warning', 'error']).default('info'),
-      title: z.string().optional(),
-      message: z.string(),
-      icon: z.string().optional(),
-    }),
+    dataSchema: z
+      .object({
+        variant: z.enum(['info', 'success', 'warning', 'error']).default('info'),
+        title: z.string().optional(),
+        message: z.string(),
+        icon: z.string().optional(),
+      })
+      .describe('Alert box'),
   },
   code: {
     category: 'content',
-    description: '{ code, language?, title?, showLineNumbers }',
     usage: 'code block with copy button',
-    dataSchema: z.object({
-      code: z.string(),
-      language: z.string().optional(),
-      title: z.string().optional(),
-      showLineNumbers: z.boolean().default(false),
-    }),
+    dataSchema: z
+      .object({
+        code: z.string(),
+        language: z.string().optional(),
+        title: z.string().optional(),
+        showLineNumbers: z.boolean().default(false),
+      })
+      .describe('Code block'),
   },
   bookmark: {
     category: 'content',
-    description: '{ label, note? }',
     usage: 'key points to remember',
-    dataSchema: z.object({
-      label: z.string(),
-      note: z.string().optional(),
-    }),
+    dataSchema: z
+      .object({
+        label: z.string(),
+        note: z.string().optional(),
+      })
+      .describe('Bookmark'),
   },
   sticky_note: {
     category: 'content',
-    description: '{ content, color: "yellow"|"pink"|"blue"|"green"|"purple"|"orange" }',
     usage: 'quick note card',
-    dataSchema: z.object({
-      content: z.string(),
-      color: z.enum(['yellow', 'pink', 'blue', 'green', 'purple', 'orange']).default('yellow'),
-    }),
+    dataSchema: z
+      .object({
+        content: z.string(),
+        color: z.enum(['yellow', 'pink', 'blue', 'green', 'purple', 'orange']).default('yellow'),
+      })
+      .describe('Sticky note'),
   },
   header: {
     category: 'content',
-    description: '{ title, subtitle?, align? }',
     usage: 'section header',
-    dataSchema: z.object({
-      title: z.string(),
-      subtitle: z.string().optional(),
-      align: z.enum(['left', 'center', 'right']).optional(),
-    }),
+    dataSchema: z
+      .object({
+        title: z.string(),
+        subtitle: z.string().optional(),
+        align: z.enum(['left', 'center', 'right']).optional(),
+      })
+      .describe('Section header'),
   },
   accordion: {
     category: 'content',
-    description: '{ sections: [{title, content, defaultOpen?}] }',
     usage: 'collapsible sections',
-    dataSchema: z.object({
-      sections: z.array(
-        z.object({
-          title: z.string(),
-          content: z.string(),
-          defaultOpen: z.boolean().optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        sections: z.array(
+          z.object({
+            title: z.string(),
+            content: z.string(),
+            defaultOpen: z.boolean().optional(),
+          })
+        ),
+      })
+      .describe('Collapsible accordion sections'),
   },
   json: {
     category: 'content',
-    description: '{ content }',
     usage: 'raw JSON viewer',
-    dataSchema: z.object({
-      content: z.string(),
-    }),
+    dataSchema: z
+      .object({
+        content: z.string(),
+      })
+      .describe('JSON viewer'),
   },
   key_value: {
     category: 'content',
-    description: '{ pairs: [{key, value}] }',
     usage: 'key-value pair display',
-    dataSchema: z.object({
-      pairs: z.array(z.object({ key: z.string(), value: z.string() })),
-    }),
+    dataSchema: z
+      .object({
+        pairs: z.array(z.object({ key: z.string(), value: z.string() })),
+      })
+      .describe('Key-value pairs'),
   },
   tag_cloud: {
     category: 'content',
-    description: '{ tags: [{label, color?}] }',
     usage: 'tag/keyword cloud',
-    dataSchema: z.object({
-      tags: z.array(z.object({ label: z.string(), color: z.string().optional() })),
-    }),
+    dataSchema: z
+      .object({
+        tags: z.array(z.object({ label: z.string(), color: z.string().optional() })),
+      })
+      .describe('Tag cloud'),
   },
   link_list: {
     category: 'content',
-    description: '{ links: [{label, url, description?}] }',
     usage: 'list of clickable links',
-    dataSchema: z.object({
-      links: z.array(
-        z.object({
-          label: z.string(),
-          url: z.string(),
-          description: z.string().optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        links: z.array(
+          z.object({
+            label: z.string(),
+            url: z.string(),
+            description: z.string().optional(),
+          })
+        ),
+      })
+      .describe('Link list'),
   },
   image: {
     category: 'media',
-    description: '{ src, alt?, caption?, fit: "contain"|"cover"|"fill", height?, borderRadius? }',
     usage: 'image display',
-    dataSchema: z.object({
-      src: z.string(),
-      alt: z.string().optional(),
-      caption: z.string().optional(),
-      fit: z.enum(['contain', 'cover', 'fill']).default('contain'),
-      height: z.number().optional(),
-      borderRadius: z.number().optional(),
-    }),
+    dataSchema: z
+      .object({
+        src: z.string(),
+        alt: z.string().optional(),
+        caption: z.string().optional(),
+        fit: z.enum(['contain', 'cover', 'fill']).default('contain'),
+        height: z.number().optional(),
+        borderRadius: z.number().optional(),
+      })
+      .describe('Image display'),
   },
   embed: {
     category: 'media',
-    description: '{ url, height? }',
     usage: 'embedded iframe content',
-    dataSchema: z.object({
-      url: z.string(),
-      height: z.number().default(300),
-    }),
+    dataSchema: z
+      .object({
+        url: z.string(),
+        height: z.number().default(300),
+      })
+      .describe('Embedded iframe'),
   },
   source_link: {
     category: 'reference',
-    description: '{ sources: CardSource[] }',
     usage: 'document source references — added automatically to cards via the sources field',
-    dataSchema: z.object({
-      sources: z.array(cardSourceSchema),
-    }),
+    dataSchema: z
+      .object({
+        sources: z.array(cardSourceSchema),
+      })
+      .describe('Source references'),
   },
   document_link: {
     category: 'reference',
-    description: '{ documents: [{name, dataSourceId?}] }',
     usage: 'document references',
-    dataSchema: z.object({
-      documents: z.array(
-        z.object({
-          name: z.string(),
-          dataSourceId: dbIdSchema('DataSource').optional(),
-        })
-      ),
-    }),
+    dataSchema: z
+      .object({
+        documents: z.array(
+          z.object({
+            name: z.string(),
+            dataSourceId: dbIdSchema('DataSource').optional(),
+          })
+        ),
+      })
+      .describe('Document references'),
   },
   search_filter: {
     category: 'reference',
-    description: '{ query, filters: [{label, value}] }',
     usage: 'show what was searched',
-    dataSchema: z.object({
-      query: z.string(),
-      filters: z.array(z.object({ label: z.string(), value: z.string() })),
-    }),
+    dataSchema: z
+      .object({
+        query: z.string(),
+        filters: z.array(z.object({ label: z.string(), value: z.string() })),
+      })
+      .describe('Search filter display'),
   },
 } satisfies Record<ComponentType, ComponentDefinition>;
 
@@ -733,13 +762,26 @@ export type ComponentNode = z.infer<typeof componentNodeSchema>;
 // Generate AI prompt from COMPONENT_DEFINITIONS
 // ---------------------------------------------------------------------------
 
+function schemaToCompactJson(schema: z.ZodType): string {
+  try {
+    const jsonSchema = z.toJSONSchema(schema);
+    // Remove $schema key to save tokens
+    const { $schema: _, ...rest } = jsonSchema;
+    return JSON.stringify(rest, null, 0);
+  } catch {
+    // Some schemas contain transforms (e.g. dbIdSchema) that can't be serialized
+    return schema.description ?? '(see usage)';
+  }
+}
+
 export function generateComponentPrompt(): string {
   const grouped = new Map<ComponentCategory, string[]>();
 
   for (const [type, def] of Object.entries(COMPONENT_DEFINITIONS)) {
     const typedDef = def satisfies ComponentDefinition;
     const lines = grouped.get(typedDef.category) ?? [];
-    lines.push(`- ${type}: ${typedDef.description} — ${typedDef.usage}`);
+    const schemaStr = schemaToCompactJson(typedDef.dataSchema);
+    lines.push(`- **${type}** — ${typedDef.usage}\n  data schema: \`${schemaStr}\``);
     grouped.set(typedDef.category, lines);
   }
 
@@ -753,7 +795,12 @@ export function generateComponentPrompt(): string {
   }
 
   const allTypes = Object.keys(COMPONENT_DEFINITIONS).join(', ');
-  return `### Component types — ONLY use these (STRICT):\nAllowed types: ${allTypes}\nUsing ANY type not in this list will fail. NEVER invent custom component types.\n\n${sections.join('\n\n')}`;
+  return `### Component types — ONLY use these (STRICT):
+Allowed types: ${allTypes}
+Using ANY type not in this list will fail. NEVER invent custom component types.
+**The \`data\` object must EXACTLY match the JSON schema shown below. Use the exact field names — wrong field names cause validation errors.**
+
+${sections.join('\n\n')}`;
 }
 
 // ---------------------------------------------------------------------------

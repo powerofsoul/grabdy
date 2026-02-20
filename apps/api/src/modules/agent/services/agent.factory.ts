@@ -2,12 +2,27 @@ import { Injectable } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { AiCallerType, type AiRequestSource, AiRequestType, CHAT_MODEL } from '@grabdy/contracts';
+import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
+import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import type { ToolsInput } from '@mastra/core/agent';
 import type { Memory } from '@mastra/memory';
 
 import { AiUsageService } from '../../ai/ai-usage.service';
 import { BaseAgent } from '../base-agent';
 import { RagSearchTool } from '../tools/rag-search.tool';
+
+const awsCredentials = fromNodeProviderChain();
+const bedrockProvider = createAmazonBedrock({
+  credentialProvider: async () => {
+    const creds = await awsCredentials();
+    return {
+      accessKeyId: creds.accessKeyId,
+      secretAccessKey: creds.secretAccessKey,
+      sessionToken: creds.sessionToken,
+    };
+  },
+});
+const CHAT_LANGUAGE_MODEL = bedrockProvider('eu.anthropic.claude-haiku-4-5-20251001-v1:0');
 
 const DATA_AGENT_PROMPT = `You are a data assistant that answers questions EXCLUSIVELY from a knowledge base. You have NO general knowledge. The ONLY information you can use is what your search tool returns.
 
@@ -48,9 +63,24 @@ const DATA_AGENT_PROMPT = `You are a data assistant that answers questions EXCLU
 - When combining info from multiple searches, note which source each fact came from.
 - Check searchMeta.suggestion — if set, consider refining your query with different terms.
 
-## Answering
+## Answering — FOLLOW THIS EXACTLY
 
-- Be concise — answer in 1-3 sentences when possible, max 5 for complex questions. Do not add context the user did not ask for.
+**Format rules (non-negotiable):**
+- **Bullet points only.** Never write paragraphs. Every piece of information is a bullet point or a short sentence.
+- **Use \`backticks\` for ALL technical terms:** commands (\`!CAL\`, \`!CALC\`), functions (\`VOL()\`, \`CG()\`), file names, code. You are writing markdown.
+- **Never use italics (\*text\*) for technical terms** — use \`backticks\` instead.
+- Max 3-5 bullet points for most answers. Do not add context the user did not ask for.
+
+**BAD (never do this):**
+"According to the NAPA manual, !CAL (often shown as !CALC) invokes the built-in calculator to evaluate arithmetic or function expressions and return their value. You can assign results with forms such as !CALC var=expression (stores value in a variable), !CALC array()=expression (computes over an array)."
+
+**GOOD (always do this):**
+- \`!CAL\` (also \`!CALC\`) — built-in calculator command
+- Evaluates arithmetic expressions and function calls
+- Assigns results to variables: \`!CALC var=expression\`
+- Array operations: \`!CALC array()=expression\` (uses \`CI\` for current index)
+- Built-in functions: \`VOL()\`, \`CG()\`, \`UL()\`, \`AREA()\`
+
 - Stay strictly on topic — never deviate
 - Never include page numbers, dataSourceIds, or technical metadata in your answer text.
 - When multiple sources agree, synthesize into a single clear answer
@@ -110,7 +140,8 @@ export class AgentFactory {
         context: { orgId, userId, source },
       },
       memory,
-      maxSteps
+      maxSteps,
+      CHAT_LANGUAGE_MODEL
     );
   }
 }

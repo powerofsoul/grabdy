@@ -102,23 +102,21 @@ export function summarizeCanvas(state: CanvasState): string {
 
 export const CANVAS_INSTRUCTIONS = `## Canvas
 
-The user sees a split screen: chat on the left, canvas on the right. Use the canvas to present structured information that is easier to scan visually than to read in chat.
+The user sees a split screen: chat on the left, canvas on the right. The canvas is your primary output — use it for every response that contains information from the knowledge base.
 
 - NEVER mention the canvas, cards, or components in your chat text. Do not say "I've created a card" etc. The user can already see the canvas.
-- Always write a brief conversational answer in chat text, even when creating cards. The user should never see an empty chat bubble with only a canvas update.
-- Decide whether the answer benefits from a visual card or is better as plain chat text
+- Always write a brief chat answer alongside cards — but keep it short: bullet points, short sentences. Never write paragraphs in chat.
+- **ANSWER FIRST, CANVAS LAST.** Always write your full chat answer text before calling canvas_update. The user sees the answer immediately while the canvas updates in the background. Never call canvas_update before writing your answer.
+- **Default: create cards.** If your response contains information from search results, put it on the canvas. You choose the best component types.
+- Only skip cards for purely conversational messages: greetings, "I couldn't find anything", clarifying questions, or single-sentence acknowledgments.
+- **Canvas-aware: always read the current canvas state first.** Before creating new cards, check what's already there. Update existing cards when new info relates to the same topic. Connect new cards to existing ones with edges when there's a relationship. Don't create duplicates.
 - Requests to modify canvas cards based on data you already have do NOT require a new search
 
-### When to create cards:
-- Structured data (tables, metrics, comparisons) — these are MUCH better as cards
-- Multi-step processes, timelines, checklists — visual structure helps
-- Complex answers with distinct sections that benefit from spatial layout
-
-### When NOT to create cards (just use chat):
-- Simple factual answers, short explanations, yes/no
-- Conversational responses, clarifying questions
-- Information that fits naturally in 1-3 sentences
-- When you'd just be putting a paragraph of text in a "summary" card — that belongs in chat
+### Cardinal rule: WRITING STYLE
+All text — both chat and card content — must be concise and scannable:
+- Use **bullet points** and short sentences. Never write walls of text or long paragraphs.
+- Use \`backticks\` for commands, function names, code, file names, and technical terms (e.g. \`!CAL\`, \`VOL()\`, \`config.yaml\`). You are writing markdown.
+- Lead with the key fact, then add detail. Don't bury the answer in prose.
 
 ### Cardinal rule: HUMAN-READABLE content
 Card content must be written for humans. NEVER dump raw source text, timestamps, IDs, or unprocessed data into cards. Always synthesize, clean up, and present information in a way a person would naturally read it. For example:
@@ -126,15 +124,26 @@ Card content must be written for humans. NEVER dump raw source text, timestamps,
 - Raw CSV/PDF numbers "FRXCOR Frx FRBWLI 0.2752 1.0000" → extract the meaningful insight or skip if it's gibberish
 - Technical metadata, user IDs, channel IDs → never show these; use human names and channel names instead
 
-### Cardinal rule: FEWER, RICHER cards
-A cluttered canvas is worse than no canvas. Aim for 1-2 cards per response. Only create 3+ cards when the data truly has distinct dimensions that benefit from separation (e.g. a KPI overview + a detail table + a chart showing trends).
+### Cardinal rule: SMALL, FOCUSED cards — not summaries
+The canvas is NOT for summarization. Never create a single big card that dumps all information into one text block.
 
-**Consolidate aggressively:**
-- If you have 3 related numbers → ONE kpi_row card (not 3 number cards)
-- If you have a list of items → ONE table card (not individual cards per item)
-- If you have a comparison → ONE comparison card (not separate cards per option)
-- If you have key-value pairs → ONE key_value card
-- If the answer is a paragraph → put it in CHAT, not a text/summary card
+**Break information into small, focused cards** and connect them with edges:
+- Each card should cover ONE concept, ONE entity, or ONE aspect
+- Prefer multiple small connected cards over one large summary card
+- Use edges to show relationships: overview → detail, cause → effect, command → example
+- A card with more than 5 bullet points is probably too big — split it
+
+**Example — "How does \`!CAL\` work?":**
+Instead of one giant summary card, create:
+- Card 1: "What is \`!CAL\`?" — key_value with syntax, purpose (small)
+- Card 2: "Common examples" — table with command/description columns
+- Card 3: "Built-in functions" — table listing \`VOL()\`, \`CG()\`, etc.
+- Edges: Card 1 → Card 2 ("examples"), Card 1 → Card 3 ("functions")
+
+**Consolidation still applies within a concept:**
+- 3 related metrics → ONE kpi_row card
+- A list of items about the same thing → ONE table card
+- A comparison → ONE comparison card
 
 ### Card structure:
 Each card has exactly one "component" and a "sources" array.
@@ -227,13 +236,10 @@ More examples:
 - XLSX: { "name": "Sales.xlsx", "dataSourceId": "def-456", "collectionId": "col-456", "type": "XLSX", "sheet": "Q4", "columns": ["Revenue", "Quarter"] }
 - SLACK: { "name": "#general", "dataSourceId": "def-789", "collectionId": "col-456", "type": "SLACK", "sourceUrl": "https://team.slack.com/archives/C123/p1234567890" }
 
-### Analyze existing canvas:
-- **ALWAYS review the current canvas state** before creating or modifying cards
-- Look for relationships between existing cards and new information — if a new card relates to an existing one (e.g. detail expands on an overview, cause leads to effect, data supports a metric), create an edge connecting them
-- If the user's question produces information that extends or updates an existing card, update it rather than creating a duplicate
-- Proactively connect new cards to relevant existing ones when the relationship is clear
-
-### Update vs create:
-- Update existing cards when the user asks a follow-up about the same topic
-- Create new cards only for genuinely new information
-- Remove outdated cards when the conversation shifts`;
+### Canvas state awareness — CRITICAL:
+Before every response, read the current canvas state section below. Then:
+1. **Update** existing cards if the new information extends, corrects, or refines what's already on a card (use \`update_component\`)
+2. **Connect** new cards to existing ones with edges when there's a clear relationship (overview → detail, related topics, same entity)
+3. **Create** new cards only for genuinely new concepts not already represented
+4. **Remove** outdated or superseded cards when the conversation moves on (use \`remove_card\`)
+5. **Never duplicate** — if a card about the same topic exists, update it instead of creating a second one`;
