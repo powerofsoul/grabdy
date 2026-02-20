@@ -270,41 +270,60 @@ export class ChatController {
 
       const streamStart = Date.now();
       let textChunks = 0;
+      let stepCount = 0;
+      let sentTextDone = false;
 
       for await (const part of result.streamResult.fullStream) {
+        const elapsed = Date.now() - streamStart;
+
         if (part.type === 'text-delta') {
-          const payload = part.payload;
           if (textChunks === 0) {
-            this.logger.log(`[stream] First text chunk at +${Date.now() - streamStart}ms`);
+            this.logger.log(`[stream] First text chunk at +${elapsed}ms`);
           }
           textChunks++;
-          res.write(`0:${JSON.stringify(payload.text)}\n`);
+          res.write(`0:${JSON.stringify(part.payload.text)}\n`);
         } else if (part.type === 'tool-call') {
-          const payload = part.payload;
+          // Send text_done before the first canvas tool call so the frontend can unlock input
+          if (!sentTextDone && textChunks > 0 && CANVAS_TOOL_NAME_SET.has(part.payload.toolName)) {
+            sentTextDone = true;
+            res.write(`8:${JSON.stringify({ type: 'text_done' })}\n`);
+          }
           this.logger.log(
-            `[stream] Tool call: ${payload.toolName} at +${Date.now() - streamStart}ms`
+            `[stream] Tool call: ${part.payload.toolName} at +${elapsed}ms args=${JSON.stringify(part.payload.args).slice(0, 1000)}`
           );
         } else if (part.type === 'tool-result') {
-          const payload = part.payload;
+          const resultStr = JSON.stringify(part.payload.result).slice(0, 500);
           this.logger.log(
-            `[stream] Tool result: ${payload.toolName} at +${Date.now() - streamStart}ms`
+            `[stream] Tool result: ${part.payload.toolName} ${part.payload.isError ? 'ERROR' : 'OK'} at +${elapsed}ms → ${resultStr}`
           );
-          if (CANVAS_TOOL_NAME_SET.has(payload.toolName)) {
+          if (CANVAS_TOOL_NAME_SET.has(part.payload.toolName)) {
             res.write(
               `8:${JSON.stringify({
                 type: 'canvas_update',
-                tool: payload.toolName,
-                args: payload.args,
-                result: payload.result,
+                tool: part.payload.toolName,
+                args: part.payload.args,
+                result: part.payload.result,
               })}\n`
             );
           }
-        } else if (part.type === 'step-finish') {
-          this.logger.log(
-            `[stream] Step finished at +${Date.now() - streamStart}ms (${textChunks} text chunks so far)`
+        } else if (part.type === 'tool-error') {
+          const p = part.payload;
+          this.logger.error(
+            `[stream] Tool ERROR: ${p.toolName} at +${elapsed}ms error=${p.error instanceof Error ? p.error.message : JSON.stringify(p.error)} args=${JSON.stringify(p.args).slice(0, 500)}`
           );
+        } else if (part.type === 'error') {
+          this.logger.error(
+            `[stream] Stream ERROR at +${elapsed}ms: ${part.payload instanceof Error ? part.payload.message : JSON.stringify(part.payload)}`
+          );
+        } else if (part.type === 'step-finish') {
+          stepCount++;
+          this.logger.log(
+            `[stream] Step ${stepCount} finished at +${elapsed}ms (${textChunks} text chunks)`
+          );
+        } else if (part.type === 'tool-call-delta' || part.type === 'tool-call-input-streaming-start' || part.type === 'tool-call-input-streaming-end') {
+          // Suppress noisy streaming events
         } else {
-          this.logger.debug(`[stream] ${part.type} at +${Date.now() - streamStart}ms`);
+          this.logger.log(`[stream] ${part.type} at +${elapsed}ms`);
         }
       }
 

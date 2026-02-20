@@ -95,6 +95,7 @@ interface CanvasPropsEditable {
   onAddCard?: (card: Card) => void;
   isMaximized?: boolean;
   onToggleMaximize?: () => void;
+  isUpdatingCanvas?: boolean;
 }
 
 interface CanvasPropsReadOnly {
@@ -129,6 +130,7 @@ export function Canvas(props: CanvasProps) {
   const onAddCard = readOnly ? undefined : props.onAddCard;
   const isMaximized = readOnly ? undefined : props.isMaximized;
   const onToggleMaximize = readOnly ? undefined : props.onToggleMaximize;
+  const isUpdatingCanvas = readOnly ? false : (props.isUpdatingCanvas ?? false);
   const theme = useTheme();
   const auth = useOptionalAuth();
   const selectedOrgId = auth?.selectedOrgId;
@@ -549,6 +551,44 @@ export function Canvas(props: CanvasProps) {
           </Panel>
         )}
       </ReactFlow>
+
+      {/* Updating canvas indicator */}
+      {isUpdatingCanvas && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            px: 1.25,
+            py: 0.5,
+            borderRadius: 2,
+            bgcolor: alpha(theme.palette.background.paper, 0.85),
+            backdropFilter: 'blur(8px)',
+            zIndex: 10,
+            pointerEvents: 'none',
+          }}
+        >
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              bgcolor: 'primary.main',
+              animation: 'canvasPulse 1.4s ease-in-out infinite',
+              '@keyframes canvasPulse': {
+                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                '50%': { opacity: 0.4, transform: 'scale(0.75)' },
+              },
+            }}
+          />
+          <Typography sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 500 }}>
+            Updating canvas…
+          </Typography>
+        </Box>
+      )}
 
       {/* Ghost card overlay during placement mode */}
       {pendingCard && (

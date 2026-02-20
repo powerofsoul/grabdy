@@ -160,31 +160,42 @@ export class CanvasTools {
           .describe('Ordered array of canvas operations to apply'),
       }),
       execute: async (input) => {
+        logger.log(
+          `[canvas_update] Executing ${input.operations.length} ops: ${input.operations.map((o) => o.op).join(', ')}`
+        );
         const idMap = new Map<string, string>();
         const results: Array<Record<string, unknown>> = [];
 
         for (const op of input.operations) {
           const result = processOp(op, orgId, idMap, logger);
           if ('error' in result) {
+            logger.error(`[canvas_update] Op "${op.op}" failed: ${result.error}`);
             return { error: result.error, results };
           }
           results.push(result);
         }
 
         // Parse results through the schema to get properly branded types
-        const batchOps = results.map((r) => batchInnerOpSchema.parse(r));
+        try {
+          const batchOps = results.map((r) => batchInnerOpSchema.parse(r));
 
-        await queue.add(
-          'batch',
-          {
-            type: 'batch',
-            threadId,
-            orgId,
-            operations: batchOps,
-          },
-          { attempts: 1 }
-        );
+          await queue.add(
+            'batch',
+            {
+              type: 'batch',
+              threadId,
+              orgId,
+              operations: batchOps,
+            },
+            { attempts: 1 }
+          );
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          logger.error(`[canvas_update] Failed to queue batch: ${msg}`);
+          return { error: `Internal error processing canvas update: ${msg}` };
+        }
 
+        logger.log(`[canvas_update] Queued ${results.length} ops successfully`);
         return { results };
       },
     });

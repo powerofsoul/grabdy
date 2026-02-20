@@ -27,6 +27,7 @@ export function useChatStream({
   const { selectedOrgId } = useAuth();
 
   const [isStreaming, setIsStreaming] = useState(false);
+  const [canvasUpdatesInFlight, setCanvasUpdatesInFlight] = useState(0);
 
   const handleSend = useCallback(
     async (userMessage: string) => {
@@ -67,6 +68,29 @@ export function useChatStream({
                 });
               }
             },
+            onTextDone: () => {
+              // Text answer is complete — unlock input, canvas updates continue in background
+              setIsStreaming(false);
+              setCanvasUpdatesInFlight((n) => n + 1);
+
+              // Parse blocks and finalize the message text
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last.role === 'assistant') {
+                  const blocks = parseBlocks(last.content);
+                  updated[updated.length - 1] = {
+                    ...last,
+                    content: blocks.text,
+                    thinkingTexts:
+                      blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
+                    sources: blocks.sources.length > 0 ? blocks.sources : undefined,
+                    isStreaming: false,
+                  };
+                }
+                return updated;
+              });
+            },
             onCanvasUpdate,
             onDone: (metadata) => {
               if (metadata.threadId) {
@@ -76,7 +100,7 @@ export function useChatStream({
                 }
               }
 
-              // Parse blocks from accumulated content
+              // Parse blocks from accumulated content (in case onTextDone didn't fire)
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
@@ -94,6 +118,7 @@ export function useChatStream({
                 return updated;
               });
 
+              setCanvasUpdatesInFlight((n) => Math.max(0, n - 1));
               fetchThreads();
             },
             onError: (error) => {
@@ -123,6 +148,7 @@ export function useChatStream({
 
   return {
     isStreaming,
+    isUpdatingCanvas: canvasUpdatesInFlight > 0,
     handleSend,
   };
 }

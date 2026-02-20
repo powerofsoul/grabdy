@@ -6,6 +6,8 @@ import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 
+import { FONT_MONO } from '@/theme';
+
 import { parseBlocks } from '../parse-blocks';
 import { SourceChips } from './source-chips';
 import { markdownStyles } from '../styles';
@@ -95,18 +97,27 @@ export const MessageRow = memo(
                   }}
                 >
                   {thinkingTexts.map((text, i) => (
-                    <Typography
+                    <Box
                       key={i}
                       sx={{
                         fontSize: '0.75rem',
-                        fontStyle: 'italic',
                         color: 'text.secondary',
                         lineHeight: 1.5,
                         '& + &': { mt: 0.5 },
+                        '& p': { m: 0, fontSize: 'inherit', lineHeight: 'inherit' },
+                        '& p + p': { mt: 0.5 },
+                        '& code': {
+                          fontFamily: FONT_MONO,
+                          bgcolor: 'grey.100',
+                          px: 0.5,
+                          py: 0.25,
+                          borderRadius: 0.5,
+                          fontSize: 'inherit',
+                        },
                       }}
                     >
-                      {text}
-                    </Typography>
+                      <ReactMarkdown>{text}</ReactMarkdown>
+                    </Box>
                   ))}
                 </Box>
               </Collapse>

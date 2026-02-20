@@ -75,6 +75,7 @@ export interface CanvasUpdate {
 
 interface StreamCallbacks {
   onText: (text: string) => void;
+  onTextDone?: () => void;
   onDone: (metadata: { threadId?: string }) => void;
   onCanvasUpdate?: (update: CanvasUpdate) => void;
   onError?: (error: Error) => void;
@@ -209,6 +210,8 @@ export async function streamChat(
               callbacks.onDone({
                 threadId: metadata.threadId,
               });
+            } else if (metadata.type === 'text_done') {
+              callbacks.onTextDone?.();
             } else if (
               metadata.type === 'canvas_update' &&
               callbacks.onCanvasUpdate &&

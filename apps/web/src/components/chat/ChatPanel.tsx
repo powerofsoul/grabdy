@@ -174,6 +174,7 @@ export function ChatPanel({
       onAddCard={canvasOps.handleAddCard}
       isMaximized={canvasMaximized}
       onToggleMaximize={handleToggleMaximize}
+      isUpdatingCanvas={chatStream.isUpdatingCanvas}
     />
   );
 
