@@ -56,7 +56,7 @@ type ChunkMeta =
   | { type: 'TXT' }
   | { type: 'JSON' }
   | { type: 'IMAGE' }
-  | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthor: string }
+  | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthors: string[] }
   | { type: 'LINEAR'; linearIssueId: string; linearCommentId: string | null }
   | {
       type: 'GITHUB';
@@ -167,6 +167,7 @@ export interface DB {
     metadata: ChunkMeta;
     source_url: string;
     embedding: string;
+    tsv: ColumnType<string, never, never>;
     data_source_id: DbId<'DataSource'>;
     collection_id: DbId<'Collection'> | null;
     created_at: Generated<Timestamp>;
@@ -244,7 +245,7 @@ export interface DB {
     model: string;
     provider: string;
     caller_type: 'MEMBER' | 'SYSTEM' | 'API_KEY';
-    request_type: 'CHAT' | 'EMBEDDING';
+    request_type: 'CHAT' | 'EMBEDDING' | 'RERANK' | 'HYDE' | 'SUMMARY';
     source: 'WEB' | 'SLACK' | 'API' | 'MCP' | 'SYSTEM';
     input_tokens: Generated<number>;
     output_tokens: Generated<number>;

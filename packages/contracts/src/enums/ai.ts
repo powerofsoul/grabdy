@@ -8,6 +8,9 @@ export type AiCallerType = (typeof AiCallerType)[keyof typeof AiCallerType];
 export const AiRequestType = {
   CHAT: 'CHAT',
   EMBEDDING: 'EMBEDDING',
+  RERANK: 'RERANK',
+  HYDE: 'HYDE',
+  SUMMARY: 'SUMMARY',
 } as const;
 export type AiRequestType = (typeof AiRequestType)[keyof typeof AiRequestType];
 

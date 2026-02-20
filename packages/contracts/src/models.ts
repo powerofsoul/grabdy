@@ -33,12 +33,22 @@ export const MODEL_INFO = {
     maxOutput: 0,
     pricing: { inputPerMillion: 0.02, outputPerMillion: 0 },
   },
+  'bedrock/cohere.rerank-v3-5:0': {
+    label: 'Cohere Rerank 3.5',
+    provider: 'Bedrock',
+    contextWindow: 4096,
+    maxOutput: 0,
+    pricing: { inputPerMillion: 2.0, outputPerMillion: 0 },
+  },
 } satisfies Record<string, ModelInfo>;
 
 export type ModelId = keyof typeof MODEL_INFO;
 
 export const CHAT_MODEL: ModelId = 'openai/gpt-5-mini';
 export const EMBEDDING_MODEL: ModelId = 'openai/text-embedding-3-small';
+export const RERANK_MODEL: ModelId = 'bedrock/cohere.rerank-v3-5:0';
+export const HYDE_MODEL: ModelId = 'openai/gpt-4o-mini';
+export const SUMMARY_MODEL: ModelId = 'openai/gpt-4o-mini';
 
 export function calculateCost(model: ModelId, inputTokens: number, outputTokens: number): number {
   const { pricing } = MODEL_INFO[model];

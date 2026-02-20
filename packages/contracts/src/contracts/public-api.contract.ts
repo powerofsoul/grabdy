@@ -45,6 +45,18 @@ export const searchBodySchema = z.object({
     .optional()
     .describe('Limit search to specific collections'),
   topK: z.number().min(1).max(50).default(10).describe('Number of results to return (default: 10)'),
+  rerank: z
+    .boolean()
+    .optional()
+    .describe('Enable LLM-based reranking for higher relevance (default: false for search)'),
+  hyde: z
+    .boolean()
+    .optional()
+    .describe('Enable HyDE (Hypothetical Document Embeddings) for better semantic matching (default: false for search)'),
+  expandContext: z
+    .boolean()
+    .optional()
+    .describe('Include surrounding chunk context for richer results (default: false for search)'),
 });
 
 export const searchResponseSchema = z.object({

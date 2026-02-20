@@ -36,7 +36,7 @@ const slackChunkMetaSchema = z.object({
   type: z.literal('SLACK'),
   slackChannelId: z.string(),
   slackMessageTs: z.string(),
-  slackAuthor: z.string(),
+  slackAuthors: z.array(z.string()),
 });
 
 const linearChunkMetaSchema = z.object({
@@ -100,7 +100,7 @@ export const CHUNK_META_DESCRIPTIONS: Record<DataSourceType, string> = {
   TXT: '{ type }',
   JSON: '{ type }',
   IMAGE: '{ type }',
-  SLACK: '{ type, slackChannelId, slackMessageTs, slackAuthor }',
+  SLACK: '{ type, slackChannelId, slackMessageTs, slackAuthors[] }',
   LINEAR: '{ type, linearIssueId, linearCommentId, linearTimestamp }',
   GITHUB: '{ type, githubItemType (issue|pull_request|discussion), githubCommentId }',
   NOTION: '{ type, notionPageId, notionBlockId }',
