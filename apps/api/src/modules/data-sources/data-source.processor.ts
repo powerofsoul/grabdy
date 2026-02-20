@@ -9,18 +9,24 @@ import {
   AiRequestType,
   type ChunkMeta,
   EMBEDDING_MODEL,
+  SUMMARY_MODEL,
   UPLOADS_MIME_TO_TYPE,
   type UploadsMime,
 } from '@grabdy/contracts';
-import { embedMany } from 'ai';
+import { embedMany, generateText } from 'ai';
 import { Job } from 'bullmq';
 
 import {
-  CHUNK_OVERLAP,
-  CHUNK_SIZE,
+  CHUNK_OVERLAP_TOKENS,
+  CHUNK_SIZE_TOKENS,
   EMBEDDING_BATCH_SIZE,
+  MIN_CHUNK_SIZE_TOKENS,
+  SUMMARY_INPUT_MAX_LENGTH,
   SUMMARY_MAX_LENGTH,
+  SUMMARY_TIMEOUT_MS,
 } from '../../config/constants';
+import { splitText } from './chunking/recursive-text-splitter';
+import { countTokens, decodeTokens, encodeTokens } from './chunking/tokenizer';
 import { env } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { AiUsageService } from '../ai/ai-usage.service';
@@ -58,6 +64,8 @@ export interface DataSourceJobData {
   messages?: SyncedMessageData[];
   /** Source URL for all chunks (used when all chunks share the same URL, e.g., a Jira issue). */
   sourceUrl?: string;
+  /** When true, append new chunks to existing data source without deleting old ones. */
+  appendOnly?: boolean;
 }
 
 interface ChunkWithMeta {
@@ -72,13 +80,103 @@ function previewUrl(dataSourceId: DbId<'DataSource'>, orgId: DbId<'Org'>): strin
 }
 
 function chunkText(text: string, metadata: ChunkMeta, sourceUrl: string): ChunkWithMeta[] {
-  const chunks: ChunkWithMeta[] = [];
-  let start = 0;
-  while (start < text.length) {
-    const end = Math.min(start + CHUNK_SIZE, text.length);
-    chunks.push({ content: text.slice(start, end), metadata, sourceUrl });
-    start += CHUNK_SIZE - CHUNK_OVERLAP;
+  const segments = splitText(text, {
+    maxSizeTokens: CHUNK_SIZE_TOKENS,
+    overlapTokens: CHUNK_OVERLAP_TOKENS,
+    minSizeTokens: MIN_CHUNK_SIZE_TOKENS,
+  });
+  return segments.map((content) => ({ content, metadata, sourceUrl }));
+}
+
+/**
+ * Check if two ChunkMeta objects represent the same grouping context.
+ * Messages with the same context can be grouped into a single chunk.
+ * For Slack, messages from the same channel are grouped regardless of author
+ * — all unique authors are collected into the chunk's `slackAuthors` array.
+ */
+function isSameGroupingContext(a: ChunkMeta, b: ChunkMeta): boolean {
+  if (a.type !== b.type) return false;
+  if (a.type === 'SLACK' && b.type === 'SLACK') {
+    return a.slackChannelId === b.slackChannelId;
   }
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/**
+ * Merge authors from a message into a SLACK chunk's metadata.
+ * Collects unique authors across all grouped messages.
+ */
+function mergeSlackAuthors(chunkMeta: ChunkMeta, messageMeta: ChunkMeta): ChunkMeta {
+  if (chunkMeta.type !== 'SLACK' || messageMeta.type !== 'SLACK') return chunkMeta;
+  const existing = new Set(chunkMeta.slackAuthors);
+  for (const author of messageMeta.slackAuthors) {
+    existing.add(author);
+  }
+  return { ...chunkMeta, slackAuthors: [...existing] };
+}
+
+/**
+ * Group consecutive messages into conversation-window chunks up to CHUNK_SIZE_TOKENS.
+ * Messages from the same context (e.g., same Slack channel) are grouped together,
+ * collecting all unique authors into the chunk's metadata.
+ * Oversized individual messages are split using the recursive text splitter.
+ */
+function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
+  if (msgs.length === 0) return [];
+
+  const chunks: ChunkWithMeta[] = [];
+  let buffer = '';
+  let bufferTokens = 0;
+  let chunkMeta: ChunkMeta = msgs[0].metadata;
+  let anchorUrl: string = msgs[0].sourceUrl;
+
+  for (const msg of msgs) {
+    const contextChanged = !isSameGroupingContext(chunkMeta, msg.metadata);
+    const separator = buffer.length > 0 ? '\n' : '';
+    const candidateTokens = countTokens(separator + msg.content);
+
+    if ((bufferTokens + candidateTokens > CHUNK_SIZE_TOKENS || contextChanged) && buffer.length > 0) {
+      // Flush current buffer as a chunk
+      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
+      buffer = '';
+      bufferTokens = 0;
+      chunkMeta = msg.metadata;
+      anchorUrl = msg.sourceUrl;
+    } else {
+      // Merge authors from this message into the chunk metadata
+      chunkMeta = mergeSlackAuthors(chunkMeta, msg.metadata);
+    }
+
+    buffer += separator + msg.content;
+    bufferTokens = countTokens(buffer);
+
+    // If a single message exceeds CHUNK_SIZE_TOKENS, flush and split it
+    if (bufferTokens > CHUNK_SIZE_TOKENS) {
+      chunks.push(...chunkText(buffer, chunkMeta, anchorUrl));
+      buffer = '';
+      bufferTokens = 0;
+      chunkMeta = msg.metadata;
+      anchorUrl = msg.sourceUrl;
+    }
+  }
+
+  if (buffer.length > 0) {
+    if (bufferTokens >= MIN_CHUNK_SIZE_TOKENS) {
+      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
+    } else if (chunks.length > 0) {
+      // Append undersized tail to the last chunk and merge authors
+      const last = chunks[chunks.length - 1];
+      chunks[chunks.length - 1] = {
+        ...last,
+        content: last.content + '\n' + buffer,
+        metadata: mergeSlackAuthors(last.metadata, chunkMeta),
+      };
+    } else {
+      // Only chunk — keep it regardless of size
+      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
+    }
+  }
+
   return chunks;
 }
 
@@ -96,31 +194,55 @@ function chunkPagesText(
     fullText += p.text;
   }
 
-  const chunks: ChunkWithMeta[] = [];
-  let start = 0;
-  while (start < fullText.length) {
-    const end = Math.min(start + CHUNK_SIZE, fullText.length);
+  // Split WITHOUT overlap first so we can accurately track positions
+  const baseSegments = splitText(fullText, {
+    maxSizeTokens: CHUNK_SIZE_TOKENS,
+    overlapTokens: 0,
+    minSizeTokens: MIN_CHUNK_SIZE_TOKENS,
+  });
 
-    // Find which pages this chunk spans
+  // Segments are contiguous (no overlap) — track offset cumulatively
+  const chunks: ChunkWithMeta[] = [];
+  let offset = 0;
+
+  for (let i = 0; i < baseSegments.length; i++) {
+    const base = baseSegments[i];
+    const start = offset;
+    const end = start + base.length;
+
+    // Apply overlap: prepend tail of previous segment (token-aware)
+    let content = base;
+    let overlapLen = 0;
+    if (i > 0 && CHUNK_OVERLAP_TOKENS > 0) {
+      const prev = baseSegments[i - 1];
+      const prevTokens = encodeTokens(prev);
+      const overlapStart = Math.max(0, prevTokens.length - CHUNK_OVERLAP_TOKENS);
+      const overlapText = decodeTokens(prevTokens.slice(overlapStart));
+      content = overlapText + base;
+      overlapLen = overlapText.length;
+    }
+
+    // Find which pages this chunk spans (including the overlap region)
+    const contentStart = start - overlapLen;
     const pageSet = new Set<number>();
     for (const b of boundaries) {
       const pageIdx = b.page - 1;
       const pageLen = pages[pageIdx]?.text.length ?? 0;
       const pageStart = b.offset;
       const pageEnd = pageStart + pageLen;
-      // Overlap check: chunk [start, end) overlaps page [pageStart, pageEnd)
-      if (pageStart < end && pageEnd > start) {
+      if (pageStart < end && pageEnd > contentStart) {
         pageSet.add(b.page);
       }
     }
 
     const pageNums = [...pageSet].sort((a, b) => a - b);
     chunks.push({
-      content: fullText.slice(start, end),
+      content,
       metadata: { type: metaType, pages: pageNums },
       sourceUrl,
     });
-    start += CHUNK_SIZE - CHUNK_OVERLAP;
+
+    offset = end;
   }
 
   return chunks;
@@ -130,18 +252,22 @@ function chunkSheets(sheets: SheetData[], sourceUrl: string): ChunkWithMeta[] {
   const chunks: ChunkWithMeta[] = [];
   for (const sheet of sheets) {
     let buffer = '';
+    let bufferTokens = 0;
     let startRow = sheet.rows[0]?.row ?? 1;
     for (const row of sheet.rows) {
-      if (buffer.length + row.text.length > CHUNK_SIZE && buffer.length > 0) {
+      const rowTokens = countTokens(row.text);
+      if (bufferTokens + rowTokens > CHUNK_SIZE_TOKENS && buffer.length > 0) {
         chunks.push({
           content: buffer,
           metadata: { type: 'XLSX', sheet: sheet.sheet, row: startRow, columns: sheet.columns },
           sourceUrl,
         });
         buffer = '';
+        bufferTokens = 0;
         startRow = row.row;
       }
       buffer += (buffer.length > 0 ? '\n' : '') + row.text;
+      bufferTokens += rowTokens + (bufferTokens > 0 ? 1 : 0); // +1 for newline token
     }
     if (buffer.length > 0) {
       chunks.push({
@@ -157,18 +283,22 @@ function chunkSheets(sheets: SheetData[], sourceUrl: string): ChunkWithMeta[] {
 function chunkCsvRows(rows: SheetRow[], columns: string[], sourceUrl: string): ChunkWithMeta[] {
   const chunks: ChunkWithMeta[] = [];
   let buffer = '';
+  let bufferTokens = 0;
   let startRow = rows[0]?.row ?? 1;
   for (const row of rows) {
-    if (buffer.length + row.text.length > CHUNK_SIZE && buffer.length > 0) {
+    const rowTokens = countTokens(row.text);
+    if (bufferTokens + rowTokens > CHUNK_SIZE_TOKENS && buffer.length > 0) {
       chunks.push({
         content: buffer,
         metadata: { type: 'CSV', row: startRow, columns },
         sourceUrl,
       });
       buffer = '';
+      bufferTokens = 0;
       startRow = row.row;
     }
     buffer += (buffer.length > 0 ? '\n' : '') + row.text;
+    bufferTokens += rowTokens + (bufferTokens > 0 ? 1 : 0);
   }
   if (buffer.length > 0) {
     chunks.push({
@@ -203,13 +333,18 @@ export class DataSourceProcessor extends WorkerHost {
 
     const defaultSourceUrl = job.data.sourceUrl ?? previewUrl(dataSourceId, orgId);
 
+    const isAppendOnly = Boolean(job.data.appendOnly);
+
     try {
-      // Update status to PROCESSING
-      await this.db.kysely
-        .updateTable('data.data_sources')
-        .set({ status: 'PROCESSING', updated_at: new Date() })
-        .where('id', '=', dataSourceId)
-        .execute();
+      // Update status to PROCESSING (append-only stays READY since old chunks are still valid)
+      if (!isAppendOnly) {
+        await this.db.kysely
+          .updateTable('data.data_sources')
+          .set({ status: 'PROCESSING', updated_at: new Date() })
+          .where('id', '=', dataSourceId)
+          .where('org_id', '=', orgId)
+          .execute();
+      }
 
       // Extract content: use pre-extracted for integration sources, otherwise read from storage
       let chunks: ChunkWithMeta[];
@@ -217,14 +352,10 @@ export class DataSourceProcessor extends WorkerHost {
       let pageCount: number | null = null;
 
       if (job.data.messages) {
-        // Structured messages: one chunk per message with per-message metadata
+        // Group consecutive messages into conversation-window chunks
         const msgs = job.data.messages.filter((m) => m.content.trim().length > 0);
         fullText = msgs.map((m) => m.content).join('\n');
-        chunks = msgs.map((m) => ({
-          content: m.content,
-          metadata: m.metadata,
-          sourceUrl: m.sourceUrl,
-        }));
+        chunks = groupMessages(msgs);
       } else if (job.data.content) {
         fullText = job.data.content;
         chunks = chunkText(fullText, { type: 'TXT' }, defaultSourceUrl);
@@ -253,7 +384,27 @@ export class DataSourceProcessor extends WorkerHost {
         throw new Error('No text content extracted from file');
       }
 
-      this.logger.log(`Split into ${chunks.length} chunks`);
+      // Generate document summary for contextual embeddings
+      // Skip for integration messages (self-contained) and append-only (summary already exists)
+      let summary: string | null = null;
+      const isIntegrationMessages = Boolean(job.data.messages);
+      if (!isIntegrationMessages && !isAppendOnly && countTokens(fullText) > MIN_CHUNK_SIZE_TOKENS) {
+        summary = await this.generateSummary(fullText, orgId);
+      }
+
+      this.logger.log(`Split into ${chunks.length} chunks${isAppendOnly ? ' (append)' : ''}`);
+
+      // For append-only, start chunk_index after the last existing chunk
+      let chunkIndexOffset = 0;
+      if (isAppendOnly) {
+        const maxRow = await this.db.kysely
+          .selectFrom('data.chunks')
+          .select(this.db.kysely.fn.max('chunk_index').as('max_index'))
+          .where('data_source_id', '=', dataSourceId)
+          .where('org_id', '=', orgId)
+          .executeTakeFirst();
+        chunkIndexOffset = maxRow?.max_index != null ? maxRow.max_index + 1 : 0;
+      }
 
       // Generate embeddings in batches
       const batchSize = EMBEDDING_BATCH_SIZE;
@@ -261,9 +412,17 @@ export class DataSourceProcessor extends WorkerHost {
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
 
+        // Contextual embeddings: prepend a short topic prefix so embeddings
+        // capture document context without dominating the chunk's own content.
+        // Use only the first sentence of the summary to keep the prefix short (~20-30 words).
+        const summaryPrefix = summary ? summary.split(/\.\s/)[0] + '.' : null;
+        const embeddingValues = batch.map((c) =>
+          summaryPrefix ? `${summaryPrefix}\n---\n${c.content}` : c.content
+        );
+
         const { embeddings, usage: embeddingUsage } = await embedMany({
           model: openai.embedding('text-embedding-3-small'),
-          values: batch.map((c) => c.content),
+          values: embeddingValues,
         });
 
         // Log embedding usage
@@ -282,7 +441,7 @@ export class DataSourceProcessor extends WorkerHost {
         const values = batch.map((chunk, idx) => ({
           id: packId('Chunk', orgId),
           content: chunk.content,
-          chunk_index: i + idx,
+          chunk_index: chunkIndexOffset + i + idx,
           metadata: chunk.metadata,
           source_url: chunk.sourceUrl,
           embedding: `[${embeddings[idx].join(',')}]`,
@@ -297,15 +456,17 @@ export class DataSourceProcessor extends WorkerHost {
       }
 
       // Update data source status to READY
+      const totalChunks = isAppendOnly ? chunkIndexOffset + chunks.length : chunks.length;
       await this.db.kysely
         .updateTable('data.data_sources')
         .set({
           status: 'READY',
-          page_count: pageCount ?? chunks.length,
-          summary: fullText.slice(0, SUMMARY_MAX_LENGTH),
+          page_count: pageCount ?? totalChunks,
+          ...(isAppendOnly ? {} : { summary: summary ?? fullText.slice(0, SUMMARY_MAX_LENGTH) }),
           updated_at: new Date(),
         })
         .where('id', '=', dataSourceId)
+        .where('org_id', '=', orgId)
         .execute();
 
       this.logger.log(`Data source ${dataSourceId} processed successfully`);
@@ -317,6 +478,7 @@ export class DataSourceProcessor extends WorkerHost {
         .updateTable('data.data_sources')
         .set({ status: 'FAILED', updated_at: new Date() })
         .where('id', '=', dataSourceId)
+        .where('org_id', '=', orgId)
         .execute();
 
       throw error;
@@ -375,6 +537,49 @@ export class DataSourceProcessor extends WorkerHost {
     }
 
     this.logger.log(`Stored ${images.length} extracted images for ${dataSourceId}`);
+  }
+
+  private async generateSummary(
+    fullText: string,
+    orgId: DbId<'Org'>
+  ): Promise<string | null> {
+    try {
+      const textForSummary = fullText.slice(0, SUMMARY_INPUT_MAX_LENGTH);
+      const abortController = new AbortController();
+      const timer = setTimeout(() => abortController.abort(), SUMMARY_TIMEOUT_MS);
+
+      let text: string;
+      let usage: { inputTokens?: number; outputTokens?: number };
+      try {
+        const result = await generateText({
+          model: openai('gpt-4o-mini'),
+          maxOutputTokens: 200,
+          abortSignal: abortController.signal,
+          prompt: `Summarize this document in 2-3 sentences for context. Focus on what the document is about and its key topics.\n\n${textForSummary}`,
+        });
+        text = result.text;
+        usage = result.usage;
+      } finally {
+        clearTimeout(timer);
+      }
+
+      // Log usage (fire-and-forget)
+      this.aiUsageService
+        .logUsage(
+          SUMMARY_MODEL,
+          usage.inputTokens ?? 0,
+          usage.outputTokens ?? 0,
+          AiCallerType.SYSTEM,
+          AiRequestType.SUMMARY,
+          { orgId, source: 'SYSTEM' }
+        )
+        .catch((err) => this.logger.error(`Summary generation usage logging failed: ${err}`));
+
+      return text;
+    } catch (error) {
+      this.logger.warn(`Summary generation failed, skipping contextual embeddings: ${error}`);
+      return null;
+    }
   }
 
   private async extractContent(

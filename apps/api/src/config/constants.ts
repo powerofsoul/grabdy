@@ -25,11 +25,21 @@ export const JOB_REMOVE_ON_FAIL_COUNT = 200;
 export const JOB_MAX_ATTEMPTS = 3;
 export const JOB_BACKOFF_DELAY_MS = 1000;
 
-// ── Data Source Processing ──────────────────────────────────────────
-export const CHUNK_SIZE = 1000;
-export const CHUNK_OVERLAP = 200;
+// ── Data Source Processing (token-based) ────────────────────────────
+export const CHUNK_SIZE_TOKENS = 400;
+export const CHUNK_OVERLAP_TOKENS = 80;
+export const MIN_CHUNK_SIZE_TOKENS = 40;
 export const EMBEDDING_BATCH_SIZE = 100;
 export const SUMMARY_MAX_LENGTH = 500;
+export const SUMMARY_INPUT_MAX_LENGTH = 3000;
+export const SUMMARY_TIMEOUT_MS = 10_000;
+
+// ── Retrieval / Search ──────────────────────────────────────────────
+export const DEFAULT_SEARCH_LIMIT = 10;
+export const CONTEXT_PREVIEW_MAX_LENGTH = 500;
+export const RERANK_MAX_DOC_LENGTH = 4000;
+export const HYDE_MAX_LENGTH = 500;
+export const THREAD_TITLE_MAX_LENGTH = 100;
 
 // ── File Upload ─────────────────────────────────────────────────────
 export const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB — multer ceiling
@@ -55,10 +65,6 @@ export function getMaxFileSizeForMime(mime: string): number {
   const limits: Partial<Record<string, number>> = FILE_SIZE_LIMITS;
   return limits[mime] ?? DEFAULT_FILE_SIZE_LIMIT;
 }
-
-// ── Retrieval ───────────────────────────────────────────────────────
-export const DEFAULT_SEARCH_LIMIT = 10;
-export const THREAD_TITLE_MAX_LENGTH = 100;
 
 // ── API Keys ────────────────────────────────────────────────────────
 export const API_KEY_RANDOM_BYTES = 32;
