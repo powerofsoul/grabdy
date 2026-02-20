@@ -25,6 +25,7 @@ interface UsageSummary {
   totalInputTokens: number;
   totalOutputTokens: number;
   totalTokens: number;
+  totalCost: number;
 }
 
 interface DailyUsage {
@@ -33,6 +34,7 @@ interface DailyUsage {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
+  cost: number;
 }
 
 interface ModelBreakdown {
@@ -42,6 +44,7 @@ interface ModelBreakdown {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
+  cost: number;
 }
 
 interface RequestTypeBreakdown {
@@ -56,6 +59,7 @@ interface SourceBreakdown {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
+  cost: number;
 }
 
 interface MemberBreakdown {
@@ -65,6 +69,7 @@ interface MemberBreakdown {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
+  cost: number;
 }
 
 interface UsageData {
@@ -84,6 +89,11 @@ function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return n.toString();
+}
+
+function formatCost(n: number): string {
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
+  return `$${n.toFixed(2)}`;
 }
 
 function DailyChart({ data }: { data: DailyUsage[] }) {
@@ -125,7 +135,10 @@ function DailyChart({ data }: { data: DailyUsage[] }) {
             fontSize: 13,
             boxShadow: 'none',
           }}
-          formatter={(value) => [formatNumber(Number(value)), 'Tokens']}
+          formatter={(value, _name, entry) => {
+            const cost = (entry.payload as DailyUsage).cost;
+            return [`${formatNumber(Number(value))} (${formatCost(cost)})`, 'Tokens'];
+          }}
           labelStyle={{ fontWeight: 600, marginBottom: 4 }}
           cursor={{ fill: alpha(theme.palette.text.primary, 0.04) }}
         />
@@ -258,6 +271,24 @@ function UsagePage() {
                 Output Tokens
               </Typography>
             </Box>
+            <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: FONT_MONO,
+                  fontSize: '3rem',
+                  fontWeight: 400,
+                  lineHeight: 1,
+                  letterSpacing: '0.05em',
+                  color: 'text.primary',
+                }}
+              >
+                {formatCost(data.summary.totalCost)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Total Cost
+              </Typography>
+            </Box>
           </Box>
 
           {/* Daily usage chart */}
@@ -280,6 +311,7 @@ function UsagePage() {
               input: 'Input',
               output: 'Output',
               total: 'Total',
+              cost: 'Cost',
             }}
             rowTitle={(row) => row.model}
             keyExtractor={(row) => row.model}
@@ -314,9 +346,14 @@ function UsagePage() {
                   {formatNumber(row.totalTokens)}
                 </Typography>
               ),
+              cost: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatCost(row.cost)}
+                </Typography>
+              ),
             }}
             sorting={{
-              sortableColumns: ['requests', 'input', 'output', 'total'] as const,
+              sortableColumns: ['requests', 'input', 'output', 'total', 'cost'] as const,
               defaultSort: 'total',
               defaultDirection: 'desc',
               getSortValue: (row, col) => {
@@ -324,6 +361,7 @@ function UsagePage() {
                 if (col === 'input') return row.inputTokens;
                 if (col === 'output') return row.outputTokens;
                 if (col === 'total') return row.totalTokens;
+                if (col === 'cost') return row.cost;
                 return null;
               },
             }}
@@ -341,6 +379,7 @@ function UsagePage() {
               input: 'Input',
               output: 'Output',
               total: 'Total',
+              cost: 'Cost',
             }}
             rowTitle={(row) => row.source}
             keyExtractor={(row) => row.source}
@@ -370,9 +409,14 @@ function UsagePage() {
                   {formatNumber(row.totalTokens)}
                 </Typography>
               ),
+              cost: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatCost(row.cost)}
+                </Typography>
+              ),
             }}
             sorting={{
-              sortableColumns: ['requests', 'input', 'output', 'total'] as const,
+              sortableColumns: ['requests', 'input', 'output', 'total', 'cost'] as const,
               defaultSort: 'total',
               defaultDirection: 'desc',
               getSortValue: (row, col) => {
@@ -380,6 +424,7 @@ function UsagePage() {
                 if (col === 'input') return row.inputTokens;
                 if (col === 'output') return row.outputTokens;
                 if (col === 'total') return row.totalTokens;
+                if (col === 'cost') return row.cost;
                 return null;
               },
             }}
@@ -397,6 +442,7 @@ function UsagePage() {
               input: 'Input',
               output: 'Output',
               total: 'Total',
+              cost: 'Cost',
             }}
             rowTitle={(row) => row.userName}
             keyExtractor={(row) => row.userId ?? 'system'}
@@ -426,9 +472,14 @@ function UsagePage() {
                   {formatNumber(row.totalTokens)}
                 </Typography>
               ),
+              cost: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatCost(row.cost)}
+                </Typography>
+              ),
             }}
             sorting={{
-              sortableColumns: ['requests', 'input', 'output', 'total'] as const,
+              sortableColumns: ['requests', 'input', 'output', 'total', 'cost'] as const,
               defaultSort: 'total',
               defaultDirection: 'desc',
               getSortValue: (row, col) => {
@@ -436,6 +487,7 @@ function UsagePage() {
                 if (col === 'input') return row.inputTokens;
                 if (col === 'output') return row.outputTokens;
                 if (col === 'total') return row.totalTokens;
+                if (col === 'cost') return row.cost;
                 return null;
               },
             }}
