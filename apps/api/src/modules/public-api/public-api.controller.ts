@@ -51,6 +51,9 @@ export class PublicApiController {
         const { results, queryTimeMs } = await this.retrievalService.query(ctx.orgId, body.query, {
           collectionIds: body.collectionIds,
           limit: body.topK,
+          rerank: body.rerank ?? false,
+          hyde: body.hyde ?? false,
+          expandContext: body.expandContext ?? false,
         });
 
         return {
@@ -89,6 +92,7 @@ export class PublicApiController {
           collectionIds: body.collectionIds,
           topK: body.topK,
         });
+        // Note: rerank for /v1/query happens inside the agent via RagSearchTool (rerank: true by default)
 
         return {
           status: 200 as const,

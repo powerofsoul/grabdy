@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const sharedFields = {
   threadId: dbIdSchema('ChatThread'),
-  orgId: dbIdSchema('Org').optional(),
+  orgId: dbIdSchema('Org'),
 };
 
 // Inner operations used within a batch (keyed on `op`, no threadId/orgId)

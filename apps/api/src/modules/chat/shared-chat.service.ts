@@ -96,6 +96,7 @@ export class SharedChatService {
   }
 
   async getByToken(shareToken: string, viewerMembershipIds: DbId<'OrgMembership'>[]) {
+    // org-safe: public share lookup by token, org unknown until token is resolved
     const row = await this.db.kysely
       .selectFrom('data.shared_chats')
       .select([

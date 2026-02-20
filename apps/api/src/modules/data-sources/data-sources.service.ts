@@ -129,6 +129,7 @@ export class DataSourcesService {
       .selectFrom('data.extracted_images')
       .select('storage_path')
       .where('data_source_id', '=', id)
+      .where('org_id', '=', orgId)
       .execute();
 
     for (const img of extractedImages) {
@@ -136,10 +137,18 @@ export class DataSourcesService {
     }
 
     // Delete chunks first
-    await this.db.kysely.deleteFrom('data.chunks').where('data_source_id', '=', id).execute();
+    await this.db.kysely
+      .deleteFrom('data.chunks')
+      .where('data_source_id', '=', id)
+      .where('org_id', '=', orgId)
+      .execute();
 
     // Delete the record (extracted_images cascade via FK)
-    await this.db.kysely.deleteFrom('data.data_sources').where('id', '=', id).execute();
+    await this.db.kysely
+      .deleteFrom('data.data_sources')
+      .where('id', '=', id)
+      .where('org_id', '=', orgId)
+      .execute();
 
     // Delete file from storage
     await this.storage.delete(dataSource.storage_path);
@@ -203,6 +212,7 @@ export class DataSourcesService {
       .selectFrom('data.extracted_images')
       .select(['id', 'storage_path', 'mime_type', 'page_number', 'ai_description'])
       .where('data_source_id', '=', id)
+      .where('org_id', '=', orgId)
       .orderBy('page_number', 'asc')
       .execute();
 
@@ -232,13 +242,18 @@ export class DataSourcesService {
     }
 
     // Delete existing chunks
-    await this.db.kysely.deleteFrom('data.chunks').where('data_source_id', '=', id).execute();
+    await this.db.kysely
+      .deleteFrom('data.chunks')
+      .where('data_source_id', '=', id)
+      .where('org_id', '=', orgId)
+      .execute();
 
     // Delete extracted images from storage and DB
     const extractedImages = await this.db.kysely
       .selectFrom('data.extracted_images')
       .select('storage_path')
       .where('data_source_id', '=', id)
+      .where('org_id', '=', orgId)
       .execute();
 
     for (const img of extractedImages) {
@@ -248,6 +263,7 @@ export class DataSourcesService {
     await this.db.kysely
       .deleteFrom('data.extracted_images')
       .where('data_source_id', '=', id)
+      .where('org_id', '=', orgId)
       .execute();
 
     // Reset status
@@ -255,6 +271,7 @@ export class DataSourcesService {
       .updateTable('data.data_sources')
       .set({ status: 'UPLOADED', updated_at: new Date() })
       .where('id', '=', id)
+      .where('org_id', '=', orgId)
       .execute();
 
     // Re-queue

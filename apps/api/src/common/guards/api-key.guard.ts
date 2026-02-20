@@ -29,6 +29,7 @@ export class ApiKeyGuard implements CanActivate {
 
     const prefix = rawKey.slice(0, 12);
 
+    // org-safe: auth boundary — org is determined from the key lookup
     const keyRecord = await this.db.kysely
       .selectFrom('api.api_keys')
       .select(['id', 'key_hash', 'org_id', 'revoked_at'])
@@ -49,6 +50,7 @@ export class ApiKeyGuard implements CanActivate {
       .updateTable('api.api_keys')
       .set({ last_used_at: new Date() })
       .where('id', '=', keyRecord.id)
+      .where('org_id', '=', keyRecord.org_id)
       .execute();
 
     request.apiKey = {

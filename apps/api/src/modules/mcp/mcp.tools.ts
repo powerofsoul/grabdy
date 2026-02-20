@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { type DbId, dbIdSchema, extractOrgNumericId, idBelongsToOrg } from '@grabdy/common';
+import { type MetadataFilter, metadataFilterSchema } from '@grabdy/contracts';
 import { Tool } from '@rekog/mcp-nest';
 import type { Request } from 'express';
 import { z } from 'zod';
@@ -24,7 +25,8 @@ export class McpTools {
 
   @Tool({
     name: 'search',
-    description: 'Search across your uploaded data for relevant content',
+    description:
+      'Search across your uploaded data for relevant content. Supports metadata filters to narrow results by source type, author, etc.',
     parameters: z.object({
       query: z.string().describe('The search query'),
       collectionIds: z
@@ -32,6 +34,12 @@ export class McpTools {
         .optional()
         .describe('Collection IDs to search within'),
       limit: z.number().min(1).max(50).default(10).describe('Maximum number of results'),
+      filters: z
+        .array(metadataFilterSchema)
+        .optional()
+        .describe('Metadata filters to narrow results (e.g., by type, slackAuthors)'),
+      hyde: z.boolean().optional().describe('Enable HyDE for better semantic matching'),
+      expandContext: z.boolean().optional().describe('Include surrounding chunk context'),
     }),
   })
   async search(
@@ -39,7 +47,17 @@ export class McpTools {
       query,
       collectionIds: rawCollectionIds,
       limit,
-    }: { query: string; collectionIds?: DbId<'Collection'>[]; limit: number },
+      filters,
+      hyde,
+      expandContext,
+    }: {
+      query: string;
+      collectionIds?: DbId<'Collection'>[];
+      limit: number;
+      filters?: MetadataFilter[];
+      hyde?: boolean;
+      expandContext?: boolean;
+    },
     _context: unknown,
     request: Request
   ) {
@@ -57,6 +75,9 @@ export class McpTools {
     const result = await this.retrievalService.query(ctx.orgId, query, {
       collectionIds: rawCollectionIds,
       limit,
+      filters,
+      hyde: hyde ?? false,
+      expandContext: expandContext ?? false,
     });
 
     return {

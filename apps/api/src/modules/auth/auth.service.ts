@@ -96,6 +96,7 @@ export class AuthService {
   }
 
   private async getUserMemberships(userId: DbId<'User'>): Promise<OrgMembershipData[]> {
+    // org-safe: user may belong to multiple orgs, cross-org listing by user
     const memberships = await this.db.kysely
       .selectFrom('org.org_memberships')
       .innerJoin('org.orgs', 'org.orgs.id', 'org.org_memberships.org_id')
@@ -602,6 +603,7 @@ export class AuthService {
   }
 
   async verifySetupToken(token: string): Promise<{ email: string; orgName: string }> {
+    // org-safe: token-based lookup, org unknown until token is resolved
     const invitation = await this.db.kysely
       .selectFrom('org.org_invitations')
       .innerJoin('org.orgs', 'org.orgs.id', 'org.org_invitations.org_id')
@@ -636,6 +638,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const result = await this.db.kysely.transaction().execute(async (trx) => {
+      // org-safe: token-based lookup, org unknown until token is resolved
       const invitation = await trx
         .selectFrom('org.org_invitations')
         .selectAll()
@@ -674,7 +677,11 @@ export class AuthService {
         })
         .execute();
 
-      await trx.deleteFrom('org.org_invitations').where('id', '=', invitation.id).execute();
+      await trx
+        .deleteFrom('org.org_invitations')
+        .where('id', '=', invitation.id)
+        .where('org_id', '=', invitation.org_id)
+        .execute();
 
       return newUser;
     });

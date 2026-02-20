@@ -92,15 +92,12 @@ export class CanvasOpsProcessor extends WorkerHost {
     // Different threads lock different rows so they run in parallel.
     // Same-thread jobs block until the previous one commits.
     return this.db.kysely.transaction().execute(async (trx) => {
-      let query = trx
+      const query = trx
         .selectFrom('data.chat_threads')
         .select('canvas_state')
         .where('id', '=', op.threadId)
+        .where('org_id', '=', op.orgId)
         .forUpdate();
-
-      if (op.orgId) {
-        query = query.where('org_id', '=', op.orgId);
-      }
 
       const thread = await query.executeTakeFirst();
       if (!thread) {
@@ -178,6 +175,7 @@ export class CanvasOpsProcessor extends WorkerHost {
         .updateTable('data.chat_threads')
         .set({ canvas_state: sql`${jsonStr}::jsonb` })
         .where('id', '=', op.threadId)
+        .where('org_id', '=', op.orgId)
         .execute();
 
       this.logger.log(`Canvas op ${op.type} completed: ${state.cards.length} cards`);

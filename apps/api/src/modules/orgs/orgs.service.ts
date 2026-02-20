@@ -331,6 +331,10 @@ export class OrgsService {
       }
     }
 
-    await this.db.kysely.deleteFrom('org.org_memberships').where('id', '=', memberId).execute();
+    await this.db.kysely
+      .deleteFrom('org.org_memberships')
+      .where('id', '=', memberId)
+      .where('org_id', '=', orgId)
+      .execute();
   }
 }

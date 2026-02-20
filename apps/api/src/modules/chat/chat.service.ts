@@ -29,11 +29,15 @@ export class ChatService {
     @InjectQueue(CANVAS_OPS_QUEUE) private canvasQueue: Queue<CanvasOp>
   ) {}
 
-  private async getCanvasState(threadId: DbId<'ChatThread'>): Promise<CanvasState | undefined> {
+  private async getCanvasState(
+    threadId: DbId<'ChatThread'>,
+    orgId: DbId<'Org'>
+  ): Promise<CanvasState | undefined> {
     const row = await this.db.kysely
       .selectFrom('data.chat_threads')
       .select('canvas_state')
       .where('id', '=', threadId)
+      .where('org_id', '=', orgId)
       .executeTakeFirst();
 
     if (!row?.canvas_state) return undefined;
@@ -54,6 +58,7 @@ export class ChatService {
           updated_at: new Date(),
         })
         .where('id', '=', options.threadId)
+        .where('org_id', '=', orgId)
         .execute();
       return options.threadId;
     }
@@ -101,7 +106,7 @@ export class ChatService {
     sources: never[];
   }> {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
-    const canvasState = await this.getCanvasState(threadId);
+    const canvasState = await this.getCanvasState(threadId, orgId);
 
     const chatAgent = this.agentFactory.createDataAgent({
       orgId,
@@ -132,7 +137,7 @@ export class ChatService {
     }
   ) {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
-    const canvasState = await this.getCanvasState(threadId);
+    const canvasState = await this.getCanvasState(threadId, orgId);
 
     const agent = this.agentFactory.createDataAgent({
       orgId,
