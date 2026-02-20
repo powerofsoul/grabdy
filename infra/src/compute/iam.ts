@@ -59,6 +59,14 @@ new aws.iam.RolePolicy('grabdy-task-policy', {
         Action: ['kms:Encrypt', 'kms:Decrypt', 'kms:GenerateDataKey'],
         Resource: [kmsKey.arn],
       },
+      // Bedrock — invoke Cohere Rerank model for search reranking
+      {
+        Effect: 'Allow',
+        Action: ['bedrock:InvokeModel'],
+        Resource: [
+          pulumi.interpolate`arn:aws:bedrock:${aws.getRegionOutput().name}::foundation-model/cohere.rerank-v3-5:0`,
+        ],
+      },
     ],
   }),
 });

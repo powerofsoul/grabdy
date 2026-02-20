@@ -4,6 +4,7 @@ import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import prettier from 'eslint-config-prettier';
 import enforceDbId from '../../eslint-rules/enforce-dbid.js';
 import enforceEntityTypeMap from '../../eslint-rules/enforce-entity-type-map.js';
+import enforceOrgId from '../../eslint-rules/enforce-org-id.js';
 
 export default tseslint.config(
   {
@@ -26,12 +27,14 @@ export default tseslint.config(
         rules: {
           'enforce-dbid': enforceDbId,
           'enforce-entity-type-map': enforceEntityTypeMap,
+          'enforce-org-id': enforceOrgId,
         },
       },
     },
     rules: {
       // Branded ID enforcement
       'local/enforce-dbid': 'error',
+      'local/enforce-org-id': 'error',
 
       // NestJS uses empty constructors for DI
       '@typescript-eslint/no-empty-function': 'off',
@@ -68,6 +71,7 @@ export default tseslint.config(
     rules: {
       'local/enforce-entity-type-map': 'error',
       'local/enforce-dbid': 'off',
+      'local/enforce-org-id': 'off',
     },
   },
 

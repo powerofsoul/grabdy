@@ -82,7 +82,12 @@ export class PdfExtractor {
     const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.mjs');
     const sharp = require('sharp');
 
-    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
+    const path = require('path');
+    const standardFontDataUrl = path.join(
+      path.dirname(require.resolve('pdfjs-dist/package.json')),
+      'standard_fonts/'
+    );
+    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer), standardFontDataUrl });
     const pdfDoc = await loadingTask.promise;
     const images: ExtractedImage[] = [];
     const seenNames = new Set<string>();
