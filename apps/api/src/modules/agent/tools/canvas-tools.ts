@@ -8,7 +8,7 @@ import { createTool } from '@mastra/core/tools';
 import { Queue } from 'bullmq';
 import { z } from 'zod';
 
-import { type CanvasOp, batchInnerOpSchema } from '../../chat/processors/canvas-ops.types';
+import { batchInnerOpSchema, type CanvasOp } from '../../chat/processors/canvas-ops.types';
 import { CANVAS_OPS_QUEUE } from '../../queue/queue.constants';
 
 // ---------------------------------------------------------------------------

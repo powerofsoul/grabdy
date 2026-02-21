@@ -6,8 +6,10 @@ import { RetrievalModule } from '../retrieval/retrieval.module';
 import { StorageModule } from '../storage/storage.module';
 
 import { AgentFactory } from './services/agent.factory';
+import { CanvasAgentFactory } from './services/canvas-agent.factory';
 import { AgentMemoryService } from './services/memory.service';
 import { AgentStorageProvider } from './services/storage.provider';
+import { CanvasDelegateTool } from './tools/canvas-delegate.tool';
 import { CanvasTools } from './tools/canvas-tools';
 import { RagSearchTool } from './tools/rag-search.tool';
 import { SlackReplyTool } from './tools/slack-reply.tool';
@@ -15,7 +17,7 @@ import { SlackReplyTool } from './tools/slack-reply.tool';
 @Global()
 @Module({
   imports: [StorageModule, RetrievalModule, BullModule.registerQueue({ name: CANVAS_OPS_QUEUE })],
-  providers: [AgentStorageProvider, AgentMemoryService, RagSearchTool, SlackReplyTool, CanvasTools, AgentFactory],
-  exports: [AgentMemoryService, AgentFactory, CanvasTools, SlackReplyTool],
+  providers: [AgentStorageProvider, AgentMemoryService, RagSearchTool, SlackReplyTool, CanvasTools, CanvasAgentFactory, CanvasDelegateTool, AgentFactory],
+  exports: [AgentMemoryService, AgentFactory, CanvasTools, CanvasDelegateTool, SlackReplyTool],
 })
 export class AgentModule {}

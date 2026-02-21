@@ -18,7 +18,7 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
 import { ChatService } from './chat.service';
 
-const CANVAS_TOOL_NAME_SET = new Set(['canvas_update']);
+const CANVAS_TOOL_NAME_SET = new Set(['canvas_update', 'canvas_delegate']);
 
 @Controller()
 export class ChatController {
@@ -296,7 +296,39 @@ export class ChatController {
           this.logger.log(
             `[stream] Tool result: ${part.payload.toolName} ${part.payload.isError ? 'ERROR' : 'OK'} at +${elapsed}ms → ${resultStr}`
           );
-          if (CANVAS_TOOL_NAME_SET.has(part.payload.toolName)) {
+          if (part.payload.toolName === 'canvas_delegate') {
+            const delegateResult = part.payload.result;
+            this.logger.log(
+              `[stream] canvas_delegate result type=${typeof delegateResult} keys=${delegateResult && typeof delegateResult === 'object' ? Object.keys(delegateResult).join(',') : 'N/A'}`
+            );
+            if (
+              delegateResult &&
+              typeof delegateResult === 'object' &&
+              'operations' in delegateResult &&
+              Array.isArray(delegateResult.operations)
+            ) {
+              this.logger.log(
+                `[stream] canvas_delegate has ${delegateResult.operations.length} operations`
+              );
+              for (const op of delegateResult.operations) {
+                this.logger.log(
+                  `[stream] Emitting canvas_update from delegate: args=${JSON.stringify(op.args).slice(0, 200)} result=${JSON.stringify(op.result).slice(0, 200)}`
+                );
+                res.write(
+                  `8:${JSON.stringify({
+                    type: 'canvas_update',
+                    tool: 'canvas_update',
+                    args: op.args,
+                    result: op.result,
+                  })}\n`
+                );
+              }
+            } else {
+              this.logger.warn(
+                `[stream] canvas_delegate result has unexpected shape: ${JSON.stringify(delegateResult).slice(0, 500)}`
+              );
+            }
+          } else if (part.payload.toolName === 'canvas_update') {
             res.write(
               `8:${JSON.stringify({
                 type: 'canvas_update',

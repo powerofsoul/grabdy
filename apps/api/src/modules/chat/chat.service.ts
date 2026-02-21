@@ -10,12 +10,11 @@ import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { AgentFactory } from '../agent/services/agent.factory';
 import { AgentMemoryService } from '../agent/services/memory.service';
-import { CanvasTools } from '../agent/tools/canvas-tools';
+import { CanvasDelegateTool } from '../agent/tools/canvas-delegate.tool';
 import { CANVAS_OPS_QUEUE } from '../queue/queue.constants';
 
 import type { CanvasOp } from './processors/canvas-ops.types';
 import { buildBlockInstructionsPrompt } from './block-registry';
-import { CANVAS_INSTRUCTIONS, summarizeCanvas } from './canvas-prompt';
 
 @Injectable()
 export class ChatService {
@@ -25,7 +24,7 @@ export class ChatService {
     private db: DbService,
     private agentFactory: AgentFactory,
     private agentMemory: AgentMemoryService,
-    private canvasTools: CanvasTools,
+    private canvasDelegateTool: CanvasDelegateTool,
     @InjectQueue(CANVAS_OPS_QUEUE) private canvasQueue: Queue<CanvasOp>
   ) {}
 
@@ -79,14 +78,19 @@ export class ChatService {
     return thread.id;
   }
 
-  private buildChatInstructions(canvasState?: CanvasState): string {
+  private buildChatInstructions(): string {
     const parts = [buildBlockInstructionsPrompt()];
 
-    parts.push(CANVAS_INSTRUCTIONS);
+    parts.push(`## Canvas — MANDATORY
+**You MUST call \`canvas_delegate\` on every response where you found an answer.** If you answered the user's question using knowledge base results, you MUST visualize it. No exceptions. Text-only answers are broken — the canvas is how users consume information.
 
-    if (canvasState && canvasState.cards.length > 0) {
-      parts.push(summarizeCanvas(canvasState));
-    }
+**Only skip \`canvas_delegate\` when you literally cannot answer:** greetings, "I couldn't find anything", clarifying questions, or single-sentence acknowledgments like "Happy to help."
+
+Execution order — non-negotiable:
+1. Search the knowledge base
+2. Write your complete chat answer (including the sources block)
+3. Call \`canvas_delegate\` as your VERY LAST action — after all text is finished
+- Pass ALL relevant search results as context so the canvas agent can visualize them.`);
 
     return parts.join('\n\n');
   }
@@ -113,9 +117,17 @@ export class ChatService {
       userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
-      instructions: this.buildChatInstructions(canvasState),
+      instructions: this.buildChatInstructions(),
       memory: this.agentMemory.getMemory(),
-      tools: [this.canvasTools.create(threadId, orgId)],
+      tools: [
+        this.canvasDelegateTool.create({
+          orgId,
+          userId,
+          threadId,
+          source: 'WEB',
+          canvasState,
+        }),
+      ],
     });
     const result = await chatAgent.generate(message, threadId, membershipId);
 
@@ -144,9 +156,17 @@ export class ChatService {
       userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
-      instructions: this.buildChatInstructions(canvasState),
+      instructions: this.buildChatInstructions(),
       memory: this.agentMemory.getMemory(),
-      tools: [this.canvasTools.create(threadId, orgId)],
+      tools: [
+        this.canvasDelegateTool.create({
+          orgId,
+          userId,
+          threadId,
+          source: 'WEB',
+          canvasState,
+        }),
+      ],
     });
 
     const streamResult = await agent.stream(message, threadId, membershipId);
