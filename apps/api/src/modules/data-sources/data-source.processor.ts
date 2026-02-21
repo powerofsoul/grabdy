@@ -16,21 +16,13 @@ import { embedMany } from 'ai';
 import { Job } from 'bullmq';
 
 import {
-  CHUNK_OVERLAP_TOKENS,
-  CHUNK_SIZE_TOKENS,
   EMBEDDING_BATCH_SIZE,
-  MIN_CHUNK_SIZE_TOKENS,
 } from '../../config/constants';
 import { env } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { AiUsageService } from '../ai/ai-usage.service';
 import { DocxExtractor } from '../extractors/docx.extractor';
-import type {
-  ExtractionResult,
-  PageText,
-  SheetData,
-  SheetRow,
-} from '../extractors/extractor.interface';
+import type { ExtractionResult } from '../extractors/extractor.interface';
 import { ImageExtractor } from '../extractors/image.extractor';
 import { PdfExtractor } from '../extractors/pdf.extractor';
 import { TextExtractor } from '../extractors/text.extractor';
@@ -39,274 +31,12 @@ import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
 
-import { splitText } from './chunking/recursive-text-splitter';
-import { countTokens, decodeTokens, encodeTokens } from './chunking/tokenizer';
-
-export interface SyncedMessageData {
-  content: string;
-  metadata: ChunkMeta;
-  sourceUrl: string;
-}
-
-export interface DataSourceJobData {
-  dataSourceId: DbId<'DataSource'>;
-  orgId: DbId<'Org'>;
-  storagePath: string;
-  mimeType: UploadsMime;
-  collectionId: DbId<'Collection'> | null;
-  /** Pre-extracted text content (used by integration sources to skip file extraction). */
-  content?: string;
-  /** Structured messages with per-message metadata (one chunk per message). Takes precedence over `content`. */
-  messages?: SyncedMessageData[];
-  /** Source URL for all chunks (used when all chunks share the same URL, e.g., a Jira issue). */
-  sourceUrl?: string;
-  /** When true, append new chunks to existing data source without deleting old ones. */
-  appendOnly?: boolean;
-}
-
-interface ChunkWithMeta {
-  content: string;
-  metadata: ChunkMeta;
-  sourceUrl: string;
-}
+import { chunkCsv, chunkPages, chunkPlainText, chunkSheets, groupMessages } from './chunking/chunk-content';
+import type { ChunkWithMeta, DataSourceJobData } from './data-source.types';
 
 /** Build a preview URL for an uploaded data source. */
 function previewUrl(dataSourceId: DbId<'DataSource'>, orgId: DbId<'Org'>): string {
   return `${env.frontendUrl}/dashboard/sources?preview=${dataSourceId}&org=${orgId}`;
-}
-
-function chunkText(text: string, metadata: ChunkMeta, sourceUrl: string): ChunkWithMeta[] {
-  const segments = splitText(text, {
-    maxSizeTokens: CHUNK_SIZE_TOKENS,
-    overlapTokens: CHUNK_OVERLAP_TOKENS,
-    minSizeTokens: MIN_CHUNK_SIZE_TOKENS,
-  });
-  return segments.map((content) => ({ content, metadata, sourceUrl }));
-}
-
-/**
- * Check if two ChunkMeta objects represent the same grouping context.
- * Messages with the same context can be grouped into a single chunk.
- * For Slack, messages from the same channel are grouped regardless of author
- * — all unique authors are collected into the chunk's `slackAuthors` array.
- */
-function isSameGroupingContext(a: ChunkMeta, b: ChunkMeta): boolean {
-  if (a.type !== b.type) return false;
-  if (a.type === 'SLACK' && b.type === 'SLACK') {
-    return a.slackChannelId === b.slackChannelId;
-  }
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
-/**
- * Merge authors from a message into a SLACK chunk's metadata.
- * Collects unique authors across all grouped messages.
- */
-function mergeSlackAuthors(chunkMeta: ChunkMeta, messageMeta: ChunkMeta): ChunkMeta {
-  if (chunkMeta.type !== 'SLACK' || messageMeta.type !== 'SLACK') return chunkMeta;
-  const existing = new Set(chunkMeta.slackAuthors);
-  for (const author of messageMeta.slackAuthors) {
-    existing.add(author);
-  }
-  return { ...chunkMeta, slackAuthors: [...existing] };
-}
-
-/**
- * Group consecutive messages into conversation-window chunks up to CHUNK_SIZE_TOKENS.
- * Messages from the same context (e.g., same Slack channel) are grouped together,
- * collecting all unique authors into the chunk's metadata.
- * Oversized individual messages are split using the recursive text splitter.
- */
-function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
-  if (msgs.length === 0) return [];
-
-  const chunks: ChunkWithMeta[] = [];
-  let buffer = '';
-  let bufferTokens = 0;
-  let chunkMeta: ChunkMeta = msgs[0].metadata;
-  let anchorUrl: string = msgs[0].sourceUrl;
-
-  for (const msg of msgs) {
-    const contextChanged = !isSameGroupingContext(chunkMeta, msg.metadata);
-    const separator = buffer.length > 0 ? '\n' : '';
-    const candidateTokens = countTokens(separator + msg.content);
-
-    if (
-      (bufferTokens + candidateTokens > CHUNK_SIZE_TOKENS || contextChanged) &&
-      buffer.length > 0
-    ) {
-      // Flush current buffer as a chunk
-      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
-      buffer = '';
-      bufferTokens = 0;
-      chunkMeta = msg.metadata;
-      anchorUrl = msg.sourceUrl;
-    } else {
-      // Merge authors from this message into the chunk metadata
-      chunkMeta = mergeSlackAuthors(chunkMeta, msg.metadata);
-    }
-
-    buffer += separator + msg.content;
-    bufferTokens = countTokens(buffer);
-
-    // If a single message exceeds CHUNK_SIZE_TOKENS, flush and split it
-    if (bufferTokens > CHUNK_SIZE_TOKENS) {
-      chunks.push(...chunkText(buffer, chunkMeta, anchorUrl));
-      buffer = '';
-      bufferTokens = 0;
-      chunkMeta = msg.metadata;
-      anchorUrl = msg.sourceUrl;
-    }
-  }
-
-  if (buffer.length > 0) {
-    if (bufferTokens >= MIN_CHUNK_SIZE_TOKENS) {
-      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
-    } else if (chunks.length > 0) {
-      // Append undersized tail to the last chunk and merge authors
-      const last = chunks[chunks.length - 1];
-      chunks[chunks.length - 1] = {
-        ...last,
-        content: last.content + '\n' + buffer,
-        metadata: mergeSlackAuthors(last.metadata, chunkMeta),
-      };
-    } else {
-      // Only chunk — keep it regardless of size
-      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
-    }
-  }
-
-  return chunks;
-}
-
-function chunkPagesText(
-  pages: PageText[],
-  metaType: 'PDF' | 'DOCX',
-  sourceUrl: string
-): ChunkWithMeta[] {
-  // Build a flat string with page boundary tracking
-  const boundaries: Array<{ offset: number; page: number }> = [];
-  let fullText = '';
-
-  for (const p of pages) {
-    boundaries.push({ offset: fullText.length, page: p.page });
-    fullText += p.text;
-  }
-
-  // Split WITHOUT overlap first so we can accurately track positions
-  const baseSegments = splitText(fullText, {
-    maxSizeTokens: CHUNK_SIZE_TOKENS,
-    overlapTokens: 0,
-    minSizeTokens: MIN_CHUNK_SIZE_TOKENS,
-  });
-
-  // Segments are contiguous (no overlap) — track offset cumulatively
-  const chunks: ChunkWithMeta[] = [];
-  let offset = 0;
-
-  for (let i = 0; i < baseSegments.length; i++) {
-    const base = baseSegments[i];
-    const start = offset;
-    const end = start + base.length;
-
-    // Apply overlap: prepend tail of previous segment (token-aware)
-    let content = base;
-    let overlapLen = 0;
-    if (i > 0 && CHUNK_OVERLAP_TOKENS > 0) {
-      const prev = baseSegments[i - 1];
-      const prevTokens = encodeTokens(prev);
-      const overlapStart = Math.max(0, prevTokens.length - CHUNK_OVERLAP_TOKENS);
-      const overlapText = decodeTokens(prevTokens.slice(overlapStart));
-      content = overlapText + base;
-      overlapLen = overlapText.length;
-    }
-
-    // Find which pages this chunk spans (including the overlap region)
-    const contentStart = start - overlapLen;
-    const pageSet = new Set<number>();
-    for (const b of boundaries) {
-      const pageIdx = b.page - 1;
-      const pageLen = pages[pageIdx]?.text.length ?? 0;
-      const pageStart = b.offset;
-      const pageEnd = pageStart + pageLen;
-      if (pageStart < end && pageEnd > contentStart) {
-        pageSet.add(b.page);
-      }
-    }
-
-    const pageNums = [...pageSet].sort((a, b) => a - b);
-    chunks.push({
-      content,
-      metadata: { type: metaType, pages: pageNums },
-      sourceUrl,
-    });
-
-    offset = end;
-  }
-
-  return chunks;
-}
-
-function chunkSheets(sheets: SheetData[], sourceUrl: string): ChunkWithMeta[] {
-  const chunks: ChunkWithMeta[] = [];
-  for (const sheet of sheets) {
-    let buffer = '';
-    let bufferTokens = 0;
-    let startRow = sheet.rows[0]?.row ?? 1;
-    for (const row of sheet.rows) {
-      const rowTokens = countTokens(row.text);
-      if (bufferTokens + rowTokens > CHUNK_SIZE_TOKENS && buffer.length > 0) {
-        chunks.push({
-          content: buffer,
-          metadata: { type: 'XLSX', sheet: sheet.sheet, row: startRow, columns: sheet.columns },
-          sourceUrl,
-        });
-        buffer = '';
-        bufferTokens = 0;
-        startRow = row.row;
-      }
-      buffer += (buffer.length > 0 ? '\n' : '') + row.text;
-      bufferTokens += rowTokens + (bufferTokens > 0 ? 1 : 0); // +1 for newline token
-    }
-    if (buffer.length > 0) {
-      chunks.push({
-        content: buffer,
-        metadata: { type: 'XLSX', sheet: sheet.sheet, row: startRow, columns: sheet.columns },
-        sourceUrl,
-      });
-    }
-  }
-  return chunks;
-}
-
-function chunkCsvRows(rows: SheetRow[], columns: string[], sourceUrl: string): ChunkWithMeta[] {
-  const chunks: ChunkWithMeta[] = [];
-  let buffer = '';
-  let bufferTokens = 0;
-  let startRow = rows[0]?.row ?? 1;
-  for (const row of rows) {
-    const rowTokens = countTokens(row.text);
-    if (bufferTokens + rowTokens > CHUNK_SIZE_TOKENS && buffer.length > 0) {
-      chunks.push({
-        content: buffer,
-        metadata: { type: 'CSV', row: startRow, columns },
-        sourceUrl,
-      });
-      buffer = '';
-      bufferTokens = 0;
-      startRow = row.row;
-    }
-    buffer += (buffer.length > 0 ? '\n' : '') + row.text;
-    bufferTokens += rowTokens + (bufferTokens > 0 ? 1 : 0);
-  }
-  if (buffer.length > 0) {
-    chunks.push({
-      content: buffer,
-      metadata: { type: 'CSV', row: startRow, columns },
-      sourceUrl,
-    });
-  }
-  return chunks;
 }
 
 @Processor(DATA_SOURCE_QUEUE, { concurrency: 25, lockDuration: 30 * 60 * 1000 })
@@ -350,6 +80,11 @@ export class DataSourceProcessor extends WorkerHost {
       let fullText: string;
       let pageCount: number | null = null;
 
+      // Progress budget: extraction 0-50%, chunking 50-55%, embedding 55-100%
+      const onExtractionProgress = async (fraction: number) => {
+        await job.updateProgress(Math.round(fraction * 50));
+      };
+
       if (job.data.messages) {
         // Group consecutive messages into conversation-window chunks
         const msgs = job.data.messages.filter((m) => m.content.trim().length > 0);
@@ -357,18 +92,20 @@ export class DataSourceProcessor extends WorkerHost {
         chunks = groupMessages(msgs);
       } else if (job.data.content) {
         fullText = job.data.content;
-        chunks = chunkText(fullText, { type: 'TXT' }, defaultSourceUrl);
+        chunks = chunkPlainText(fullText, { type: 'TXT' }, defaultSourceUrl);
       } else if (mimeType.startsWith('image/')) {
         // Image files get special handling: AI vision extracts description
         const meta = await this.imageExtractor.extractWithMetadata(storagePath, orgId);
         fullText = meta.text;
-        chunks = chunkText(fullText, { type: 'IMAGE' }, defaultSourceUrl);
+        chunks = chunkPlainText(fullText, { type: 'IMAGE' }, defaultSourceUrl);
       } else {
-        const result = await this.extractContent(storagePath, mimeType);
+        const result = await this.extractContent(storagePath, mimeType, onExtractionProgress);
         fullText = result.text;
         chunks = this.chunksFromResult(result, defaultSourceUrl, mimeType);
         pageCount = result.type === 'pages' ? result.pages.length : null;
       }
+
+      await job.updateProgress(50);
 
       if (!fullText.trim()) {
         throw new Error('No text content extracted from file');
@@ -397,6 +134,8 @@ export class DataSourceProcessor extends WorkerHost {
           .executeTakeFirst();
         chunkIndexOffset = maxRow?.max_index != null ? maxRow.max_index + 1 : 0;
       }
+
+      await job.updateProgress(55);
 
       // Generate embeddings in batches
       const batchSize = EMBEDDING_BATCH_SIZE;
@@ -436,7 +175,7 @@ export class DataSourceProcessor extends WorkerHost {
 
         await this.db.kysely.insertInto('data.chunks').values(values).execute();
 
-        await job.updateProgress(Math.min(((i + batchSize) / chunks.length) * 100, 100));
+        await job.updateProgress(55 + Math.min(((i + batchSize) / chunks.length) * 45, 45));
       }
 
       // Update data source status to READY
@@ -477,11 +216,11 @@ export class DataSourceProcessor extends WorkerHost {
 
     switch (result.type) {
       case 'pages':
-        return chunkPagesText(result.pages, dsType === 'DOCX' ? 'DOCX' : 'PDF', sourceUrl);
+        return chunkPages(result.pages, dsType === 'DOCX' ? 'DOCX' : 'PDF', sourceUrl);
       case 'sheets':
         return chunkSheets(result.sheets, sourceUrl);
       case 'rows':
-        return chunkCsvRows(result.rows, result.columns, sourceUrl);
+        return chunkCsv(result.rows, result.columns, sourceUrl);
       case 'text': {
         const meta: ChunkMeta =
           dsType === 'JSON'
@@ -489,18 +228,19 @@ export class DataSourceProcessor extends WorkerHost {
             : dsType === 'IMAGE'
               ? { type: 'IMAGE' }
               : { type: 'TXT' };
-        return chunkText(result.text, meta, sourceUrl);
+        return chunkPlainText(result.text, meta, sourceUrl);
       }
     }
   }
 
   private async extractContent(
     storagePath: string,
-    mimeType: UploadsMime
+    mimeType: UploadsMime,
+    onProgress?: (fraction: number) => Promise<void>
   ): Promise<ExtractionResult> {
     switch (mimeType) {
       case 'application/pdf':
-        return this.pdfExtractor.extract(storagePath);
+        return this.pdfExtractor.extract(storagePath, onProgress);
       case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
       case 'application/msword':
         return this.docxExtractor.extract(storagePath);

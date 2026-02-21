@@ -13,7 +13,7 @@ import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
 
-import type { DataSourceJobData } from './data-source.processor';
+import type { DataSourceJobData } from './data-source.types';
 
 @Injectable()
 export class DataSourcesService {
@@ -78,7 +78,11 @@ export class DataSourcesService {
       collectionId,
     };
 
-    await this.dataSourceQueue.add('process', jobData);
+    await this.dataSourceQueue.add('process', jobData, {
+      jobId: dataSourceId,
+      removeOnComplete: true,
+      removeOnFail: true,
+    });
 
     return this.toResponse(dataSource);
   }
@@ -222,7 +226,11 @@ export class DataSourcesService {
       collectionId: dataSource.collection_id,
     };
 
-    await this.dataSourceQueue.add('process', jobData);
+    await this.dataSourceQueue.add('process', jobData, {
+      jobId: id,
+      removeOnComplete: true,
+      removeOnFail: true,
+    });
 
     return this.toResponse({ ...dataSource, status: 'UPLOADED' as const });
   }

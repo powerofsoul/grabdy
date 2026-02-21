@@ -7,7 +7,7 @@ import type { IntegrationProvider, SyncTrigger } from '@grabdy/contracts';
 import { Job, Queue } from 'bullmq';
 
 import { DbService } from '../../../db/db.module';
-import type { DataSourceJobData } from '../../data-sources/data-source.processor';
+import type { DataSourceJobData } from '../../data-sources/data-source.types';
 import { DATA_SOURCE_QUEUE, INTEGRATIONS_QUEUE } from '../../queue/queue.constants';
 import {
   parseProviderData,
