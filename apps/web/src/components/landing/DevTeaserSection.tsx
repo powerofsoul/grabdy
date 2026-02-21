@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
+import { ArrowRight as ArrowRightIcon } from '@phosphor-icons/react';
+import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -86,6 +88,22 @@ export function DevTeaserSection() {
               Two REST endpoints, an MCP server for AI agents, and SDKs for every major language.
               Ship integrations in an afternoon.
             </Typography>
+            <Link to="/dashboard/api/docs" style={{ textDecoration: 'none' }}>
+              <Button
+                variant="text"
+                size="small"
+                endIcon={<ArrowRightIcon size={16} weight="light" />}
+                sx={{
+                  color: isDark ? 'primary.main' : 'primary.light',
+                  fontWeight: 500,
+                  fontSize: '0.85rem',
+                  px: 0,
+                  '&:hover': { bgcolor: 'transparent', opacity: 0.8 },
+                }}
+              >
+                Read the docs
+              </Button>
+            </Link>
           </Box>
 
           {/* Right — code snippet */}

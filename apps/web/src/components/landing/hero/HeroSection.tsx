@@ -133,33 +133,30 @@ export function HeroSection() {
         scrollTrigger: {
           trigger: demoRef.current,
           start: 'top 10%',
-          end: '+=150%',
+          end: '+=60%',
           pin: true,
-          scrub: 0.5,
+          scrub: 0.15,
         },
       });
-
-      // First half: App visible (hold)
-      pinTl.to({}, { duration: 0.4 });
 
       // Crossfade: App out, Slack in
       pinTl.to(
         appView,
-        { opacity: 0, y: -30, duration: 0.3, ease: 'power2.inOut' },
+        { opacity: 0, y: -12, duration: 0.8, ease: 'power2.inOut' },
       );
       pinTl.fromTo(
         slackView,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.3, ease: 'power2.inOut' },
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power2.inOut' },
         '<',
       );
 
       // Labels: swap active state
-      pinTl.to(labelApp, { opacity: 0.4, duration: 0.2 }, '<');
-      pinTl.to(labelSlack, { opacity: 1, duration: 0.2 }, '<');
+      pinTl.to(labelApp, { opacity: 0.4, duration: 0.4 }, '<');
+      pinTl.to(labelSlack, { opacity: 1, duration: 0.4 }, '<');
 
-      // Second half: Slack visible (hold)
-      pinTl.to({}, { duration: 0.4 });
+      // Brief hold so Slack is visible before unpin
+      pinTl.to({}, { duration: 0.1 });
     }, demoRef);
 
     return () => ctx.revert();

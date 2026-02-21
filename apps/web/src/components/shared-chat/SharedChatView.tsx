@@ -54,7 +54,7 @@ export function SharedChatView({ title, messages, canvasState }: SharedChatViewP
   );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', bgcolor: 'background.default' }}>
       {/* Header */}
       <Box
         sx={{
@@ -113,11 +113,11 @@ export function SharedChatView({ title, messages, canvasState }: SharedChatViewP
       {/* Content */}
       {hasCanvas ? (
         isMobile ? (
-          <Box sx={{ flex: 1, minHeight: 0 }}>
-            <Box sx={{ display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+            <Box sx={{ display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', position: 'absolute', inset: 0 }}>
               <ChatMessages messages={messages} isLoading={false} isStreaming={false} />
             </Box>
-            <Box sx={{ display: activeTab === 'canvas' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
+            <Box sx={{ display: activeTab === 'canvas' ? 'flex' : 'none', flexDirection: 'column', position: 'absolute', inset: 0 }}>
               <Canvas readOnly nodes={nodes} edges={edges} />
             </Box>
           </Box>

@@ -1,5 +1,6 @@
 import { alpha, Box, Container, IconButton, Typography, useTheme } from '@mui/material';
 import { LinkedinLogo as LinkedinLogoIcon, XLogo as XLogoIcon } from '@phosphor-icons/react';
+import { Link } from '@tanstack/react-router';
 
 import { Logo } from '../ui/Logo';
 
@@ -59,6 +60,12 @@ export function Footer() {
               </Typography>
               <Typography component="a" href="#developers" sx={linkSx}>
                 Developers
+              </Typography>
+              <Typography component={Link} to="/dashboard/api/docs" sx={linkSx}>
+                API Docs
+              </Typography>
+              <Typography component={Link} to="/dashboard/api/mcp" sx={linkSx}>
+                MCP
               </Typography>
             </Box>
           </Box>

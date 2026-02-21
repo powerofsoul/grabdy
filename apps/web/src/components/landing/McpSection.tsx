@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
+import { ArrowRight as ArrowRightIcon } from '@phosphor-icons/react';
+import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -87,9 +89,26 @@ export function McpSection() {
             }}
           >
             Connect Claude, Cursor, or any MCP-compatible agent to your company knowledge in one
-            config block. Ask a question — the AI searches every source you've connected and answers
+            config block. Ask a question, the AI searches every source you've connected and answers
             with citations.
           </Typography>
+          <Link to="/dashboard/api/mcp" style={{ textDecoration: 'none' }}>
+            <Button
+              variant="text"
+              size="small"
+              endIcon={<ArrowRightIcon size={16} weight="light" />}
+              sx={{
+                color: 'primary.main',
+                fontWeight: 500,
+                fontSize: '0.85rem',
+                mt: 1.5,
+                px: 0,
+                '&:hover': { bgcolor: 'transparent', opacity: 0.8 },
+              }}
+            >
+              Set up MCP
+            </Button>
+          </Link>
         </Box>
 
         {/* Two panels */}
@@ -234,7 +253,7 @@ export function McpSection() {
                       {s.name}
                     </span>
                     <span style={{ ...monoStyle, fontSize: '0.72rem', color: codeTextMuted }}>
-                      — {s.detail}
+                      · {s.detail}
                     </span>
                   </Box>
                 ))}
