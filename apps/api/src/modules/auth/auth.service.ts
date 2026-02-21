@@ -18,6 +18,8 @@ import {
   BCRYPT_SALT_ROUNDS,
   JWT_EXPIRY,
   JWT_MAX_AGE_MS,
+  LOGIN_BLOCK_DURATION_S,
+  LOGIN_MAX_ATTEMPTS,
   OTP_EXPIRY_MINUTES,
   OTP_MAX,
   OTP_MIN,
@@ -486,7 +488,19 @@ export class AuthService {
     };
   }
 
-  async login(email: string, password: string): Promise<{ user: UserData; token: string }> {
+  async login(
+    email: string,
+    password: string,
+    clientIp: string
+  ): Promise<{ user: UserData; token: string }> {
+    // Check if IP is blocked
+    const blocked = await this.redis.get(redisKeys.loginBlocked(clientIp));
+    if (blocked) {
+      throw new UnauthorizedException(
+        'Too many failed login attempts. Please try again in 15 minutes.'
+      );
+    }
+
     const user = await this.db.kysely
       .selectFrom('auth.users')
       .select(['id', 'email', 'first_name', 'last_name', 'status', 'password_hash'])
@@ -494,13 +508,18 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user || !user.password_hash) {
+      await this.recordFailedLogin(clientIp);
       throw new UnauthorizedException('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
+      await this.recordFailedLogin(clientIp);
       throw new UnauthorizedException('Invalid email or password');
     }
+
+    // Clear failed attempts on successful login
+    await this.redis.del(redisKeys.loginAttempts(clientIp));
 
     const memberships = await this.getUserMemberships(user.id);
     const token = this.generateToken({
@@ -522,6 +541,19 @@ export class AuthService {
       },
       token,
     };
+  }
+
+  private async recordFailedLogin(clientIp: string): Promise<void> {
+    const key = redisKeys.loginAttempts(clientIp);
+    const attempts = await this.redis.incr(key);
+    if (attempts === 1) {
+      await this.redis.expire(key, LOGIN_BLOCK_DURATION_S);
+    }
+    if (attempts >= LOGIN_MAX_ATTEMPTS) {
+      await this.redis.set(redisKeys.loginBlocked(clientIp), '1', 'EX', LOGIN_BLOCK_DURATION_S);
+      await this.redis.del(key);
+      this.logger.warn(`IP ${clientIp} blocked after ${LOGIN_MAX_ATTEMPTS} failed login attempts`);
+    }
   }
 
   async forgotPassword(email: string): Promise<void> {

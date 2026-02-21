@@ -87,7 +87,6 @@ export class AuthGuard implements CanActivate {
 
     const payload = parseJwtPayload(decoded);
     if (!payload) {
-      console.error('JWT payload validation failed:', JSON.stringify(decoded));
       throw new UnauthorizedException('Invalid token payload');
     }
 

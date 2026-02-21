@@ -114,7 +114,8 @@ export class AuthController {
       },
       login: async ({ body }) => {
         try {
-          const { user, token } = await this.authService.login(body.email, body.password);
+          const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+          const { user, token } = await this.authService.login(body.email, body.password, clientIp);
           res.cookie('auth_token', token, this.cookieOptions);
           return {
             status: 200 as const,
