@@ -14,21 +14,34 @@ interface BlockDefinition {
 const BLOCKS: Record<StreamBlock, BlockDefinition> = {
   [StreamBlock.THINKING]: {
     purpose:
-      "Narrate your reasoning to the user in real time. The UI renders these as a collapsible \"Thinking\" section. This is the user's ONLY feedback that work is happening — without it, they stare at a blank screen. Be verbose and frequent.",
+      'Narrate your reasoning to the user in real time. The UI renders these as a collapsible "Thinking" section. This is the user\'s ONLY feedback that work is happening — without it, they stare at a blank screen. Be verbose and frequent.',
     guidelines: [
-      '**MANDATORY: output thinking blocks FREQUENTLY throughout your response.** The user is watching a live stream — every few seconds without visible progress feels like the app is frozen.',
-      "Output a thinking block BEFORE every tool call: say what you're searching for and why.",
-      'Output a thinking block AFTER every tool result: summarize what you found, how many results, whether they look relevant.',
-      'Output a thinking block BEFORE creating canvas cards: say what cards you plan to create.',
-      'Aim for 3-5 thinking blocks per response. More is better than fewer — the user wants to see your thought process.',
-      'Keep each block to 1-2 natural sentences. Be specific: "Found 4 results about `!CAL` in **Napa Materials**, pages 376-813" — not "Searching...".',
-      'Use markdown: `backticks` for code/commands/terms, **bold** for emphasis. NEVER use quotes or italics for technical terms.',
-      'Do NOT disclose internal IDs, scores, or raw metadata. Speak like a helpful assistant narrating their work: "Looking for documentation about `!CAL`...", "Found relevant sections, building a summary...".',
-      'Do NOT put thinking blocks after your final answer text.',
-      'Thinking blocks are NATURAL LANGUAGE ONLY. NEVER put raw JSON, data structures, tool results, arrays, or objects inside thinking blocks. Summarize findings in plain English.',
-      'NEVER use XML tags (`<thinking>`, `</thinking>`). Always use triple-backtick fences: \\`\\`\\`thinking ... \\`\\`\\`.',
+      '**Output reasoning blocks frequently** — the user is watching a live stream and needs constant feedback that work is happening. Without these blocks they see a blank screen for seconds.',
+      "**BEFORE every tool call:** Explain what you're about to search for and why. Example: \"Let me search for `!CAL` command syntax in the knowledge base...\"",
+      '**AFTER every tool result:** Summarize what you found — how many results, which sources matched, whether they look relevant. Example: "Found 4 results about `!CAL` in **Napa Materials** covering syntax and built-in functions. Let me also look for usage examples..."',
+      '**Between searches:** If you plan to search again, explain your reasoning — what you still need, why you\'re refining the query, what angle you\'re trying next.',
+      '**Before writing your answer:** Briefly state what you concluded — "I have enough information to answer. The knowledge base covers `!CAL` syntax, variable assignment, and array operations."',
+      'Be specific and detailed. Name the sources, mention what topics they cover, note page ranges. "Found 3 matches in **Q4 Report.pdf** pages 12-15 covering revenue breakdown" — not just "Searching..." or "Found results."',
+      'Use markdown: `backticks` for code/commands/terms, **bold** for source names and emphasis. NEVER use quotes or italics for technical terms.',
+      'Do NOT disclose internal IDs, scores, or raw metadata. Speak like a helpful assistant narrating their work.',
+      '**STOP reasoning blocks once you start writing your answer text.** No reasoning blocks inside or after the answer.',
+      'Skip reasoning blocks entirely for greetings, acknowledgments, and messages that do not require a search.',
     ],
-    example: `\`\`\`${StreamBlock.THINKING}\nSearching for \`!CAL\` command documentation...\n\`\`\`\n\n[tool call]\n\n\`\`\`${StreamBlock.THINKING}\nFound several matches in **Napa Materials** covering \`!CAL\` syntax and built-in functions. Let me search for usage examples too...\n\`\`\`\n\n[tool call]\n\n\`\`\`${StreamBlock.THINKING}\nGot examples of \`!CALC var=expression\` and array operations. Creating cards for the overview and examples...\n\`\`\``,
+    example: `\`\`\`${StreamBlock.THINKING}
+The user is asking about the \`!CAL\` command. Let me search the knowledge base for its documentation and syntax...
+\`\`\`
+
+[tool call]
+
+\`\`\`${StreamBlock.THINKING}
+Found 4 results about \`!CAL\` in **Napa Materials** (pages 376-813) covering the command syntax, variable assignment, and built-in math functions like \`VOL()\` and \`CG()\`. I still need concrete usage examples — let me search for those specifically...
+\`\`\`
+
+[tool call]
+
+\`\`\`${StreamBlock.THINKING}
+Got 3 more results with examples of \`!CALC var=expression\` and array operations using \`CI\` (current index). I now have enough information to give a complete answer covering syntax, assignment, and built-in functions.
+\`\`\``,
   },
   [StreamBlock.SOURCES]: {
     purpose:
@@ -41,7 +54,9 @@ const BLOCKS: Record<StreamBlock, BlockDefinition> = {
       'The JSON must be a valid array of source objects.',
       'Omit the sources block entirely if you did not use any sources (e.g. greetings, clarifications).',
     ],
-    example: `\`\`\`${StreamBlock.SOURCES}\n[{"dataSourceId":"abc-123","dataSourceName":"Q4 Report.pdf","score":0.85,"type":"PDF","pages":[1,3]},{"dataSourceId":"def-456","dataSourceName":"Sales Data.xlsx","score":0.72,"type":"XLSX","sheet":"Q4","rows":[5,12],"columns":["Revenue","Quarter"]}]\n\`\`\``,
+    example: `\`\`\`${StreamBlock.SOURCES}
+[{"dataSourceId":"abc-123","dataSourceName":"Q4 Report.pdf","score":0.85,"type":"PDF","pages":[1,3]},{"dataSourceId":"def-456","dataSourceName":"Sales Data.xlsx","score":0.72,"type":"XLSX","sheet":"Q4","rows":[5,12],"columns":["Revenue","Quarter"]}]
+\`\`\``,
   },
 };
 
@@ -51,49 +66,22 @@ export function buildBlockInstructionsPrompt(): string {
     '',
     'You MUST use these special fenced code blocks in your response. The UI extracts and renders them separately — they will NOT appear as code in the chat. Without these blocks, the user gets no feedback while you work and no source attribution.',
     '',
-    '**Format:** Standard markdown fenced code blocks with the block name as the language tag. Open with \\`\\`\\`blockname and close with \\`\\`\\`. NEVER use XML-style tags like `<thinking>`, `</thinking>`, `<sources>`, or `</sources>` — only use triple-backtick fenced code blocks.',
+    '**Format:** Standard markdown fenced code blocks with the block name as the language tag.',
     '',
   ];
 
   for (const [name, block] of Object.entries(BLOCKS)) {
-    lines.push(`### \`${name}\` block`);
-    lines.push('');
-    lines.push(block.purpose);
-    lines.push('');
-    for (const g of block.guidelines) {
-      lines.push(`- ${g}`);
-    }
-    lines.push('');
-    lines.push('Example:');
-    lines.push(block.example);
-    lines.push('');
-  }
+    lines.push(`### \`${name}\` block
 
-  lines.push('### Full response example (follow this pattern)');
-  lines.push('');
-  lines.push(`\`\`\`${StreamBlock.THINKING}`);
-  lines.push('Searching for **Q4 revenue** data in your documents...');
-  lines.push('```');
-  lines.push('');
-  lines.push('[tool call happens here]');
-  lines.push('');
-  lines.push(`\`\`\`${StreamBlock.THINKING}`);
-  lines.push('Found results in `Q4 Report.pdf`. Let me also search for Q3 data to compare...');
-  lines.push('```');
-  lines.push('');
-  lines.push('[another tool call happens here]');
-  lines.push('');
-  lines.push("Here's what I found about Q4 revenue: ...");
-  lines.push('');
-  lines.push(`\`\`\`${StreamBlock.SOURCES}`);
-  lines.push(
-    '[{"dataSourceId":"abc-123","dataSourceName":"Q4 Report.pdf","score":0.85,"type":"PDF","pages":[1,3]},{"dataSourceId":"def-456","dataSourceName":"Data.xlsx","score":0.72,"type":"XLSX","sheet":"Revenue","rows":[5],"columns":["Revenue","Quarter"]}]'
-  );
-  lines.push('```');
-  lines.push('');
-  lines.push(
-    `**Pattern:** ${StreamBlock.THINKING} → tool call → ${StreamBlock.THINKING} → tool call → answer text → ${StreamBlock.SOURCES}`
-  );
+Purpose: ${block.purpose}
+
+Guidelines:
+${block.guidelines.map((g) => `- ${g}`).join('\n')}
+
+Example:
+${block.example}
+`);
+  }
 
   return lines.join('\n');
 }

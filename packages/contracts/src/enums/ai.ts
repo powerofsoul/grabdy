@@ -25,7 +25,7 @@ export type AiRequestSource = (typeof AiRequestSource)[keyof typeof AiRequestSou
 
 /** Fenced code block names the AI can output in chat responses. */
 export const StreamBlock = {
-  THINKING: 'thinking',
+  THINKING: 'reasoning',
   SOURCES: 'sources',
 } as const;
 export type StreamBlock = (typeof StreamBlock)[keyof typeof StreamBlock];

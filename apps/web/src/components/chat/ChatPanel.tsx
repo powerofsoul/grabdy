@@ -47,6 +47,7 @@ interface ChatPanelProps {
   headerHeight?: number;
   initialThreadId?: string;
   onThreadChange?: (threadId: string | undefined) => void;
+  showMobileSidebar?: boolean;
 }
 
 export function ChatPanel({
@@ -55,6 +56,7 @@ export function ChatPanel({
   headerHeight = 48,
   initialThreadId,
   onThreadChange,
+  showMobileSidebar = true,
 }: ChatPanelProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
@@ -144,7 +146,12 @@ export function ChatPanel({
       >
         <ChatEmptyState />
         <Box sx={{ width: '100%', maxWidth: 680 }}>
-          <ChatInput onSend={chatStream.handleSend} isStreaming={chatStream.isStreaming} elevated />
+          <ChatInput
+              onSend={chatStream.handleSend}
+              isStreaming={chatStream.isStreaming}
+              placeholder={chatStream.isUpdatingCanvas ? 'Updating canvas…' : undefined}
+              elevated
+            />
         </Box>
       </Stack>
     ) : (
@@ -154,7 +161,11 @@ export function ChatPanel({
           isLoading={threadManager.isLoadingMessages}
           isStreaming={chatStream.isStreaming}
         />
-        <ChatInput onSend={chatStream.handleSend} isStreaming={chatStream.isStreaming} />
+        <ChatInput
+          onSend={chatStream.handleSend}
+          isStreaming={chatStream.isStreaming}
+          placeholder={chatStream.isUpdatingCanvas ? 'Updating canvas…' : undefined}
+        />
       </Stack>
     );
 
@@ -399,10 +410,14 @@ export function ChatPanel({
           >
             <ClockCounterClockwiseIcon size={18} weight="light" color="currentColor" />
           </IconButton>
-          <Box sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.08) }} />
-          <IconButton size="small" onClick={toggleMobileSidebar} sx={{ color: 'text.primary' }}>
-            <ListIcon size={20} weight="regular" />
-          </IconButton>
+          {showMobileSidebar && (
+            <>
+              <Box sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.08) }} />
+              <IconButton size="small" onClick={toggleMobileSidebar} sx={{ color: 'text.primary' }}>
+                <ListIcon size={20} weight="regular" />
+              </IconButton>
+            </>
+          )}
         </Box>
       ) : (
         /* Desktop: standard top bar */

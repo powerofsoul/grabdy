@@ -27,7 +27,7 @@ export function useChatStream({
   const { selectedOrgId } = useAuth();
 
   const [isStreaming, setIsStreaming] = useState(false);
-  const [canvasUpdatesInFlight, setCanvasUpdatesInFlight] = useState(0);
+  const [hasCanvasWork, setHasCanvasWork] = useState(false);
 
   const handleSend = useCallback(
     async (userMessage: string) => {
@@ -35,6 +35,7 @@ export function useChatStream({
 
       setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
       setIsStreaming(true);
+      setHasCanvasWork(false);
 
       try {
         const threadId = await ensureThread();
@@ -69,11 +70,10 @@ export function useChatStream({
               }
             },
             onTextDone: () => {
-              // Text answer is complete — unlock input, canvas updates continue in background
-              setIsStreaming(false);
-              setCanvasUpdatesInFlight((n) => n + 1);
+              // Text answer is complete — parse blocks and finalize message,
+              // but keep isStreaming true until the full stream ends (canvas ops may follow)
+              setHasCanvasWork(true);
 
-              // Parse blocks and finalize the message text
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
@@ -119,7 +119,7 @@ export function useChatStream({
                 return updated;
               });
 
-              setCanvasUpdatesInFlight((n) => Math.max(0, n - 1));
+              setHasCanvasWork(false);
               fetchThreads();
             },
             onError: (error) => {
@@ -134,6 +134,7 @@ export function useChatStream({
         toast.error(err instanceof Error ? err.message : 'Failed to send message');
       } finally {
         setIsStreaming(false);
+        setHasCanvasWork(false);
       }
     },
     [
@@ -149,7 +150,7 @@ export function useChatStream({
 
   return {
     isStreaming,
-    isUpdatingCanvas: canvasUpdatesInFlight > 0,
+    isUpdatingCanvas: hasCanvasWork,
     handleSend,
   };
 }

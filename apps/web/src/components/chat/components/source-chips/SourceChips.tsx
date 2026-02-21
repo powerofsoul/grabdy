@@ -36,13 +36,15 @@ export function SourceChips({ sources }: SourceChipsProps) {
               alignItems: 'center',
               gap: 0.5,
               cursor: 'pointer',
+              minWidth: 0,
+              maxWidth: '100%',
               '&:hover .source-label': { textDecoration: 'underline' },
             }}
           >
             {group.icon}
             <Typography
               className="source-label"
-              sx={{ fontSize: '0.7rem', color: 'text.disabled', lineHeight: 1 }}
+              sx={{ fontSize: '0.7rem', color: 'text.disabled', lineHeight: 1, minWidth: 0 }}
               noWrap
             >
               {group.label}

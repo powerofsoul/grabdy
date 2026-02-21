@@ -168,7 +168,7 @@ export const MessageRow = memo(
 
         {/* Sources */}
         {!isUser && sources && sources.length > 0 && (
-          <Box sx={{ mt: 0.75, pl: 2 }}>
+          <Box sx={{ mt: 0.75, pl: 2, minWidth: 0, overflow: 'hidden' }}>
             <SourceChips sources={sources} />
           </Box>
         )}

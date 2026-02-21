@@ -573,10 +573,11 @@ export function Canvas(props: CanvasProps) {
         >
           <Box
             sx={{
-              width: 8,
-              height: 8,
+              width: 12,
+              height: 12,
               borderRadius: '50%',
-              bgcolor: 'primary.main',
+              bgcolor: 'success.main',
+              boxShadow: (t) => `0 0 8px ${t.palette.success.main}`,
               animation: 'canvasPulse 1.4s ease-in-out infinite',
               '@keyframes canvasPulse': {
                 '0%, 100%': { opacity: 1, transform: 'scale(1)' },
