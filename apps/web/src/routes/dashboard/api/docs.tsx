@@ -33,6 +33,21 @@ function ApiDocsPage() {
             '--scalar-font': '"Inter", "SF Pro", system-ui, sans-serif',
             '--scalar-font-code': '"Geist Mono", "JetBrains Mono", monospace',
 
+            // Sync background with theme
+            '--scalar-background-1': theme.palette.background.default,
+            '--scalar-background-2': theme.palette.background.paper,
+            '--scalar-background-3': isDark
+              ? theme.palette.grey[800]
+              : theme.palette.grey[100],
+            '--scalar-sidebar-background-1': theme.palette.background.default,
+            '--scalar-sidebar-color-1': theme.palette.text.primary,
+            '--scalar-sidebar-color-2': theme.palette.text.secondary,
+            '--scalar-sidebar-search-background': isDark
+              ? theme.palette.grey[100]
+              : theme.palette.grey[200],
+            '--scalar-sidebar-search-border-color': theme.palette.divider,
+            '--scalar-sidebar-search-color': theme.palette.text.primary,
+
             // No border radius
             '--scalar-radius': '0px',
             '--scalar-radius-lg': '0px',

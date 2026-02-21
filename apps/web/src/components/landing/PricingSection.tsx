@@ -45,7 +45,7 @@ const TIERS = [
     description: 'Dedicated infrastructure, custom integrations, and SLA.',
     cta: 'Talk to us',
     ctaVariant: 'outlined',
-    comingSoon: false,
+    comingSoon: true,
     highlighted: false,
   },
 ] satisfies ReadonlyArray<Tier>;

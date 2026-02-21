@@ -371,7 +371,7 @@ export function ChatPanel({
             height: 44,
             flexShrink: 0,
             borderBottom: '1px solid',
-            borderColor: alpha(ct, 0.06),
+            borderColor: 'divider',
             gap: 0.5,
           }}
         >
@@ -430,7 +430,7 @@ export function ChatPanel({
             height: headerHeight,
             flexShrink: 0,
             borderBottom: '1px solid',
-            borderColor: alpha(ct, 0.06),
+            borderColor: 'divider',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>

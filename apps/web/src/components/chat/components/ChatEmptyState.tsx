@@ -35,7 +35,7 @@ export function ChatEmptyState() {
 
       <Typography variant="h4">Your documents await</Typography>
       <Typography sx={{ color: alpha(ct, 0.4), fontSize: 14 }}>
-        Ask anything — they don&apos;t bite.
+        Ask anything. They don&apos;t bite.
       </Typography>
     </Box>
   );

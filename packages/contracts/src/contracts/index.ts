@@ -6,6 +6,7 @@ import { authContract } from './auth.contract.js';
 import { chatContract, streamChatBodySchema } from './chat.contract.js';
 import { collectionsContract } from './collections.contract.js';
 import { dataSourcesContract } from './data-sources.contract.js';
+import { demoRequestContract } from './demo-request.contract.js';
 import { integrationsContract } from './integrations.contract.js';
 import { orgsContract } from './orgs.contract.js';
 import { publicApiContract } from './public-api.contract.js';
@@ -20,6 +21,7 @@ export const contract = c.router({
   orgs: orgsContract,
   collections: collectionsContract,
   dataSources: dataSourcesContract,
+  demoRequest: demoRequestContract,
   integrations: integrationsContract,
   chat: chatContract,
   sharedChats: sharedChatsContract,
@@ -34,6 +36,7 @@ export {
   chatContract,
   collectionsContract,
   dataSourcesContract,
+  demoRequestContract,
   integrationsContract,
   orgsContract,
   publicApiContract,
@@ -41,6 +44,8 @@ export {
   streamChatBodySchema,
   usersContract,
 };
+
+export { demoRequestBodySchema } from './demo-request.contract.js';
 
 export { type ChatSource, chatSourceSchema } from './chat.contract.js';
 export {

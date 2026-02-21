@@ -35,6 +35,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
+import { DemoRequestModule } from './modules/demo-request/demo-request.module';
 import { EmailModule } from './modules/email/email.module';
 import { HealthModule } from './modules/health/health.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
@@ -97,6 +98,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     CollectionsModule,
     DataSourcesModule,
+    DemoRequestModule,
     ChatModule,
     ApiKeysModule,
     IntegrationsModule,

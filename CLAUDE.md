@@ -1,5 +1,7 @@
 # grabdy.com
 
+**NEVER use em dashes (—) anywhere in copy, code, or UI text. Use commas, periods, or rephrase instead.**
+
 SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it contextually via REST API and chatbot. Multi-tenant organizations, packed UUID IDs, vector search, and type-safe APIs.
 
 ## Project Structure

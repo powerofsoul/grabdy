@@ -6,12 +6,19 @@ interface LogoProps {
 }
 
 export function Logo({ size = 'md' }: LogoProps) {
-  const fontSize = size === 'sm' ? 20 : size === 'lg' ? 28 : 24;
+  const fontSize = size === 'sm' ? 16 : size === 'lg' ? 22 : 18;
 
   return (
     <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-      <Typography variant="h5" sx={{ fontSize, color: 'text.primary' }}>
-        grabdy.
+      <Typography
+        sx={{
+          fontSize,
+          fontWeight: 700,
+          color: 'text.primary',
+          letterSpacing: '-0.03em',
+        }}
+      >
+        grabdy
       </Typography>
     </Link>
   );

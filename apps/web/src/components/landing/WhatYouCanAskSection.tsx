@@ -1,19 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Box, Container, Typography } from '@mui/material';
+import { alpha, Box, Container, IconButton, Typography, useTheme } from '@mui/material';
+import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import {
-  BRAND_LOGOS,
   GmailLogo,
   GoogleDriveLogo,
   LinearLogo,
   NotionLogo,
   SlackLogo,
 } from './IntegrationLogos';
-
-import { FONT_SERIF } from '@/theme';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -61,9 +59,87 @@ const QUERY_CARDS = [
   },
 ] satisfies ReadonlyArray<QueryCard>;
 
-export function WhatYouCanAskSection() {
-  const sectionRef = useRef<HTMLDivElement>(null);
+const AUTO_ROTATE_MS = 5000;
 
+export function WhatYouCanAskSection() {
+  const theme = useTheme();
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const ct = theme.palette.text.primary;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [showSources, setShowSources] = useState(false);
+  const autoRotateRef = useRef<ReturnType<typeof setTimeout>>();
+  const userInteractedRef = useRef(false);
+  const isInViewRef = useRef(false);
+
+  const showCard = useCallback((idx: number) => {
+    setActiveIndex(idx);
+    setShowAnswer(false);
+    setShowSources(false);
+
+    setTimeout(() => setShowSources(true), 200);
+    setTimeout(() => setShowAnswer(true), 400);
+  }, []);
+
+  const scheduleNext = useCallback((idx: number) => {
+    clearTimeout(autoRotateRef.current);
+    autoRotateRef.current = setTimeout(() => {
+      const next = (idx + 1) % QUERY_CARDS.length;
+      showCard(next);
+      scheduleNext(next);
+    }, AUTO_ROTATE_MS);
+  }, [showCard]);
+
+  // Auto-rotation on viewport entry
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      showCard(0);
+      return;
+    }
+
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isInViewRef.current) {
+          isInViewRef.current = true;
+          showCard(0);
+          scheduleNext(0);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(section);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(autoRotateRef.current);
+    };
+  }, [showCard, scheduleNext]);
+
+  const goTo = useCallback((idx: number) => {
+    userInteractedRef.current = true;
+    clearTimeout(autoRotateRef.current);
+    showCard(idx);
+    // Resume auto-rotation after user interaction
+    autoRotateRef.current = setTimeout(() => {
+      const next = (idx + 1) % QUERY_CARDS.length;
+      showCard(next);
+      scheduleNext(next);
+    }, AUTO_ROTATE_MS * 2);
+  }, [showCard, scheduleNext]);
+
+  const goNext = useCallback(() => {
+    goTo((activeIndex + 1) % QUERY_CARDS.length);
+  }, [activeIndex, goTo]);
+
+  const goPrev = useCallback(() => {
+    goTo((activeIndex - 1 + QUERY_CARDS.length) % QUERY_CARDS.length);
+  }, [activeIndex, goTo]);
+
+  // Section entrance animation
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion || !sectionRef.current) return;
@@ -74,16 +150,13 @@ export function WhatYouCanAskSection() {
       });
 
       tl.from('.wyca-title', { y: 30, opacity: 0, duration: 0.6 });
-      tl.from(
-        '.wyca-card',
-        { y: 25, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
-        '-=0.3'
-      );
-      tl.from('.wyca-logos', { opacity: 0, duration: 0.5 }, '-=0.2');
+      tl.from('.wyca-showcase', { y: 25, opacity: 0, duration: 0.5, ease: 'power2.out' }, '-=0.3');
     }, sectionRef);
 
     return () => ctx.revert();
   }, []);
+
+  const activeCard = QUERY_CARDS[activeIndex];
 
   return (
     <Box
@@ -101,110 +174,151 @@ export function WhatYouCanAskSection() {
           sx={{
             textAlign: 'center',
             mb: { xs: 5, md: 7 },
-            fontSize: { xs: '1.75rem', md: '2.5rem' },
+            fontSize: { xs: '1.75rem', md: '2.75rem' },
             maxWidth: 700,
             mx: 'auto',
           }}
         >
-          Questions your team asks every day — answered in seconds.
+          Questions your team asks every day, answered in seconds.
         </Typography>
 
-        {/* Query cards — 2x2 grid */}
+        {/* Chat-style showcase */}
         <Box
+          className="wyca-showcase"
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: { xs: 2, md: 2.5 },
-            maxWidth: 900,
+            maxWidth: 600,
             mx: 'auto',
-            mb: { xs: 5, md: 7 },
+            mb: { xs: 4, md: 5 },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            minHeight: 220,
           }}
         >
-          {QUERY_CARDS.map((card) => (
+          {/* User message bubble */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Box
-              key={card.question}
-              className="wyca-card"
               sx={{
-                p: 3,
-                borderRadius: 2,
-                borderBottom: '1px solid',
-                borderBottomColor: 'divider',
-                bgcolor: 'transparent',
+                maxWidth: '80%',
+                px: 2.5,
+                py: 1.5,
+                borderRadius: '18px 18px 4px 18px',
+                bgcolor: alpha(ct, 0.08),
+                minHeight: 44,
               }}
             >
               <Typography
                 sx={{
-                  fontFamily: FONT_SERIF,
-                  fontWeight: 500,
-                  fontSize: '1rem',
-                  mb: 1.5,
+                  fontSize: { xs: '0.95rem', md: '1.05rem' },
                   lineHeight: 1.5,
                   color: 'text.primary',
-                  fontStyle: 'italic',
                 }}
               >
-                {card.question}
+                {activeCard.question}
               </Typography>
+            </Box>
+          </Box>
 
-              {/* Source icons */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                {card.sources.map((src) => (
-                  <Box key={src.name} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <src.Logo size={16} />
+          {/* Assistant response bubble */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-start',
+              opacity: showAnswer ? 1 : 0,
+              transform: showAnswer ? 'translateY(0)' : 'translateY(12px)',
+              transition: 'all 0.4s ease',
+            }}
+          >
+            <Box
+              sx={{
+                maxWidth: '85%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
+              }}
+            >
+              <Box
+                sx={{
+                  px: 2.5,
+                  py: 1.5,
+                  borderRadius: '18px 18px 18px 4px',
+                  bgcolor: alpha(ct, 0.04),
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: { xs: '0.9rem', md: '0.95rem' },
+                    color: 'text.secondary',
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {activeCard.preview}
+                </Typography>
+              </Box>
+
+              {/* Source pills */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  pl: 1,
+                  opacity: showSources ? 1 : 0,
+                  transform: showSources ? 'translateY(0)' : 'translateY(6px)',
+                  transition: 'all 0.3s ease 0.1s',
+                }}
+              >
+                {activeCard.sources.map((src) => (
+                  <Box
+                    key={src.name}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: 1,
+                      bgcolor: alpha(ct, 0.04),
+                    }}
+                  >
+                    <src.Logo size={14} />
                     <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
                       {src.name}
                     </Typography>
                   </Box>
                 ))}
               </Box>
-
-              {/* Preview answer */}
-              <Typography
-                sx={{
-                  fontSize: '0.82rem',
-                  color: 'text.secondary',
-                  lineHeight: 1.6,
-                  fontStyle: 'italic',
-                }}
-              >
-                {card.preview}
-              </Typography>
             </Box>
-          ))}
+          </Box>
         </Box>
 
-        {/* Integration logo strip */}
-        <Box
-          className="wyca-logos"
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 1.5,
-          }}
-        >
-          <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-            {BRAND_LOGOS.map((brand) => (
-              <Box
-                key={brand.name}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  opacity: 0.7,
-                }}
-              >
-                <brand.Logo size={28} />
-                <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-                  {brand.name}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-          <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary' }}>
-            Syncs with your stack in minutes
-          </Typography>
+        {/* Navigation: arrows + dots */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5 }}>
+          <IconButton onClick={goPrev} size="small" sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}>
+            <CaretLeftIcon size={16} weight="light" />
+          </IconButton>
+
+          {QUERY_CARDS.map((_, i) => (
+            <Box
+              key={i}
+              onClick={() => goTo(i)}
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: i === activeIndex ? alpha(ct, 0.6) : alpha(ct, 0.12),
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                '&:hover': { bgcolor: alpha(ct, 0.3) },
+              }}
+            />
+          ))}
+
+          <IconButton onClick={goNext} size="small" sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}>
+            <CaretRightIcon size={16} weight="light" />
+          </IconButton>
         </Box>
       </Container>
     </Box>

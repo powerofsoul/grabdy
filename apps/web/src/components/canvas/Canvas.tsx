@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type NonDbId, nonDbIdSchema, packNonDbId } from '@grabdy/common';
 import type { CanvasEdge, Card } from '@grabdy/contracts';
 import { alpha, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { ArrowsInIcon, ArrowsOutIcon, BrainIcon } from '@phosphor-icons/react';
+import { ArrowsInIcon, ArrowsOutIcon, SparkleIcon } from '@phosphor-icons/react';
 import {
   Background,
   BackgroundVariant,
@@ -497,7 +497,7 @@ export function Canvas(props: CanvasProps) {
                 textAlign: 'center',
               }}
             >
-              <BrainIcon size={48} weight="light" color={alpha(theme.palette.text.primary, 0.12)} />
+              <SparkleIcon size={48} weight="light" color={alpha(theme.palette.text.primary, 0.12)} />
               <Typography
                 sx={{
                   fontSize: 16,
@@ -506,7 +506,7 @@ export function Canvas(props: CanvasProps) {
                   mt: 1,
                 }}
               >
-                Nothing here yet
+                Your canvas
               </Typography>
               {!readOnly && (
                 <Typography
@@ -516,7 +516,7 @@ export function Canvas(props: CanvasProps) {
                     lineHeight: 1.6,
                   }}
                 >
-                  Ask something in the chat and cards will appear here
+                  Ask a question and results will appear here
                 </Typography>
               )}
             </Box>

@@ -40,7 +40,32 @@ export function SlackBotSection() {
         scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
       });
       tl.from('.slack-heading', { y: 30, opacity: 0, duration: 0.6, ease: 'power2.out' });
-      tl.from('.slack-window', { y: 30, opacity: 0, duration: 0.5, ease: 'power2.out' }, '-=0.3');
+      // 3D window entrance — lays flat then stands up
+      tl.from(
+        '.slack-window',
+        {
+          y: 40,
+          opacity: 0,
+          rotateX: 4,
+          transformPerspective: 1000,
+          transformOrigin: 'center bottom',
+          duration: 0.7,
+          ease: 'power3.out',
+        },
+        '-=0.3'
+      );
+      // Stagger in the message elements
+      tl.from(
+        '.slack-msg',
+        { y: 15, opacity: 0, duration: 0.4, stagger: 0.15, ease: 'power2.out' },
+        '-=0.3'
+      );
+      // Sources appear last
+      tl.from(
+        '.slack-source',
+        { x: -10, opacity: 0, duration: 0.3, stagger: 0.08, ease: 'power2.out' },
+        '-=0.2'
+      );
     }, sectionRef);
 
     return () => ctx.revert();
@@ -168,6 +193,7 @@ export function SlackBotSection() {
             <Box sx={{ px: { xs: 2, md: 2.5 }, py: 2, flex: 1 }}>
               {/* User message */}
               <Box
+                className="slack-msg"
                 sx={{
                   display: 'flex',
                   gap: 1.25,
@@ -251,6 +277,7 @@ export function SlackBotSection() {
 
               {/* Bot message */}
               <Box
+                className="slack-msg"
                 sx={{
                   display: 'flex',
                   gap: 1.25,
@@ -351,6 +378,7 @@ export function SlackBotSection() {
                     ].map((s) => (
                       <Typography
                         key={s.name}
+                        className="slack-source"
                         sx={{
                           fontFamily: FONT_SLACK,
                           fontSize: '0.85rem',

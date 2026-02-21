@@ -12,6 +12,10 @@ export class NotificationService {
     this.sendSlack(`🎉 New signup: *${name}* (${email}) via ${method}`);
   }
 
+  notifyDemoRequest(name: string, company: string, email: string): void {
+    this.sendSlack(`📅 Demo request: *${name}* from *${company}* (${email})`);
+  }
+
   private sendSlack(text: string): void {
     if (!this.slackWebhookUrl) return;
 

@@ -1,94 +1,162 @@
 import { useEffect, useRef } from 'react';
 
 import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
-import { FileTextIcon, LightningIcon, PuzzlePieceIcon, SparkleIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+import {
+  GmailLogo,
+  GoogleDriveLogo,
+  LinearLogo,
+  NotionLogo,
+  SlackLogo,
+} from './IntegrationLogos';
+
 gsap.registerPlugin(ScrollTrigger);
 
-interface Feature {
-  icon: typeof LightningIcon;
-  title: string;
-  description: string;
-  proof: string;
-  colorKey: 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success';
+type LogoComponent = typeof SlackLogo;
+
+interface UseCase {
+  emoji: string;
+  role: string;
+  question: string;
+  answer: string;
+  sources: ReadonlyArray<{ Logo: LogoComponent; label: string }>;
 }
 
-const HERO_FEATURES = [
+const USE_CASES = [
   {
-    icon: FileTextIcon,
-    title: 'Cites real sources',
-    description:
-      'Every response links back to the exact file, page, and passage. No hallucinated answers.',
-    proof:
-      'Searching manually: hope for the best. Grabdy: direct link to file, page, and paragraph.',
-    colorKey: 'primary',
+    emoji: '\uD83D\uDCC9',
+    role: 'Sales',
+    question: 'What discount did we give Acme Corp last time?',
+    answer:
+      '15% multi-year discount on Enterprise, approved by VP Sales on March 12. Price-lock through 2026.',
+    sources: [
+      { Logo: GoogleDriveLogo, label: 'acme-renewal.pdf' },
+      { Logo: SlackLogo, label: '#sales-deals' },
+    ],
   },
   {
-    icon: LightningIcon,
-    title: 'Sub-second answers',
-    description: 'Fast enough that people use it instead of asking a teammate.',
-    proof: 'Asking a teammate: 4 hours. Grabdy: 23ms.',
-    colorKey: 'warning',
+    emoji: '\uD83D\uDEE0\uFE0F',
+    role: 'Engineering',
+    question: 'How do we validate JWT tokens?',
+    answer:
+      'AuthGuard extracts the Bearer token, verifies with RS256 via JWKS endpoint, attaches decoded user to request context.',
+    sources: [
+      { Logo: NotionLogo, label: 'Auth Architecture' },
+      { Logo: SlackLogo, label: '#backend' },
+    ],
   },
-] satisfies ReadonlyArray<Feature>;
+  {
+    emoji: '\uD83D\uDC4B',
+    role: 'New hires',
+    question: 'How do I deploy to production?',
+    answer:
+      'Merge to main triggers CI. Deploy captain approves Vercel preview, then promotes to prod. Rollback via git revert.',
+    sources: [
+      { Logo: GoogleDriveLogo, label: 'deploy-runbook.md' },
+      { Logo: LinearLogo, label: 'ENG-102' },
+    ],
+  },
+  {
+    emoji: '\uD83D\uDCAC',
+    role: 'Support',
+    question: 'What are customers saying about the new dashboard?',
+    answer:
+      'Top requests: faster load times (14x), exportable charts (9x), dark mode (7x). NPS dropped 3 points post-rollout.',
+    sources: [
+      { Logo: GmailLogo, label: 'Q1 feedback' },
+      { Logo: SlackLogo, label: '#customer-feedback' },
+    ],
+  },
+] satisfies ReadonlyArray<UseCase>;
 
-const SECONDARY_FEATURES = [
-  {
-    icon: PuzzlePieceIcon,
-    title: 'Works across your whole stack',
-    description: 'Searches Slack, Drive, Linear, Notion at once.',
-    proof: 'One query searches Slack, Drive, Linear, Notion, Confluence, and Gmail at once.',
-    colorKey: 'info',
-  },
-  {
-    icon: SparkleIcon,
-    title: 'Remembers context',
-    description: 'Follow-up questions build on previous answers.',
-    proof: 'Ask follow-ups like you would a colleague — no re-explaining.',
-    colorKey: 'success',
-  },
-] satisfies ReadonlyArray<Feature>;
-
-function FeatureCard({ feature, large }: { feature: Feature; large?: boolean }) {
+function UseCaseCard({ useCase }: { useCase: UseCase }) {
   const theme = useTheme();
-  const Icon = feature.icon;
   const ct = theme.palette.text.primary;
 
   return (
     <Box
-      className={large ? 'feature-hero-card' : 'feature-secondary-card'}
+      className="usecase-card"
       sx={{
-        p: large ? { xs: 3, md: 4 } : 3,
-        border: '1px solid',
-        borderColor: 'grey.900',
-        borderTop: `2px solid ${ct}`,
-        bgcolor: 'transparent',
+        p: { xs: 2.5, md: 3 },
+        borderRadius: 3,
+        bgcolor: alpha(ct, 0.03),
+        transition: 'background-color 0.2s ease',
+        '&:hover': {
+          bgcolor: alpha(ct, 0.05),
+        },
       }}
     >
-      <Box sx={{ mb: 2, color: 'text.primary' }}>
-        <Icon size={large ? 26 : 22} weight="light" color="currentColor" />
+      {/* Role badge */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Typography sx={{ fontSize: '1.1rem', lineHeight: 1 }}>{useCase.emoji}</Typography>
+        <Typography
+          sx={{
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            color: 'text.secondary',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
+          {useCase.role}
+        </Typography>
       </Box>
-      <Typography variant={large ? 'h5' : 'h6'} sx={{ mb: 1 }}>
-        {feature.title}
-      </Typography>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ lineHeight: 1.6, fontSize: '0.85rem', mb: 1.5 }}
-      >
-        {feature.description}
-      </Typography>
+
+      {/* Question */}
       <Typography
         sx={{
-          fontSize: '0.75rem',
+          fontSize: { xs: '0.95rem', md: '1.05rem' },
           fontWeight: 600,
-          color: alpha(ct, 0.5),
+          color: 'text.primary',
+          lineHeight: 1.4,
+          mb: 1.5,
         }}
       >
-        {feature.proof}
+        {useCase.question}
       </Typography>
+
+      {/* Answer */}
+      <Typography
+        sx={{
+          fontSize: '0.88rem',
+          color: 'text.secondary',
+          lineHeight: 1.7,
+          mb: 2,
+        }}
+      >
+        {useCase.answer}
+      </Typography>
+
+      {/* Sources */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        {useCase.sources.map((s) => (
+          <Box
+            key={s.label}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.5,
+              px: 1,
+              py: 0.375,
+              borderRadius: 1,
+              bgcolor: alpha(ct, 0.05),
+            }}
+          >
+            <s.Logo size={12} />
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                color: 'text.secondary',
+                lineHeight: 1.3,
+              }}
+            >
+              {s.label}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
     </Box>
   );
 }
@@ -106,14 +174,16 @@ export function FeaturesSection() {
       });
 
       tl.from('.features-title', { y: 30, opacity: 0, duration: 0.6 });
+      tl.from('.features-subtitle', { y: 20, opacity: 0, duration: 0.5 }, '-=0.3');
       tl.from(
-        '.feature-hero-card',
-        { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
-        '-=0.3'
-      );
-      tl.from(
-        '.feature-secondary-card',
-        { y: 25, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
+        '.usecase-card',
+        {
+          y: 30,
+          opacity: 0,
+          duration: 0.5,
+          stagger: 0.1,
+          ease: 'power2.out',
+        },
         '-=0.2'
       );
     }, sectionRef);
@@ -128,49 +198,60 @@ export function FeaturesSection() {
       sx={{
         py: { xs: 10, md: 14 },
         bgcolor: 'background.default',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
       <Container maxWidth="lg">
-        <Typography
-          className="features-title"
-          variant="h2"
-          sx={{
-            textAlign: 'center',
-            mb: { xs: 5, md: 7 },
-            fontSize: { xs: '2rem', md: '2.5rem' },
-          }}
-        >
-          Why Grabdy.
-        </Typography>
-
-        {/* 2 hero cards — stacked, full width */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: { xs: 2, md: 2.5 },
-            maxWidth: 900,
-            mx: 'auto',
-            mb: { xs: 2, md: 2.5 },
-          }}
-        >
-          {HERO_FEATURES.map((feature) => (
-            <FeatureCard key={feature.title} feature={feature} large />
-          ))}
+        <Box sx={{ textAlign: 'center', mb: { xs: 5, md: 7 } }}>
+          <Typography
+            className="features-title"
+            variant="overline"
+            sx={{
+              mb: 1.5,
+              display: 'block',
+              color: 'text.secondary',
+            }}
+          >
+            Use cases
+          </Typography>
+          <Typography
+            className="features-title"
+            variant="h2"
+            sx={{
+              mb: 2,
+              fontSize: { xs: '1.75rem', md: '2.25rem' },
+              fontWeight: 600,
+            }}
+          >
+            One question. Cited answer.
+          </Typography>
+          <Typography
+            className="features-subtitle"
+            sx={{
+              color: 'text.secondary',
+              fontSize: { xs: '0.9rem', md: '1rem' },
+              lineHeight: 1.6,
+              maxWidth: 520,
+              mx: 'auto',
+            }}
+          >
+            Every team asks questions across scattered tools. Grabdy finds the answer and shows you
+            exactly where it came from.
+          </Typography>
         </Box>
 
-        {/* 2 secondary cards — side by side */}
         <Box
           sx={{
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: { xs: 2, md: 2.5 },
-            maxWidth: 900,
+            gap: { xs: 2, md: 2 },
+            maxWidth: 860,
             mx: 'auto',
           }}
         >
-          {SECONDARY_FEATURES.map((feature) => (
-            <FeatureCard key={feature.title} feature={feature} />
+          {USE_CASES.map((uc) => (
+            <UseCaseCard key={uc.role} useCase={uc} />
           ))}
         </Box>
       </Container>

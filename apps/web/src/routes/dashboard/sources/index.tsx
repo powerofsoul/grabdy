@@ -160,17 +160,17 @@ function CollectionsPage() {
                 sx={{
                   fontWeight: 500,
                   fontSize: '0.9rem',
-                  flex: 1,
+                  flexShrink: 0,
                 }}
               >
                 {collection.name}
               </Typography>
 
-              {/* Dotted leader + counts */}
+              {/* Dotted leader */}
               <Box
                 sx={{
                   flex: 1,
-                  borderBottom: `1px dotted ${alpha(ct, 0.15)}`,
+                  borderBottom: `1px dashed ${alpha(ct, 0.2)}`,
                   mb: '0.3em',
                   minWidth: 40,
                 }}

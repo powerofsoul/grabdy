@@ -1,205 +1,193 @@
-import type { CardSource, HeroCardId } from './types';
+import { nonDbIdSchema } from '@grabdy/common';
+import type { Card } from '@grabdy/contracts';
+import type { Node, Edge } from '@xyflow/react';
 
-export const TURNS = [
+import type { ChatMessage } from '@/components/chat/types';
+
+import type { DemoSource } from './types';
+
+// ── ID helpers for demo data ──
+// Construct valid packed UUIDs with correct entity type bytes.
+// Layout: org(4B) + timestamp(6B) + entity_type(1B) + random(5B)
+// Byte 10 (hex chars 20-21): CanvasCard=0x31, CanvasEdge=0x32, CanvasComponent=0x33
+const parseCardId = nonDbIdSchema('CanvasCard').parse;
+const parseComponentId = nonDbIdSchema('CanvasComponent').parse;
+const parseEdgeId = nonDbIdSchema('CanvasEdge').parse;
+
+const cardId = (n: number) => parseCardId(`00000001-0000-0000-0000-31000000000${n}`);
+const compId = (n: number) => parseComponentId(`00000001-0000-0000-0000-33000000000${n}`);
+const edgeId = (n: number) => parseEdgeId(`00000001-0000-0000-0000-32000000000${n}`);
+
+// ── Chat demo data ──
+
+export const DEMO_MESSAGES = [
   {
-    user: 'Analyze the uploaded market research and map out the competitive landscape',
-    thinking: [
-      'Scanning Google Drive (3 files)...',
-      'Reading #market-research on Slack...',
-      'Cross-referencing Linear PRD-142...',
-      'Extracting from Internal Review.docx...',
-    ],
-    answer:
-      'Based on Market Analysis 2024.pdf from Drive, the TAM is $47B with $12B serviceable. From Competitor Data.xlsx + Linear PRD-142, you rank 2nd among 4 key players. SWOT pulled from Slack #strategy-discussion and Internal Review.docx.',
-    sources: ['Google Drive (3 files)', 'Slack (2 channels)', 'Linear (1 issue)'],
-    responseMs: 2340,
+    id: 'demo-user-1',
+    role: 'user',
+    content: 'What was decided about the Q2 pricing changes?',
   },
   {
-    user: 'Break down our metrics and identify the best growth channels',
-    thinking: [
-      'Parsing Financial Report Q4.pdf from Drive...',
-      'Analyzing Marketing Data.csv...',
-      'Reading Slack #growth-team history...',
+    id: 'demo-assistant-1',
+    role: 'assistant',
+    content:
+      'Based on the Q2 Pricing Review and the discussion in #pricing-team, enterprise tier pricing increases from **$89/seat to $99/seat** effective July 1st. Existing annual contracts are grandfathered at the current rate through renewal. A **15% volume discount** now applies to teams over 200 seats.',
+    thinkingTexts: [
+      'Scanning Q2-pricing-review.pdf...',
+      'Reading #pricing-team discussion...',
+      'Cross-referencing PROD-892...',
     ],
-    answer:
-      'From Financial Report Q4.pdf: revenue $9.6M, +23% YoY, NRR 124%. Marketing Data.csv shows organic content drives 45% of new ARR. Slack #ops-alerts flags the 4.2-month enterprise sales cycle as a risk.',
-    sources: ['Google Drive (2 files)', 'Slack (2 channels)', 'Linear (KPI-Dashboard)'],
-    responseMs: 1870,
+    durationMs: 2300,
+  },
+] satisfies ChatMessage[];
+
+export const DEMO_SOURCES = [
+  { type: 'PDF', name: 'Q2-pricing-review.pdf', detail: 'page 3' },
+  { type: 'SLACK', name: '#pricing-team', detail: 'discussion' },
+  { type: 'LINEAR', name: 'PROD-892', detail: '' },
+] satisfies DemoSource[];
+
+// ── Canvas demo data (real Card types for ReactFlow) ──
+
+const DEMO_CARD_DEFS = [
+  {
+    id: cardId(1),
+    position: { x: 0, y: 0 },
+    width: 360,
+    height: 140,
+    title: 'Pricing Summary',
+    component: {
+      id: compId(1),
+      type: 'key_value',
+      data: {
+        pairs: [
+          { key: 'Enterprise tier', value: '$99/seat/mo' },
+          { key: 'Effective date', value: 'July 1, 2025' },
+          { key: 'Volume discount', value: '15% (200+ seats)' },
+        ],
+      },
+      citations: [],
+    },
+    sources: [],
+    metadata: { createdBy: 'ai', locked: false, tags: [] },
   },
   {
-    user: 'What are your strategic recommendations? Build me a 90-day plan.',
-    thinking: [
-      'Synthesizing across all sources...',
-      'Ranking opportunities by confidence...',
-      'Mapping to Linear Sprint 24 Plan...',
-    ],
-    answer:
-      'Synthesizing all sources — three priorities: (1) enterprise SDR team (Financial Report Q4 supports the ROI case), (2) content-led growth per Marketing Data channel analysis, (3) partner program aligned with Linear Sprint 24 roadmap.',
-    sources: ['Google Drive (5 files)', 'Slack (3 channels)', 'Linear (4 issues)'],
-    responseMs: 3120,
+    id: cardId(2),
+    position: { x: 420, y: 0 },
+    width: 360,
+    height: 140,
+    title: 'Tier Comparison',
+    component: {
+      id: compId(2),
+      type: 'table',
+      data: {
+        columns: [
+          { key: 'tier', label: 'Tier' },
+          { key: 'price', label: 'Price' },
+        ],
+        rows: [
+          { tier: 'Starter', price: '$29/seat' },
+          { tier: 'Pro', price: '$59/seat' },
+          { tier: 'Enterprise', price: '$99/seat' },
+        ],
+      },
+      citations: [],
+    },
+    sources: [],
+    metadata: { createdBy: 'ai', locked: false, tags: [] },
   },
-] satisfies Array<{
-  user: string;
-  thinking: string[];
-  answer: string;
-  sources: string[];
-  responseMs: number;
-}>;
+  {
+    id: cardId(3),
+    position: { x: 0, y: 220 },
+    width: 360,
+    height: 140,
+    title: 'Revenue Impact',
+    component: {
+      id: compId(3),
+      type: 'kpi_row',
+      data: {
+        metrics: [
+          { label: 'Projected ARR', value: '+$2.4M', trend: { direction: 'up', value: '+27%' } },
+          { label: 'Enterprise seats', value: '4,200' },
+          { label: 'Grandfathered', value: '~30%' },
+        ],
+      },
+      citations: [],
+    },
+    sources: [],
+    metadata: { createdBy: 'ai', locked: false, tags: [] },
+  },
+  {
+    id: cardId(4),
+    position: { x: 420, y: 220 },
+    width: 360,
+    height: 160,
+    title: 'Action Items',
+    component: {
+      id: compId(4),
+      type: 'checklist',
+      data: {
+        items: [
+          { label: 'Notify existing enterprise customers', checked: false },
+          { label: 'Update pricing page by June 15', checked: false },
+          { label: 'Brief sales team on new tiers', checked: true },
+          { label: 'Set up grandfathering logic', checked: false },
+        ],
+      },
+      citations: [],
+    },
+    sources: [],
+    metadata: { createdBy: 'ai', locked: false, tags: [] },
+  },
+] satisfies Card[];
 
-export const INIT_POS: Record<HeroCardId, { x: number; y: number }> = {
-  hub: { x: 500, y: 15 },
-  market: { x: 20, y: 120 },
-  competitors: { x: 420, y: 120 },
-  swot: { x: 850, y: 120 },
-  metrics: { x: 10, y: 420 },
-  channels: { x: 390, y: 420 },
-  risks: { x: 830, y: 420 },
-  recommendations: { x: 100, y: 680 },
-  roadmap: { x: 580, y: 680 },
-  summary: { x: 410, y: 930 },
+// Convert Card[] to ReactFlow Node[]
+export const DEMO_NODES: Node[] = DEMO_CARD_DEFS.map((card) => ({
+  id: card.id,
+  type: 'card',
+  position: card.position,
+  data: {
+    id: card.id,
+    position: card.position,
+    width: card.width,
+    height: card.height,
+    title: card.title,
+    component: card.component,
+    sources: card.sources,
+    metadata: card.metadata,
+  },
+  width: card.width,
+  style: { width: card.width },
+  connectable: false,
+}));
+
+export const DEMO_EDGES: Edge[] = [
+  { id: edgeId(1), source: cardId(1), target: cardId(3), sourceHandle: 'bottom', targetHandle: 'top' },
+  { id: edgeId(2), source: cardId(2), target: cardId(4), sourceHandle: 'bottom', targetHandle: 'top' },
+  { id: edgeId(3), source: cardId(1), target: cardId(2), sourceHandle: 'right', targetHandle: 'left' },
+  { id: edgeId(4), source: cardId(3), target: cardId(4), sourceHandle: 'right', targetHandle: 'left' },
+].map((e) => ({ ...e, type: 'custom' satisfies string, data: { strokeWidth: 2 } }));
+
+// ── Slack demo data ──
+
+export const SLACK_DEMO = {
+  userName: 'Sarah Chen',
+  userInitials: 'SC',
+  userMessage: 'What was decided about the Q2 pricing changes for enterprise tier?',
+  botResponse:
+    'Based on the Q2 Pricing Review and the discussion in #pricing-team: enterprise tier pricing will increase from $89/seat to $99/seat, effective July 1st. Existing annual contracts are grandfathered at the current rate through renewal. A 15% volume discount now applies to teams over 200 seats.',
+  sources: [
+    { name: 'Q2-pricing-review.pdf', detail: 'page 3' },
+    { name: '#pricing-team', detail: 'discussion (Apr 2)' },
+    { name: 'PROD-892', detail: 'Linear' },
+  ],
+  channel: 'product-team',
+  time: '2:42 PM',
+} satisfies {
+  userName: string;
+  userInitials: string;
+  userMessage: string;
+  botResponse: string;
+  sources: ReadonlyArray<{ name: string; detail: string }>;
+  channel: string;
+  time: string;
 };
-
-export const NODE_W: Record<HeroCardId, number> = {
-  hub: 280,
-  market: 250,
-  competitors: 270,
-  swot: 270,
-  metrics: 260,
-  channels: 280,
-  risks: 255,
-  recommendations: 290,
-  roadmap: 300,
-  summary: 330,
-};
-
-export const NODE_H: Record<HeroCardId, number> = {
-  hub: 44,
-  market: 210,
-  competitors: 200,
-  swot: 230,
-  metrics: 165,
-  channels: 160,
-  risks: 165,
-  recommendations: 180,
-  roadmap: 155,
-  summary: 65,
-};
-
-export const EDGES: ReadonlyArray<readonly [HeroCardId, HeroCardId]> = [
-  ['hub', 'market'],
-  ['hub', 'competitors'],
-  ['hub', 'swot'],
-  ['market', 'metrics'],
-  ['competitors', 'channels'],
-  ['swot', 'risks'],
-  ['metrics', 'recommendations'],
-  ['channels', 'recommendations'],
-  ['risks', 'roadmap'],
-  ['recommendations', 'roadmap'],
-  ['recommendations', 'summary'],
-  ['roadmap', 'summary'],
-] satisfies ReadonlyArray<readonly [HeroCardId, HeroCardId]>;
-
-export const CURSOR_TARGETS: Record<HeroCardId, { x: number; y: number }> = {
-  hub: { x: 630, y: 30 },
-  market: { x: 145, y: 200 },
-  competitors: { x: 545, y: 200 },
-  swot: { x: 975, y: 200 },
-  metrics: { x: 130, y: 500 },
-  channels: { x: 520, y: 490 },
-  risks: { x: 950, y: 500 },
-  recommendations: { x: 235, y: 760 },
-  roadmap: { x: 720, y: 750 },
-  summary: { x: 570, y: 960 },
-};
-
-export const MARKET_BARS = [
-  { label: 'TAM', value: '$47B', pct: 100 },
-  { label: 'SAM', value: '$12B', pct: 26 },
-  { label: 'SOM', value: '$3.2B', pct: 7 },
-] satisfies Array<{ label: string; value: string; pct: number }>;
-
-export const COMPETITORS = [
-  { name: 'You', score: 87, pos: '2nd' },
-  { name: 'Acme AI', score: 91, pos: '1st' },
-  { name: 'DataCo', score: 72, pos: '3rd' },
-  { name: 'InfoX', score: 64, pos: '4th' },
-] satisfies Array<{ name: string; score: number; pos: string }>;
-
-export const SWOT = {
-  s: ['AI-first platform', 'Dev experience'],
-  w: ['Enterprise sales', 'Brand awareness'],
-  o: ['APAC expansion', 'Partner channel'],
-  t: ['Big tech entry', 'Pricing pressure'],
-} satisfies Record<string, string[]>;
-
-export const METRICS_DATA = [
-  { label: 'Revenue', value: '$9.6M', delta: '+23%' },
-  { label: 'ARR', value: '$11.2M', delta: '+18%' },
-  { label: 'NRR', value: '124%', delta: '+6%' },
-] satisfies Array<{ label: string; value: string; delta: string }>;
-
-export const CHANNEL_FLOW = ['Organic', 'Content', 'Trial', 'Convert'] as const;
-
-export const RISKS = [
-  { text: 'Sales cycle length', level: 'High' },
-  { text: 'Churn in SMB tier', level: 'Med' },
-  { text: 'Hiring pipeline', level: 'Low' },
-] satisfies Array<{ text: string; level: string }>;
-
-export const PRIORITIES = [
-  { text: 'Enterprise SDR team', confidence: 92 },
-  { text: 'Content-led growth', confidence: 87 },
-  { text: 'Partner program', confidence: 78 },
-] satisfies Array<{ text: string; confidence: number }>;
-
-export const ROADMAP_ITEMS = [
-  { q: 'W1-4', text: 'SDR hire + playbook' },
-  { q: 'W5-8', text: 'Content engine 2.0' },
-  { q: 'W9-12', text: 'Partner beta launch' },
-] satisfies Array<{ q: string; text: string }>;
-
-export const SUMMARY_STATS = [
-  { label: 'Insights', value: '9' },
-  { label: 'Priorities', value: '3' },
-  { label: 'Timeline', value: '90d' },
-] satisfies Array<{ label: string; value: string }>;
-
-export const CARD_SOURCES: Partial<Record<HeroCardId, CardSource[]>> = {
-  market: [
-    { type: 'gdrive', label: 'Market Analysis 2024.pdf' },
-    { type: 'slack', label: '#market-research' },
-  ],
-  competitors: [
-    { type: 'gdrive', label: 'Competitor Data.xlsx' },
-    { type: 'linear', label: 'PRD-142 Competitive Intel' },
-  ],
-  swot: [
-    { type: 'slack', label: '#strategy-discussion' },
-    { type: 'gdrive', label: 'Internal Review.docx' },
-  ],
-  metrics: [
-    { type: 'gdrive', label: 'Financial Report Q4.pdf' },
-    { type: 'linear', label: 'KPI-Dashboard' },
-  ],
-  channels: [
-    { type: 'gdrive', label: 'Marketing Data.csv' },
-    { type: 'slack', label: '#growth-team' },
-  ],
-  risks: [
-    { type: 'linear', label: 'RISK-23 Sales Cycle' },
-    { type: 'slack', label: '#ops-alerts' },
-  ],
-  recommendations: [
-    { type: 'gdrive', label: '5 documents' },
-    { type: 'slack', label: '3 channels' },
-    { type: 'linear', label: '4 issues' },
-  ],
-  roadmap: [
-    { type: 'linear', label: 'Sprint 24 Plan' },
-    { type: 'gdrive', label: 'Internal Review.docx' },
-  ],
-};
-
-export const CX = 630;
-export const CY = 520;

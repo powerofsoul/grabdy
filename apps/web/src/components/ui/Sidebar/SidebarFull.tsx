@@ -21,7 +21,6 @@ import { Link, useLocation } from '@tanstack/react-router';
 
 import { useSidebarSources } from './useSidebarSources';
 
-import { ProviderIcon } from '@/components/integrations/ProviderIcon';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
 import { FONT_MONO } from '@/theme';
@@ -61,11 +60,12 @@ function NavItem({
           mx: '8px',
 
           cursor: 'pointer',
-          borderLeft: isActive ? `2px solid ${ct}` : '2px solid transparent',
-          bgcolor: 'transparent',
-          transition: 'color 120ms ease, border-color 120ms ease',
+          borderRadius: 1,
+          bgcolor: isActive ? alpha(ct, 0.06) : 'transparent',
+          transition: 'color 120ms ease, background-color 120ms ease',
           '&:hover': {
-            bgcolor: alpha(ct, 0.03),
+            bgcolor: alpha(ct, isActive ? 0.08 : 0.03),
+            borderRadius: 1,
           },
         }}
       >
@@ -118,7 +118,7 @@ function SectionHeader({
         gap: 0.5,
         ...(to && {
           cursor: 'pointer',
-          '&:hover .section-label': { color: alpha(ct, 0.6) },
+          '&:hover .section-label': { color: alpha(ct, 0.5) },
           '&:hover .section-arrow': { opacity: 1 },
         }),
       }}
@@ -127,7 +127,7 @@ function SectionHeader({
         variant="overline"
         className="section-label"
         sx={{
-          color: alpha(ct, 0.35),
+          color: alpha(ct, 0.25),
           transition: 'color 120ms ease',
         }}
       >
@@ -139,7 +139,7 @@ function SectionHeader({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            color: alpha(ct, 0.35),
+            color: alpha(ct, 0.25),
             opacity: 0,
             transition: 'opacity 120ms ease',
           }}
@@ -188,7 +188,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
   const { user, logout, isAdmin } = useAuth();
   const { preference, setPreference } = useThemeMode();
-  const { collections, connections } = useSidebarSources();
+  const { collections } = useSidebarSources();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
 
@@ -205,7 +205,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
         flexDirection: 'column',
         bgcolor: 'background.default',
         borderRight: '1px solid',
-        borderColor: 'grey.900',
+        borderColor: 'divider',
       }}
     >
       {/* Logo + collapse */}
@@ -243,7 +243,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           )}
         </Box>
 
-        <Box sx={{ height: '1px', bgcolor: 'grey.900', mb: '16px' }} />
+        <Box sx={{ height: '1px', bgcolor: 'divider', mb: '16px' }} />
       </Box>
 
       {/* Nav */}
@@ -272,15 +272,6 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               trailing={<CountBadge count={c.sourceCount} />}
             />
           ))}
-          {connections.map((conn) => (
-            <NavItem
-              key={conn.id}
-              to="/dashboard/integrations"
-              label={conn.name}
-              icon={<ProviderIcon provider={conn.provider} size={15} />}
-              activePrefix="__never__"
-            />
-          ))}
           <NavItem
             to="/dashboard/sources"
             label="View all"
@@ -289,19 +280,14 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           />
         </Box>
 
-        {/* Integrate */}
+        {/* Developer */}
         <Box sx={{ mt: 2.5 }}>
-          <SectionHeader label="Integrate" />
+          <SectionHeader label="Developer" />
           <NavItem
             to="/dashboard/integrations"
             label="Integrations"
             icon={<PlugIcon size={16} weight="light" color="currentColor" />}
           />
-        </Box>
-
-        {/* API */}
-        <Box sx={{ mt: 2.5 }}>
-          <SectionHeader label="API" />
           <NavItem
             to="/dashboard/api/keys"
             label="Keys"
@@ -332,7 +318,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
 
       {/* Footer */}
       <Box>
-        <Box sx={{ height: '1px', bgcolor: 'grey.900', mx: '20px', mb: '12px' }} />
+        <Box sx={{ height: '1px', bgcolor: 'divider', mx: '20px', mb: '12px' }} />
 
         {/* View as Member link for admins/owners */}
         {isAdmin && (
@@ -364,7 +350,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 </Typography>
               </Box>
             </Link>
-            <Box sx={{ height: '1px', bgcolor: 'grey.900', mx: '20px', mb: '12px' }} />
+            <Box sx={{ height: '1px', bgcolor: 'divider', mx: '20px', mb: '12px' }} />
           </>
         )}
 
@@ -381,7 +367,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           />
         </Box>
 
-        <Box sx={{ height: '1px', bgcolor: 'grey.900', mx: '20px', mb: '8px' }} />
+        <Box sx={{ height: '1px', bgcolor: 'divider', mx: '20px', mb: '8px' }} />
 
         {user && (
           <Box
