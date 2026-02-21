@@ -8,7 +8,7 @@ import { Job, Queue } from 'bullmq';
 import { DbService } from '../../../../db/db.module';
 import { AgentFactory } from '../../../agent/services/agent.factory';
 import { SlackReplyTool } from '../../../agent/tools/slack-reply.tool';
-import type { DataSourceJobData } from '../../../data-sources/data-source.processor';
+import type { DataSourceJobData } from '../../../data-sources/data-source.types';
 import { DATA_SOURCE_QUEUE, SLACK_BOT_QUEUE } from '../../../queue/queue.constants';
 import { parseProviderData } from '../../connector.interface';
 import { IntegrationsService } from '../../integrations.service';
@@ -106,7 +106,7 @@ export class SlackBotProcessor extends WorkerHost {
       }
 
       // Create a slack_reply tool so the agent can post/update messages progressively
-      const slackReplyTool = this.slackReplyTool.create({
+      const slackReply = this.slackReplyTool.create({
         accessToken: connection.access_token,
         channel: slackChannelId,
         threadTs,
@@ -118,12 +118,17 @@ export class SlackBotProcessor extends WorkerHost {
         source: 'SLACK',
         callerType: AiCallerType.SYSTEM,
         instructions: this.slackConnector.botInstructions,
-        tools: [{ slack_reply: slackReplyTool }],
-        maxSteps: 5,
+        tools: [{ slack_reply: slackReply.tool }],
+        maxSteps: 15,
       });
 
-      // Generate answer — the agent posts/updates the Slack message via slack_reply tool
-      await agent.generate(prompt);
+      // Generate answer — the agent posts/updates via slack_reply tool calls.
+      // After generation, always post the final text to guarantee the user sees the answer.
+      const result = await agent.generate(prompt);
+
+      if (result.text.trim()) {
+        await slackReply.postFinal(result.text);
+      }
 
       this.logger.log(`Posted bot reply in channel ${slackChannelId} thread ${threadTs}`);
     } catch (error) {

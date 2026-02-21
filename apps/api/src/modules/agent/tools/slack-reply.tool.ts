@@ -19,43 +19,9 @@ export class SlackReplyTool {
     const logger = this.logger;
     let messageTs: string | null = null;
 
-    return createTool({
-      id: 'slack_reply',
-      description: `Post or update your reply in Slack. Call this tool to show the user what you're doing and to deliver your final answer.
-
-Usage pattern:
-1. FIRST call: Post a brief status like "Searching the knowledge base..." BEFORE you search
-2. AFTER searching: Call again with your complete, final answer — this updates the same message
-
-You MUST call this tool at least twice: once before searching (status), once after (answer).
-The message uses Slack mrkdwn formatting.`,
-      inputSchema: z.object({
-        text: z.string().describe('The message text to post/update in Slack mrkdwn format'),
-      }),
-      execute: async ({ text }) => {
-        if (!messageTs) {
-          const res = await fetch(`${SLACK_API_URL}/chat.postMessage`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${opts.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              channel: opts.channel,
-              text,
-              thread_ts: opts.threadTs,
-            }),
-          });
-          const data: SlackPostResponse = await res.json();
-          if (data.ok && data.ts) {
-            messageTs = data.ts;
-            return { success: true, action: 'posted' };
-          }
-          logger.warn(`Slack chat.postMessage failed: ${data.error ?? 'Unknown error'}`);
-          return { success: false, error: data.error ?? 'Unknown error' };
-        }
-
-        const res = await fetch(`${SLACK_API_URL}/chat.update`, {
+    const postOrUpdate = async (text: string) => {
+      if (!messageTs) {
+        const res = await fetch(`${SLACK_API_URL}/chat.postMessage`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${opts.accessToken}`,
@@ -63,16 +29,57 @@ The message uses Slack mrkdwn formatting.`,
           },
           body: JSON.stringify({
             channel: opts.channel,
-            ts: messageTs,
             text,
+            thread_ts: opts.threadTs,
           }),
         });
         const data: SlackPostResponse = await res.json();
-        if (!data.ok) {
-          logger.warn(`Slack chat.update failed: ${data.error ?? 'Unknown error'}`);
+        if (data.ok && data.ts) {
+          messageTs = data.ts;
+          return { success: true, action: 'posted' as const };
         }
-        return { success: data.ok, action: 'updated', error: data.error };
-      },
+        logger.warn(`Slack chat.postMessage failed: ${data.error ?? 'Unknown error'}`);
+        return { success: false, action: 'posted' as const, error: data.error ?? 'Unknown error' };
+      }
+
+      const res = await fetch(`${SLACK_API_URL}/chat.update`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${opts.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          channel: opts.channel,
+          ts: messageTs,
+          text,
+        }),
+      });
+      const data: SlackPostResponse = await res.json();
+      if (!data.ok) {
+        logger.warn(`Slack chat.update failed: ${data.error ?? 'Unknown error'}`);
+      }
+      return { success: data.ok, action: 'updated' as const, error: data.error };
+    };
+
+    const tool = createTool({
+      id: 'slack_reply',
+      description: `Post a progress update in Slack so the user knows you're working. The system posts your final answer automatically — use this tool only for status updates during search.
+
+Call this BEFORE each search to show the user what you're doing:
+- Before first search: ":mag: Looking that up..."
+- Before additional searches: ":mag: Searching for more details..."
+
+Uses Slack mrkdwn formatting.`,
+      inputSchema: z.object({
+        text: z.string().describe('The message text to post/update in Slack mrkdwn format'),
+      }),
+      execute: async ({ text }) => postOrUpdate(text),
     });
+
+    return {
+      tool,
+      /** Always post/update the final text — guarantees the user sees the answer. */
+      postFinal: (text: string) => postOrUpdate(text),
+    };
   }
 }

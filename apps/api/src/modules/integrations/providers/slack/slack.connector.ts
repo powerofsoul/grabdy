@@ -16,9 +16,9 @@ import {
   type WebhookHandlerResult,
 } from '../../connector.interface';
 
-import { SlackBotService } from './slack-bot.service';
-import type { SlackProviderData } from './slack.types';
 import { SlackChannelWebhook } from './webhooks/channel.webhook';
+import type { SlackProviderData } from './slack.types';
+import { SlackBotService } from './slack-bot.service';
 
 const SLACK_AUTH_URL = 'https://slack.com/oauth/v2/authorize';
 const SLACK_TOKEN_URL = 'https://slack.com/api/oauth.v2.access';
@@ -129,14 +129,14 @@ Users have reported they can't access the chat feature. A workaround is to type 
 
 ## Replying
 
-You MUST use the slack_reply tool to respond. Do NOT output a plain text answer.
+Use \`slack_reply\` to keep the user informed while you work. The system will automatically post your final answer — you do NOT need to call \`slack_reply\` with the final answer.
 
-1. IMMEDIATELY call slack_reply with a brief status (e.g. ":mag: Looking that up...")
-2. Do your first rag-search
-3. If you need more searches, call slack_reply with a progress update (e.g. ":mag: Searching for more details..." or ":mag: Checking related topics...") so the user knows you're still working
-4. Call slack_reply with your complete answer — this updates the same message
+Your job is to post **progress updates** so the user doesn't stare at nothing:
+1. IMMEDIATELY call \`slack_reply\` with a brief status (e.g. ":mag: Looking that up...") BEFORE you search
+2. Do your rag-search(es)
+3. If you need more searches, call \`slack_reply\` with a progress update (e.g. ":mag: Searching for more details...") so the user knows you're still working
 
-The user sees one message that evolves from "searching..." → "digging deeper..." → the final answer. Always keep the user informed that something is happening.`;
+The system posts your final text answer automatically. Focus on writing a great answer and keeping the user updated during search.`;
 
   private readonly logger = new Logger(SlackConnector.name);
 
