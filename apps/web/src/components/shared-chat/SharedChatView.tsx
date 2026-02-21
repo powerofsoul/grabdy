@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { CanvasState } from '@grabdy/contracts';
-import { alpha, Box, Stack, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Stack, Tab, Tabs, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { ChatCircleIcon, GraphIcon } from '@phosphor-icons/react';
 import type { Edge, Node } from '@xyflow/react';
 
 import { Canvas } from '@/components/canvas';
@@ -14,6 +15,8 @@ interface SharedChatViewProps {
   messages: ChatMessage[];
   canvasState: CanvasState | null;
 }
+
+type MobileTab = 'chat' | 'canvas';
 
 function canvasToReactFlow(canvasState: CanvasState): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = canvasState.cards.map((card) => ({
@@ -41,6 +44,8 @@ function canvasToReactFlow(canvasState: CanvasState): { nodes: Node[]; edges: Ed
 export function SharedChatView({ title, messages, canvasState }: SharedChatViewProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [activeTab, setActiveTab] = useState<MobileTab>('chat');
 
   const hasCanvas = canvasState !== null && canvasState.cards.length > 0;
   const { nodes, edges } = useMemo(
@@ -56,49 +61,84 @@ export function SharedChatView({ title, messages, canvasState }: SharedChatViewP
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          px: 2.5,
+          px: { xs: 1.5, md: 2.5 },
           height: 56,
           flexShrink: 0,
           borderBottom: '1px solid',
           borderColor: alpha(ct, 0.06),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography variant="h5" sx={{ fontSize: 18, color: 'text.primary' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+          <Typography variant="h5" sx={{ fontSize: 18, color: 'text.primary', flexShrink: 0 }}>
             grabdy.
           </Typography>
           {title && (
             <>
-              <Box sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.1) }} />
+              <Box sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.1), flexShrink: 0 }} />
               <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 500 }} noWrap>
                 {title}
               </Typography>
             </>
           )}
         </Box>
-        <Typography sx={{ fontSize: 12, color: alpha(ct, 0.35) }}>
+        <Typography sx={{ fontSize: 12, color: alpha(ct, 0.35), flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
           Shared conversation snapshot
         </Typography>
       </Box>
 
+      {/* Mobile tabs */}
+      {isMobile && hasCanvas && (
+        <Tabs
+          value={activeTab}
+          onChange={(_, v: MobileTab) => setActiveTab(v)}
+          variant="fullWidth"
+          sx={{
+            minHeight: 40,
+            flexShrink: 0,
+            borderBottom: '1px solid',
+            borderColor: alpha(ct, 0.06),
+            '& .MuiTab-root': {
+              minHeight: 40,
+              fontSize: 13,
+              fontWeight: 500,
+              textTransform: 'none',
+            },
+          }}
+        >
+          <Tab value="chat" label="Chat" icon={<ChatCircleIcon size={16} weight="light" />} iconPosition="start" />
+          <Tab value="canvas" label="Canvas" icon={<GraphIcon size={16} weight="light" />} iconPosition="start" />
+        </Tabs>
+      )}
+
       {/* Content */}
       {hasCanvas ? (
-        <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-          <ResizablePanel
-            direction="horizontal"
-            defaultSize={Math.round(window.innerWidth * 0.4)}
-            minSize={320}
-            maxSize={900}
-            resizeFrom="end"
-            storageKey="shared-chat-panel-width"
-            sx={{ minWidth: 0 }}
-          >
-            <ChatMessages messages={messages} isLoading={false} isStreaming={false} />
-          </ResizablePanel>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Canvas readOnly nodes={nodes} edges={edges} />
+        isMobile ? (
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            <Box sx={{ display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
+              <ChatMessages messages={messages} isLoading={false} isStreaming={false} />
+            </Box>
+            <Box sx={{ display: activeTab === 'canvas' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
+              <Canvas readOnly nodes={nodes} edges={edges} />
+            </Box>
           </Box>
-        </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+            <ResizablePanel
+              direction="horizontal"
+              defaultSize={Math.round(window.innerWidth * 0.4)}
+              minSize={320}
+              maxSize={900}
+              resizeFrom="end"
+              storageKey="shared-chat-panel-width"
+              sx={{ minWidth: 0 }}
+            >
+              <ChatMessages messages={messages} isLoading={false} isStreaming={false} />
+            </ResizablePanel>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Canvas readOnly nodes={nodes} edges={edges} />
+            </Box>
+          </Box>
+        )
       ) : (
         <Stack sx={{ flex: 1, minHeight: 0 }}>
           <ChatMessages messages={messages} isLoading={false} isStreaming={false} />
