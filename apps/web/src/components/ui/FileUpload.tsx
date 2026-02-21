@@ -1,15 +1,16 @@
 import { useCallback, useState } from 'react';
 
 import { UPLOADS_EXTENSIONS, UPLOADS_LABELS, UPLOADS_MIMES } from '@grabdy/contracts';
-import { Box, Typography } from '@mui/material';
+import { Box, LinearProgress, Typography } from '@mui/material';
 import { UploadSimpleIcon } from '@phosphor-icons/react';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
   disabled?: boolean;
+  uploadProgress?: number | null;
 }
 
-export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
+export function FileUpload({ onFileSelect, disabled, uploadProgress }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDrop = useCallback(
@@ -83,6 +84,18 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
         {UPLOADS_LABELS}
       </Typography>
+      {uploadProgress != null && (
+        <Box sx={{ width: '100%', mt: 2, px: 2 }}>
+          <LinearProgress variant="determinate" value={uploadProgress} />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 0.5, display: 'block', textAlign: 'center' }}
+          >
+            Uploading… {uploadProgress}%
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 }

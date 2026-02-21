@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { dbIdSchema } from '@grabdy/common';
 import type { DataSourceStatus, UploadsExt } from '@grabdy/contracts';
@@ -43,7 +43,7 @@ import { MainTable } from '@/components/ui/main-table';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { useAuth } from '@/context/AuthContext';
 import { type DrawerProps, useDrawer } from '@/context/DrawerContext';
-import { api, uploadDataSource } from '@/lib/api';
+import { api, baseUrl, uploadDataSource } from '@/lib/api';
 
 interface DataSource {
   id: string;
@@ -55,6 +55,7 @@ interface DataSource {
   pageCount: number | null;
   createdAt: string;
   updatedAt: string;
+  progress?: number;
 }
 
 interface Collection {
@@ -190,6 +191,8 @@ function CollectionDetailPage() {
   const [isDeletingCollection, setIsDeletingCollection] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DataSource | null>(null);
   const [isDeletingSource, setIsDeletingSource] = useState(false);
+  const eventSourcesRef = useRef<Map<string, EventSource>>(new Map());
+  const fetchDataRef = useRef<() => void>(() => {});
 
   const fetchData = useCallback(async () => {
     if (!selectedOrgId) return;
@@ -218,9 +221,75 @@ function CollectionDetailPage() {
     }
   }, [selectedOrgId, collectionId]);
 
+  fetchDataRef.current = fetchData;
+
+  const connectProgress = useCallback(
+    (dsId: string) => {
+      if (!selectedOrgId) return;
+      if (eventSourcesRef.current.has(dsId)) return;
+
+      const es = new EventSource(
+        `${baseUrl}/orgs/${selectedOrgId}/data-sources/${dsId}/progress`,
+        { withCredentials: true }
+      );
+
+      eventSourcesRef.current.set(dsId, es);
+
+      es.onmessage = (event) => {
+        const parsed = JSON.parse(event.data) as
+          | { status: DataSourceStatus; progress: number }
+          | { done: boolean };
+
+        if ('done' in parsed) {
+          es.close();
+          eventSourcesRef.current.delete(dsId);
+          return;
+        }
+
+        setDataSources((prev) =>
+          prev.map((ds) =>
+            ds.id === dsId ? { ...ds, status: parsed.status, progress: parsed.progress } : ds
+          )
+        );
+
+        if (parsed.status === 'READY' || parsed.status === 'FAILED') {
+          es.close();
+          eventSourcesRef.current.delete(dsId);
+          fetchDataRef.current();
+        }
+      };
+
+      es.onerror = () => {
+        es.close();
+        eventSourcesRef.current.delete(dsId);
+      };
+    },
+    [selectedOrgId]
+  );
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Connect to SSE for any in-progress data sources
+  useEffect(() => {
+    for (const ds of dataSources) {
+      if (ds.status === 'PROCESSING' || ds.status === 'UPLOADED') {
+        connectProgress(ds.id);
+      }
+    }
+  }, [dataSources, connectProgress]);
+
+  // Cleanup all EventSources on unmount
+  useEffect(() => {
+    const sources = eventSourcesRef.current;
+    return () => {
+      for (const es of sources.values()) {
+        es.close();
+      }
+      sources.clear();
+    };
+  }, []);
 
   const handleUpload = async (file: File) => {
     if (!selectedOrgId) return;
@@ -428,7 +497,7 @@ function CollectionDetailPage() {
                 {ds.type}
               </Typography>
             ),
-            status: (ds) => <StatusChip status={ds.status} />,
+            status: (ds) => <StatusChip status={ds.status} progress={ds.progress} />,
             size: (ds) => formatFileSize(ds.fileSize),
             uploaded: (ds) => relativeDate(ds.createdAt),
             actions: (ds) => (

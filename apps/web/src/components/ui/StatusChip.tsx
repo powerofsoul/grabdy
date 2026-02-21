@@ -1,6 +1,12 @@
 import { type DataSourceStatus } from '@grabdy/contracts';
-import { Chip } from '@mui/material';
+import { Chip, keyframes } from '@mui/material';
 import { green, grey, red } from '@mui/material/colors';
+
+const pulse = keyframes`
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+`;
 
 const STATUS_CONFIG: Record<DataSourceStatus, { label: string; color: string; bgColor: string }> = {
   UPLOADED: { label: 'Uploaded', color: grey[600], bgColor: grey[100] },
@@ -11,13 +17,17 @@ const STATUS_CONFIG: Record<DataSourceStatus, { label: string; color: string; bg
 
 interface StatusChipProps {
   status: DataSourceStatus;
+  progress?: number;
 }
 
-export function StatusChip({ status }: StatusChipProps) {
+export function StatusChip({ status, progress }: StatusChipProps) {
   const config = STATUS_CONFIG[status];
+  const isProcessing = status === 'PROCESSING';
+  const label = isProcessing && progress != null ? `${progress}%` : config.label;
+
   return (
     <Chip
-      label={config.label}
+      label={label}
       size="small"
       sx={{
         color: config.color,
@@ -25,6 +35,9 @@ export function StatusChip({ status }: StatusChipProps) {
         border: 'none',
         fontWeight: 500,
         fontSize: '0.75rem',
+        ...(isProcessing && {
+          animation: `${pulse} 1.5s ease-in-out infinite`,
+        }),
       }}
     />
   );

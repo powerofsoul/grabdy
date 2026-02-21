@@ -16,11 +16,14 @@ export class PdfExtractor {
 
   constructor(@Inject(FILE_STORAGE) private storage: FileStorage) {}
 
-  async extract(storagePath: string): Promise<ExtractionResult> {
+  async extract(
+    storagePath: string,
+    onProgress?: (fraction: number) => void
+  ): Promise<ExtractionResult> {
     const tempFile = await this.storage.getTempPath(storagePath);
 
     try {
-      const pages = await this.extractText(tempFile.path);
+      const pages = await this.extractText(tempFile.path, onProgress);
       const fullText = pages.map((p) => p.text).join('');
       return { type: 'pages', text: fullText, pages };
     } finally {
@@ -32,7 +35,10 @@ export class PdfExtractor {
    * Extract text page-by-page using `pdftotext` from poppler-utils.
    * The PDF is processed entirely in native code — nothing is loaded into the JS heap.
    */
-  private async extractText(filePath: string): Promise<PageText[]> {
+  private async extractText(
+    filePath: string,
+    onProgress?: (fraction: number) => void
+  ): Promise<PageText[]> {
     // Get page count from pdfinfo
     const { stdout: infoOut } = await execFileAsync('pdfinfo', [filePath]);
     const pagesMatch = /Pages:\s+(\d+)/.exec(infoOut);
@@ -58,6 +64,8 @@ export class PdfExtractor {
       if (text.length > 0) {
         pages.push({ page, text: text + '\n' });
       }
+
+      onProgress?.(page / numPages);
     }
 
     return pages;

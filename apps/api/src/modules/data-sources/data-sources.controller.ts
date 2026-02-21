@@ -1,14 +1,30 @@
-import { Controller, Get, Logger, Param, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import {
+  Controller,
+  Get,
+  Logger,
+  type MessageEvent,
+  Param,
+  Res,
+  Sse,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-import { dbIdSchema } from '@grabdy/common';
+import { type DbId, dbIdSchema } from '@grabdy/common';
 import { dataSourcesContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
+import { Queue } from 'bullmq';
 import { Response } from 'express';
+import { Observable, concat, interval, map, of, switchMap, takeWhile } from 'rxjs';
 
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { MAX_FILE_SIZE_BYTES } from '../../config/constants';
+import { DbService } from '../../db/db.module';
+import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
 
 import { DataSourcesService } from './data-sources.service';
 
@@ -20,7 +36,11 @@ function toISOString(date: Date): string {
 export class DataSourcesController {
   private readonly logger = new Logger(DataSourcesController.name);
 
-  constructor(private dataSourcesService: DataSourcesService) {}
+  constructor(
+    private dataSourcesService: DataSourcesService,
+    private db: DbService,
+    @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue
+  ) {}
 
   @OrgAccess(dataSourcesContract.upload, { params: ['orgId'] })
   @TsRestHandler(dataSourcesContract.upload)
@@ -214,6 +234,41 @@ export class DataSourcesController {
         };
       }
     });
+  }
+
+  @OrgAccess({ params: ['orgId'] })
+  @Sse('/orgs/:orgId/data-sources/:id/progress')
+  progress(
+    @Param('orgId', new ZodValidationPipe(dbIdSchema('Org'))) orgId: DbId<'Org'>,
+    @Param('id', new ZodValidationPipe(dbIdSchema('DataSource'))) id: DbId<'DataSource'>
+  ): Observable<MessageEvent> {
+    const poll$ = interval(1000).pipe(
+      switchMap(async () => {
+        const row = await this.db.kysely
+          .selectFrom('data.data_sources')
+          .select('status')
+          .where('id', '=', id)
+          .where('org_id', '=', orgId)
+          .executeTakeFirst();
+
+        const status = row?.status ?? 'FAILED';
+
+        let progress = 0;
+        const job = await this.dataSourceQueue.getJob(id);
+        if (job) {
+          const p = job.progress;
+          progress = typeof p === 'number' ? p : 0;
+        }
+
+        return { status, progress };
+      }),
+      map(({ status, progress }) => ({
+        data: { status, progress: Math.round(progress) },
+      })),
+      takeWhile(({ data }) => data.status !== 'READY' && data.status !== 'FAILED', true)
+    );
+
+    return concat(poll$, of({ data: { done: true } }));
   }
 
   @Get('/files/:orgNum/:filename')
