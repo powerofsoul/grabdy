@@ -22,7 +22,7 @@ new aws.ecr.LifecyclePolicy('grabdy-api-lifecycle', {
         selection: {
           tagStatus: 'any',
           countType: 'imageCountMoreThan',
-          countNumber: 10,
+          countNumber: 50,
         },
         action: { type: 'expire' },
       },

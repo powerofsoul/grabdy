@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { openai } from '@ai-sdk/openai';
+import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import type { DbId } from '@grabdy/common';
 import {
   type AiCallerType,
@@ -26,6 +28,20 @@ import { AiUsageService } from '../ai/ai-usage.service';
 
 import { reciprocalRankFusion } from './hybrid-search';
 import { RerankService } from './rerank.service';
+
+const awsCredentials = fromNodeProviderChain();
+const bedrockProvider = createAmazonBedrock({
+  region: 'us-east-1',
+  credentialProvider: async () => {
+    const creds = await awsCredentials();
+    return {
+      accessKeyId: creds.accessKeyId,
+      secretAccessKey: creds.secretAccessKey,
+      sessionToken: creds.sessionToken,
+    };
+  },
+});
+const HYDE_LANGUAGE_MODEL = bedrockProvider('google.gemma-3-4b-it');
 
 export interface SearchResult {
   chunkId: DbId<'Chunk'>;
@@ -227,7 +243,7 @@ export class SearchService {
       let usage: { inputTokens?: number; outputTokens?: number };
       try {
         const result = await generateText({
-          model: openai('gpt-4o-mini'),
+          model: HYDE_LANGUAGE_MODEL,
           maxOutputTokens: 150,
           abortSignal: abortController.signal,
           prompt: `Write a short passage (~100 words) that directly answers this question. Write as if you are quoting from a relevant document. Do not preface or explain — just write the answer passage.\n\nQuestion: ${queryText}`,

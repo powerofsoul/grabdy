@@ -332,39 +332,41 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
 
       {/* Footer */}
       <Box>
+        <Box sx={{ height: '1px', bgcolor: 'grey.900', mx: '20px', mb: '12px' }} />
+
         {/* View as Member link for admins/owners */}
         {isAdmin && (
-          <Link to="/app" style={{ textDecoration: 'none' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                mx: '12px',
-                mb: '8px',
-                px: 1.5,
-                py: 0.75,
-
-                cursor: 'pointer',
-                border: '1px solid',
-                borderColor: alpha(ct, 0.1),
-                transition: 'all 120ms ease',
-                '&:hover': {
-                  bgcolor: alpha(ct, 0.03),
-                },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', color: alpha(ct, 0.4) }}>
-                <EyeIcon size={14} weight="light" color="currentColor" />
+          <>
+            <Link to="/app" style={{ textDecoration: 'none' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  mx: '12px',
+                  mb: '8px',
+                  px: 1.5,
+                  py: 0.75,
+                  cursor: 'pointer',
+                  border: '1px solid',
+                  borderColor: alpha(ct, 0.1),
+                  transition: 'all 120ms ease',
+                  '&:hover': {
+                    bgcolor: alpha(ct, 0.03),
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', color: alpha(ct, 0.4) }}>
+                  <EyeIcon size={14} weight="light" color="currentColor" />
+                </Box>
+                <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
+                  View as Member
+                </Typography>
               </Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
-                View as Member
-              </Typography>
-            </Box>
-          </Link>
+            </Link>
+            <Box sx={{ height: '1px', bgcolor: 'grey.900', mx: '20px', mb: '12px' }} />
+          </>
         )}
-
-        <Box sx={{ height: '1px', bgcolor: 'grey.900', mx: '20px', mb: '12px' }} />
 
         <Box sx={{ mb: '8px', display: 'flex', flexDirection: 'column', gap: 0.25 }}>
           <NavItem

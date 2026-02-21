@@ -56,6 +56,7 @@ function AppPage() {
           });
         }}
         headerHeight={56}
+        showMobileSidebar={false}
         headerSlot={
           <>
             {isAdmin && (

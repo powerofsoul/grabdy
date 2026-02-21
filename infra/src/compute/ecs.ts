@@ -100,8 +100,8 @@ const taskDef = new aws.ecs.TaskDefinition('grabdy-api-task', {
   family: 'grabdy-api',
   requiresCompatibilities: ['FARGATE'],
   networkMode: 'awsvpc',
-  cpu: '512',
-  memory: '1024',
+  cpu: '1024',
+  memory: '4096',
   runtimePlatform: {
     cpuArchitecture: 'ARM64',
     operatingSystemFamily: 'LINUX',

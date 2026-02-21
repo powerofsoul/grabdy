@@ -181,29 +181,32 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
 
       {/* View as Member link for admins/owners */}
       {isAdmin && (
-        <Tooltip title="View as Member" placement="right">
-          <Link to="/app" style={{ textDecoration: 'none' }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-
-                cursor: 'pointer',
-                color: alpha(ct, 0.35),
-                transition: 'all 120ms ease',
-                '&:hover': {
-                  bgcolor: alpha(ct, 0.03),
-                  color: 'text.primary',
-                },
-              }}
-            >
-              <EyeIcon size={16} weight="light" color="currentColor" />
-            </Box>
-          </Link>
-        </Tooltip>
+        <>
+          <Box sx={{ width: 28, height: '1px', bgcolor: 'grey.900', my: 0.5 }} />
+          <Tooltip title="View as Member" placement="right">
+            <Link to="/app" style={{ textDecoration: 'none' }}>
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: alpha(ct, 0.35),
+                  transition: 'all 120ms ease',
+                  '&:hover': {
+                    bgcolor: alpha(ct, 0.03),
+                    color: 'text.primary',
+                  },
+                }}
+              >
+                <EyeIcon size={16} weight="light" color="currentColor" />
+              </Box>
+            </Link>
+          </Tooltip>
+          <Box sx={{ width: 28, height: '1px', bgcolor: 'grey.900', my: 0.5 }} />
+        </>
       )}
 
       {/* Settings */}
