@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
-import { AiCallerType, AiRequestType, type ModelId } from '@grabdy/contracts';
+import { AiCallerType, AiRequestType, type ModelKey } from '@grabdy/contracts';
 import { generateText } from 'ai';
 
 import { AiUsageService } from '../ai/ai-usage.service';
@@ -51,7 +51,7 @@ function parseImageAnalysis(response: string): ImageMetadata {
   };
 }
 
-const VISION_MODEL = 'openai/gpt-4o-mini' satisfies ModelId;
+const VISION_MODEL = 'openai/gpt-4o-mini' satisfies ModelKey;
 
 @Injectable()
 export class ImageExtractor {

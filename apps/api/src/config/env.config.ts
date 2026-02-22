@@ -87,6 +87,15 @@ export const env = {
 
   // KMS (resource identifier, not a secret)
   kmsKeyArn: process.env.KMS_KEY_ARN || '',
+
+  // Code indexer (ECS task spawning)
+  indexerTaskDefArn: requiredInProd('INDEXER_TASK_DEF_ARN', ''),
+  indexerClusterArn: requiredInProd('INDEXER_CLUSTER_ARN', ''),
+  indexerSubnets: requiredInProd('INDEXER_SUBNETS', ''),
+  indexerSecurityGroup: requiredInProd('INDEXER_SECURITY_GROUP', ''),
+  docGenTaskDefArn: requiredInProd('DOC_GEN_TASK_DEF_ARN', ''),
+  codeAnalysisModel: process.env.CODE_ANALYSIS_MODEL_ID || 'openai.gpt-oss-120b-1:0',
+  reposBasePath: process.env.REPOS_BASE_PATH || '.cache/repos',
 } as const;
 
 type EnvKey = keyof typeof env;

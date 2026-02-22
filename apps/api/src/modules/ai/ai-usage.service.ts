@@ -7,7 +7,7 @@ import {
   type AiRequestType,
   calculateCost,
   MODEL_INFO,
-  type ModelId,
+  type ModelKey,
 } from '@grabdy/contracts';
 
 import { DbService } from '../../db/db.module';
@@ -31,7 +31,7 @@ export class AiUsageService {
   constructor(private db: DbService) {}
 
   async logUsage(
-    model: ModelId,
+    model: ModelKey,
     inputTokens: number,
     outputTokens: number,
     callerType: AiCallerType,

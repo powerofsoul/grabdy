@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
-import type { AiCallerType, AiRequestType, ModelId } from '@grabdy/contracts';
+import type { AiCallerType, AiRequestType, ModelKey } from '@grabdy/contracts';
 import type { ToolsInput } from '@mastra/core/agent';
 import { Agent } from '@mastra/core/agent';
 import type { MastraModelConfig } from '@mastra/core/llm';
@@ -20,7 +20,7 @@ export class BaseAgent {
   protected logger: Logger;
   private usageService: AiUsageService | null;
   private usageConfig: AgentUsageConfig | null;
-  private modelName: ModelId;
+  private modelName: ModelKey;
   private maxSteps: number;
   private hasMemory: boolean;
 
@@ -29,7 +29,7 @@ export class BaseAgent {
     name: string,
     instructions: string,
     tools: ToolsInput,
-    model: ModelId,
+    model: ModelKey,
     usageService?: AiUsageService,
     usageConfig?: AgentUsageConfig,
     memory?: Memory,
