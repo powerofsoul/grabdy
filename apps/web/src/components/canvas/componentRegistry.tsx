@@ -1,7 +1,8 @@
 import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
-import { type ChatSource, chatSourceSchema } from '@grabdy/contracts';
 
 import { SourceChips } from '../chat/components/source-chips';
+
+import { cardSourcesToChat } from './canvas-helpers';
 
 import { AccordionComponent } from './components/AccordionComponent';
 import { BookmarkComponent } from './components/BookmarkComponent';
@@ -65,28 +66,7 @@ export function renderComponent(
     case 'text':
       return <TextComponent data={node.data} onSave={onSave} />;
     case 'source_link': {
-      const chatSources: ChatSource[] = [];
-      for (const s of node.data.sources) {
-        if (!s.dataSourceId) continue;
-        const t = s.type ?? 'TXT';
-        const base = {
-          dataSourceId: s.dataSourceId,
-          dataSourceName: s.name,
-          score: s.score ?? 0,
-          type: t,
-          sourceUrl: s.sourceUrl,
-        };
-        let full: Record<string, unknown> = base;
-        if (t === 'PDF' || t === 'DOCX') {
-          full = { ...base, pages: s.pages ?? [] };
-        } else if (t === 'XLSX') {
-          full = { ...base, sheet: s.sheet ?? '', rows: s.rows ?? [], columns: s.columns ?? [] };
-        } else if (t === 'CSV') {
-          full = { ...base, rows: s.rows ?? [], columns: s.columns ?? [] };
-        }
-        const parsed = chatSourceSchema.safeParse(full);
-        if (parsed.success) chatSources.push(parsed.data);
-      }
+      const chatSources = cardSourcesToChat(node.data.sources);
       return chatSources.length > 0 ? <SourceChips sources={chatSources} /> : null;
     }
     case 'document_link':
