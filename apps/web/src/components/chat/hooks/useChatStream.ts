@@ -100,18 +100,24 @@ export function useChatStream({
                 }
               }
 
-              // Parse blocks from accumulated content (in case onTextDone didn't fire)
+              // Parse blocks only if onTextDone didn't already extract them
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
                 if (last.role === 'assistant') {
-                  const blocks = parseBlocks(last.content);
+                  const alreadyParsed = Boolean(last.sources ?? last.thinkingTexts);
+                  const blocks = alreadyParsed ? null : parseBlocks(last.content);
                   updated[updated.length - 1] = {
                     ...last,
-                    content: blocks.text,
+                    content: blocks ? blocks.text : last.content,
                     thinkingTexts:
-                      blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
-                    sources: blocks.sources.length > 0 ? blocks.sources : undefined,
+                      last.thinkingTexts ??
+                      (blocks && blocks.thinkingTexts.length > 0
+                        ? blocks.thinkingTexts
+                        : undefined),
+                    sources:
+                      last.sources ??
+                      (blocks && blocks.sources.length > 0 ? blocks.sources : undefined),
                     isStreaming: false,
                     durationMs: metadata.durationMs,
                   };

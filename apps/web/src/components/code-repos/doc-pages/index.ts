@@ -1,0 +1,1 @@
+export { DocPagesLayout } from './DocPagesLayout';

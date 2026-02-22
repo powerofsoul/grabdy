@@ -104,6 +104,10 @@ export class NotionConnector extends IntegrationConnector<'NOTION'> {
     throw new Error('Notion tokens do not expire and cannot be refreshed');
   }
 
+  async revoke(_accessToken: string, _providerData: NotionProviderData): Promise<void> {
+    // Notion has no token revocation API. Users must remove the integration from Notion settings.
+  }
+
   async getAccountInfo(accessToken: string): Promise<AccountInfo<'NOTION'>> {
     const client = new Client({ auth: accessToken });
     const me = await client.users.me({});
@@ -131,18 +135,26 @@ export class NotionConnector extends IntegrationConnector<'NOTION'> {
     return this.pageWebhook.extractEvent(body);
   }
 
-  handleWebhookRequest(
+  verifyWebhook(
     headers: Record<string, string>,
+    _body: unknown,
+    rawBody?: string
+  ): boolean {
+    return this.verifySignature(headers, this.notionWebhookSecret, rawBody ?? '');
+  }
+
+  handleWebhookRequest(
+    _headers: Record<string, string>,
     body: unknown,
     connections: ReadonlyArray<{
       id: DbId<'Connection'>;
       orgId: DbId<'Org'>;
       providerData: NotionProviderData;
     }>,
-    rawBody?: string
+    _rawBody?: string
   ): WebhookHandlerResult {
-    // Verification token is handled in the controller (before connections check)
-    const event = this.parseWebhook(headers, body, this.notionWebhookSecret, rawBody);
+    // Signature already verified by verifyWebhook
+    const event = this.pageWebhook.extractEvent(body);
     if (!event) {
       return { response: { ok: true } };
     }

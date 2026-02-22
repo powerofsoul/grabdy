@@ -14,6 +14,8 @@ import { env } from './config/env.config';
 import { buildOpenApiDocument } from './config/openapi';
 import {
   CANVAS_OPS_QUEUE,
+  CODE_REPO_DOC_GEN_QUEUE,
+  CODE_REPO_QUEUE,
   DATA_SOURCE_QUEUE,
   INTEGRATIONS_QUEUE,
   SLACK_BOT_QUEUE,
@@ -44,6 +46,8 @@ export async function bootstrap() {
   const canvasOpsQueue = app.get<Queue>(getQueueToken(CANVAS_OPS_QUEUE));
   const integrationsQueue = app.get<Queue>(getQueueToken(INTEGRATIONS_QUEUE));
   const slackBotQueue = app.get<Queue>(getQueueToken(SLACK_BOT_QUEUE));
+  const codeRepoQueue = app.get<Queue>(getQueueToken(CODE_REPO_QUEUE));
+  const codeRepoDocGenQueue = app.get<Queue>(getQueueToken(CODE_REPO_DOC_GEN_QUEUE));
 
   createBullBoard({
     queues: [
@@ -51,6 +55,8 @@ export async function bootstrap() {
       new BullMQAdapter(canvasOpsQueue),
       new BullMQAdapter(integrationsQueue),
       new BullMQAdapter(slackBotQueue),
+      new BullMQAdapter(codeRepoQueue),
+      new BullMQAdapter(codeRepoDocGenQueue),
     ],
     serverAdapter,
   });

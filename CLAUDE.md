@@ -67,7 +67,8 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - Org=0x01, User=0x02, OrgMembership=0x03, AuthToken=0x04
 - Collection=0x10, DataSource=0x11, Chunk=0x12, ExtractedImage=0x13
-- ApiKey=0x20, ChatThread=0x30, CanvasCard=0x31, CanvasEdge=0x32, CanvasComponent=0x33
+- ApiKey=0x20, ChatThread=0x30, CanvasCard=0x31, CanvasEdge=0x32, CanvasComponent=0x33, SharedChat=0x34, DocPage=0x35, DocPageVersion=0x36, CodeRepoDoc=0x37
+- AiUsageLog=0x40, Connection=0x50, SyncLog=0x51
 
 ### Database
 
@@ -103,6 +104,12 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 ### Data Fetching - CRITICAL
 
+- **ALWAYS use `useQuery` and `useMutation` from `@tanstack/react-query` for data fetching.**
+- **NEVER use the manual `useState` + `useEffect` + `useCallback` pattern for API calls.**
+- Use the `api` client from `@/lib/api` as the `queryFn`.
+- Use `queryClient.invalidateQueries()` to refetch related data after mutations.
+- Use `refetchInterval` for polling instead of manual `setInterval`.
+- Use `enabled` to conditionally skip queries (e.g., `enabled: !!orgId`).
 - **ALWAYS do filtering, sorting, and pagination on the server.**
 
 ### Forms (react-hook-form) - CRITICAL

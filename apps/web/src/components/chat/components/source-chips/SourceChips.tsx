@@ -58,7 +58,15 @@ export function SourceChips({ sources }: SourceChipsProps) {
           {groups
             .find((g) => g.type === expandedType)
             ?.sources.map((source) => (
-              <SourceItem key={source.dataSourceId} source={source} onOpen={openSource} />
+              <SourceItem
+                key={
+                  source.type === 'CODE_REPO'
+                    ? `${source.dataSourceId}-${source.docPageId ?? source.filePath ?? ''}`
+                    : source.dataSourceId
+                }
+                source={source}
+                onOpen={openSource}
+              />
             ))}
         </Box>
       )}

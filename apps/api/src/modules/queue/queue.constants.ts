@@ -2,3 +2,5 @@ export const DATA_SOURCE_QUEUE = 'data-source-processing';
 export const CANVAS_OPS_QUEUE = 'canvas-ops';
 export const INTEGRATIONS_QUEUE = 'integrations';
 export const SLACK_BOT_QUEUE = 'slack-bot';
+export const CODE_REPO_QUEUE = 'code-repo-sync';
+export const CODE_REPO_DOC_GEN_QUEUE = 'code-repo-doc-gen';

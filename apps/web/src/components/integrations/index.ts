@@ -1,4 +1,3 @@
-export { ConnectionDetailDrawer } from './ConnectionDetailDrawer';
 export { IntegrationCard } from './IntegrationCard';
 export type { ConnectionSummary } from './IntegrationGrid';
 export { IntegrationGrid } from './IntegrationGrid';

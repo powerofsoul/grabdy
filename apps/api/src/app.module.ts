@@ -33,6 +33,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { CodeReposModule } from './modules/code-repos/code-repos.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
 import { DemoRequestModule } from './modules/demo-request/demo-request.module';
@@ -100,6 +101,7 @@ import { UsersModule } from './modules/users/users.module';
     DataSourcesModule,
     DemoRequestModule,
     ChatModule,
+    CodeReposModule,
     ApiKeysModule,
     IntegrationsModule,
     PublicApiModule,

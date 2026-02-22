@@ -1,15 +1,13 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
 import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
-import { Queue } from 'bullmq';
 
 import { getMaxFileSizeForMime } from '../../config/constants';
 import { env } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
-import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
+import { InngestService } from '../inngest/inngest.service';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
 
@@ -19,7 +17,7 @@ import type { DataSourceJobData } from './data-source.types';
 export class DataSourcesService {
   constructor(
     private db: DbService,
-    @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue,
+    private inngestService: InngestService,
     @Inject(FILE_STORAGE) private storage: FileStorage
   ) {}
 
@@ -78,16 +76,12 @@ export class DataSourcesService {
       collectionId,
     };
 
-    await this.dataSourceQueue.add('process', jobData, {
-      jobId: dataSourceId,
-      removeOnComplete: true,
-      removeOnFail: true,
-    });
+    await this.inngestService.send('app/data-source.process', jobData);
 
     return this.toResponse(dataSource);
   }
 
-  async list(orgId: DbId<'Org'>, collectionId?: DbId<'Collection'>) {
+  async list(orgId: DbId<'Org'>, collectionId?: DbId<'Collection'>, type?: DataSourceType) {
     let query = this.db.kysely
       .selectFrom('data.data_sources')
       .selectAll()
@@ -95,6 +89,10 @@ export class DataSourcesService {
 
     if (collectionId) {
       query = query.where('collection_id', '=', collectionId);
+    }
+
+    if (type) {
+      query = query.where('type', '=', type);
     }
 
     const dataSources = await query.orderBy('created_at', 'desc').execute();
@@ -226,11 +224,7 @@ export class DataSourcesService {
       collectionId: dataSource.collection_id,
     };
 
-    await this.dataSourceQueue.add('process', jobData, {
-      jobId: id,
-      removeOnComplete: true,
-      removeOnFail: true,
-    });
+    await this.inngestService.send('app/data-source.process', jobData);
 
     return this.toResponse({ ...dataSource, status: 'UPLOADED' as const });
   }

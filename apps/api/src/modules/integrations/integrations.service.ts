@@ -1,15 +1,13 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
 import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '@grabdy/contracts';
-import { Queue } from 'bullmq';
 import { sql } from 'kysely';
 
 import { EncryptionService } from '../../common/encryption/encryption.service';
 import { DbService } from '../../db/db.module';
-import { INTEGRATIONS_QUEUE } from '../queue/queue.constants';
+import { InngestService } from '../inngest/inngest.service';
 
 import { ProviderRegistry } from './providers/provider-registry';
 import {
@@ -47,7 +45,7 @@ export class IntegrationsService {
     private db: DbService,
     private encryption: EncryptionService,
     private providerRegistry: ProviderRegistry,
-    @InjectQueue(INTEGRATIONS_QUEUE) private syncQueue: Queue
+    private inngestService: InngestService
   ) {}
 
   async listConnections(orgId: DbId<'Org'>) {
@@ -88,6 +86,43 @@ export class IntegrationsService {
       access_token: await this.encryption.decrypt(row.access_token),
       refresh_token: row.refresh_token ? await this.encryption.decrypt(row.refresh_token) : null,
     };
+  }
+
+  /**
+   * Returns a valid access token, refreshing it first if expired or near expiry.
+   * Use this instead of getConnection() when you only need the token for API calls.
+   */
+  async getValidAccessToken(orgId: DbId<'Org'>, provider: IntegrationProvider): Promise<string | null> {
+    const connection = await this.getConnection(orgId, provider);
+    if (!connection) return null;
+
+    const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+
+    if (connection.token_expires_at) {
+      const expiresAt = new Date(connection.token_expires_at).getTime();
+      if (expiresAt - Date.now() < TOKEN_REFRESH_BUFFER_MS) {
+        if (!connection.refresh_token) {
+          this.logger.warn(`${provider} token expired for org ${orgId} but no refresh token available`);
+          return null;
+        }
+        this.logger.log(`Refreshing expired ${provider} token for org ${orgId}`);
+        try {
+          const connector = this.providerRegistry.getConnector(provider);
+          const newTokens = await connector.refreshTokens(connection.refresh_token);
+          await this.updateConnection(connection.id, {
+            accessToken: newTokens.accessToken,
+            refreshToken: newTokens.refreshToken,
+            tokenExpiresAt: newTokens.expiresAt,
+          });
+          return newTokens.accessToken;
+        } catch (err) {
+          this.logger.error(`Failed to refresh ${provider} token for org ${orgId}: ${err}`);
+          return null;
+        }
+      }
+    }
+
+    return connection.access_token;
   }
 
   /** Returns connection metadata without decrypting tokens — safe for controller use. */
@@ -182,7 +217,7 @@ export class IntegrationsService {
   async disconnect(orgId: DbId<'Org'>, provider: IntegrationProvider) {
     const connection = await this.db.kysely
       .selectFrom('integration.connections')
-      .select(['id'])
+      .select(['id', 'access_token', 'provider_data'])
       .where('org_id', '=', orgId)
       .where('provider', '=', provider)
       .where('status', '!=', 'DISCONNECTED')
@@ -190,7 +225,15 @@ export class IntegrationsService {
 
     if (!connection) return false;
 
-    await this.removeScheduledSync(connection.id, provider);
+    // Best-effort revoke at the provider level
+    try {
+      const accessToken = await this.encryption.decrypt(connection.access_token);
+      const providerData = parseProviderData(connection.provider_data);
+      const connector = this.providerRegistry.getConnector(provider);
+      await connector.revoke(accessToken, providerData);
+    } catch (err) {
+      this.logger.warn(`Failed to revoke ${provider} tokens for org ${orgId}: ${err}`);
+    }
 
     await this.db.kysely
       .updateTable('integration.connections')
@@ -212,8 +255,6 @@ export class IntegrationsService {
 
     if (!connection) return false;
 
-    await this.removeScheduledSync(connection.id, provider);
-
     // Delete associated data sources (chunks cascade from data_sources)
     await this.db.kysely
       .deleteFrom('data.data_sources')
@@ -231,7 +272,7 @@ export class IntegrationsService {
   }
 
   async triggerSync(connectionId: DbId<'Connection'>, orgId: DbId<'Org'>, trigger: SyncTrigger) {
-    await this.syncQueue.add('discover', {
+    await this.inngestService.send('app/integration.discover', {
       connectionId,
       orgId,
       trigger,
@@ -245,7 +286,7 @@ export class IntegrationsService {
     orgId: DbId<'Org'>,
     event: WebhookEvent
   ) {
-    await this.syncQueue.add('process-item', {
+    await this.inngestService.send('app/integration.process-item', {
       connectionId,
       orgId,
       event,
@@ -256,27 +297,62 @@ export class IntegrationsService {
     );
   }
 
-  async registerScheduledSync(connectionId: DbId<'Connection'>, everyMs: number) {
-    await this.syncQueue.add(
-      'scheduled-sync',
-      { connectionId },
-      { repeat: { every: everyMs }, jobId: `scheduled-${connectionId}` }
-    );
-    this.logger.log(`Registered scheduled sync every ${everyMs}ms for connection ${connectionId}`);
-  }
+  /** Handle a GitHub push webhook by spawning incremental indexer jobs for matching CODE_REPO data sources. */
+  async handleCodeRepoPush(repoFullName: string, ref: string): Promise<void> {
+    const pushedBranch = ref.replace('refs/heads/', '');
 
-  async removeScheduledSync(connectionId: DbId<'Connection'>, provider: IntegrationProvider) {
-    const connector = this.providerRegistry.getConnector(provider);
-    if (!connector.syncSchedule) return;
+    const codeRepoSources = await this.db.kysely
+      .selectFrom('data.data_sources')
+      .innerJoin(
+        'data.code_repo_state',
+        'data.code_repo_state.data_source_id',
+        'data.data_sources.id'
+      )
+      .select([
+        'data.data_sources.id',
+        'data.data_sources.org_id',
+        'data.data_sources.status',
+        'data.code_repo_state.branch',
+        'data.code_repo_state.repo_full_name',
+      ])
+      .where('data.code_repo_state.repo_full_name', '=', repoFullName)
+      .where('data.data_sources.type', '=', 'CODE_REPO')
+      .where('data.data_sources.status', '!=', 'PROCESSING')
+      .execute();
 
-    try {
-      await this.syncQueue.removeRepeatable('scheduled-sync', {
-        every: connector.syncSchedule.every,
-        jobId: `scheduled-${connectionId}`,
+    for (const source of codeRepoSources) {
+      if (source.branch !== pushedBranch) continue;
+
+      const connection = await this.db.kysely
+        .selectFrom('integration.connections')
+        .select(['id'])
+        .where('org_id', '=', source.org_id)
+        .where('provider', '=', 'GITHUB')
+        .where('status', '=', 'ACTIVE')
+        .executeTakeFirst();
+      if (!connection) continue;
+
+      this.logger.log(
+        `Push event for ${repoFullName}:${pushedBranch}, spawning incremental indexer`
+      );
+
+      const claimed = await this.db.kysely
+        .updateTable('data.data_sources')
+        .set({ status: 'PROCESSING', updated_at: new Date() })
+        .where('id', '=', source.id)
+        .where('status', '!=', 'PROCESSING')
+        .executeTakeFirst();
+
+      if (!claimed || claimed.numUpdatedRows === 0n) continue;
+
+      await this.inngestService.send('app/code-repo.sync', {
+        dataSourceId: source.id,
+        orgId: source.org_id,
+        repoFullName,
+        branch: pushedBranch,
+        connectionId: connection.id,
+        mode: 'incremental',
       });
-      this.logger.log(`Removed scheduled sync for connection ${connectionId}`);
-    } catch {
-      // Repeatable job may not exist — safe to ignore
     }
   }
 

@@ -7,6 +7,7 @@ import { cacheHost, cachePort } from '../data/cache';
 import { db, dbSecretArn } from '../data/database';
 import { apiCertArn } from '../network/certificates';
 import { albSg, apiSg, vpc } from '../network/vpc';
+import { efs, efsAccessPoint, efsSg } from '../storage/efs';
 import { imageUri } from './ecr';
 import { executionRole, kmsKey, taskRole } from './iam';
 
@@ -76,9 +77,9 @@ const logGroup = new aws.cloudwatch.LogGroup('grabdy-api-logs', {
   retentionInDays: 14,
 });
 
-// Environment variables — only non-sensitive values.
+// Environment variables shared by API and indexer containers.
 // All secrets are fetched from SSM Parameter Store at app startup.
-const environment = [
+const baseEnvironment = [
   { name: 'NODE_ENV', value: 'production' },
   { name: 'API_PORT', value: '4000' },
   { name: 'API_URL', value: pulumi.interpolate`https://${Env.apiDomain}` },
@@ -93,6 +94,108 @@ const environment = [
   { name: 'KMS_KEY_ARN', value: kmsKey.arn },
   { name: 'DB_SECRET_ARN', value: dbSecretArn },
   { name: 'DB_ENDPOINT', value: db.endpoint },
+] satisfies { name: string; value: pulumi.Input<string> }[];
+
+// Indexer CloudWatch log group
+const indexerLogGroup = new aws.cloudwatch.LogGroup('grabdy-indexer-logs', {
+  retentionInDays: 14,
+});
+
+// Indexer task definition, 2 vCPU / 8 GB with EFS volume
+const indexerTaskDef = new aws.ecs.TaskDefinition('grabdy-indexer-task', {
+  family: 'grabdy-indexer',
+  requiresCompatibilities: ['FARGATE'],
+  networkMode: 'awsvpc',
+  cpu: '2048',
+  memory: '8192',
+  runtimePlatform: {
+    cpuArchitecture: 'ARM64',
+    operatingSystemFamily: 'LINUX',
+  },
+  executionRoleArn: executionRole.arn,
+  taskRoleArn: taskRole.arn,
+  volumes: [
+    {
+      name: 'repos',
+      efsVolumeConfiguration: {
+        fileSystemId: efs.id,
+        transitEncryption: 'ENABLED',
+        authorizationConfig: {
+          accessPointId: efsAccessPoint.id,
+          iam: 'ENABLED',
+        },
+      },
+    },
+  ],
+  containerDefinitions: pulumi.jsonStringify([
+    {
+      name: 'indexer',
+      image: imageUri,
+      essential: true,
+      command: ['node', 'apps/api/dist/code-indexer/main.js'],
+      mountPoints: [
+        {
+          sourceVolume: 'repos',
+          containerPath: '/mnt/repos',
+          readOnly: false,
+        },
+      ],
+      environment: [
+        ...baseEnvironment,
+        { name: 'REPOS_BASE_PATH', value: '/mnt/repos' },
+      ],
+      logConfiguration: {
+        logDriver: 'awslogs',
+        options: {
+          'awslogs-group': indexerLogGroup.name,
+          'awslogs-region': Env.region.name,
+          'awslogs-stream-prefix': 'indexer',
+        },
+      },
+    },
+  ]),
+});
+
+// Doc generation task definition, 1 vCPU / 4 GB, no EFS needed
+const docGenTaskDef = new aws.ecs.TaskDefinition('grabdy-doc-gen-task', {
+  family: 'grabdy-doc-gen',
+  requiresCompatibilities: ['FARGATE'],
+  networkMode: 'awsvpc',
+  cpu: '1024',
+  memory: '4096',
+  runtimePlatform: {
+    cpuArchitecture: 'ARM64',
+    operatingSystemFamily: 'LINUX',
+  },
+  executionRoleArn: executionRole.arn,
+  taskRoleArn: taskRole.arn,
+  containerDefinitions: pulumi.jsonStringify([
+    {
+      name: 'doc-gen',
+      image: imageUri,
+      essential: true,
+      command: ['node', 'apps/api/dist/code-indexer/doc-gen-main.js'],
+      environment: baseEnvironment,
+      logConfiguration: {
+        logDriver: 'awslogs',
+        options: {
+          'awslogs-group': indexerLogGroup.name,
+          'awslogs-region': Env.region.name,
+          'awslogs-stream-prefix': 'doc-gen',
+        },
+      },
+    },
+  ]),
+});
+
+// API environment includes base vars plus indexer task references
+const environment = [
+  ...baseEnvironment,
+  { name: 'INDEXER_CLUSTER_ARN', value: cluster.arn },
+  { name: 'INDEXER_TASK_DEF_ARN', value: indexerTaskDef.arn },
+  { name: 'INDEXER_SUBNETS', value: vpc.publicSubnetIds.apply((ids) => ids.join(',')) },
+  { name: 'INDEXER_SECURITY_GROUP', value: apiSg.id },
+  { name: 'DOC_GEN_TASK_DEF_ARN', value: docGenTaskDef.arn },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
 // Task definition

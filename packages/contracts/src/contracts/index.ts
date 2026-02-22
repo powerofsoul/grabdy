@@ -4,6 +4,7 @@ import { analyticsContract } from './analytics.contract.js';
 import { apiKeysContract } from './api-keys.contract.js';
 import { authContract } from './auth.contract.js';
 import { chatContract, streamChatBodySchema } from './chat.contract.js';
+import { codeReposContract } from './code-repos.contract.js';
 import { collectionsContract } from './collections.contract.js';
 import { dataSourcesContract } from './data-sources.contract.js';
 import { demoRequestContract } from './demo-request.contract.js';
@@ -20,6 +21,7 @@ export const contract = c.router({
   auth: authContract,
   orgs: orgsContract,
   collections: collectionsContract,
+  codeRepos: codeReposContract,
   dataSources: dataSourcesContract,
   demoRequest: demoRequestContract,
   integrations: integrationsContract,
@@ -34,6 +36,7 @@ export {
   apiKeysContract,
   authContract,
   chatContract,
+  codeReposContract,
   collectionsContract,
   dataSourcesContract,
   demoRequestContract,
@@ -63,5 +66,16 @@ export {
   searchBodySchema,
   searchResponseSchema,
 } from './public-api.contract.js';
+
+export type {
+  AvailableRepo,
+  DocPageDetail,
+  DocPageSummary,
+  DocPageVersion,
+  DocPageVersionDetail,
+  DocVersion,
+  IndexingStatus,
+  RepoDocs,
+} from './code-repos.contract.js';
 
 export type Contract = typeof contract;

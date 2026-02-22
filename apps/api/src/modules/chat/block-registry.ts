@@ -50,12 +50,12 @@ Got 3 more results with examples of \`!CALC var=expression\` and array operation
       'Place exactly ONE sources block at the END of your response, after the answer text.',
       'Include only sources whose information you used in the answer.',
       'Copy dataSourceId, dataSourceName, score, type (from metadata), and sourceUrl from tool results.',
-      'Include location info from the chunk metadata: `pages` for PDFs/DOCX, `sheet`/`rows`/`columns` for XLSX, `rows`/`columns` for CSV.',
+      'Include location info from the chunk metadata: `pages` for PDFs/DOCX, `sheet`/`rows`/`columns` for XLSX, `rows`/`columns` for CSV, `filePath` for CODE_REPO code files, `docPageId` and `docPageTitle` for CODE_REPO doc pages.',
       'The JSON must be a valid array of source objects.',
       'Omit the sources block entirely if you did not use any sources (e.g. greetings, clarifications).',
     ],
     example: `\`\`\`${StreamBlock.SOURCES}
-[{"dataSourceId":"abc-123","dataSourceName":"Q4 Report.pdf","score":0.85,"type":"PDF","pages":[1,3]},{"dataSourceId":"def-456","dataSourceName":"Sales Data.xlsx","score":0.72,"type":"XLSX","sheet":"Q4","rows":[5,12],"columns":["Revenue","Quarter"]}]
+[{"dataSourceId":"abc-123","dataSourceName":"Q4 Report.pdf","score":0.85,"type":"PDF","pages":[1,3]},{"dataSourceId":"def-456","dataSourceName":"Sales Data.xlsx","score":0.72,"type":"XLSX","sheet":"Q4","rows":[5,12],"columns":["Revenue","Quarter"]},{"dataSourceId":"ghi-789","dataSourceName":"acme/backend","score":0.80,"type":"CODE_REPO","filePath":"src/auth/login.ts"},{"dataSourceId":"ghi-789","dataSourceName":"acme/backend","score":0.78,"type":"CODE_REPO","docPageId":"doc-page-id","docPageTitle":"Authentication Guide"}]
 \`\`\``,
   },
 };

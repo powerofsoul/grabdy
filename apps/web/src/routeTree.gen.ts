@@ -27,7 +27,10 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-pas
 import { Route as AuthCompleteAccountRouteImport } from './routes/auth/complete-account'
 import { Route as DashboardSourcesIndexRouteImport } from './routes/dashboard/sources/index'
 import { Route as DashboardIntegrationsIndexRouteImport } from './routes/dashboard/integrations/index'
+import { Route as DashboardCodeReposIndexRouteImport } from './routes/dashboard/code-repos/index'
 import { Route as DashboardSourcesCollectionIdRouteImport } from './routes/dashboard/sources/$collectionId'
+import { Route as DashboardIntegrationsProviderRouteImport } from './routes/dashboard/integrations/$provider'
+import { Route as DashboardCodeReposDataSourceIdRouteImport } from './routes/dashboard/code-repos/$dataSourceId'
 import { Route as DashboardApiMcpRouteImport } from './routes/dashboard/api/mcp'
 import { Route as DashboardApiKeysRouteImport } from './routes/dashboard/api/keys'
 import { Route as DashboardApiDocsRouteImport } from './routes/dashboard/api/docs'
@@ -123,10 +126,27 @@ const DashboardIntegrationsIndexRoute =
     path: '/integrations/',
     getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardCodeReposIndexRoute = DashboardCodeReposIndexRouteImport.update({
+  id: '/code-repos/',
+  path: '/code-repos/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSourcesCollectionIdRoute =
   DashboardSourcesCollectionIdRouteImport.update({
     id: '/sources/$collectionId',
     path: '/sources/$collectionId',
+    getParentRoute: () => DashboardRoute,
+  } as any)
+const DashboardIntegrationsProviderRoute =
+  DashboardIntegrationsProviderRouteImport.update({
+    id: '/integrations/$provider',
+    path: '/integrations/$provider',
+    getParentRoute: () => DashboardRoute,
+  } as any)
+const DashboardCodeReposDataSourceIdRoute =
+  DashboardCodeReposDataSourceIdRouteImport.update({
+    id: '/code-repos/$dataSourceId',
+    path: '/code-repos/$dataSourceId',
     getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardApiMcpRoute = DashboardApiMcpRouteImport.update({
@@ -165,7 +185,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/api/docs': typeof DashboardApiDocsRoute
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
   '/dashboard/api/mcp': typeof DashboardApiMcpRoute
+  '/dashboard/code-repos/$dataSourceId': typeof DashboardCodeReposDataSourceIdRoute
+  '/dashboard/integrations/$provider': typeof DashboardIntegrationsProviderRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/code-repos/': typeof DashboardCodeReposIndexRoute
   '/dashboard/integrations/': typeof DashboardIntegrationsIndexRoute
   '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
@@ -188,7 +211,10 @@ export interface FileRoutesByTo {
   '/dashboard/api/docs': typeof DashboardApiDocsRoute
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
   '/dashboard/api/mcp': typeof DashboardApiMcpRoute
+  '/dashboard/code-repos/$dataSourceId': typeof DashboardCodeReposDataSourceIdRoute
+  '/dashboard/integrations/$provider': typeof DashboardIntegrationsProviderRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/code-repos': typeof DashboardCodeReposIndexRoute
   '/dashboard/integrations': typeof DashboardIntegrationsIndexRoute
   '/dashboard/sources': typeof DashboardSourcesIndexRoute
 }
@@ -213,7 +239,10 @@ export interface FileRoutesById {
   '/dashboard/api/docs': typeof DashboardApiDocsRoute
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
   '/dashboard/api/mcp': typeof DashboardApiMcpRoute
+  '/dashboard/code-repos/$dataSourceId': typeof DashboardCodeReposDataSourceIdRoute
+  '/dashboard/integrations/$provider': typeof DashboardIntegrationsProviderRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
+  '/dashboard/code-repos/': typeof DashboardCodeReposIndexRoute
   '/dashboard/integrations/': typeof DashboardIntegrationsIndexRoute
   '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
@@ -239,7 +268,10 @@ export interface FileRouteTypes {
     | '/dashboard/api/docs'
     | '/dashboard/api/keys'
     | '/dashboard/api/mcp'
+    | '/dashboard/code-repos/$dataSourceId'
+    | '/dashboard/integrations/$provider'
     | '/dashboard/sources/$collectionId'
+    | '/dashboard/code-repos/'
     | '/dashboard/integrations/'
     | '/dashboard/sources/'
   fileRoutesByTo: FileRoutesByTo
@@ -262,7 +294,10 @@ export interface FileRouteTypes {
     | '/dashboard/api/docs'
     | '/dashboard/api/keys'
     | '/dashboard/api/mcp'
+    | '/dashboard/code-repos/$dataSourceId'
+    | '/dashboard/integrations/$provider'
     | '/dashboard/sources/$collectionId'
+    | '/dashboard/code-repos'
     | '/dashboard/integrations'
     | '/dashboard/sources'
   id:
@@ -286,7 +321,10 @@ export interface FileRouteTypes {
     | '/dashboard/api/docs'
     | '/dashboard/api/keys'
     | '/dashboard/api/mcp'
+    | '/dashboard/code-repos/$dataSourceId'
+    | '/dashboard/integrations/$provider'
     | '/dashboard/sources/$collectionId'
+    | '/dashboard/code-repos/'
     | '/dashboard/integrations/'
     | '/dashboard/sources/'
   fileRoutesById: FileRoutesById
@@ -429,11 +467,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIntegrationsIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/code-repos/': {
+      id: '/dashboard/code-repos/'
+      path: '/code-repos'
+      fullPath: '/dashboard/code-repos/'
+      preLoaderRoute: typeof DashboardCodeReposIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/sources/$collectionId': {
       id: '/dashboard/sources/$collectionId'
       path: '/sources/$collectionId'
       fullPath: '/dashboard/sources/$collectionId'
       preLoaderRoute: typeof DashboardSourcesCollectionIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/integrations/$provider': {
+      id: '/dashboard/integrations/$provider'
+      path: '/integrations/$provider'
+      fullPath: '/dashboard/integrations/$provider'
+      preLoaderRoute: typeof DashboardIntegrationsProviderRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/code-repos/$dataSourceId': {
+      id: '/dashboard/code-repos/$dataSourceId'
+      path: '/code-repos/$dataSourceId'
+      fullPath: '/dashboard/code-repos/$dataSourceId'
+      preLoaderRoute: typeof DashboardCodeReposDataSourceIdRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/api/mcp': {
@@ -485,7 +544,10 @@ interface DashboardRouteChildren {
   DashboardApiDocsRoute: typeof DashboardApiDocsRoute
   DashboardApiKeysRoute: typeof DashboardApiKeysRoute
   DashboardApiMcpRoute: typeof DashboardApiMcpRoute
+  DashboardCodeReposDataSourceIdRoute: typeof DashboardCodeReposDataSourceIdRoute
+  DashboardIntegrationsProviderRoute: typeof DashboardIntegrationsProviderRoute
   DashboardSourcesCollectionIdRoute: typeof DashboardSourcesCollectionIdRoute
+  DashboardCodeReposIndexRoute: typeof DashboardCodeReposIndexRoute
   DashboardIntegrationsIndexRoute: typeof DashboardIntegrationsIndexRoute
   DashboardSourcesIndexRoute: typeof DashboardSourcesIndexRoute
 }
@@ -499,7 +561,10 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardApiDocsRoute: DashboardApiDocsRoute,
   DashboardApiKeysRoute: DashboardApiKeysRoute,
   DashboardApiMcpRoute: DashboardApiMcpRoute,
+  DashboardCodeReposDataSourceIdRoute: DashboardCodeReposDataSourceIdRoute,
+  DashboardIntegrationsProviderRoute: DashboardIntegrationsProviderRoute,
   DashboardSourcesCollectionIdRoute: DashboardSourcesCollectionIdRoute,
+  DashboardCodeReposIndexRoute: DashboardCodeReposIndexRoute,
   DashboardIntegrationsIndexRoute: DashboardIntegrationsIndexRoute,
   DashboardSourcesIndexRoute: DashboardSourcesIndexRoute,
 }

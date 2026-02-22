@@ -83,6 +83,12 @@ export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
     };
   }
 
+  async revoke(_accessToken: string, _providerData: GitHubProviderData): Promise<void> {
+    // No-op: GitHub App installations are managed by the user in GitHub settings.
+    // Calling deleteInstallation would remove the app entirely, breaking push webhooks
+    // for CODE_REPO data sources that depend on the same installation.
+  }
+
   async getAccountInfo(accessToken: string): Promise<AccountInfo<'GITHUB'>> {
     const octokit = new Octokit({ auth: accessToken });
     const { data } = await octokit.apps.listReposAccessibleToInstallation({ per_page: 1 });
@@ -102,6 +108,14 @@ export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
     return this.extractWebhookEvent(headers, body);
   }
 
+  verifyWebhook(
+    headers: Record<string, string>,
+    body: unknown,
+    rawBody?: string
+  ): boolean {
+    return this.verifySignature(headers, body, rawBody);
+  }
+
   handleWebhookRequest(
     headers: Record<string, string>,
     body: unknown,
@@ -110,9 +124,8 @@ export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
       orgId: DbId<'Org'>;
       providerData: GitHubProviderData;
     }>,
-    rawBody?: string
+    _rawBody?: string
   ): WebhookHandlerResult {
-    if (!this.verifySignature(headers, body, rawBody)) return { response: { ok: true } };
 
     const eventType = headers['x-github-event'];
     const basePayload = webhookBasePayloadSchema.safeParse(body);

@@ -88,6 +88,21 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     throw new Error('Linear tokens do not expire and cannot be refreshed');
   }
 
+  async revoke(accessToken: string, _providerData: LinearProviderData): Promise<void> {
+    try {
+      const response = await fetch('https://api.linear.app/oauth/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ access_token: accessToken }),
+      });
+      if (!response.ok) {
+        this.logger.warn(`Linear token revocation returned ${response.status}`);
+      }
+    } catch (err) {
+      this.logger.warn(`Linear token revocation failed: ${err}`);
+    }
+  }
+
   async getAccountInfo(accessToken: string): Promise<AccountInfo<'LINEAR'>> {
     const client = new LinearClient({ accessToken });
     const org = await client.organization;
@@ -126,18 +141,34 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     return this.issueWebhook.extractEvent(body);
   }
 
-  handleWebhookRequest(
+  verifyWebhook(
     headers: Record<string, string>,
+    _body: unknown,
+    rawBody?: string
+  ): boolean {
+    const signature = headers['linear-signature'];
+    if (!signature || !this.linearWebhookSecret) return false;
+
+    const bodyString = rawBody ?? '';
+    const expected = createHmac('sha256', this.linearWebhookSecret).update(bodyString).digest('hex');
+
+    const sigBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+    return sigBuffer.length === expectedBuffer.length && timingSafeEqual(sigBuffer, expectedBuffer);
+  }
+
+  handleWebhookRequest(
+    _headers: Record<string, string>,
     body: unknown,
     connections: ReadonlyArray<{
       id: DbId<'Connection'>;
       orgId: DbId<'Org'>;
       providerData: LinearProviderData;
     }>,
-    rawBody?: string
+    _rawBody?: string
   ): WebhookHandlerResult {
-    // App-level webhook — verify once with the shared secret, then dispatch to all connections
-    const event = this.parseWebhook(headers, body, this.linearWebhookSecret, rawBody);
+    // Signature already verified by verifyWebhook
+    const event = this.issueWebhook.extractEvent(body);
     if (!event) {
       return { response: { ok: true } };
     }

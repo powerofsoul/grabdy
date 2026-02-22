@@ -16,7 +16,7 @@ export interface ConnectionSummary {
 interface IntegrationGridProps {
   connections: ConnectionSummary[];
   onConnect: (provider: ProviderKey) => void;
-  onManage: (provider: IntegrationProvider, connection: ConnectionSummary) => void;
+  onManage: (provider: IntegrationProvider) => void;
 }
 
 const gridColumns = {
@@ -124,12 +124,7 @@ export function IntegrationGrid({ connections, onConnect, onManage }: Integratio
           )}
           {/* Coming soon cards */}
           {COMING_SOON_PROVIDERS.map((provider) => (
-            <IntegrationCard
-              key={provider}
-              provider={provider}
-              connection={null}
-              onManage={onManage}
-            />
+            <IntegrationCard key={provider} provider={provider} connection={null} onManage={onManage} />
           ))}
         </Box>
       </Box>

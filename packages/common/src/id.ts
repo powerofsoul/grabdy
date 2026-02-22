@@ -23,7 +23,10 @@ export type TableIdName =
   | 'AiUsageLog'
   | 'SharedChat'
   | 'Connection'
-  | 'SyncLog';
+  | 'SyncLog'
+  | 'CodeRepoDoc'
+  | 'DocPage'
+  | 'DocPageVersion';
 
 // ── Entity Type Maps ─────────────────────────────────────────────────────
 
@@ -59,6 +62,9 @@ export const ENTITY_TYPE_MAP = {
   CanvasEdge: 0x32,
   CanvasComponent: 0x33,
   SharedChat: 0x34,
+  DocPage: 0x35,
+  DocPageVersion: 0x36,
+  CodeRepoDoc: 0x37,
   // Analytics
   AiUsageLog: 0x40,
   // Integrations

@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { DbId } from '@grabdy/common';
 import { IntegrationProvider } from '@grabdy/contracts';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { z } from 'zod';
 
 import { InjectEnv } from '../../../../config/env.config';
 import {
@@ -25,6 +26,8 @@ const SLACK_TOKEN_URL = 'https://slack.com/api/oauth.v2.access';
 const SLACK_API_URL = 'https://slack.com/api';
 const SLACK_SCOPES =
   'channels:history,channels:read,channels:join,users:read,team:read,app_mentions:read,chat:write,im:history,im:read';
+
+const slackApiResponseSchema = z.object({ ok: z.boolean(), error: z.string().optional() });
 
 // --- Slack API response types ---
 
@@ -192,6 +195,25 @@ The system posts your final text answer automatically. Focus on writing a great 
     throw new Error('Slack bot tokens do not expire and cannot be refreshed');
   }
 
+  async revoke(accessToken: string, _providerData: SlackProviderData): Promise<void> {
+    const response = await fetch(`${SLACK_API_URL}/apps.uninstall`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: this.oauthClient,
+        client_secret: this.clientSecret,
+      }),
+    });
+
+    const parsed = slackApiResponseSchema.safeParse(await response.json());
+    if (!parsed.success || !parsed.data.ok) {
+      this.logger.warn(`Slack apps.uninstall failed: ${parsed.success ? (parsed.data.error ?? 'unknown') : 'invalid response'}`);
+    }
+  }
+
   async getAccountInfo(accessToken: string): Promise<AccountInfo<'SLACK'>> {
     const response = await fetch(`${SLACK_API_URL}/team.info`, {
       method: 'GET',
@@ -222,6 +244,15 @@ The system posts your final text answer automatically. Focus on writing a great 
 
   // ---- Webhooks ------------------------------------------------------------
 
+  verifyWebhook(
+    headers: Record<string, string>,
+    _body: unknown,
+    rawBody?: string
+  ): boolean {
+    // url_verification is handled by the controller before verifyWebhook is called
+    return this.verifySignature(headers, rawBody ?? '');
+  }
+
   handleWebhookRequest(
     headers: Record<string, string>,
     body: unknown,
@@ -232,19 +263,8 @@ The system posts your final text answer automatically. Focus on writing a great 
     }>,
     rawBody?: string
   ): WebhookHandlerResult {
-    // Handle url_verification before anything else (Slack requires immediate response)
-    if (
-      typeof body === 'object' &&
-      body !== null &&
-      'type' in body &&
-      body.type === 'url_verification' &&
-      'challenge' in body
-    ) {
-      return { response: { challenge: body.challenge } };
-    }
-
     // Delegate bot events (app_mention, member_joined, DM) to SlackBotService
-    const botResult = this.slackBotService.handleWebhook(headers, body, connections, rawBody);
+    const botResult = this.slackBotService.handleWebhook(body, connections);
     if (botResult.handled) {
       return { response: { ok: true } };
     }

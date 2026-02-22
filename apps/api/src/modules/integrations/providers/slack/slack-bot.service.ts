@@ -3,9 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { Queue } from 'bullmq';
-import { createHmac, timingSafeEqual } from 'crypto';
 
-import { InjectEnv } from '../../../../config/env.config';
 import { SLACK_BOT_QUEUE } from '../../../queue/queue.constants';
 import type { SlackProviderData } from './slack.types';
 
@@ -48,7 +46,6 @@ export class SlackBotService {
   private readonly logger = new Logger(SlackBotService.name);
 
   constructor(
-    @InjectEnv('slackSigningSecret') private readonly signingSecret: string,
     @InjectQueue(SLACK_BOT_QUEUE) private readonly botQueue: Queue
   ) {}
 
@@ -58,28 +55,16 @@ export class SlackBotService {
    * or `{ handled: false }` if it should fall through to normal sync handling.
    */
   handleWebhook(
-    headers: Record<string, string>,
     body: unknown,
     connections: ReadonlyArray<{
       id: DbId<'Connection'>;
       orgId: DbId<'Org'>;
       providerData: SlackProviderData;
-    }>,
-    rawBody?: string
+    }>
   ): SlackWebhookResult {
     if (!isSlackEventBody(body)) return { handled: false };
 
-    // URL verification (no signature check needed — Slack sends this during setup)
-    if (body.type === 'url_verification' && body.challenge) {
-      return { handled: true, challenge: body.challenge };
-    }
-
-    // Verify signature using raw body for exact match
-    if (!this.verifySignature(headers, rawBody ?? body)) {
-      this.logger.warn('Slack webhook signature verification failed');
-      return { handled: false };
-    }
-
+    // Signature already verified by SlackConnector.verifyWebhook in the controller
     const event = body.event;
     if (!event || !event.type) {
       this.logger.log(
@@ -115,28 +100,6 @@ export class SlackBotService {
 
     // Not a bot event — let the controller handle it as a normal sync webhook
     return { handled: false };
-  }
-
-  private verifySignature(headers: Record<string, string>, body: unknown): boolean {
-    const timestamp = headers['x-slack-request-timestamp'];
-    const signature = headers['x-slack-signature'];
-
-    if (!timestamp || !signature) return false;
-
-    const now = Math.floor(Date.now() / 1000);
-    const ts = parseInt(timestamp, 10);
-    if (isNaN(ts) || Math.abs(now - ts) > 300) return false;
-
-    const bodyString = typeof body === 'string' ? body : JSON.stringify(body);
-    const sigBasestring = `v0:${timestamp}:${bodyString}`;
-    const expectedSignature = `v0=${createHmac('sha256', this.signingSecret).update(sigBasestring).digest('hex')}`;
-
-    const sigBuffer = Buffer.from(signature);
-    const expectedBuffer = Buffer.from(expectedSignature);
-    if (sigBuffer.length !== expectedBuffer.length || !timingSafeEqual(sigBuffer, expectedBuffer)) {
-      return false;
-    }
-    return true;
   }
 
   private handleAppMention(

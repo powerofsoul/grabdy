@@ -28,6 +28,11 @@ const OAUTH_STATE_TTL_SECONDS = 600; // 10 minutes
 
 const notionVerificationSchema = z.object({ verification_token: z.string() });
 
+const pushWebhookSchema = z.object({
+  ref: z.string(),
+  repository: z.object({ full_name: z.string() }),
+});
+
 function toISOStringOrNull(date: Date | null | undefined): string | null {
   if (!date) return null;
   return date instanceof Date ? date.toISOString() : String(date);
@@ -337,15 +342,7 @@ export class IntegrationsController {
         createdById: userId,
       });
 
-      // Register scheduled sync if the provider needs it
-      if (connector.syncSchedule) {
-        await this.integrationsService.registerScheduledSync(
-          newConnection.id,
-          connector.syncSchedule.every
-        );
-      }
-
-      // Trigger initial sync
+      // Trigger initial sync (scheduled syncs handled by Inngest cron)
       await this.integrationsService.triggerSync(newConnection.id, orgId, 'INITIAL');
 
       res.redirect(`${this.frontendUrl}/dashboard/integrations?connected=${validatedProvider}`);
@@ -407,12 +404,39 @@ export class IntegrationsController {
       }
 
       const rawBody = 'rawBody' in req ? req.rawBody : undefined;
+      const rawBodyStr =
+        typeof rawBody === 'string'
+          ? rawBody
+          : Buffer.isBuffer(rawBody)
+            ? rawBody.toString('utf8')
+            : undefined;
       const connector = this.providerRegistry.getConnector(validProvider);
+
+      // Verify webhook signature before processing
+      if (!connector.verifyWebhook(headers, req.body, rawBodyStr)) {
+        this.logger.warn(`Webhook signature verification failed for ${validProvider}`);
+        res.status(200).json({ ok: true });
+        return;
+      }
+
+      // Handle push events for code repo incremental indexing (fire-and-forget, independent of main webhook flow)
+      if (headers['x-github-event'] === 'push' && providerUpper === 'GITHUB') {
+        const pushPayload = pushWebhookSchema.safeParse(body);
+        if (pushPayload.success) {
+          void this.integrationsService.handleCodeRepoPush(
+            pushPayload.data.repository.full_name,
+            pushPayload.data.ref
+          ).catch((err) => {
+            this.logger.error(`handleCodeRepoPush failed: ${err}`);
+          });
+        }
+      }
+
       const result = connector.handleWebhookRequest(
         headers,
         req.body,
         connections,
-        typeof rawBody === 'string' ? rawBody : undefined
+        rawBodyStr
       );
 
       // Handle disconnection events (e.g. GitHub App uninstalled)

@@ -38,4 +38,8 @@ export class ProviderRegistry {
   hasConnector(provider: IntegrationProvider): boolean {
     return this.connectors.has(provider);
   }
+
+  getAllConnectors(): ReadonlyMap<string, IntegrationConnector> {
+    return this.connectors;
+  }
 }

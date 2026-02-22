@@ -15,6 +15,7 @@ import {
 import type { IconProps } from '@phosphor-icons/react';
 import {
   ArrowsClockwiseIcon,
+  CodeIcon,
   DatabaseIcon,
   DownloadSimpleIcon,
   EyeIcon,
@@ -35,6 +36,7 @@ import {
   canPreview,
   DocumentPreviewDrawer,
 } from '@/components/chat/components/DocumentPreviewDrawer';
+import { RepoDocsViewer } from '@/components/code-repos';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -99,7 +101,8 @@ function isFileExt(ext: string): ext is UploadsExt {
   return ext in ICON_BY_EXT;
 }
 
-function getFileIcon(filename: string): ComponentType<IconProps> {
+function getFileIcon(filename: string, type?: string): ComponentType<IconProps> {
+  if (type === 'CODE_REPO') return CodeIcon;
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   return isFileExt(ext) ? ICON_BY_EXT[ext] : FileTextIcon;
 }
@@ -403,6 +406,16 @@ function CollectionDetailPage() {
     );
   };
 
+  const handleViewDocs = (ds: DataSource) => {
+    if (!selectedOrgId) return;
+    const parsed = dbIdSchema('DataSource').safeParse(ds.id);
+    if (!parsed.success) return;
+    pushDrawer(
+      () => <RepoDocsViewer orgId={selectedOrgId} dataSourceId={parsed.data} />,
+      { title: `${ds.title} Documentation`, mode: 'drawer', width: 640 }
+    );
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -480,7 +493,7 @@ function CollectionDetailPage() {
           }}
           renderItems={{
             name: (ds) => {
-              const Icon = getFileIcon(ds.title);
+              const Icon = getFileIcon(ds.title, ds.type);
               return (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                   <Icon size={18} weight="light" style={{ flexShrink: 0 }} />
@@ -494,7 +507,7 @@ function CollectionDetailPage() {
             },
             type: (ds) => (
               <Typography variant="caption" color="text.secondary">
-                {ds.type}
+                {ds.type === 'CODE_REPO' ? 'Code' : ds.type}
               </Typography>
             ),
             status: (ds) => <StatusChip status={ds.status} progress={ds.progress} />,
@@ -502,7 +515,20 @@ function CollectionDetailPage() {
             uploaded: (ds) => relativeDate(ds.createdAt),
             actions: (ds) => (
               <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'flex-end' }}>
-                {canPreview(ds.mimeType) ? (
+                {ds.type === 'CODE_REPO' ? (
+                  <Tooltip title="View Documentation">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDocs(ds);
+                      }}
+                      disabled={ds.status !== 'READY'}
+                    >
+                      <EyeIcon size={16} weight="light" />
+                    </IconButton>
+                  </Tooltip>
+                ) : canPreview(ds.mimeType) ? (
                   <Tooltip title="Preview">
                     <IconButton
                       size="small"
@@ -527,17 +553,19 @@ function CollectionDetailPage() {
                     </IconButton>
                   </Tooltip>
                 )}
-                <Tooltip title="Rename">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRename(ds);
-                    }}
-                  >
-                    <PencilSimpleIcon size={16} weight="light" />
-                  </IconButton>
-                </Tooltip>
+                {ds.type !== 'CODE_REPO' && (
+                  <Tooltip title="Rename">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRename(ds);
+                      }}
+                    >
+                      <PencilSimpleIcon size={16} weight="light" />
+                    </IconButton>
+                  </Tooltip>
+                )}
                 <Tooltip title="Reprocess">
                   <IconButton
                     size="small"

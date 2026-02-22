@@ -4,6 +4,7 @@ import * as pulumi from '@pulumi/pulumi';
 import { dbSecretArn } from '../data/database';
 import { kmsKey } from '../secrets/kms';
 import { uploadsBucket } from '../storage/buckets';
+import { efs, efsAccessPoint } from '../storage/efs';
 
 // Re-export so ecs.ts can import from here as before
 export { kmsKey };
@@ -75,6 +76,42 @@ new aws.iam.RolePolicy('grabdy-task-policy', {
           pulumi.interpolate`arn:aws:bedrock:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0`,
           'arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0',
         ],
+      },
+      // ECS — spawn and monitor indexer tasks (scoped to grabdy task families)
+      {
+        Effect: 'Allow',
+        Action: ['ecs:RunTask'],
+        Resource: [
+          pulumi.interpolate`arn:aws:ecs:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:task-definition/grabdy-indexer:*`,
+          pulumi.interpolate`arn:aws:ecs:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:task-definition/grabdy-doc-gen:*`,
+        ],
+      },
+      {
+        Effect: 'Allow',
+        Action: ['ecs:DescribeTasks'],
+        Resource: [
+          pulumi.interpolate`arn:aws:ecs:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:task/*`,
+        ],
+      },
+      // IAM — pass execution and task roles to spawned indexer tasks
+      {
+        Effect: 'Allow',
+        Action: ['iam:PassRole'],
+        Resource: [executionRole.arn, taskRole.arn],
+      },
+      // EFS — mount and write to the repos filesystem
+      {
+        Effect: 'Allow',
+        Action: [
+          'elasticfilesystem:ClientMount',
+          'elasticfilesystem:ClientWrite',
+        ],
+        Resource: [efs.arn],
+        Condition: {
+          StringEquals: {
+            'elasticfilesystem:AccessPointArn': efsAccessPoint.arn,
+          },
+        },
       },
     ],
   }),

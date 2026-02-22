@@ -1,3 +1,4 @@
+import { dbIdSchema } from '@grabdy/common';
 import { z } from 'zod';
 
 import type { DataSourceType } from '../enums/data-source.js';
@@ -58,6 +59,21 @@ const notionChunkMetaSchema = z.object({
   notionBlockId: z.string().nullable(),
 });
 
+/** Sentinel filePath value used for doc page chunks (not actual code files). */
+export const DOC_PAGE_FILE_PATH = 'doc-page';
+
+const codeRepoChunkMetaSchema = z.object({
+  type: z.literal('CODE_REPO'),
+  filePath: z.string(),
+  language: z.string(),
+  repoFullName: z.string(),
+  startLine: z.number(),
+  endLine: z.number(),
+  fileSummary: z.string(),
+  docPageId: dbIdSchema('DocPage').optional(),
+  docPageTitle: z.string().optional(),
+});
+
 export const chunkMetaSchema = z.discriminatedUnion('type', [
   pdfChunkMetaSchema,
   docxChunkMetaSchema,
@@ -70,6 +86,7 @@ export const chunkMetaSchema = z.discriminatedUnion('type', [
   linearChunkMetaSchema,
   githubChunkMetaSchema,
   notionChunkMetaSchema,
+  codeRepoChunkMetaSchema,
 ]);
 
 export type ChunkMeta = z.infer<typeof chunkMetaSchema>;
@@ -104,4 +121,5 @@ export const CHUNK_META_DESCRIPTIONS: Record<DataSourceType, string> = {
   LINEAR: '{ type, linearIssueId, linearCommentId, linearTimestamp }',
   GITHUB: '{ type, githubItemType (issue|pull_request|discussion), githubCommentId }',
   NOTION: '{ type, notionPageId, notionBlockId }',
+  CODE_REPO: '{ type, filePath, language, repoFullName, startLine, endLine, fileSummary, docPageId?, docPageTitle? }',
 };

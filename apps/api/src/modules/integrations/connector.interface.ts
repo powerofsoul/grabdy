@@ -165,6 +165,15 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
     rawBody?: string
   ): WebhookEvent | null;
 
+  /** Verify the webhook signature/HMAC. Called by the controller BEFORE handleWebhookRequest.
+   *  Must return true for the webhook to be processed. Implementations should use timing-safe
+   *  comparison. Return true for providers that handle verification inline (e.g. delegated services). */
+  abstract verifyWebhook(
+    headers: Record<string, string>,
+    body: unknown,
+    rawBody?: string
+  ): boolean;
+
   abstract handleWebhookRequest(
     headers: Record<string, string>,
     body: unknown,
@@ -190,6 +199,10 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
     tokenMetadata?: Partial<ProviderDataMap[P]>,
     accountMetadata?: Partial<ProviderDataMap[P]>
   ): ProviderDataMap[P];
+
+  /** Revoke tokens / uninstall the app at the provider level. Called on disconnect.
+   *  Best-effort: failures are logged but do not block the disconnect. */
+  abstract revoke(accessToken: string, providerData: ProviderDataMap[P]): Promise<void>;
 
   /** List selectable resources (e.g. channels) for the provider. Optional — not all providers support this. */
   listResources?(

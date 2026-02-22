@@ -2,7 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 
 import {
-  DATA_SOURCE_QUEUE,
+  CODE_REPO_QUEUE,
   INTEGRATIONS_QUEUE,
   SLACK_BOT_QUEUE,
 } from '../queue/queue.constants';
@@ -27,8 +27,8 @@ import { IntegrationsService } from './integrations.service';
 @Module({
   imports: [
     BullModule.registerQueue({ name: INTEGRATIONS_QUEUE }),
-    BullModule.registerQueue({ name: DATA_SOURCE_QUEUE }),
     BullModule.registerQueue({ name: SLACK_BOT_QUEUE }),
+    BullModule.registerQueue({ name: CODE_REPO_QUEUE }),
   ],
   controllers: [IntegrationsController],
   providers: [

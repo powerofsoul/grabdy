@@ -26,7 +26,7 @@ RUN turbo build --filter=@grabdy/api
 # Stage 2: Production image
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils && \
+RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils git && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

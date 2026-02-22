@@ -44,6 +44,7 @@ export const dataSourcesContract = c.router(
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
       query: z.object({
         collectionId: dbIdSchema('Collection').optional(),
+        type: dataSourceTypeEnum.optional(),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: z.array(dataSourceSchema) }),

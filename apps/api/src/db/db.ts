@@ -63,7 +63,18 @@ type ChunkMeta =
       githubItemType: 'issue' | 'pull_request' | 'discussion';
       githubCommentId: string | null;
     }
-  | { type: 'NOTION'; notionPageId: string; notionBlockId: string | null };
+  | { type: 'NOTION'; notionPageId: string; notionBlockId: string | null }
+  | {
+      type: 'CODE_REPO';
+      filePath: string;
+      language: string;
+      repoFullName: string;
+      startLine: number;
+      endLine: number;
+      fileSummary: string;
+      docPageId?: DbId<'DocPage'>;
+      docPageTitle?: string;
+    };
 
 // ---------------------------------------------------------------------------
 // Database interface — maps schema.table names to their column types
@@ -146,7 +157,8 @@ export interface DB {
       | 'SLACK'
       | 'LINEAR'
       | 'GITHUB'
-      | 'NOTION';
+      | 'NOTION'
+      | 'CODE_REPO';
     status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED'>;
     page_count: number | null;
     collection_id: DbId<'Collection'> | null;
@@ -233,7 +245,7 @@ export interface DB {
     model: string;
     provider: string;
     caller_type: 'MEMBER' | 'SYSTEM' | 'API_KEY';
-    request_type: 'CHAT' | 'EMBEDDING' | 'RERANK' | 'HYDE' | 'SUMMARY';
+    request_type: 'CHAT' | 'EMBEDDING' | 'RERANK' | 'HYDE' | 'SUMMARY' | 'CODE_ANALYSIS';
     source: 'WEB' | 'SLACK' | 'API' | 'MCP' | 'SYSTEM';
     input_tokens: Generated<number>;
     output_tokens: Generated<number>;
@@ -267,5 +279,55 @@ export interface DB {
     role: string;
     type: string;
     createdAt: Timestamp;
+  };
+
+  'data.code_repo_state': {
+    data_source_id: DbId<'DataSource'>;
+    repo_full_name: string;
+    branch: string;
+    last_commit_sha: string | null;
+    total_files: Generated<number>;
+    processed_files: Generated<number>;
+    efs_path: string | null;
+    org_id: DbId<'Org'>;
+    created_at: Generated<Timestamp>;
+    updated_at: Timestamp;
+  };
+
+  'data.code_repo_docs': {
+    id: Generated<DbId<'CodeRepoDoc'>>;
+    data_source_id: DbId<'DataSource'>;
+    commit_sha: string;
+    content: string;
+    version: number;
+    org_id: DbId<'Org'>;
+    created_at: Generated<Timestamp>;
+  };
+
+  'data.code_repo_doc_pages': {
+    id: Generated<DbId<'DocPage'>>;
+    data_source_id: DbId<'DataSource'>;
+    parent_id: DbId<'DocPage'> | null;
+    title: string;
+    slug: string;
+    content: Generated<string>;
+    sort_order: Generated<number>;
+    is_user_edited: Generated<boolean>;
+    commit_sha: string | null;
+    version: Generated<number>;
+    org_id: DbId<'Org'>;
+    created_at: Generated<Timestamp>;
+    updated_at: Timestamp;
+  };
+
+  'data.code_repo_doc_page_versions': {
+    id: Generated<DbId<'DocPageVersion'>>;
+    page_id: DbId<'DocPage'>;
+    content: string;
+    commit_sha: string | null;
+    source: 'AI' | 'USER';
+    version: number;
+    org_id: DbId<'Org'>;
+    created_at: Generated<Timestamp>;
   };
 }

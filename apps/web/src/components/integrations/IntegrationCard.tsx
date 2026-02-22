@@ -22,7 +22,7 @@ interface IntegrationCardProps {
   provider: ProviderKey;
   connection: ConnectionSummary | null;
   onConnect?: (provider: ProviderKey) => void;
-  onManage?: (provider: IntegrationProvider, connection: ConnectionSummary) => void;
+  onManage?: (provider: IntegrationProvider) => void;
 }
 
 export function IntegrationCard({
@@ -43,9 +43,9 @@ export function IntegrationCard({
       <Box
         role="button"
         tabIndex={0}
-        onClick={() => onManage?.(connection.provider, connection)}
+        onClick={() => onManage?.(connection.provider)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') onManage?.(connection.provider, connection);
+          if (e.key === 'Enter') onManage?.(connection.provider);
         }}
         sx={{
           border: '1px solid',
@@ -112,9 +112,9 @@ export function IntegrationCard({
       <Box
         role="button"
         tabIndex={0}
-        onClick={() => onManage?.(connection.provider, connection)}
+        onClick={() => onManage?.(connection.provider)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') onManage?.(connection.provider, connection);
+          if (e.key === 'Enter') onManage?.(connection.provider);
         }}
         sx={{
           border: '1px solid',

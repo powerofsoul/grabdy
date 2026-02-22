@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-
+import type { DbId } from '@grabdy/common';
 import type { IntegrationProvider } from '@grabdy/contracts';
+import { useQuery } from '@tanstack/react-query';
 
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -17,59 +17,70 @@ interface SidebarConnection {
   name: string;
 }
 
+interface SidebarCodeRepo {
+  id: DbId<'DataSource'>;
+  title: string;
+}
+
 export function useSidebarSources() {
   const { selectedOrgId } = useAuth();
-  const [collections, setCollections] = useState<SidebarCollection[]>([]);
-  const [connections, setConnections] = useState<SidebarConnection[]>([]);
 
-  useEffect(() => {
-    if (!selectedOrgId) return;
-
-    let cancelled = false;
-
-    const fetchCollections = async () => {
-      try {
-        const res = await api.collections.list({ params: { orgId: selectedOrgId } });
-        if (res.status === 200 && !cancelled) {
-          setCollections(
-            res.body.data.map((c: { id: string; name: string; sourceCount: number }) => ({
-              id: c.id,
-              name: c.name,
-              sourceCount: c.sourceCount,
-            }))
-          );
-        }
-      } catch {
-        // keep empty
+  const { data: collections = [] } = useQuery<SidebarCollection[]>({
+    queryKey: ['collections', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
+      const res = await api.collections.list({ params: { orgId: selectedOrgId } });
+      if (res.status === 200) {
+        return res.body.data.map((c: { id: string; name: string; sourceCount: number }) => ({
+          id: c.id,
+          name: c.name,
+          sourceCount: c.sourceCount,
+        }));
       }
-    };
+      return [];
+    },
+    enabled: !!selectedOrgId,
+  });
 
-    const fetchConnections = async () => {
-      try {
-        const res = await api.integrations.listConnections({ params: { orgId: selectedOrgId } });
-        if (res.status === 200 && !cancelled) {
-          setConnections(
-            res.body.data
-              .filter((c) => c.status === 'ACTIVE')
-              .map((c) => ({
-                id: c.id,
-                provider: c.provider,
-                name: c.externalAccountName ?? c.provider,
-              }))
-          );
-        }
-      } catch {
-        // keep empty
+  const { data: connections = [] } = useQuery({
+    queryKey: ['integrations', 'connections', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
+      const res = await api.integrations.listConnections({ params: { orgId: selectedOrgId } });
+      if (res.status === 200) return res.body.data;
+      return [];
+    },
+    enabled: !!selectedOrgId,
+    select: (data): SidebarConnection[] =>
+      data
+        .filter((c) => c.status === 'ACTIVE')
+        .map((c) => ({
+          id: c.id,
+          provider: c.provider,
+          name: c.externalAccountName ?? c.provider,
+        })),
+  });
+
+  const { data: codeRepos = [] } = useQuery<SidebarCodeRepo[]>({
+    queryKey: ['data-sources', 'code-repos', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
+      const res = await api.dataSources.list({
+        params: { orgId: selectedOrgId },
+        query: { type: 'CODE_REPO' },
+      });
+      if (res.status === 200) {
+        return res.body.data
+          .filter((ds) => ds.status === 'READY')
+          .map((ds) => ({
+            id: ds.id,
+            title: ds.title,
+          }));
       }
-    };
+      return [];
+    },
+    enabled: !!selectedOrgId,
+  });
 
-    fetchCollections();
-    fetchConnections();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedOrgId]);
-
-  return { collections, connections };
+  return { collections, connections, codeRepos };
 }

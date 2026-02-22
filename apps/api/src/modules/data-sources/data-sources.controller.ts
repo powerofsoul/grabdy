@@ -1,4 +1,3 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import {
   Controller,
   Get,
@@ -15,7 +14,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import { dataSourcesContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
-import { Queue } from 'bullmq';
 import { Response } from 'express';
 import { Observable, concat, interval, map, of, switchMap, takeWhile } from 'rxjs';
 
@@ -24,7 +22,6 @@ import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { MAX_FILE_SIZE_BYTES } from '../../config/constants';
 import { DbService } from '../../db/db.module';
-import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
 
 import { DataSourcesService } from './data-sources.service';
 
@@ -38,8 +35,7 @@ export class DataSourcesController {
 
   constructor(
     private dataSourcesService: DataSourcesService,
-    private db: DbService,
-    @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue
+    private db: DbService
   ) {}
 
   @OrgAccess(dataSourcesContract.upload, { params: ['orgId'] })
@@ -101,7 +97,7 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.list)
   async list() {
     return tsRestHandler(dataSourcesContract.list, async ({ params, query }) => {
-      const dataSources = await this.dataSourcesService.list(params.orgId, query.collectionId);
+      const dataSources = await this.dataSourcesService.list(params.orgId, query.collectionId, query.type);
       return {
         status: 200 as const,
         body: {
@@ -253,12 +249,9 @@ export class DataSourcesController {
 
         const status = row?.status ?? 'FAILED';
 
-        let progress = 0;
-        const job = await this.dataSourceQueue.getJob(id);
-        if (job) {
-          const p = job.progress;
-          progress = typeof p === 'number' ? p : 0;
-        }
+        // Progress is estimated from status: UPLOADED=0, PROCESSING=50, READY/FAILED=100
+        const progress =
+          status === 'READY' || status === 'FAILED' ? 100 : status === 'PROCESSING' ? 50 : 0;
 
         return { status, progress };
       }),

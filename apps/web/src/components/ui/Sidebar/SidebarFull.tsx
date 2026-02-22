@@ -5,6 +5,7 @@ import {
   CaretRightIcon,
   ChartBarIcon,
   ChatCircleIcon,
+  CodeIcon,
   EyeIcon,
   FolderIcon,
   GearIcon,
@@ -12,6 +13,7 @@ import {
   KeyIcon,
   MoonIcon,
   PlugIcon,
+  PlusIcon,
   SignOutIcon,
   SquaresFourIcon,
   SunIcon,
@@ -21,6 +23,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 
 import { useSidebarSources } from './useSidebarSources';
 
+import { getProviderLabel, ProviderIcon } from '@/components/integrations';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
 import { FONT_MONO } from '@/theme';
@@ -119,7 +122,6 @@ function SectionHeader({
         ...(to && {
           cursor: 'pointer',
           '&:hover .section-label': { color: alpha(ct, 0.5) },
-          '&:hover .section-arrow': { opacity: 1 },
         }),
       }}
     >
@@ -135,16 +137,13 @@ function SectionHeader({
       </Typography>
       {to && (
         <Box
-          className="section-arrow"
           sx={{
             display: 'flex',
             alignItems: 'center',
-            color: alpha(ct, 0.25),
-            opacity: 0,
-            transition: 'opacity 120ms ease',
+            color: alpha(ct, 0.2),
           }}
         >
-          <CaretRightIcon size={12} weight="light" color="currentColor" />
+          <CaretRightIcon size={10} weight="light" color="currentColor" />
         </Box>
       )}
     </Box>
@@ -188,7 +187,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
   const { user, logout, isAdmin } = useAuth();
   const { preference, setPreference } = useThemeMode();
-  const { collections } = useSidebarSources();
+  const { collections, connections, codeRepos } = useSidebarSources();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
 
@@ -247,22 +246,47 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
       </Box>
 
       {/* Nav */}
-      <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-        <NavItem
-          to="/dashboard"
-          label="Dashboard"
-          exact
-          icon={<SquaresFourIcon size={16} weight="light" color="currentColor" />}
-        />
-        <NavItem
-          to="/dashboard/chat"
-          label="Chat"
-          icon={<ChatCircleIcon size={16} weight="light" color="currentColor" />}
-        />
+      <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+          <NavItem
+            to="/dashboard"
+            label="Dashboard"
+            exact
+            icon={<SquaresFourIcon size={16} weight="light" color="currentColor" />}
+          />
+          <NavItem
+            to="/dashboard/chat"
+            label="Chat"
+            icon={<ChatCircleIcon size={16} weight="light" color="currentColor" />}
+          />
+        </Box>
 
-        {/* Sources */}
-        <Box sx={{ mt: 2.5 }}>
-          <SectionHeader label="Sources" />
+        {/* Collections */}
+        <Box>
+          <SectionHeader label="Collections" />
+          <NavItem
+            to="/dashboard/sources"
+            label="All collections"
+            exact
+            icon={<FolderIcon size={15} weight="light" color="currentColor" />}
+            trailing={
+              <Tooltip title="New collection">
+                <Box
+                  component={Link}
+                  to="/dashboard/sources"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: alpha(ct, 0.25),
+                    '&:hover': { color: 'text.primary' },
+                  }}
+                >
+                  <PlusIcon size={14} weight="light" color="currentColor" />
+                </Box>
+              </Tooltip>
+            }
+          />
           {collections.map((c) => (
             <NavItem
               key={c.id}
@@ -272,41 +296,80 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               trailing={<CountBadge count={c.sourceCount} />}
             />
           ))}
+        </Box>
+
+        {/* Integrations */}
+        <Box>
+          <SectionHeader label="Integrations" />
           <NavItem
-            to="/dashboard/sources"
-            label="View all"
+            to="/dashboard/integrations"
+            label="All integrations"
             exact
-            icon={<FolderIcon size={15} weight="light" color="currentColor" />}
+            icon={<PlugIcon size={15} weight="light" color="currentColor" />}
+            trailing={
+              <Tooltip title="Add integration">
+                <Box
+                  component={Link}
+                  to="/dashboard/integrations"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: alpha(ct, 0.25),
+                    '&:hover': { color: 'text.primary' },
+                  }}
+                >
+                  <PlusIcon size={14} weight="light" color="currentColor" />
+                </Box>
+              </Tooltip>
+            }
           />
+          {connections.map((conn) => {
+            const isGitHub = conn.provider === 'GITHUB';
+            return (
+              <Box key={conn.id}>
+                <NavItem
+                  to={`/dashboard/integrations/${conn.provider.toLowerCase()}`}
+                  label={getProviderLabel(conn.provider)}
+                  icon={<ProviderIcon provider={conn.provider} size={15} />}
+                />
+                {isGitHub &&
+                  codeRepos.map((repo) => (
+                    <Box key={repo.id} sx={{ pl: 1.5 }}>
+                      <NavItem
+                        to={`/dashboard/code-repos/${repo.id}`}
+                        label={repo.title}
+                        icon={<CodeIcon size={15} weight="light" color="currentColor" />}
+                      />
+                    </Box>
+                  ))}
+              </Box>
+            );
+          })}
         </Box>
 
         {/* Developer */}
-        <Box sx={{ mt: 2.5 }}>
+        <Box>
           <SectionHeader label="Developer" />
-          <NavItem
-            to="/dashboard/integrations"
-            label="Integrations"
-            icon={<PlugIcon size={16} weight="light" color="currentColor" />}
-          />
           <NavItem
             to="/dashboard/api/keys"
             label="Keys"
             icon={<KeyIcon size={16} weight="light" color="currentColor" />}
           />
           <NavItem
-            to="/dashboard/api/docs"
-            label="Docs"
-            icon={<BookOpenIcon size={16} weight="light" color="currentColor" />}
-          />
-          <NavItem
             to="/dashboard/api/mcp"
             label="MCP"
             icon={<GitForkIcon size={16} weight="light" color="currentColor" />}
           />
+          <NavItem
+            to="/dashboard/api/docs"
+            label="Docs"
+            icon={<BookOpenIcon size={16} weight="light" color="currentColor" />}
+          />
         </Box>
 
         {/* Team */}
-        <Box sx={{ mt: 2.5 }}>
+        <Box>
           <SectionHeader label="Team" />
           <NavItem
             to="/dashboard/members"

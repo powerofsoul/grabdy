@@ -1,0 +1,202 @@
+/** Directories to skip when walking the repository tree. */
+export const SKIP_DIRECTORIES = new Set([
+  'node_modules',
+  '.git',
+  'vendor',
+  'dist',
+  'build',
+  '__pycache__',
+  '.venv',
+  'venv',
+  'target',
+  '.next',
+  '.nuxt',
+  '.output',
+  '.cache',
+  '.turbo',
+  'coverage',
+  '.idea',
+  '.vscode',
+  '.angular',
+  'out',
+  'tmp',
+  'temp',
+  '.svelte-kit',
+  'bower_components',
+  '.gradle',
+  '.mvn',
+  'bin',
+  'obj',
+  'pkg',
+  '.parcel-cache',
+  '.vercel',
+]);
+
+/** File extensions that should be indexed. */
+export const INDEXABLE_EXTENSIONS = new Set([
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.py',
+  '.go',
+  '.rs',
+  '.java',
+  '.kt',
+  '.rb',
+  '.php',
+  '.c',
+  '.cpp',
+  '.cc',
+  '.h',
+  '.hpp',
+  '.cs',
+  '.swift',
+  '.scala',
+  '.sql',
+  '.yaml',
+  '.yml',
+  '.toml',
+  '.md',
+  '.mdx',
+  '.vue',
+  '.svelte',
+  '.astro',
+  '.tf',
+  '.hcl',
+  '.lua',
+  '.r',
+  '.dart',
+  '.ex',
+  '.exs',
+  '.erl',
+  '.hs',
+  '.ml',
+  '.clj',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.fish',
+  '.ps1',
+  '.proto',
+  '.graphql',
+  '.gql',
+  '.css',
+  '.scss',
+  '.less',
+  '.html',
+  '.xml',
+  '.json',
+  '.jsonc',
+  '.ini',
+  '.cfg',
+  '.conf',
+  '.env.example',
+  '.dockerfile',
+  '.makefile',
+]);
+
+/** File names to skip regardless of extension. */
+export const SKIP_FILES = new Set([
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml',
+  'go.sum',
+  'Cargo.lock',
+  'composer.lock',
+  'Gemfile.lock',
+  'poetry.lock',
+  'Pipfile.lock',
+  'bun.lockb',
+  '.DS_Store',
+  'thumbs.db',
+]);
+
+/** Maximum file size in bytes (500 KB). */
+export const MAX_FILE_SIZE_BYTES = 500 * 1024;
+
+/** Maximum concurrent GPT-OSS-20B calls per indexer task. */
+export const MAX_CONCURRENT_AI_CALLS = 5;
+
+/** Strip markdown code fences (```json ... ```) that LLMs often wrap around JSON output. */
+export function stripMarkdownFences(text: string): string {
+  const trimmed = text.trim();
+  const fenceMatch = /^```(?:\w+)?\s*\n([\s\S]*?)\n\s*```$/m.exec(trimmed);
+  return fenceMatch ? fenceMatch[1].trim() : trimmed;
+}
+
+/** File extension to language name mapping for common languages. */
+export const EXTENSION_TO_LANGUAGE = {
+  '.ts': 'TypeScript',
+  '.tsx': 'TypeScript',
+  '.js': 'JavaScript',
+  '.jsx': 'JavaScript',
+  '.mjs': 'JavaScript',
+  '.cjs': 'JavaScript',
+  '.py': 'Python',
+  '.go': 'Go',
+  '.rs': 'Rust',
+  '.java': 'Java',
+  '.kt': 'Kotlin',
+  '.rb': 'Ruby',
+  '.php': 'PHP',
+  '.c': 'C',
+  '.cpp': 'C++',
+  '.cc': 'C++',
+  '.h': 'C',
+  '.hpp': 'C++',
+  '.cs': 'C#',
+  '.swift': 'Swift',
+  '.scala': 'Scala',
+  '.sql': 'SQL',
+  '.yaml': 'YAML',
+  '.yml': 'YAML',
+  '.toml': 'TOML',
+  '.md': 'Markdown',
+  '.mdx': 'MDX',
+  '.vue': 'Vue',
+  '.svelte': 'Svelte',
+  '.astro': 'Astro',
+  '.tf': 'Terraform',
+  '.hcl': 'HCL',
+  '.lua': 'Lua',
+  '.r': 'R',
+  '.dart': 'Dart',
+  '.ex': 'Elixir',
+  '.exs': 'Elixir',
+  '.erl': 'Erlang',
+  '.hs': 'Haskell',
+  '.ml': 'OCaml',
+  '.clj': 'Clojure',
+  '.sh': 'Shell',
+  '.bash': 'Shell',
+  '.zsh': 'Shell',
+  '.fish': 'Shell',
+  '.ps1': 'PowerShell',
+  '.proto': 'Protocol Buffers',
+  '.graphql': 'GraphQL',
+  '.gql': 'GraphQL',
+  '.css': 'CSS',
+  '.scss': 'SCSS',
+  '.less': 'Less',
+  '.html': 'HTML',
+  '.xml': 'XML',
+  '.json': 'JSON',
+  '.jsonc': 'JSON',
+  '.ini': 'INI',
+  '.cfg': 'Config',
+  '.conf': 'Config',
+} satisfies Record<string, string>;
+
+export type IndexableExtension = keyof typeof EXTENSION_TO_LANGUAGE;
+
+function isIndexableExtension(ext: string): ext is IndexableExtension {
+  return ext in EXTENSION_TO_LANGUAGE;
+}
+
+export function getLanguageForExtension(ext: string): string {
+  if (isIndexableExtension(ext)) return EXTENSION_TO_LANGUAGE[ext];
+  return 'Unknown';
+}
