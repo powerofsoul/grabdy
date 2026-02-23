@@ -3,6 +3,7 @@ import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`
+    CREATE SCHEMA IF NOT EXISTS agent;
     CREATE TABLE agent.chat_messages (
       id          UUID PRIMARY KEY DEFAULT make_packed_uuid(0, ${sql.lit(ENTITY_TYPE_MAP.ChatMessage)}),
       thread_id   UUID NOT NULL REFERENCES data.chat_threads(id) ON DELETE CASCADE,
