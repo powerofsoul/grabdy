@@ -4,5 +4,6 @@ config:
   grabdy:apiDomain: api.grabdy.com
   grabdy:googleClientId: 357547769348-le22eragabq1ecp0sbthtjsgq1hqsit2.apps.googleusercontent.com
   grabdy:smtpHost: smtp.zeptomail.eu
+  grabdy:inngestDomain: inngest.grabdy.com
   grabdy:smtpPort: '587'
   grabdy:emailFrom: Grabdy <noreply@grabdy.com>

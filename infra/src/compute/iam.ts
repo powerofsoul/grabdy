@@ -1,10 +1,9 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
-import { dbSecretArn } from '../data/database';
+import { dbSecretArn, inngestDbSecretArn } from '../data/database';
 import { kmsKey } from '../secrets/kms';
 import { uploadsBucket } from '../storage/buckets';
-import { efs, efsAccessPoint } from '../storage/efs';
 
 // Re-export so ecs.ts can import from here as before
 export { kmsKey };
@@ -19,6 +18,34 @@ export const executionRole = new aws.iam.Role('grabdy-exec-role', {
 new aws.iam.RolePolicyAttachment('grabdy-exec-policy', {
   role: executionRole.name,
   policyArn: 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy',
+});
+
+// Allow execution role to read SSM parameters and Secrets Manager secrets
+// (required for ECS task definition `secrets` from SSM and Secrets Manager)
+new aws.iam.RolePolicy('grabdy-exec-secrets-policy', {
+  role: executionRole.name,
+  policy: pulumi.jsonStringify({
+    Version: '2012-10-17',
+    Statement: [
+      {
+        Effect: 'Allow',
+        Action: ['ssm:GetParameters'],
+        Resource: [
+          pulumi.interpolate`arn:aws:ssm:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:parameter/grabdy/prod/*`,
+        ],
+      },
+      {
+        Effect: 'Allow',
+        Action: ['secretsmanager:GetSecretValue'],
+        Resource: [dbSecretArn, inngestDbSecretArn],
+      },
+      {
+        Effect: 'Allow',
+        Action: ['kms:Decrypt'],
+        Resource: [kmsKey.arn],
+      },
+    ],
+  }),
 });
 
 // ECS task role — what the running container can do
@@ -77,41 +104,31 @@ new aws.iam.RolePolicy('grabdy-task-policy', {
           'arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0',
         ],
       },
-      // ECS — spawn and monitor indexer tasks (scoped to grabdy task families)
+    ],
+  }),
+});
+
+// Inngest task role — minimal permissions for reading DB credentials
+export const inngestTaskRole = new aws.iam.Role('grabdy-inngest-task-role', {
+  assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
+    Service: 'ecs-tasks.amazonaws.com',
+  }),
+});
+
+new aws.iam.RolePolicy('grabdy-inngest-task-policy', {
+  role: inngestTaskRole.name,
+  policy: pulumi.jsonStringify({
+    Version: '2012-10-17',
+    Statement: [
       {
         Effect: 'Allow',
-        Action: ['ecs:RunTask'],
-        Resource: [
-          pulumi.interpolate`arn:aws:ecs:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:task-definition/grabdy-indexer:*`,
-          pulumi.interpolate`arn:aws:ecs:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:task-definition/grabdy-doc-gen:*`,
-        ],
+        Action: ['secretsmanager:GetSecretValue'],
+        Resource: [inngestDbSecretArn],
       },
       {
         Effect: 'Allow',
-        Action: ['ecs:DescribeTasks'],
-        Resource: [
-          pulumi.interpolate`arn:aws:ecs:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:task/*`,
-        ],
-      },
-      // IAM — pass execution and task roles to spawned indexer tasks
-      {
-        Effect: 'Allow',
-        Action: ['iam:PassRole'],
-        Resource: [executionRole.arn, taskRole.arn],
-      },
-      // EFS — mount and write to the repos filesystem
-      {
-        Effect: 'Allow',
-        Action: [
-          'elasticfilesystem:ClientMount',
-          'elasticfilesystem:ClientWrite',
-        ],
-        Resource: [efs.arn],
-        Condition: {
-          StringEquals: {
-            'elasticfilesystem:AccessPointArn': efsAccessPoint.arn,
-          },
-        },
+        Action: ['kms:Decrypt'],
+        Resource: [kmsKey.arn],
       },
     ],
   }),

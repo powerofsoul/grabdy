@@ -22,26 +22,52 @@ export const albSg = new aws.ec2.SecurityGroup('grabdy-alb-sg', {
   egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
 });
 
-// API security group — ALB -> Fargate on port 4000
+// Inngest security group — ALB -> Fargate on port 8288
+export const inngestSg = new aws.ec2.SecurityGroup('grabdy-inngest-sg', {
+  vpcId: vpc.vpcId,
+  description: 'Fargate Inngest security group',
+  ingress: [{ protocol: 'tcp', fromPort: 8288, toPort: 8288, securityGroups: [albSg.id] }],
+  egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
+});
+
+// API security group — ALB + Inngest -> Fargate on port 4000
 export const apiSg = new aws.ec2.SecurityGroup('grabdy-api-sg', {
   vpcId: vpc.vpcId,
   description: 'Fargate API security group',
-  ingress: [{ protocol: 'tcp', fromPort: 4000, toPort: 4000, securityGroups: [albSg.id] }],
+  ingress: [
+    { protocol: 'tcp', fromPort: 4000, toPort: 4000, securityGroups: [albSg.id] },
+    { protocol: 'tcp', fromPort: 4000, toPort: 4000, securityGroups: [inngestSg.id] },
+  ],
   egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
 });
 
-// Database security group — Fargate -> RDS on 5432
+// Database security group — Fargate API -> RDS on 5432
 export const dbSg = new aws.ec2.SecurityGroup('grabdy-db-sg', {
   vpcId: vpc.vpcId,
   description: 'RDS security group',
-  ingress: [{ protocol: 'tcp', fromPort: 5432, toPort: 5432, securityGroups: [apiSg.id] }],
+  ingress: [
+    { protocol: 'tcp', fromPort: 5432, toPort: 5432, securityGroups: [apiSg.id] },
+  ],
   egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
 });
 
-// Cache security group — Fargate -> ElastiCache on 6379
+// Inngest database security group — Inngest Fargate -> Inngest RDS on 5432
+export const inngestDbSg = new aws.ec2.SecurityGroup('inngest-db-sg', {
+  vpcId: vpc.vpcId,
+  description: 'Inngest RDS security group',
+  ingress: [
+    { protocol: 'tcp', fromPort: 5432, toPort: 5432, securityGroups: [inngestSg.id] },
+  ],
+  egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
+});
+
+// Cache security group — Fargate + Inngest -> ElastiCache on 6379
 export const cacheSg = new aws.ec2.SecurityGroup('grabdy-cache-sg', {
   vpcId: vpc.vpcId,
   description: 'ElastiCache security group',
-  ingress: [{ protocol: 'tcp', fromPort: 6379, toPort: 6379, securityGroups: [apiSg.id] }],
+  ingress: [
+    { protocol: 'tcp', fromPort: 6379, toPort: 6379, securityGroups: [apiSg.id] },
+    { protocol: 'tcp', fromPort: 6379, toPort: 6379, securityGroups: [inngestSg.id] },
+  ],
   egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
 });

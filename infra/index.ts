@@ -26,6 +26,20 @@ new aws.route53.Record('grabdy-api-dns', {
   ],
 });
 
+// inngest.grabdy.com -> ALB
+new aws.route53.Record('grabdy-inngest-dns', {
+  zoneId: zone.then((z) => z.zoneId),
+  name: Env.inngestDomain,
+  type: 'A',
+  aliases: [
+    {
+      name: alb.dnsName,
+      zoneId: alb.zoneId,
+      evaluateTargetHealth: true,
+    },
+  ],
+});
+
 // grabdy.com -> CloudFront
 new aws.route53.Record('grabdy-frontend-dns', {
   zoneId: zone.then((z) => z.zoneId),
