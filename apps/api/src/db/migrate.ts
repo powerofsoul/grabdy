@@ -60,6 +60,7 @@ async function fresh() {
   console.log('Dropping all objects...');
   await sql`
     DROP SCHEMA IF EXISTS auth CASCADE;
+    DROP SCHEMA IF EXISTS agent CASCADE;
     DROP SCHEMA IF EXISTS org CASCADE;
     DROP SCHEMA IF EXISTS data CASCADE;
     DROP SCHEMA IF EXISTS integration CASCADE;

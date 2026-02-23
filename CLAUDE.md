@@ -16,7 +16,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - **Backend**: NestJS, Kysely, PostgreSQL + pgvector
 - **Frontend**: React, TanStack Router, MUI v7
 - **AI**: OpenAI embeddings (text-embedding-3-small), AI SDK for chat
-- **Queues**: BullMQ with Redis
+- **Workflows**: Inngest for durable background jobs (dashboard at localhost:8288)
 - **Animations**: GSAP + ScrollTrigger for landing page
 
 ## Package Manager - CRITICAL
@@ -67,7 +67,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - Org=0x01, User=0x02, OrgMembership=0x03, AuthToken=0x04
 - Collection=0x10, DataSource=0x11, Chunk=0x12, ExtractedImage=0x13
-- ApiKey=0x20, ChatThread=0x30, CanvasCard=0x31, CanvasEdge=0x32, CanvasComponent=0x33, SharedChat=0x34, DocPage=0x35, DocPageVersion=0x36, CodeRepoDoc=0x37
+- ApiKey=0x20, ChatThread=0x30, CanvasCard=0x31, CanvasEdge=0x32, CanvasComponent=0x33, SharedChat=0x34, ChatMessage=0x38
 - AiUsageLog=0x40, Connection=0x50, SyncLog=0x51
 
 ### Database
@@ -80,8 +80,9 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - **NEVER make injected services optional.**
 - Never use `forwardRef()`. Fix circular dependencies properly.
-- **Use `@nestjs/bullmq` for job queues.**
-- **NEVER call AI SDK functions (`generateText`, `streamText`, `embed`, `embedMany`) directly.** Always use an injectable service that tracks usage via `AiUsageService`. The only exceptions are inside dedicated service classes (e.g., `ImageExtractor`, `RagSearchTool`) that inject `AiUsageService` and log usage themselves.
+- **Use Inngest for all background/async work.** Event naming: `app/{entity}.{action}` (e.g., `app/data-source.process`). Define events in `inngest.client.ts`, create function providers with `@InngestFunctions()` decorator, send events via `InngestService.send()`. Each module owns its `*.functions.ts` file. Auto-discovery picks up all decorated providers.
+- **NEVER call AI SDK functions (`generateText`, `streamText`, `embed`, `embedMany`) directly.** Always use an injectable service that tracks usage via `AiUsageService`. The only exceptions are inside dedicated service classes (e.g., `RagSearchTool`) that inject `AiUsageService` and log usage themselves, and **Inngest `*.functions.ts` files** which use `step.ai.wrap()` for AI observability and log usage via `AiUsageService` in a durable `step.run`.
+- **Inside Inngest functions, ALWAYS use `step.ai.wrap()` for AI calls** and `step.run()` for usage logging. Never call AI SDK functions inside `step.run()` since `step.ai.wrap` provides AI-specific observability (token counts, latency) in the Inngest dashboard.
 
 ### API Calls (ts-rest) - CRITICAL
 
