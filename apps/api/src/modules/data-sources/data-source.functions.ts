@@ -162,9 +162,15 @@ export class DataSourceFunctions {
           const batchStart = batchIdx * EMBEDDING_BATCH_SIZE;
           const batch = extracted.chunks.slice(batchStart, batchStart + EMBEDDING_BATCH_SIZE);
 
-          const { embeddings, usage } = await step.ai.wrap(`embed-batch-${batchIdx}`, embedMany, {
-            model: openai.embedding('text-embedding-3-small'),
-            values: batch.map((c) => c.content),
+          const embedResult = await step.ai.wrap(`embed-batch-${batchIdx}`, async () => {
+            const result = await embedMany({
+              model: openai.embedding('text-embedding-3-small'),
+              values: batch.map((c) => c.content),
+            });
+            return {
+              embeddings: result.embeddings,
+              tokens: result.usage.tokens,
+            };
           });
 
           await step.run(`store-batch-${batchIdx}`, async () => {
@@ -174,7 +180,7 @@ export class DataSourceFunctions {
               chunk_index: chunkIndexOffset + batchStart + idx,
               metadata: chunk.metadata,
               source_url: chunk.sourceUrl,
-              embedding: `[${embeddings[idx].join(',')}]`,
+              embedding: `[${embedResult.embeddings[idx].join(',')}]`,
               data_source_id: dataSourceId,
               collection_id: collectionId,
               org_id: orgId,
@@ -184,7 +190,7 @@ export class DataSourceFunctions {
 
             await this.aiUsageService.logUsage(
               EMBEDDING_MODEL,
-              usage.tokens,
+              embedResult.tokens,
               0,
               AiCallerType.SYSTEM,
               AiRequestType.EMBEDDING,
@@ -304,7 +310,7 @@ export class DataSourceFunctions {
     const aiResult = await step.ai.wrap('analyze-image', async () => {
       const data = await this.storage.get(storagePath);
 
-      return generateText({
+      const result = await generateText({
         model: openai('gpt-4o-mini'),
         messages: [
           {
@@ -327,13 +333,19 @@ TEXT: <visible text or None>`,
           },
         ],
       });
+
+      return {
+        text: result.text,
+        inputTokens: result.usage.inputTokens,
+        outputTokens: result.usage.outputTokens,
+      };
     });
 
     await step.run('log-image-usage', async () => {
       await this.aiUsageService.logUsage(
         'openai/gpt-4o-mini',
-        aiResult.usage.inputTokens ?? 0,
-        aiResult.usage.outputTokens ?? 0,
+        aiResult.inputTokens ?? 0,
+        aiResult.outputTokens ?? 0,
         AiCallerType.SYSTEM,
         AiRequestType.CHAT,
         { orgId, source: 'SYSTEM' }
