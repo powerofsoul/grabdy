@@ -1,7 +1,29 @@
 import * as aws from '@pulumi/aws';
 
 import { kmsKey } from '../secrets/kms';
-import { dbSg, inngestDbSg, vpc } from '../network/vpc';
+import { apiSg } from '../compute/services/api.sg';
+import { inngestSg } from '../compute/services/inngest.sg';
+import { vpc } from '../network/vpc';
+
+// Database security group — Fargate API -> RDS on 5432
+const dbSg = new aws.ec2.SecurityGroup('grabdy-db-sg', {
+  vpcId: vpc.vpcId,
+  description: 'RDS security group',
+  ingress: [
+    { protocol: 'tcp', fromPort: 5432, toPort: 5432, securityGroups: [apiSg.id] },
+  ],
+  egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
+});
+
+// Inngest database security group — Inngest Fargate -> Inngest RDS on 5432
+const inngestDbSg = new aws.ec2.SecurityGroup('inngest-db-sg', {
+  vpcId: vpc.vpcId,
+  description: 'Inngest RDS security group',
+  ingress: [
+    { protocol: 'tcp', fromPort: 5432, toPort: 5432, securityGroups: [inngestSg.id] },
+  ],
+  egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
+});
 
 const subnetGroup = new aws.rds.SubnetGroup('grabdy-db-subnet', {
   subnetIds: vpc.isolatedSubnetIds,
@@ -36,8 +58,9 @@ export const db = new aws.rds.Instance('grabdy-db', {
 
 /** ARN of the Secrets Manager secret containing the RDS master password. */
 export const dbSecretArn = db.masterUserSecrets.apply((secrets) => {
-  // During preview or before RDS update completes, secrets may be empty
-  if (!secrets || secrets.length === 0) return '';
+  if (!secrets || secrets.length === 0) {
+    throw new Error('Main RDS master user secret not available. Has the RDS instance been created?');
+  }
   return secrets[0].secretArn;
 });
 
@@ -74,6 +97,8 @@ export const inngestDb = new aws.rds.Instance('inngest-db', {
 });
 
 export const inngestDbSecretArn = inngestDb.masterUserSecrets.apply((secrets) => {
-  if (!secrets || secrets.length === 0) return '';
+  if (!secrets || secrets.length === 0) {
+    throw new Error('Inngest RDS master user secret not available. Has the RDS instance been created?');
+  }
   return secrets[0].secretArn;
 });
