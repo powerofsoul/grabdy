@@ -1,5 +1,4 @@
 import type { ChatSource, IntegrationProvider, UploadsExt } from '@grabdy/contracts';
-import { DOC_PAGE_FILE_PATH } from '@grabdy/contracts';
 import { FileTextIcon } from '@phosphor-icons/react';
 
 import {
@@ -23,8 +22,6 @@ export function formatLocation(source: ChatSource): string {
   if ('pages' in source && source.pages.length > 0) parts.push(`p. ${source.pages.join(', ')}`);
   if ('rows' in source && source.rows.length > 0) parts.push(`row ${source.rows.join(', ')}`);
   if ('columns' in source && source.columns.length > 0) parts.push(source.columns.join(', '));
-  if ('filePath' in source && source.filePath && source.filePath !== DOC_PAGE_FILE_PATH)
-    parts.push(source.filePath);
   return parts.length > 0 ? ` ${parts.join(', ')}` : '';
 }
 
@@ -32,7 +29,7 @@ export function isIntegrationProvider(type: string): type is IntegrationProvider
   return INTEGRATION_SOURCE_TYPES.has(type);
 }
 
-/** Returns true for integration providers and standalone types (e.g. CODE_REPO) */
+/** Returns true for integration providers */
 export function isExternalSource(type: string): boolean {
   return EXTERNAL_SOURCE_TYPES.has(type);
 }
@@ -56,13 +53,7 @@ export function groupSources(
     const type = isExternalSource(source.type) ? source.type : 'UPLOAD';
     const existing = groups.get(type);
     if (existing) {
-      const isDuplicate = existing.some((s) => {
-        if (s.dataSourceId !== source.dataSourceId) return false;
-        if (source.type === 'CODE_REPO' && s.type === 'CODE_REPO') {
-          return s.filePath === source.filePath && s.docPageId === source.docPageId;
-        }
-        return true;
-      });
+      const isDuplicate = existing.some((s) => s.dataSourceId === source.dataSourceId);
       if (!isDuplicate) {
         existing.push(source);
       }
@@ -92,25 +83,6 @@ export function groupSources(
         count: items.length,
         sources: items,
       });
-    } else if (type === 'CODE_REPO') {
-      // CODE_REPO uses the GitHub icon since repos are synced from GitHub
-      const providerType = 'GITHUB' satisfies keyof typeof SOURCE_NOUN;
-
-      const getCodeRepoLabel = (item: ChatSource): string => {
-        if (item.type === 'CODE_REPO' && item.docPageTitle) return item.docPageTitle;
-        return `${item.dataSourceName}${formatLocation(item)}`;
-      };
-
-      result.push({
-        type,
-        label:
-          items.length === 1
-            ? getCodeRepoLabel(items[0])
-            : `${getProviderLabel(providerType)} (${pluralize(items.length, SOURCE_NOUN[type])})`,
-        icon: <ProviderIcon provider={providerType} size={13} />,
-        count: items.length,
-        sources: items,
-      });
     } else if (isIntegrationProvider(type)) {
       result.push({
         type,
@@ -126,10 +98,7 @@ export function groupSources(
       // Unknown external source type fallback
       result.push({
         type,
-        label:
-          items.length === 1
-            ? items[0].dataSourceName
-            : pluralize(items.length, 'source'),
+        label: items.length === 1 ? items[0].dataSourceName : pluralize(items.length, 'source'),
         icon: <FileTextIcon size={12} weight="light" style={{ flexShrink: 0, opacity: 0.5 }} />,
         count: items.length,
         sources: items,

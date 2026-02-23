@@ -61,13 +61,6 @@ export const MODEL_INFO = {
     maxOutput: 5120,
     pricing: { inputPerMillion: 0.06, outputPerMillion: 0.24 },
   },
-  'amazon-bedrock/openai.gpt-oss-120b-1:0': {
-    label: 'GPT OSS 120B',
-    provider: 'Bedrock',
-    contextWindow: 128000,
-    maxOutput: 16384,
-    pricing: { inputPerMillion: 0.20, outputPerMillion: 0.80 },
-  },
 } satisfies Record<string, ModelInfo>;
 
 export type ModelKey = keyof typeof MODEL_INFO;
@@ -76,7 +69,6 @@ export const CHAT_MODEL: ModelKey = 'amazon-bedrock/eu.anthropic.claude-haiku-4-
 export const EMBEDDING_MODEL: ModelKey = 'openai/text-embedding-3-small';
 export const RERANK_MODEL: ModelKey = 'bedrock/cohere.rerank-v3-5:0';
 export const HYDE_MODEL: ModelKey = 'amazon-bedrock/google.gemma-3-4b-it';
-export const CODE_ANALYSIS_MODEL: ModelKey = 'amazon-bedrock/openai.gpt-oss-120b-1:0';
 
 export function calculateCost(model: ModelKey, inputTokens: number, outputTokens: number): number {
   const { pricing } = MODEL_INFO[model];

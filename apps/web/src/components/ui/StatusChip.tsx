@@ -17,13 +17,12 @@ const STATUS_CONFIG: Record<DataSourceStatus, { label: string; color: string; bg
 
 interface StatusChipProps {
   status: DataSourceStatus;
-  progress?: number;
 }
 
-export function StatusChip({ status, progress }: StatusChipProps) {
+export function StatusChip({ status }: StatusChipProps) {
   const config = STATUS_CONFIG[status];
   const isProcessing = status === 'PROCESSING';
-  const label = isProcessing && progress != null ? `${progress}%` : config.label;
+  const label = config.label;
 
   return (
     <Chip

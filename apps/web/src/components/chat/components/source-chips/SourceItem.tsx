@@ -10,8 +10,7 @@ import { ProviderIcon } from '@/components/integrations/ProviderIcon';
 export function SourceItem({ source, onOpen }: SourceItemProps) {
   const isExternal = isExternalSource(source.type);
   const hasUrl = Boolean(source.sourceUrl);
-  const isCodeRepo = source.type === 'CODE_REPO';
-  const clickable = hasUrl || isCodeRepo || !isExternal;
+  const clickable = hasUrl || !isExternal;
 
   return (
     <Box
@@ -29,9 +28,7 @@ export function SourceItem({ source, onOpen }: SourceItemProps) {
         '&:hover': clickable ? { bgcolor: (t) => alpha(t.palette.primary.main, 0.08) } : {},
       }}
     >
-      {source.type === 'CODE_REPO' ? (
-        <ProviderIcon provider="GITHUB" size={11} />
-      ) : isIntegrationProvider(source.type) ? (
+      {isIntegrationProvider(source.type) ? (
         <ProviderIcon provider={source.type} size={11} />
       ) : (
         <FileIcon name={source.dataSourceName} size={11} />
@@ -45,11 +42,9 @@ export function SourceItem({ source, onOpen }: SourceItemProps) {
           maxWidth: 200,
         }}
       >
-        {source.type === 'CODE_REPO' && source.docPageTitle
-          ? source.docPageTitle
-          : `${source.dataSourceName}${formatLocation(source)}`}
+        {`${source.dataSourceName}${formatLocation(source)}`}
       </Typography>
-      {(hasUrl || (isCodeRepo && source.filePath)) && (
+      {hasUrl && (
         <ArrowSquareOutIcon size={9} weight="light" style={{ flexShrink: 0, opacity: 0.4 }} />
       )}
     </Box>

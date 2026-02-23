@@ -35,10 +35,6 @@ export const cardSourceSchema = z.object({
   sheet: z.string().optional(),
   rows: z.array(z.number()).optional(),
   columns: z.array(z.string()).optional(),
-  // CODE_REPO metadata
-  filePath: z.string().optional(),
-  docPageId: dbIdSchema('DocPage').optional(),
-  docPageTitle: z.string().optional(),
 });
 
 export type CardSource = z.infer<typeof cardSourceSchema>;

@@ -11,7 +11,6 @@ import { getProviderLabel, ProviderIcon } from '@/components/integrations';
 import {
   ChannelPicker,
   formatRelativeTime,
-  GitHubRepos,
   Section,
   StatusChip,
 } from '@/components/integrations/provider-detail';
@@ -237,10 +236,6 @@ function IntegrationDetailPage() {
 
         {provider === 'SLACK' && isActive && selectedOrgId && (
           <ChannelPicker provider={provider} orgId={selectedOrgId} onRefresh={refreshConnections} />
-        )}
-
-        {provider === 'GITHUB' && isActive && selectedOrgId && (
-          <GitHubRepos orgId={selectedOrgId} />
         )}
 
         <Section title={isDisconnected ? 'Actions' : 'Danger Zone'}>

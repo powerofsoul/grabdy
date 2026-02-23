@@ -1,4 +1,11 @@
-import type { CanvasEdge, CanvasState, Card, CardSource, ChatSource, DataSourceType } from '@grabdy/contracts';
+import type {
+  CanvasEdge,
+  CanvasState,
+  Card,
+  CardSource,
+  ChatSource,
+  DataSourceType,
+} from '@grabdy/contracts';
 import { chatSourceSchema } from '@grabdy/contracts';
 import type { Edge, Node } from '@xyflow/react';
 
@@ -19,8 +26,6 @@ function chatSourceExtras(type: DataSourceType, s: CardSource): Record<string, u
       return { sheet: s.sheet ?? '', rows: s.rows ?? [], columns: s.columns ?? [] };
     case 'CSV':
       return { rows: s.rows ?? [], columns: s.columns ?? [] };
-    case 'CODE_REPO':
-      return { filePath: s.filePath, docPageId: s.docPageId, docPageTitle: s.docPageTitle };
     case 'TXT':
     case 'JSON':
     case 'IMAGE':

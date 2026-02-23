@@ -1,4 +1,3 @@
-import type { DbId } from '@grabdy/common';
 import type { IntegrationProvider } from '@grabdy/contracts';
 import { useQuery } from '@tanstack/react-query';
 
@@ -15,11 +14,6 @@ interface SidebarConnection {
   id: string;
   provider: IntegrationProvider;
   name: string;
-}
-
-interface SidebarCodeRepo {
-  id: DbId<'DataSource'>;
-  title: string;
 }
 
 export function useSidebarSources() {
@@ -61,26 +55,5 @@ export function useSidebarSources() {
         })),
   });
 
-  const { data: codeRepos = [] } = useQuery<SidebarCodeRepo[]>({
-    queryKey: ['data-sources', 'code-repos', selectedOrgId],
-    queryFn: async () => {
-      if (!selectedOrgId) return [];
-      const res = await api.dataSources.list({
-        params: { orgId: selectedOrgId },
-        query: { type: 'CODE_REPO' },
-      });
-      if (res.status === 200) {
-        return res.body.data
-          .filter((ds) => ds.status === 'READY')
-          .map((ds) => ({
-            id: ds.id,
-            title: ds.title,
-          }));
-      }
-      return [];
-    },
-    enabled: !!selectedOrgId,
-  });
-
-  return { collections, connections, codeRepos };
+  return { collections, connections };
 }

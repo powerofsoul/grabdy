@@ -5,7 +5,6 @@ import {
   CaretRightIcon,
   ChartBarIcon,
   ChatCircleIcon,
-  CodeIcon,
   EyeIcon,
   FolderIcon,
   GearIcon,
@@ -187,7 +186,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
   const { user, logout, isAdmin } = useAuth();
   const { preference, setPreference } = useThemeMode();
-  const { collections, connections, codeRepos } = useSidebarSources();
+  const { collections, connections } = useSidebarSources();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
 
@@ -324,28 +323,14 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               </Tooltip>
             }
           />
-          {connections.map((conn) => {
-            const isGitHub = conn.provider === 'GITHUB';
-            return (
-              <Box key={conn.id}>
-                <NavItem
-                  to={`/dashboard/integrations/${conn.provider.toLowerCase()}`}
-                  label={getProviderLabel(conn.provider)}
-                  icon={<ProviderIcon provider={conn.provider} size={15} />}
-                />
-                {isGitHub &&
-                  codeRepos.map((repo) => (
-                    <Box key={repo.id} sx={{ pl: 1.5 }}>
-                      <NavItem
-                        to={`/dashboard/code-repos/${repo.id}`}
-                        label={repo.title}
-                        icon={<CodeIcon size={15} weight="light" color="currentColor" />}
-                      />
-                    </Box>
-                  ))}
-              </Box>
-            );
-          })}
+          {connections.map((conn) => (
+            <NavItem
+              key={conn.id}
+              to={`/dashboard/integrations/${conn.provider.toLowerCase()}`}
+              label={getProviderLabel(conn.provider)}
+              icon={<ProviderIcon provider={conn.provider} size={15} />}
+            />
+          ))}
         </Box>
 
         {/* Developer */}

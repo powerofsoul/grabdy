@@ -11,7 +11,6 @@ export const AiRequestType = {
   RERANK: 'RERANK',
   HYDE: 'HYDE',
   SUMMARY: 'SUMMARY',
-  CODE_ANALYSIS: 'CODE_ANALYSIS',
 } as const;
 export type AiRequestType = (typeof AiRequestType)[keyof typeof AiRequestType];
 

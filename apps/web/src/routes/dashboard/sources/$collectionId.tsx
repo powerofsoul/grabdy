@@ -15,7 +15,6 @@ import {
 import type { IconProps } from '@phosphor-icons/react';
 import {
   ArrowsClockwiseIcon,
-  CodeIcon,
   DatabaseIcon,
   DownloadSimpleIcon,
   EyeIcon,
@@ -36,7 +35,6 @@ import {
   canPreview,
   DocumentPreviewDrawer,
 } from '@/components/chat/components/DocumentPreviewDrawer';
-import { RepoDocsViewer } from '@/components/code-repos';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -57,7 +55,6 @@ interface DataSource {
   pageCount: number | null;
   createdAt: string;
   updatedAt: string;
-  progress?: number;
 }
 
 interface Collection {
@@ -101,8 +98,7 @@ function isFileExt(ext: string): ext is UploadsExt {
   return ext in ICON_BY_EXT;
 }
 
-function getFileIcon(filename: string, type?: string): ComponentType<IconProps> {
-  if (type === 'CODE_REPO') return CodeIcon;
+function getFileIcon(filename: string): ComponentType<IconProps> {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   return isFileExt(ext) ? ICON_BY_EXT[ext] : FileTextIcon;
 }
@@ -231,17 +227,14 @@ function CollectionDetailPage() {
       if (!selectedOrgId) return;
       if (eventSourcesRef.current.has(dsId)) return;
 
-      const es = new EventSource(
-        `${baseUrl}/orgs/${selectedOrgId}/data-sources/${dsId}/progress`,
-        { withCredentials: true }
-      );
+      const es = new EventSource(`${baseUrl}/orgs/${selectedOrgId}/data-sources/${dsId}/progress`, {
+        withCredentials: true,
+      });
 
       eventSourcesRef.current.set(dsId, es);
 
       es.onmessage = (event) => {
-        const parsed = JSON.parse(event.data) as
-          | { status: DataSourceStatus; progress: number }
-          | { done: boolean };
+        const parsed = JSON.parse(event.data) as { status: DataSourceStatus } | { done: boolean };
 
         if ('done' in parsed) {
           es.close();
@@ -250,9 +243,7 @@ function CollectionDetailPage() {
         }
 
         setDataSources((prev) =>
-          prev.map((ds) =>
-            ds.id === dsId ? { ...ds, status: parsed.status, progress: parsed.progress } : ds
-          )
+          prev.map((ds) => (ds.id === dsId ? { ...ds, status: parsed.status } : ds))
         );
 
         if (parsed.status === 'READY' || parsed.status === 'FAILED') {
@@ -406,16 +397,6 @@ function CollectionDetailPage() {
     );
   };
 
-  const handleViewDocs = (ds: DataSource) => {
-    if (!selectedOrgId) return;
-    const parsed = dbIdSchema('DataSource').safeParse(ds.id);
-    if (!parsed.success) return;
-    pushDrawer(
-      () => <RepoDocsViewer orgId={selectedOrgId} dataSourceId={parsed.data} />,
-      { title: `${ds.title} Documentation`, mode: 'drawer', width: 640 }
-    );
-  };
-
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -450,7 +431,11 @@ function CollectionDetailPage() {
       )}
 
       <Box sx={{ mb: 3 }}>
-        <FileUpload onFileSelect={handleUpload} disabled={uploadProgress !== null} uploadProgress={uploadProgress} />
+        <FileUpload
+          onFileSelect={handleUpload}
+          disabled={uploadProgress !== null}
+          uploadProgress={uploadProgress}
+        />
       </Box>
 
       {dataSources.length === 0 ? (
@@ -493,7 +478,7 @@ function CollectionDetailPage() {
           }}
           renderItems={{
             name: (ds) => {
-              const Icon = getFileIcon(ds.title, ds.type);
+              const Icon = getFileIcon(ds.title);
               return (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                   <Icon size={18} weight="light" style={{ flexShrink: 0 }} />
@@ -507,28 +492,15 @@ function CollectionDetailPage() {
             },
             type: (ds) => (
               <Typography variant="caption" color="text.secondary">
-                {ds.type === 'CODE_REPO' ? 'Code' : ds.type}
+                {ds.type}
               </Typography>
             ),
-            status: (ds) => <StatusChip status={ds.status} progress={ds.progress} />,
+            status: (ds) => <StatusChip status={ds.status} />,
             size: (ds) => formatFileSize(ds.fileSize),
             uploaded: (ds) => relativeDate(ds.createdAt),
             actions: (ds) => (
               <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'flex-end' }}>
-                {ds.type === 'CODE_REPO' ? (
-                  <Tooltip title="View Documentation">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewDocs(ds);
-                      }}
-                      disabled={ds.status !== 'READY'}
-                    >
-                      <EyeIcon size={16} weight="light" />
-                    </IconButton>
-                  </Tooltip>
-                ) : canPreview(ds.mimeType) ? (
+                {canPreview(ds.mimeType) ? (
                   <Tooltip title="Preview">
                     <IconButton
                       size="small"
@@ -553,19 +525,17 @@ function CollectionDetailPage() {
                     </IconButton>
                   </Tooltip>
                 )}
-                {ds.type !== 'CODE_REPO' && (
-                  <Tooltip title="Rename">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRename(ds);
-                      }}
-                    >
-                      <PencilSimpleIcon size={16} weight="light" />
-                    </IconButton>
-                  </Tooltip>
-                )}
+                <Tooltip title="Rename">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRename(ds);
+                    }}
+                  >
+                    <PencilSimpleIcon size={16} weight="light" />
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Reprocess">
                   <IconButton
                     size="small"

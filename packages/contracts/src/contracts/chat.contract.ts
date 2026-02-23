@@ -48,13 +48,6 @@ export const chatSourceSchema = z.discriminatedUnion('type', [
   z.object({ ...chatSourceBase, type: z.literal('LINEAR') }),
   z.object({ ...chatSourceBase, type: z.literal('GITHUB') }),
   z.object({ ...chatSourceBase, type: z.literal('NOTION') }),
-  z.object({
-    ...chatSourceBase,
-    type: z.literal('CODE_REPO'),
-    filePath: z.string().optional(),
-    docPageId: dbIdSchema('DocPage').optional(),
-    docPageTitle: z.string().optional(),
-  }),
 ]);
 
 export type ChatSource = z.infer<typeof chatSourceSchema>;
