@@ -2,16 +2,24 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import type { AiRequestSource, CanvasState } from '@grabdy/contracts';
-import { createTool } from '@mastra/core/tools';
+import { AiCallerType, AiRequestType, CHAT_MODEL } from '@grabdy/contracts';
+import { stepCountIs, tool, ToolLoopAgent } from 'ai';
 import { z } from 'zod';
 
-import { CanvasAgentFactory } from '../services/canvas-agent.factory';
+import { AiUsageService } from '../../ai/ai-usage.service';
+import { CHAT_LANGUAGE_MODEL } from '../../ai/bedrock.provider';
+import { CANVAS_INSTRUCTIONS, summarizeCanvas } from '../../chat/canvas-prompt';
+
+import { CanvasTools } from './canvas-tools';
 
 @Injectable()
 export class CanvasDelegateTool {
   private readonly logger = new Logger(CanvasDelegateTool.name);
 
-  constructor(private canvasAgentFactory: CanvasAgentFactory) {}
+  constructor(
+    private canvasTools: CanvasTools,
+    private aiUsageService: AiUsageService
+  ) {}
 
   create(opts: {
     orgId: DbId<'Org'>;
@@ -20,11 +28,11 @@ export class CanvasDelegateTool {
     source: AiRequestSource;
     canvasState?: CanvasState;
   }) {
-    const factory = this.canvasAgentFactory;
+    const canvasTools = this.canvasTools;
+    const aiUsageService = this.aiUsageService;
     const logger = this.logger;
 
-    const canvasDelegate = createTool({
-      id: 'canvas_delegate',
+    const canvasDelegate = tool({
       description:
         'Create visual cards on the canvas from structured data. Pass the search context and what to visualize. A specialized canvas agent will create the cards.',
       inputSchema: z.object({
@@ -44,17 +52,37 @@ export class CanvasDelegateTool {
           `[canvas_delegate] Delegating to canvas agent: intent="${input.intent}", context=${input.context.length} chars`
         );
 
-        const agent = factory.create({
-          orgId: opts.orgId,
-          userId: opts.userId,
-          threadId: opts.threadId,
-          source: opts.source,
-          canvasState: opts.canvasState,
-        });
+        const parts = [CANVAS_INSTRUCTIONS];
+        if (opts.canvasState && opts.canvasState.cards.length > 0) {
+          parts.push(summarizeCanvas(opts.canvasState));
+        }
+        const instructions = parts.join('\n\n');
+
+        const tools = canvasTools.create(opts.threadId, opts.orgId);
 
         const prompt = `Based on the following data, create appropriate canvas cards.\n\nIntent: ${input.intent}\n\nData:\n${input.context}`;
 
-        const result = await agent.generate(prompt);
+        const canvasAgent = new ToolLoopAgent({
+          id: 'canvas-agent',
+          model: CHAT_LANGUAGE_MODEL,
+          instructions,
+          tools,
+          stopWhen: stepCountIs(10),
+          onStepFinish: ({ usage }) => {
+            aiUsageService
+              .logUsage(
+                CHAT_MODEL,
+                usage.inputTokens ?? 0,
+                usage.outputTokens ?? 0,
+                AiCallerType.MEMBER,
+                AiRequestType.CHAT,
+                { orgId: opts.orgId, userId: opts.userId, source: opts.source }
+              )
+              .catch((err) => logger.error(`Usage logging failed: ${err}`));
+          },
+        });
+
+        const result = await canvasAgent.generate({ prompt });
 
         // Extract canvas_update tool results from all steps
         const canvasOps: Array<{ args: unknown; result: unknown }> = [];
@@ -68,13 +96,11 @@ export class CanvasDelegateTool {
             `[canvas_delegate] Step: ${step.toolResults.length} tool results, ${step.toolCalls.length} tool calls`
           );
           for (const tr of step.toolResults) {
-            logger.log(
-              `[canvas_delegate] Tool result: ${tr.payload.toolName} isError=${tr.payload.isError ?? false}`
-            );
-            if (tr.payload.toolName === 'canvas_update') {
+            logger.log(`[canvas_delegate] Tool result: ${tr.toolName} type=${tr.type}`);
+            if (tr.toolName === 'canvas_update') {
               canvasOps.push({
-                args: tr.payload.args,
-                result: tr.payload.result,
+                args: tr.input,
+                result: tr.output,
               });
             }
           }

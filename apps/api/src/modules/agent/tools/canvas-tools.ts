@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { DbId } from '@grabdy/common';
 import { nonDbIdSchema, packNonDbId } from '@grabdy/common';
 import { canvasEdgeSchema, cardSchema, chunkMetaTypeEnum } from '@grabdy/contracts';
-import { createTool } from '@mastra/core/tools';
+import { tool } from 'ai';
 import { Queue } from 'bullmq';
 import { z } from 'zod';
 
@@ -150,8 +150,7 @@ export class CanvasTools {
     const queue = this.canvasQueue;
     const logger = this.logger;
 
-    const canvasUpdate = createTool({
-      id: 'canvas_update',
+    const canvasUpdate = tool({
       description:
         'Apply one or more canvas operations in a single batch. Use placeholder IDs for new cards/edges — the server replaces them with real IDs. Later operations in the same batch can reference placeholder IDs from earlier operations.',
       inputSchema: z.object({

@@ -2,16 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { dbIdSchema } from '@grabdy/common';
-import {
-  AiCallerType,
-  CHAT_MODEL,
-  type ChunkMeta,
-  type MetadataFilter,
-} from '@grabdy/contracts';
+import { AiCallerType, CHAT_MODEL, type ChunkMeta, type MetadataFilter } from '@grabdy/contracts';
 import { chunkMetaSchema } from '@grabdy/contracts';
 import { z } from 'zod';
 
-import { AgentFactory } from '../agent/services/agent.factory';
+import { DataAgent } from '../agent/agents/data/data-agent';
 import type { SearchResult } from '../retrieval/search.service';
 import { SearchService } from '../retrieval/search.service';
 
@@ -32,7 +27,7 @@ export class RetrievalService {
 
   constructor(
     private searchService: SearchService,
-    private agentFactory: AgentFactory
+    private dataAgent: DataAgent
   ) {}
 
   async query(
@@ -74,7 +69,7 @@ export class RetrievalService {
     model: string;
     usage: { promptTokens: number; completionTokens: number; totalTokens: number };
   }> {
-    const agent = this.agentFactory.createDataAgent({
+    const session = this.dataAgent.create({
       orgId,
       source: 'API',
       collectionIds: options.collectionIds,
@@ -82,7 +77,7 @@ export class RetrievalService {
       defaultTopK: options.topK,
     });
 
-    const result = await agent.generate(queryText);
+    const result = await session.generate({ message: queryText });
 
     // Extract sources from rag-search tool results across all steps
     const sources: Array<{
@@ -94,8 +89,8 @@ export class RetrievalService {
 
     for (const step of result.steps) {
       for (const tr of step.toolResults) {
-        if (tr.payload.toolName !== 'rag-search') continue;
-        const parsed = ragResultsSchema.safeParse(tr.payload.result);
+        if (tr.toolName !== 'rag-search') continue;
+        const parsed = ragResultsSchema.safeParse(tr.output);
         if (!parsed.success) {
           this.logger.warn(`Failed to parse rag-search result: ${parsed.error.message}`);
           continue;

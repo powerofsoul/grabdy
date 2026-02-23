@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { AiCallerType, AiRequestType, CODE_ANALYSIS_MODEL } from '@grabdy/contracts';
-import { generateText, type LanguageModel } from 'ai';
+import { AiRequestType, CODE_ANALYSIS_MODEL } from '@grabdy/contracts';
+import type { LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import { InjectEnv } from '../../config/env.config';
-import { AiUsageService, type UsageContext } from '../../modules/ai/ai-usage.service';
-import { createBedrockModel } from '../bedrock-model';
+import { type AiCallContext, AiService } from '../../modules/ai/ai.service';
+import { createBedrockModel } from '../../modules/ai/bedrock.provider';
 import { stripMarkdownFences } from '../constants';
 
 // ── Schemas ──────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ export class DocPlannerService {
   constructor(
     @InjectEnv('codeAnalysisModel') model: string,
     @InjectEnv('awsRegion') region: string,
-    private aiUsageService: AiUsageService
+    private aiService: AiService
   ) {
     this.model = createBedrockModel(region, model);
   }
@@ -56,7 +56,7 @@ export class DocPlannerService {
     directoryTree: string,
     fileSummaries: string,
     languageBreakdown: string,
-    context: UsageContext
+    context: AiCallContext
   ): Promise<DocPlan> {
     const prompt = `You are a documentation architect. Plan a multi-page documentation structure for the repository "${repoFullName}".
 
@@ -158,7 +158,7 @@ Respond with ONLY valid JSON, no markdown fencing or explanation.`;
     }>,
     changedFiles: string[],
     fileSummaries: string,
-    context: UsageContext
+    context: AiCallContext
   ): Promise<IncrementalUpdate> {
     const existingPagesText = existingPages
       .map((p) => `- ${p.slug}: "${p.title}" (covers: ${p.relevantFiles.slice(0, 5).join(', ')})`)
@@ -233,32 +233,14 @@ Respond with ONLY valid JSON, no markdown fencing or explanation.`;
     return parsed.data;
   }
 
-  private async invokeModel(prompt: string, context: UsageContext): Promise<string> {
-    const startTime = Date.now();
+  private async invokeModel(prompt: string, context: AiCallContext): Promise<string> {
+    const result = await this.aiService.generateText(
+      { model: this.model, maxOutputTokens: 8192, temperature: 0.2, prompt },
+      CODE_ANALYSIS_MODEL,
+      AiRequestType.CODE_ANALYSIS,
+      context
+    );
 
-    const { text, usage } = await generateText({
-      model: this.model,
-      maxOutputTokens: 8192,
-      temperature: 0.2,
-      prompt,
-    });
-
-    const inputTokens = usage.inputTokens ?? 0;
-    const outputTokens = usage.outputTokens ?? 0;
-    const durationMs = Date.now() - startTime;
-
-    this.aiUsageService
-      .logUsage(
-        CODE_ANALYSIS_MODEL,
-        inputTokens,
-        outputTokens,
-        AiCallerType.SYSTEM,
-        AiRequestType.CODE_ANALYSIS,
-        context,
-        { durationMs }
-      )
-      .catch((err: unknown) => this.logger.error(`Failed to log doc planner usage: ${err}`));
-
-    return text;
+    return result.text;
   }
 }

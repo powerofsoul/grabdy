@@ -4,23 +4,13 @@ import { Inject, Logger } from '@nestjs/common';
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
 import { packId } from '@grabdy/common';
-import {
-  AiCallerType,
-  AiRequestType,
-  type ChunkMeta,
-  EMBEDDING_MODEL,
-  UPLOADS_MIME_TO_TYPE,
-  type UploadsMime,
-} from '@grabdy/contracts';
-import { embedMany } from 'ai';
+import { type ChunkMeta, UPLOADS_MIME_TO_TYPE, type UploadsMime } from '@grabdy/contracts';
 import { Job } from 'bullmq';
 
-import {
-  EMBEDDING_BATCH_SIZE,
-} from '../../config/constants';
+import { EMBEDDING_BATCH_SIZE } from '../../config/constants';
 import { env } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
-import { AiUsageService } from '../ai/ai-usage.service';
+import { AiService } from '../ai/ai.service';
 import { DocxExtractor } from '../extractors/docx.extractor';
 import type { ExtractionResult } from '../extractors/extractor.interface';
 import { ImageExtractor } from '../extractors/image.extractor';
@@ -31,7 +21,13 @@ import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
 
-import { chunkCsv, chunkPages, chunkPlainText, chunkSheets, groupMessages } from './chunking/chunk-content';
+import {
+  chunkCsv,
+  chunkPages,
+  chunkPlainText,
+  chunkSheets,
+  groupMessages,
+} from './chunking/chunk-content';
 import type { ChunkWithMeta, DataSourceJobData } from './data-source.types';
 
 /** Build a preview URL for an uploaded data source. */
@@ -51,7 +47,7 @@ export class DataSourceProcessor extends WorkerHost {
     private textExtractor: TextExtractor,
     private xlsxExtractor: XlsxExtractor,
     private imageExtractor: ImageExtractor,
-    private aiUsageService: AiUsageService
+    private aiService: AiService
   ) {
     super();
   }
@@ -99,7 +95,12 @@ export class DataSourceProcessor extends WorkerHost {
         fullText = meta.text;
         chunks = chunkPlainText(fullText, { type: 'IMAGE' }, defaultSourceUrl);
       } else {
-        const result = await this.extractContent(storagePath, mimeType, onExtractionProgress);
+        const result = await this.extractContent(
+          storagePath,
+          mimeType,
+          orgId,
+          onExtractionProgress
+        );
         fullText = result.text;
         chunks = this.chunksFromResult(result, defaultSourceUrl, mimeType);
         pageCount = result.type === 'pages' ? result.pages.length : null;
@@ -143,22 +144,13 @@ export class DataSourceProcessor extends WorkerHost {
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
 
-        const { embeddings, usage: embeddingUsage } = await embedMany({
-          model: openai.embedding('text-embedding-3-small'),
-          values: batch.map((c) => c.content),
-        });
-
-        // Log embedding usage
-        this.aiUsageService
-          .logUsage(
-            EMBEDDING_MODEL,
-            embeddingUsage.tokens,
-            0,
-            AiCallerType.SYSTEM,
-            AiRequestType.EMBEDDING,
-            { orgId, source: 'SYSTEM' }
-          )
-          .catch((err) => this.logger.error(`Embedding usage logging failed: ${err}`));
+        const { embeddings } = await this.aiService.embedMany(
+          {
+            model: openai.embedding('text-embedding-3-small'),
+            values: batch.map((c) => c.content),
+          },
+          { orgId, source: 'SYSTEM' }
+        );
 
         // Store chunks with embeddings
         const values = batch.map((chunk, idx) => ({
@@ -236,6 +228,7 @@ export class DataSourceProcessor extends WorkerHost {
   private async extractContent(
     storagePath: string,
     mimeType: UploadsMime,
+    orgId: DbId<'Org'>,
     onProgress?: (fraction: number) => Promise<void>
   ): Promise<ExtractionResult> {
     switch (mimeType) {
@@ -256,7 +249,7 @@ export class DataSourceProcessor extends WorkerHost {
       case 'image/jpeg':
       case 'image/webp':
       case 'image/gif':
-        return this.imageExtractor.extract(storagePath);
+        return this.imageExtractor.extract(storagePath, orgId);
       default: {
         const _exhaustive: never = mimeType;
         throw new Error(`Unsupported mime type: ${_exhaustive}`);

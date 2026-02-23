@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { AiCallerType, AiRequestType, CODE_ANALYSIS_MODEL } from '@grabdy/contracts';
-import { generateText, type LanguageModel } from 'ai';
+import { AiRequestType, CODE_ANALYSIS_MODEL } from '@grabdy/contracts';
+import type { LanguageModel } from 'ai';
 import { z } from 'zod';
 
 import { InjectEnv } from '../../config/env.config';
-import { AiUsageService, type UsageContext } from '../../modules/ai/ai-usage.service';
-import { createBedrockModel } from '../bedrock-model';
+import { type AiCallContext, AiService } from '../../modules/ai/ai.service';
+import { createBedrockModel } from '../../modules/ai/bedrock.provider';
 import { stripMarkdownFences } from '../constants';
 
 const fileSectionSchema = z.object({
@@ -30,7 +30,7 @@ export class CodeAnalysisService {
   constructor(
     @InjectEnv('codeAnalysisModel') model: string,
     @InjectEnv('awsRegion') region: string,
-    private aiUsageService: AiUsageService
+    private aiService: AiService
   ) {
     this.model = createBedrockModel(region, model);
   }
@@ -39,7 +39,7 @@ export class CodeAnalysisService {
     filePath: string,
     content: string,
     language: string,
-    context: UsageContext
+    context: AiCallContext
   ): Promise<FileAnalysis> {
     const prompt = `Analyze this ${language} file and return a JSON object with:
 1. "summary": A concise 1-2 sentence description of what this file does.
@@ -87,7 +87,7 @@ Respond with ONLY valid JSON, no markdown fencing or explanation.`;
     languageBreakdown: string,
     previousDoc: string | null,
     changedFiles: string[] | null,
-    context: UsageContext
+    context: AiCallContext
   ): Promise<string> {
     let prompt: string;
 
@@ -131,32 +131,14 @@ Write clear, developer-friendly documentation.`;
     return this.invokeModel(prompt, context);
   }
 
-  private async invokeModel(prompt: string, context: UsageContext): Promise<string> {
-    const startTime = Date.now();
+  private async invokeModel(prompt: string, context: AiCallContext): Promise<string> {
+    const result = await this.aiService.generateText(
+      { model: this.model, maxOutputTokens: 8192, temperature: 0.2, prompt },
+      CODE_ANALYSIS_MODEL,
+      AiRequestType.CODE_ANALYSIS,
+      context
+    );
 
-    const { text, usage } = await generateText({
-      model: this.model,
-      maxOutputTokens: 8192,
-      temperature: 0.2,
-      prompt,
-    });
-
-    const inputTokens = usage.inputTokens ?? 0;
-    const outputTokens = usage.outputTokens ?? 0;
-    const durationMs = Date.now() - startTime;
-
-    this.aiUsageService
-      .logUsage(
-        CODE_ANALYSIS_MODEL,
-        inputTokens,
-        outputTokens,
-        AiCallerType.SYSTEM,
-        AiRequestType.CODE_ANALYSIS,
-        context,
-        { durationMs }
-      )
-      .catch((err: unknown) => this.logger.error(`Failed to log code analysis usage: ${err}`));
-
-    return text;
+    return result.text;
   }
 }

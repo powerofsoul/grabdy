@@ -1,13 +1,15 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
 import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '@grabdy/contracts';
+import { Queue } from 'bullmq';
 import { sql } from 'kysely';
 
 import { EncryptionService } from '../../common/encryption/encryption.service';
 import { DbService } from '../../db/db.module';
-import { InngestService } from '../inngest/inngest.service';
+import { CODE_REPO_QUEUE, INTEGRATIONS_QUEUE } from '../queue/queue.constants';
 
 import { ProviderRegistry } from './providers/provider-registry';
 import {
@@ -45,7 +47,8 @@ export class IntegrationsService {
     private db: DbService,
     private encryption: EncryptionService,
     private providerRegistry: ProviderRegistry,
-    private inngestService: InngestService
+    @InjectQueue(INTEGRATIONS_QUEUE) private integrationsQueue: Queue,
+    @InjectQueue(CODE_REPO_QUEUE) private codeRepoQueue: Queue
   ) {}
 
   async listConnections(orgId: DbId<'Org'>) {
@@ -277,7 +280,7 @@ export class IntegrationsService {
   }
 
   async triggerSync(connectionId: DbId<'Connection'>, orgId: DbId<'Org'>, trigger: SyncTrigger) {
-    await this.inngestService.send('app/integration.discover', {
+    await this.integrationsQueue.add('discover', {
       connectionId,
       orgId,
       trigger,
@@ -291,7 +294,7 @@ export class IntegrationsService {
     orgId: DbId<'Org'>,
     event: WebhookEvent
   ) {
-    await this.inngestService.send('app/integration.process-item', {
+    await this.integrationsQueue.add('process-item', {
       connectionId,
       orgId,
       event,
@@ -352,7 +355,7 @@ export class IntegrationsService {
 
       if (!claimed || claimed.numUpdatedRows === 0n) continue;
 
-      await this.inngestService.send('app/code-repo.sync', {
+      await this.codeRepoQueue.add('sync', {
         dataSourceId: source.id,
         orgId: source.org_id,
         repoFullName,

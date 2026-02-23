@@ -1,20 +1,17 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
-import { type DbId, type NonDbId, packId } from '@grabdy/common';
-import { type CanvasEdge, type CanvasState, canvasStateSchema, type Card } from '@grabdy/contracts';
-import { Queue } from 'bullmq';
+import { type DbId, packId } from '@grabdy/common';
+import { canvasStateSchema } from '@grabdy/contracts';
 import { sql } from 'kysely';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
-import { AgentFactory } from '../agent/services/agent.factory';
+import { DataAgent } from '../agent/agents/data/data-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
 import { CanvasDelegateTool } from '../agent/tools/canvas-delegate.tool';
-import { CANVAS_OPS_QUEUE } from '../queue/queue.constants';
 
-import type { CanvasOp } from './processors/canvas-ops.types';
 import { buildBlockInstructionsPrompt } from './block-registry';
+import { CanvasService } from './canvas.service';
 
 @Injectable()
 export class ChatService {
@@ -22,26 +19,11 @@ export class ChatService {
 
   constructor(
     private db: DbService,
-    private agentFactory: AgentFactory,
+    private dataAgent: DataAgent,
     private agentMemory: AgentMemoryService,
     private canvasDelegateTool: CanvasDelegateTool,
-    @InjectQueue(CANVAS_OPS_QUEUE) private canvasQueue: Queue<CanvasOp>
+    private canvasService: CanvasService
   ) {}
-
-  private async getCanvasState(
-    threadId: DbId<'ChatThread'>,
-    orgId: DbId<'Org'>
-  ): Promise<CanvasState | undefined> {
-    const row = await this.db.kysely
-      .selectFrom('data.chat_threads')
-      .select('canvas_state')
-      .where('id', '=', threadId)
-      .where('org_id', '=', orgId)
-      .executeTakeFirst();
-
-    if (!row?.canvas_state) return undefined;
-    return canvasStateSchema.parse(row.canvas_state);
-  }
 
   private async ensureThread(
     orgId: DbId<'Org'>,
@@ -81,15 +63,15 @@ export class ChatService {
   private buildChatInstructions(): string {
     const parts = [buildBlockInstructionsPrompt()];
 
-    parts.push(`## Canvas — MANDATORY
-**You MUST call \`canvas_delegate\` on every response where you found an answer.** If you answered the user's question using knowledge base results, you MUST visualize it. No exceptions. Text-only answers are broken — the canvas is how users consume information.
+    parts.push(`## Canvas -- MANDATORY
+**You MUST call \`canvas_delegate\` on every response where you found an answer.** If you answered the user's question using knowledge base results, you MUST visualize it. No exceptions. Text-only answers are broken. The canvas is how users consume information.
 
 **Only skip \`canvas_delegate\` when you literally cannot answer:** greetings, "I couldn't find anything", clarifying questions, or single-sentence acknowledgments like "Happy to help."
 
-Execution order — non-negotiable:
+Execution order, non-negotiable:
 1. Search the knowledge base
 2. Write your complete chat answer (including the sources block)
-3. Call \`canvas_delegate\` as your VERY LAST action — after all text is finished
+3. Call \`canvas_delegate\` as your VERY LAST action, after all text is finished
 - Pass ALL relevant search results as context so the canvas agent can visualize them.`);
 
     return parts.join('\n\n');
@@ -110,15 +92,14 @@ Execution order — non-negotiable:
     sources: never[];
   }> {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
-    const canvasState = await this.getCanvasState(threadId, orgId);
+    const canvasState = await this.canvasService.getState(threadId, orgId);
 
-    const chatAgent = this.agentFactory.createDataAgent({
+    const session = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
       instructions: this.buildChatInstructions(),
-      memory: this.agentMemory.getMemory(),
       tools: [
         this.canvasDelegateTool.create({
           orgId,
@@ -129,7 +110,8 @@ Execution order — non-negotiable:
         }),
       ],
     });
-    const result = await chatAgent.generate(message, threadId, membershipId);
+
+    const result = await session.generate({ threadId, message });
 
     return {
       answer: result.text,
@@ -149,15 +131,14 @@ Execution order — non-negotiable:
     }
   ) {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
-    const canvasState = await this.getCanvasState(threadId, orgId);
+    const canvasState = await this.canvasService.getState(threadId, orgId);
 
-    const agent = this.agentFactory.createDataAgent({
+    const session = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
       instructions: this.buildChatInstructions(),
-      memory: this.agentMemory.getMemory(),
       tools: [
         this.canvasDelegateTool.create({
           orgId,
@@ -169,9 +150,9 @@ Execution order — non-negotiable:
       ],
     });
 
-    const streamResult = await agent.stream(message, threadId, membershipId);
+    const { streamResult, saveAssistant } = await session.stream({ threadId, message });
 
-    return { threadId, streamResult };
+    return { threadId, streamResult, orgId, saveAssistant };
   }
 
   async createThread(
@@ -282,72 +263,5 @@ Execution order — non-negotiable:
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
     };
-  }
-
-  private enqueueCanvasOp(op: CanvasOp): void {
-    this.canvasQueue.add(op.type, op, { attempts: 1 }).catch((err) => {
-      this.logger.error(`Failed to enqueue canvas op ${op.type}: ${err}`);
-    });
-  }
-
-  async moveCanvasCard(
-    orgId: DbId<'Org'>,
-    threadId: DbId<'ChatThread'>,
-    cardId: NonDbId<'CanvasCard'>,
-    update: {
-      position?: { x: number; y: number };
-      width?: number;
-      height?: number;
-      title?: string;
-      zIndex?: number;
-    }
-  ): Promise<void> {
-    this.enqueueCanvasOp({ type: 'move_card', threadId, orgId, cardId, ...update });
-  }
-
-  async updateCanvasEdges(
-    orgId: DbId<'Org'>,
-    threadId: DbId<'ChatThread'>,
-    edges: CanvasEdge[]
-  ): Promise<void> {
-    this.enqueueCanvasOp({ type: 'update_edges', threadId, orgId, edges });
-  }
-
-  async addCanvasEdge(
-    orgId: DbId<'Org'>,
-    threadId: DbId<'ChatThread'>,
-    edge: CanvasEdge
-  ): Promise<void> {
-    this.enqueueCanvasOp({ type: 'add_edge', threadId, orgId, edge });
-  }
-
-  async deleteCanvasEdge(
-    orgId: DbId<'Org'>,
-    threadId: DbId<'ChatThread'>,
-    edgeId: NonDbId<'CanvasEdge'>
-  ): Promise<void> {
-    this.enqueueCanvasOp({ type: 'delete_edge', threadId, orgId, edgeId });
-  }
-
-  async deleteCanvasCard(
-    orgId: DbId<'Org'>,
-    threadId: DbId<'ChatThread'>,
-    cardId: NonDbId<'CanvasCard'>
-  ): Promise<void> {
-    this.enqueueCanvasOp({ type: 'remove_card', threadId, orgId, cardId });
-  }
-
-  async updateCanvasComponent(
-    orgId: DbId<'Org'>,
-    threadId: DbId<'ChatThread'>,
-    cardId: NonDbId<'CanvasCard'>,
-    componentId: NonDbId<'CanvasComponent'>,
-    data: Record<string, unknown>
-  ): Promise<void> {
-    this.enqueueCanvasOp({ type: 'update_component', threadId, orgId, cardId, componentId, data });
-  }
-
-  async addCanvasCard(orgId: DbId<'Org'>, threadId: DbId<'ChatThread'>, card: Card): Promise<void> {
-    this.enqueueCanvasOp({ type: 'add_card', threadId, orgId, cards: [card] });
   }
 }

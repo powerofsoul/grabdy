@@ -9,11 +9,9 @@ import {
   type AiRequestSource,
   AiRequestType,
   type ChunkMeta,
-  EMBEDDING_MODEL,
   HYDE_MODEL,
   type MetadataFilter,
 } from '@grabdy/contracts';
-import { embed, generateText } from 'ai';
 import type { RawBuilder } from 'kysely';
 import { sql } from 'kysely';
 
@@ -24,10 +22,9 @@ import {
   HYDE_TIMEOUT_MS,
 } from '../../config/constants';
 import { DbService } from '../../db/db.module';
-import { AiUsageService } from '../ai/ai-usage.service';
+import { AiService } from '../ai/ai.service';
 
 import { reciprocalRankFusion } from './hybrid-search';
-import { RerankService } from './rerank.service';
 
 const awsCredentials = fromNodeProviderChain();
 const bedrockProvider = createAmazonBedrock({
@@ -124,8 +121,7 @@ export class SearchService {
 
   constructor(
     private db: DbService,
-    private aiUsageService: AiUsageService,
-    private rerankService: RerankService
+    private aiService: AiService
   ) {}
 
   async search(
@@ -145,22 +141,10 @@ export class SearchService {
       }
     }
 
-    const { embedding, usage: embedUsage } = await embed({
-      model: openai.embedding('text-embedding-3-small'),
-      value: vectorQueryText,
-    });
-
-    // Log embedding usage (fire-and-forget)
-    this.aiUsageService
-      .logUsage(
-        EMBEDDING_MODEL,
-        embedUsage.tokens,
-        0,
-        options.callerType,
-        AiRequestType.EMBEDDING,
-        { orgId, userId: options.userId, source: options.source }
-      )
-      .catch((err) => this.logger.error(`Search embedding usage logging failed: ${err}`));
+    const { embedding } = await this.aiService.embed(
+      { model: openai.embedding('text-embedding-3-small'), value: vectorQueryText },
+      { orgId, userId: options.userId, source: options.source, callerType: options.callerType }
+    );
 
     const embeddingStr = `[${embedding.join(',')}]`;
 
@@ -205,11 +189,10 @@ export class SearchService {
 
     // Apply reranking if requested
     if (options.rerank && results.length > 1) {
-      const reranked = await this.rerankService.rerank(
+      const reranked = await this.aiService.rerank(
         queryText,
         results.map((r) => ({ id: r.chunkId, content: r.content, vectorScore: r.score })),
-        orgId,
-        { userId: options.userId }
+        { orgId, userId: options.userId, source: options.source, callerType: options.callerType }
       );
 
       if (reranked) {
@@ -240,31 +223,22 @@ export class SearchService {
 
     try {
       let text: string;
-      let usage: { inputTokens?: number; outputTokens?: number };
       try {
-        const result = await generateText({
-          model: HYDE_LANGUAGE_MODEL,
-          maxOutputTokens: 150,
-          abortSignal: abortController.signal,
-          prompt: `Write a short passage (~100 words) that directly answers this question. Write as if you are quoting from a relevant document. Do not preface or explain — just write the answer passage.\n\nQuestion: ${queryText}`,
-        });
+        const result = await this.aiService.generateText(
+          {
+            model: HYDE_LANGUAGE_MODEL,
+            maxOutputTokens: 150,
+            abortSignal: abortController.signal,
+            prompt: `Write a short passage (~100 words) that directly answers this question. Write as if you are quoting from a relevant document. Do not preface or explain, just write the answer passage.\n\nQuestion: ${queryText}`,
+          },
+          HYDE_MODEL,
+          AiRequestType.HYDE,
+          { orgId, userId: options.userId, source: options.source, callerType: options.callerType }
+        );
         text = result.text;
-        usage = result.usage;
       } finally {
         clearTimeout(timer);
       }
-
-      // Log HyDE usage (fire-and-forget)
-      this.aiUsageService
-        .logUsage(
-          HYDE_MODEL,
-          usage.inputTokens ?? 0,
-          usage.outputTokens ?? 0,
-          options.callerType,
-          AiRequestType.HYDE,
-          { orgId, userId: options.userId, source: options.source }
-        )
-        .catch((err) => this.logger.error(`HyDE usage logging failed: ${err}`));
 
       return text;
     } catch (error) {

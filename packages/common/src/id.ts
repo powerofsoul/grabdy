@@ -26,7 +26,8 @@ export type TableIdName =
   | 'SyncLog'
   | 'CodeRepoDoc'
   | 'DocPage'
-  | 'DocPageVersion';
+  | 'DocPageVersion'
+  | 'ChatMessage';
 
 // ── Entity Type Maps ─────────────────────────────────────────────────────
 
@@ -65,6 +66,7 @@ export const ENTITY_TYPE_MAP = {
   DocPage: 0x35,
   DocPageVersion: 0x36,
   CodeRepoDoc: 0x37,
+  ChatMessage: 0x38,
   // Analytics
   AiUsageLog: 0x40,
   // Integrations

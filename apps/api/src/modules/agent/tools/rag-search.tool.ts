@@ -7,7 +7,7 @@ import {
   chunkMetaTypeEnum,
   type MetadataFilter,
 } from '@grabdy/contracts';
-import { createTool } from '@mastra/core/tools';
+import { tool } from 'ai';
 import { z } from 'zod';
 
 import { SearchService } from '../../retrieval/search.service';
@@ -30,8 +30,7 @@ export class RagSearchTool {
       .map(([type, shape]) => `${type}: ${shape}`)
       .join(', ');
 
-    return createTool({
-      id: 'rag-search',
+    return tool({
       description: `Search the knowledge base. Each result includes:
 - content: the matched text
 - contextBefore/contextAfter: surrounding text from adjacent chunks for richer context

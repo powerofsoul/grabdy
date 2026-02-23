@@ -2,19 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import { type DbId, packId } from '@grabdy/common';
-import {
-  AiCallerType,
-  AiRequestType,
-  type ChunkMeta,
-  DOC_PAGE_FILE_PATH,
-  EMBEDDING_MODEL,
-} from '@grabdy/contracts';
-import { embedMany } from 'ai';
+import { type ChunkMeta, DOC_PAGE_FILE_PATH } from '@grabdy/contracts';
 import { sql } from 'kysely';
 
 import { EMBEDDING_BATCH_SIZE } from '../../../config/constants';
 import { DbService } from '../../../db/db.module';
-import { AiUsageService } from '../../ai/ai-usage.service';
+import { AiService } from '../../ai/ai.service';
 import { chunkPlainText } from '../../data-sources/chunking/chunk-content';
 
 @Injectable()
@@ -23,7 +16,7 @@ export class DocEmbeddingService {
 
   constructor(
     private db: DbService,
-    private aiUsageService: AiUsageService
+    private aiService: AiService
   ) {}
 
   async reEmbedDocPage(
@@ -63,21 +56,10 @@ export class DocEmbeddingService {
     for (let i = 0; i < chunks.length; i += EMBEDDING_BATCH_SIZE) {
       const batch = chunks.slice(i, i + EMBEDDING_BATCH_SIZE);
 
-      const { embeddings, usage: embeddingUsage } = await embedMany({
-        model: openai.embedding('text-embedding-3-small'),
-        values: batch.map((c) => c.content),
-      });
-
-      this.aiUsageService
-        .logUsage(
-          EMBEDDING_MODEL,
-          embeddingUsage.tokens,
-          0,
-          AiCallerType.SYSTEM,
-          AiRequestType.EMBEDDING,
-          { orgId, source: 'SYSTEM' }
-        )
-        .catch((err: unknown) => this.logger.error(`Embedding usage logging failed: ${err}`));
+      const { embeddings } = await this.aiService.embedMany(
+        { model: openai.embedding('text-embedding-3-small'), values: batch.map((c) => c.content) },
+        { orgId, source: 'SYSTEM' }
+      );
 
       const values = batch.map((chunk, idx) => ({
         id: packId('Chunk', orgId),

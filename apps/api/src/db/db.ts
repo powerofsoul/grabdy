@@ -272,13 +272,13 @@ export interface DB {
     created_at: Generated<Timestamp>;
   };
 
-  'agent.mastra_messages': {
-    id: string;
+  'agent.chat_messages': {
+    id: Generated<DbId<'ChatMessage'>>;
     thread_id: DbId<'ChatThread'>;
+    org_id: DbId<'Org'>;
+    role: 'user' | 'assistant' | 'system' | 'tool';
     content: string;
-    role: string;
-    type: string;
-    createdAt: Timestamp;
+    created_at: Generated<Timestamp>;
   };
 
   'data.code_repo_state': {

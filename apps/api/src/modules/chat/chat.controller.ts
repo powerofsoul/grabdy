@@ -16,6 +16,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
+import { CanvasService } from './canvas.service';
 import { ChatService } from './chat.service';
 
 const CANVAS_TOOL_NAME_SET = new Set(['canvas_update', 'canvas_delegate']);
@@ -24,7 +25,10 @@ const CANVAS_TOOL_NAME_SET = new Set(['canvas_update', 'canvas_delegate']);
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
 
-  constructor(private chatService: ChatService) {}
+  constructor(
+    private chatService: ChatService,
+    private canvasService: CanvasService
+  ) {}
 
   @OrgAccess(chatContract.chat, { params: ['orgId'] })
   @TsRestHandler(chatContract.chat)
@@ -180,7 +184,7 @@ export class ChatController {
   @TsRestHandler(chatContract.moveCanvasCard)
   async moveCanvasCard() {
     return tsRestHandler(chatContract.moveCanvasCard, async ({ params, body }) => {
-      await this.chatService.moveCanvasCard(params.orgId, params.threadId, params.cardId, body);
+      this.canvasService.moveCard(params.orgId, params.threadId, params.cardId, body);
       return { status: 200 as const, body: { success: true as const } };
     });
   }
@@ -189,7 +193,7 @@ export class ChatController {
   @TsRestHandler(chatContract.updateCanvasEdges)
   async updateCanvasEdges() {
     return tsRestHandler(chatContract.updateCanvasEdges, async ({ params, body }) => {
-      await this.chatService.updateCanvasEdges(params.orgId, params.threadId, body.edges);
+      this.canvasService.updateEdges(params.orgId, params.threadId, body.edges);
       return { status: 200 as const, body: { success: true as const } };
     });
   }
@@ -198,7 +202,7 @@ export class ChatController {
   @TsRestHandler(chatContract.deleteCanvasCard)
   async deleteCanvasCard() {
     return tsRestHandler(chatContract.deleteCanvasCard, async ({ params }) => {
-      await this.chatService.deleteCanvasCard(params.orgId, params.threadId, params.cardId);
+      this.canvasService.deleteCard(params.orgId, params.threadId, params.cardId);
       return { status: 200 as const, body: { success: true as const } };
     });
   }
@@ -207,7 +211,7 @@ export class ChatController {
   @TsRestHandler(chatContract.addCanvasEdge)
   async addCanvasEdge() {
     return tsRestHandler(chatContract.addCanvasEdge, async ({ params, body }) => {
-      await this.chatService.addCanvasEdge(params.orgId, params.threadId, body.edge);
+      this.canvasService.addEdge(params.orgId, params.threadId, body.edge);
       return { status: 200 as const, body: { success: true as const } };
     });
   }
@@ -216,7 +220,7 @@ export class ChatController {
   @TsRestHandler(chatContract.deleteCanvasEdge)
   async deleteCanvasEdge() {
     return tsRestHandler(chatContract.deleteCanvasEdge, async ({ params }) => {
-      await this.chatService.deleteCanvasEdge(params.orgId, params.threadId, params.edgeId);
+      this.canvasService.deleteEdge(params.orgId, params.threadId, params.edgeId);
       return { status: 200 as const, body: { success: true as const } };
     });
   }
@@ -225,7 +229,7 @@ export class ChatController {
   @TsRestHandler(chatContract.updateCanvasComponent)
   async updateCanvasComponent() {
     return tsRestHandler(chatContract.updateCanvasComponent, async ({ params, body }) => {
-      await this.chatService.updateCanvasComponent(
+      this.canvasService.updateComponent(
         params.orgId,
         params.threadId,
         params.cardId,
@@ -240,7 +244,7 @@ export class ChatController {
   @TsRestHandler(chatContract.addCanvasCard)
   async addCanvasCard() {
     return tsRestHandler(chatContract.addCanvasCard, async ({ params, body }) => {
-      await this.chatService.addCanvasCard(params.orgId, params.threadId, body.card);
+      this.canvasService.addCard(params.orgId, params.threadId, body.card);
       return { status: 200 as const, body: { success: true as const } };
     });
   }
@@ -261,7 +265,7 @@ export class ChatController {
         collectionId: body.collectionId,
       });
 
-      // AI SDK v5 data stream protocol
+      // AI SDK v6 data stream protocol
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
@@ -272,6 +276,7 @@ export class ChatController {
       let textChunks = 0;
       let stepCount = 0;
       let sentTextDone = false;
+      let fullText = '';
 
       for await (const part of result.streamResult.fullStream) {
         const elapsed = Date.now() - streamStart;
@@ -281,23 +286,24 @@ export class ChatController {
             this.logger.log(`[stream] First text chunk at +${elapsed}ms`);
           }
           textChunks++;
-          res.write(`0:${JSON.stringify(part.payload.text)}\n`);
+          fullText += part.text;
+          res.write(`0:${JSON.stringify(part.text)}\n`);
         } else if (part.type === 'tool-call') {
           // Send text_done before the first canvas tool call so the frontend can unlock input
-          if (!sentTextDone && textChunks > 0 && CANVAS_TOOL_NAME_SET.has(part.payload.toolName)) {
+          if (!sentTextDone && textChunks > 0 && CANVAS_TOOL_NAME_SET.has(part.toolName)) {
             sentTextDone = true;
             res.write(`8:${JSON.stringify({ type: 'text_done' })}\n`);
           }
           this.logger.log(
-            `[stream] Tool call: ${part.payload.toolName} at +${elapsed}ms args=${JSON.stringify(part.payload.args).slice(0, 1000)}`
+            `[stream] Tool call: ${part.toolName} at +${elapsed}ms args=${JSON.stringify(part.input).slice(0, 1000)}`
           );
         } else if (part.type === 'tool-result') {
-          const resultStr = JSON.stringify(part.payload.result).slice(0, 500);
+          const resultStr = JSON.stringify(part.output).slice(0, 500);
           this.logger.log(
-            `[stream] Tool result: ${part.payload.toolName} ${part.payload.isError ? 'ERROR' : 'OK'} at +${elapsed}ms → ${resultStr}`
+            `[stream] Tool result: ${part.toolName} OK at +${elapsed}ms → ${resultStr}`
           );
-          if (part.payload.toolName === 'canvas_delegate') {
-            const delegateResult = part.payload.result;
+          if (part.toolName === 'canvas_delegate') {
+            const delegateResult = part.output;
             this.logger.log(
               `[stream] canvas_delegate result type=${typeof delegateResult} keys=${delegateResult && typeof delegateResult === 'object' ? Object.keys(delegateResult).join(',') : 'N/A'}`
             );
@@ -328,36 +334,42 @@ export class ChatController {
                 `[stream] canvas_delegate result has unexpected shape: ${JSON.stringify(delegateResult).slice(0, 500)}`
               );
             }
-          } else if (part.payload.toolName === 'canvas_update') {
+          } else if (part.toolName === 'canvas_update') {
             res.write(
               `8:${JSON.stringify({
                 type: 'canvas_update',
-                tool: part.payload.toolName,
-                args: part.payload.args,
-                result: part.payload.result,
+                tool: part.toolName,
+                args: part.input,
+                result: part.output,
               })}\n`
             );
           }
         } else if (part.type === 'tool-error') {
-          const p = part.payload;
           this.logger.error(
-            `[stream] Tool ERROR: ${p.toolName} at +${elapsed}ms error=${p.error instanceof Error ? p.error.message : JSON.stringify(p.error)} args=${JSON.stringify(p.args).slice(0, 500)}`
+            `[stream] Tool ERROR: ${part.toolName} at +${elapsed}ms error=${part.error instanceof Error ? part.error.message : JSON.stringify(part.error)} args=${JSON.stringify(part.input).slice(0, 500)}`
           );
         } else if (part.type === 'error') {
           this.logger.error(
-            `[stream] Stream ERROR at +${elapsed}ms: ${part.payload instanceof Error ? part.payload.message : JSON.stringify(part.payload)}`
+            `[stream] Stream ERROR at +${elapsed}ms: ${part.error instanceof Error ? part.error.message : JSON.stringify(part.error)}`
           );
-        } else if (part.type === 'step-finish') {
+        } else if (part.type === 'finish-step') {
           stepCount++;
           this.logger.log(
             `[stream] Step ${stepCount} finished at +${elapsed}ms (${textChunks} text chunks)`
           );
-        } else if (part.type === 'tool-call-delta' || part.type === 'tool-call-input-streaming-start' || part.type === 'tool-call-input-streaming-end') {
+        } else if (
+          part.type === 'tool-input-start' ||
+          part.type === 'tool-input-delta' ||
+          part.type === 'tool-input-end'
+        ) {
           // Suppress noisy streaming events
-        } else {
-          this.logger.log(`[stream] ${part.type} at +${elapsed}ms`);
+        } else if (part.type === 'text-start' || part.type === 'text-end') {
+          // Suppress text boundary events
         }
       }
+
+      // Save assistant message after stream completes
+      await result.saveAssistant(fullText);
 
       this.logger.log(
         `[stream] Complete at +${Date.now() - streamStart}ms, ${textChunks} text chunks total`

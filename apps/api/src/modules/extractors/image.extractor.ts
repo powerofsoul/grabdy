@@ -2,10 +2,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import type { DbId } from '@grabdy/common';
-import { AiCallerType, AiRequestType, type ModelKey } from '@grabdy/contracts';
-import { generateText } from 'ai';
+import { AiRequestType, type ModelKey } from '@grabdy/contracts';
 
-import { AiUsageService } from '../ai/ai-usage.service';
+import { AiService } from '../ai/ai.service';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
 
@@ -59,49 +58,37 @@ export class ImageExtractor {
 
   constructor(
     @Inject(FILE_STORAGE) private storage: FileStorage,
-    private aiUsageService: AiUsageService
+    private aiService: AiService
   ) {}
 
-  async extract(storagePath: string): Promise<ExtractionResult> {
-    const meta = await this.extractWithMetadata(storagePath);
+  async extract(storagePath: string, orgId: DbId<'Org'>): Promise<ExtractionResult> {
+    const meta = await this.extractWithMetadata(storagePath, orgId);
     return { type: 'text', text: meta.text };
   }
 
   async extractWithMetadata(
     storagePath: string,
-    orgId?: DbId<'Org'>
+    orgId: DbId<'Org'>
   ): Promise<{ text: string; aiTags: string[]; aiDescription: string }> {
     const buffer = await this.storage.get(storagePath);
 
-    const { text: response, usage } = await generateText({
-      model: openai('gpt-4o-mini'),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: IMAGE_ANALYSIS_PROMPT },
-            {
-              type: 'image',
-              image: new Uint8Array(buffer),
-            },
-          ],
-        },
-      ],
-    });
-
-    // Log AI usage
-    if (orgId) {
-      this.aiUsageService
-        .logUsage(
-          VISION_MODEL,
-          usage.inputTokens ?? 0,
-          usage.outputTokens ?? 0,
-          AiCallerType.SYSTEM,
-          AiRequestType.CHAT,
-          { orgId, source: 'SYSTEM' }
-        )
-        .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
-    }
+    const { text: response } = await this.aiService.generateText(
+      {
+        model: openai('gpt-4o-mini'),
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: IMAGE_ANALYSIS_PROMPT },
+              { type: 'image', image: new Uint8Array(buffer) },
+            ],
+          },
+        ],
+      },
+      VISION_MODEL,
+      AiRequestType.CHAT,
+      { orgId, source: 'SYSTEM' }
+    );
 
     const parsed = parseImageAnalysis(response);
     this.logger.log(

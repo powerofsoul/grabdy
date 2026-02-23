@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { createTool } from '@mastra/core/tools';
+import { tool } from 'ai';
 import { z } from 'zod';
 
 const SLACK_API_URL = 'https://slack.com/api';
@@ -61,8 +61,7 @@ export class SlackReplyTool {
       return { success: data.ok, action: 'updated' as const, error: data.error };
     };
 
-    const tool = createTool({
-      id: 'slack_reply',
+    const slackReplyTool = tool({
       description: `Post a progress update in Slack so the user knows you're working. The system posts your final answer automatically — use this tool only for status updates during search.
 
 Call this BEFORE each search to show the user what you're doing:
@@ -77,7 +76,7 @@ Uses Slack mrkdwn formatting.`,
     });
 
     return {
-      tool,
+      tool: slackReplyTool,
       /** Always post/update the final text — guarantees the user sees the answer. */
       postFinal: (text: string) => postOrUpdate(text),
     };

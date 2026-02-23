@@ -2,12 +2,10 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 
 import { extractOrgNumericId, packId } from '@grabdy/common';
-import { AiCallerType } from '@grabdy/contracts';
 import { Job, Queue } from 'bullmq';
 
 import { DbService } from '../../../../db/db.module';
-import { AgentFactory } from '../../../agent/services/agent.factory';
-import { SlackReplyTool } from '../../../agent/tools/slack-reply.tool';
+import { SlackAgent } from '../../../agent/agents/slack-agent';
 import type { DataSourceJobData } from '../../../data-sources/data-source.types';
 import { DATA_SOURCE_QUEUE, SLACK_BOT_QUEUE } from '../../../queue/queue.constants';
 import { parseProviderData } from '../../connector.interface';
@@ -31,24 +29,12 @@ interface SlackChannelInfoResponse extends SlackApiResponse {
   };
 }
 
-interface SlackThreadMessage {
-  user?: string;
-  bot_id?: string;
-  text?: string;
-  ts?: string;
-}
-
-interface SlackConversationsRepliesResponse extends SlackApiResponse {
-  messages?: SlackThreadMessage[];
-}
-
 @Processor(SLACK_BOT_QUEUE)
 export class SlackBotProcessor extends WorkerHost {
   private readonly logger = new Logger(SlackBotProcessor.name);
 
   constructor(
-    private readonly agentFactory: AgentFactory,
-    private readonly slackReplyTool: SlackReplyTool,
+    private readonly slackAgent: SlackAgent,
     private readonly integrationsService: IntegrationsService,
     private readonly slackConnector: SlackConnector,
     private readonly channelWebhook: SlackChannelWebhook,
@@ -91,44 +77,14 @@ export class SlackBotProcessor extends WorkerHost {
     const slackBotUserId = providerData.slackBotUserId;
 
     try {
-      // Fetch thread history for context
-      const threadContext = await this.fetchThreadContext(
-        connection.access_token,
-        slackChannelId,
-        threadTs,
-        slackBotUserId
-      );
-
-      // Build the prompt with thread context
-      let prompt = text;
-      if (threadContext) {
-        prompt = `Previous conversation:\n${threadContext}\n\nCurrent question: ${text}`;
-      }
-
-      // Create a slack_reply tool so the agent can post/update messages progressively
-      const slackReply = this.slackReplyTool.create({
+      await this.slackAgent.run({
+        orgId,
         accessToken: connection.access_token,
         channel: slackChannelId,
         threadTs,
+        text,
+        slackBotUserId,
       });
-
-      // Create a data agent with all collections, no canvas, and provider-specific instructions
-      const agent = this.agentFactory.createDataAgent({
-        orgId,
-        source: 'SLACK',
-        callerType: AiCallerType.SYSTEM,
-        instructions: this.slackConnector.botInstructions,
-        tools: [{ slack_reply: slackReply.tool }],
-        maxSteps: 15,
-      });
-
-      // Generate answer — the agent posts/updates via slack_reply tool calls.
-      // After generation, always post the final text to guarantee the user sees the answer.
-      const result = await agent.generate(prompt);
-
-      if (result.text.trim()) {
-        await slackReply.postFinal(result.text);
-      }
 
       this.logger.log(`Posted bot reply in channel ${slackChannelId} thread ${threadTs}`);
     } catch (error) {
@@ -347,40 +303,5 @@ export class SlackBotProcessor extends WorkerHost {
     }
 
     return data.channel.name;
-  }
-
-  private async fetchThreadContext(
-    accessToken: string,
-    channel: string,
-    threadTs: string,
-    slackBotUserId?: string
-  ): Promise<string | null> {
-    const params = new URLSearchParams({
-      channel,
-      ts: threadTs,
-      limit: '50',
-    });
-
-    const response = await fetch(`${SLACK_API_URL}/conversations.replies?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    const data: SlackConversationsRepliesResponse = await response.json();
-
-    if (!data.ok || !data.messages || data.messages.length <= 1) {
-      return null;
-    }
-
-    // Exclude the latest message (the current question) — it's already in `text`
-    const history = data.messages.slice(0, -1);
-
-    const lines = history.map((msg) => {
-      const isBot = (slackBotUserId && msg.user === slackBotUserId) || Boolean(msg.bot_id);
-      const role = isBot ? 'Assistant' : 'User';
-      const text = (msg.text ?? '').replace(/<@[A-Z0-9]+>/g, '').trim();
-      return `${role}: ${text}`;
-    });
-
-    return lines.join('\n');
   }
 }

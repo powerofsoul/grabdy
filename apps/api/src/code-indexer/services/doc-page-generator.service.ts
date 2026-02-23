@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { AiCallerType, AiRequestType, CODE_ANALYSIS_MODEL } from '@grabdy/contracts';
-import { generateText, type LanguageModel } from 'ai';
+import { AiRequestType, CODE_ANALYSIS_MODEL } from '@grabdy/contracts';
+import type { LanguageModel } from 'ai';
 
 import { InjectEnv } from '../../config/env.config';
-import { AiUsageService, type UsageContext } from '../../modules/ai/ai-usage.service';
-import { createBedrockModel } from '../bedrock-model';
+import { type AiCallContext, AiService } from '../../modules/ai/ai.service';
+import { createBedrockModel } from '../../modules/ai/bedrock.provider';
 
 import type { DocPlanPage } from './doc-planner.service';
 
@@ -26,12 +26,12 @@ export class DocPageGeneratorService {
   constructor(
     @InjectEnv('codeAnalysisModel') model: string,
     @InjectEnv('awsRegion') region: string,
-    private aiUsageService: AiUsageService
+    private aiService: AiService
   ) {
     this.model = createBedrockModel(region, model);
   }
 
-  async generatePage(input: PageGenerationInput, context: UsageContext): Promise<string> {
+  async generatePage(input: PageGenerationInput, context: AiCallContext): Promise<string> {
     const { planPage, relevantSourceCode, siblingPages, repoFullName, currentContent, sourceDiff } =
       input;
 
@@ -158,35 +158,17 @@ If a section is based on a single file, still include the source block. The line
 
 Produce only the markdown content, no JSON wrapping.`;
 
-    const startTime = Date.now();
+    const result = await this.aiService.generateText(
+      { model: this.model, maxOutputTokens: 16384, temperature: 0.3, prompt },
+      CODE_ANALYSIS_MODEL,
+      AiRequestType.CODE_ANALYSIS,
+      context
+    );
 
-    const { text, usage } = await generateText({
-      model: this.model,
-      maxOutputTokens: 16384,
-      temperature: 0.3,
-      prompt,
-    });
+    this.logger.log(
+      `Generated page "${planPage.title}" (${result.usage.outputTokens ?? 0} tokens)`
+    );
 
-    const inputTokens = usage.inputTokens ?? 0;
-    const outputTokens = usage.outputTokens ?? 0;
-    const durationMs = Date.now() - startTime;
-
-    this.aiUsageService
-      .logUsage(
-        CODE_ANALYSIS_MODEL,
-        inputTokens,
-        outputTokens,
-        AiCallerType.SYSTEM,
-        AiRequestType.CODE_ANALYSIS,
-        context,
-        { durationMs }
-      )
-      .catch((err: unknown) =>
-        this.logger.error(`Failed to log doc page generation usage: ${err}`)
-      );
-
-    this.logger.log(`Generated page "${planPage.title}" (${outputTokens} tokens, ${durationMs}ms)`);
-
-    return text;
+    return result.text;
   }
 }

@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 
 import {
   CODE_REPO_QUEUE,
+  DATA_SOURCE_QUEUE,
   INTEGRATIONS_QUEUE,
   SLACK_BOT_QUEUE,
 } from '../queue/queue.constants';
@@ -29,6 +30,7 @@ import { IntegrationsService } from './integrations.service';
     BullModule.registerQueue({ name: INTEGRATIONS_QUEUE }),
     BullModule.registerQueue({ name: SLACK_BOT_QUEUE }),
     BullModule.registerQueue({ name: CODE_REPO_QUEUE }),
+    BullModule.registerQueue({ name: DATA_SOURCE_QUEUE }),
   ],
   controllers: [IntegrationsController],
   providers: [

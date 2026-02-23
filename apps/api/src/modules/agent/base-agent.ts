@@ -1,128 +1,64 @@
 import { Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
-import type { AiCallerType, AiRequestType, ModelKey } from '@grabdy/contracts';
-import type { ToolsInput } from '@mastra/core/agent';
-import { Agent } from '@mastra/core/agent';
-import type { MastraModelConfig } from '@mastra/core/llm';
-import type { Memory } from '@mastra/memory';
+import {
+  type AiCallerType,
+  type AiRequestSource,
+  type AiRequestType,
+  CHAT_MODEL,
+  type ModelKey,
+} from '@grabdy/contracts';
+import { type PrepareStepFunction, stepCountIs, ToolLoopAgent, type ToolSet } from 'ai';
 
-import type { AiUsageService, UsageContext } from '../ai/ai-usage.service';
+import type { AiUsageService } from '../ai/ai-usage.service';
+import { CHAT_LANGUAGE_MODEL } from '../ai/bedrock.provider';
 
-export interface AgentUsageConfig {
-  callerType: AiCallerType;
-  requestType: AiRequestType;
-  context: UsageContext;
+export interface AgentCallOptions {
+  orgId: DbId<'Org'>;
+  source: AiRequestSource;
+  callerType?: AiCallerType;
+  requestType?: AiRequestType;
+  userId?: DbId<'User'>;
+  tools: ToolSet;
+  instructions: string;
+  maxSteps?: number;
+  prepareStep?: PrepareStepFunction;
 }
 
-export class BaseAgent {
-  protected agent: Agent;
-  protected logger: Logger;
-  private usageService: AiUsageService | null;
-  private usageConfig: AgentUsageConfig | null;
-  private modelName: ModelKey;
-  private maxSteps: number;
-  private hasMemory: boolean;
+export abstract class BaseAgent {
+  protected abstract readonly agentId: string;
+  protected abstract readonly defaultMaxSteps: number;
+  protected readonly logger = new Logger(this.constructor.name);
 
-  constructor(
-    id: string,
-    name: string,
-    instructions: string,
-    tools: ToolsInput,
-    model: ModelKey,
-    usageService?: AiUsageService,
-    usageConfig?: AgentUsageConfig,
-    memory?: Memory,
-    maxSteps = 999,
-    languageModel?: MastraModelConfig
-  ) {
-    this.logger = new Logger(this.constructor.name);
-    this.usageService = usageService ?? null;
-    this.usageConfig = usageConfig ?? null;
-    this.modelName = model;
-    this.maxSteps = maxSteps;
-    this.hasMemory = Boolean(memory);
+  constructor(protected readonly aiUsageService: AiUsageService) {}
 
-    this.agent = new Agent({
-      id,
-      name,
-      instructions,
-      model: languageModel ?? model,
-      tools,
-      ...(memory ? { memory } : {}),
-    });
-  }
+  protected buildAgent(opts: AgentCallOptions): ToolLoopAgent {
+    const modelKey: ModelKey = CHAT_MODEL;
 
-  stream(message: string, threadId: DbId<'ChatThread'>, membershipId: DbId<'OrgMembership'>) {
-    this.logger.debug(`Streaming message for thread: ${threadId}`);
-
-    const result = this.agent.stream(message, {
-      memory: {
-        thread: threadId,
-        resource: membershipId,
+    return new ToolLoopAgent({
+      id: this.agentId,
+      model: CHAT_LANGUAGE_MODEL,
+      instructions: opts.instructions,
+      tools: opts.tools,
+      stopWhen: stepCountIs(opts.maxSteps ?? this.defaultMaxSteps),
+      prepareStep: opts.prepareStep,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: this.agentId,
+        metadata: { orgId: opts.orgId },
       },
-      maxSteps: this.maxSteps,
-    });
-
-    // Fire-and-forget usage logging after stream completes
-    if (this.usageService && this.usageConfig) {
-      const svc = this.usageService;
-      const cfg = this.usageConfig;
-      const modelName = this.modelName;
-
-      result
-        .then(async (streamResult) => {
-          const usage = await streamResult.usage;
-          await svc.logUsage(
-            modelName,
+      onStepFinish: async ({ usage }) => {
+        await this.aiUsageService
+          .logUsage(
+            modelKey,
             usage.inputTokens ?? 0,
             usage.outputTokens ?? 0,
-            cfg.callerType,
-            cfg.requestType,
-            cfg.context,
-            { streaming: true }
-          );
-        })
-        .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
-    }
-
-    return result;
-  }
-
-  generate(message: string, threadId?: DbId<'ChatThread'>, membershipId?: DbId<'OrgMembership'>) {
-    this.logger.debug(`Generating message${threadId ? ` for thread: ${threadId}` : ''}`);
-
-    const memoryOpts =
-      this.hasMemory && threadId && membershipId
-        ? { memory: { thread: threadId, resource: membershipId } }
-        : {};
-
-    const result = this.agent.generate(message, {
-      ...memoryOpts,
-      maxSteps: this.maxSteps,
+            opts.callerType ?? 'MEMBER',
+            opts.requestType ?? 'CHAT',
+            { orgId: opts.orgId, userId: opts.userId, source: opts.source }
+          )
+          .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
+      },
     });
-
-    // Fire-and-forget usage logging after generation completes
-    if (this.usageService && this.usageConfig) {
-      const svc = this.usageService;
-      const cfg = this.usageConfig;
-      const modelName = this.modelName;
-
-      result
-        .then(async (genResult) => {
-          const usage = genResult.usage;
-          await svc.logUsage(
-            modelName,
-            usage.inputTokens ?? 0,
-            usage.outputTokens ?? 0,
-            cfg.callerType,
-            cfg.requestType,
-            cfg.context
-          );
-        })
-        .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
-    }
-
-    return result;
   }
 }

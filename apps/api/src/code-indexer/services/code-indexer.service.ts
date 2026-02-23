@@ -2,9 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { openai } from '@ai-sdk/openai';
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
-import { AiCallerType, AiRequestType, type ChunkMeta, EMBEDDING_MODEL } from '@grabdy/contracts';
+import { type ChunkMeta } from '@grabdy/contracts';
 import { createAppAuth } from '@octokit/auth-app';
-import { embedMany } from 'ai';
 import { execFileSync } from 'child_process';
 import {
   closeSync,
@@ -24,7 +23,7 @@ import { EncryptionService } from '../../common/encryption/encryption.service';
 import { EMBEDDING_BATCH_SIZE } from '../../config/constants';
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
-import { AiUsageService } from '../../modules/ai/ai-usage.service';
+import { AiService } from '../../modules/ai/ai.service';
 import { chunkPlainText } from '../../modules/data-sources/chunking/chunk-content';
 import {
   getLanguageForExtension,
@@ -71,7 +70,7 @@ export class CodeIndexerService {
     private codeAnalysis: CodeAnalysisService,
     private docPlanner: DocPlannerService,
     private docPageGenerator: DocPageGeneratorService,
-    private aiUsageService: AiUsageService,
+    private aiService: AiService,
     @InjectEnv('reposBasePath') private readonly reposBasePath: string,
     @InjectEnv('githubAppId') private readonly githubAppId: string,
     @InjectEnv('githubPrivateKey') private readonly githubPrivateKey: string
@@ -483,21 +482,10 @@ export class CodeIndexerService {
     for (let i = 0; i < chunks.length; i += EMBEDDING_BATCH_SIZE) {
       const batch = chunks.slice(i, i + EMBEDDING_BATCH_SIZE);
 
-      const { embeddings, usage: embeddingUsage } = await embedMany({
-        model: openai.embedding('text-embedding-3-small'),
-        values: batch.map((c) => c.content),
-      });
-
-      this.aiUsageService
-        .logUsage(
-          EMBEDDING_MODEL,
-          embeddingUsage.tokens,
-          0,
-          AiCallerType.SYSTEM,
-          AiRequestType.EMBEDDING,
-          { orgId: params.orgId, source: 'SYSTEM' }
-        )
-        .catch((err) => this.logger.error(`Embedding usage logging failed: ${err}`));
+      const { embeddings } = await this.aiService.embedMany(
+        { model: openai.embedding('text-embedding-3-small'), values: batch.map((c) => c.content) },
+        { orgId: params.orgId, source: 'SYSTEM' }
+      );
 
       const values = batch.map((chunk, idx) => ({
         id: packId('Chunk', params.orgId),

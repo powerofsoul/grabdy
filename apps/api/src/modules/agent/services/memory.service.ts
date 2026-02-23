@@ -1,12 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
-import type { DbId } from '@grabdy/common';
-import { z } from 'zod';
+import { type DbId, packId } from '@grabdy/common';
 
 import { DbService } from '../../../db/db.module';
-import { OrderedMemory } from '../ordered-memory';
-
-import { AgentStorageProvider } from './storage.provider';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -19,131 +15,97 @@ export interface UIMessage {
   createdAt: Date | null;
 }
 
-// ---------------------------------------------------------------------------
-// Zod schemas for Mastra message content parsing
-// ---------------------------------------------------------------------------
-
-/** Text part inside a Mastra "parts" array */
-const textPartSchema = z.object({
-  type: z.literal('text'),
-  text: z.string(),
-});
-
-/** Mastra v2 message content envelope */
-const mastraContentSchema = z.object({
-  parts: z.array(z.unknown()).optional(),
-  content: z.string().optional(),
-});
+export interface CoreMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
 
 // ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
 @Injectable()
-export class AgentMemoryService implements OnModuleInit {
+export class AgentMemoryService {
   private readonly logger = new Logger(AgentMemoryService.name);
-  private memory: OrderedMemory | null = null;
+  private lastTimestamp = 0;
 
-  constructor(
-    private storageProvider: AgentStorageProvider,
-    private db: DbService
-  ) {}
+  constructor(private db: DbService) {}
 
-  async onModuleInit() {
-    this.memory = new OrderedMemory({
-      storage: this.storageProvider.getStore(),
-      options: {
-        lastMessages: 20,
-        workingMemory: { enabled: false },
-      },
-    });
-    this.logger.log('Agent Memory initialized with OrderedMemory');
+  /**
+   * Load recent messages for passing as context to the agent.
+   */
+  async getMessagesForContext(threadId: DbId<'ChatThread'>, limit = 20): Promise<CoreMessage[]> {
+    const rows = await this.db.kysely
+      .selectFrom('agent.chat_messages')
+      .select(['role', 'content'])
+      .where('thread_id', '=', threadId)
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .execute();
+
+    // Reverse to chronological order
+    rows.reverse();
+
+    return rows
+      .filter(
+        (r): r is typeof r & { role: 'user' | 'assistant' | 'system' } =>
+          r.role === 'user' || r.role === 'assistant' || r.role === 'system'
+      )
+      .map((r) => ({ role: r.role, content: r.content }));
   }
 
-  getMemory(): OrderedMemory {
-    if (!this.memory) {
-      throw new InternalServerErrorException('AgentMemoryService not initialized');
-    }
-    return this.memory;
+  /**
+   * Save messages to the chat_messages table with sequential timestamps.
+   */
+  async saveMessages(
+    threadId: DbId<'ChatThread'>,
+    orgId: DbId<'Org'>,
+    messages: Array<{ role: 'user' | 'assistant' | 'system' | 'tool'; content: string }>
+  ): Promise<void> {
+    if (messages.length === 0) return;
+
+    const now = Date.now();
+    const baseTime = Math.max(now, this.lastTimestamp + 1);
+
+    const rows = messages.map((msg, index) => ({
+      id: packId('ChatMessage', orgId),
+      thread_id: threadId,
+      org_id: orgId,
+      role: msg.role,
+      content: msg.content,
+      created_at: new Date(baseTime + index),
+    }));
+
+    this.lastTimestamp = baseTime + messages.length - 1;
+
+    await this.db.kysely.insertInto('agent.chat_messages').values(rows).execute();
   }
 
+  /**
+   * Get chat history for display (UI messages).
+   */
   async getHistory(
     threadId: DbId<'ChatThread'>,
     options?: { limit?: number }
   ): Promise<UIMessage[]> {
     const limit = options?.limit ?? 1000;
 
-    const allMessages = await this.db.kysely
-      .selectFrom('agent.mastra_messages')
-      .select(['id', 'role', 'content', 'createdAt'])
+    const rows = await this.db.kysely
+      .selectFrom('agent.chat_messages')
+      .select(['id', 'role', 'content', 'created_at'])
       .where('thread_id', '=', threadId)
-      .orderBy('createdAt', 'asc')
+      .orderBy('created_at', 'asc')
       .limit(limit)
       .execute();
 
-    const result: UIMessage[] = [];
-
-    for (const msg of allMessages) {
-      if (msg.role !== 'user' && msg.role !== 'assistant') continue;
-
-      const text = extractText(msg.content);
-      if (text.length === 0) continue;
-
-      result.push({
-        id: msg.id,
-        role: msg.role,
-        content: text,
-        createdAt: msg.createdAt,
-      });
-    }
-
-    return result;
+    return rows
+      .filter((r) => r.role === 'user' || r.role === 'assistant')
+      .filter((r) => r.content.length > 0)
+      .map((r) => ({
+        id: r.id,
+        role: r.role === 'user' ? ('user' as const) : ('assistant' as const),
+        content: r.content,
+        createdAt: r.created_at,
+      }));
   }
-}
-
-// ---------------------------------------------------------------------------
-// Content parsing helpers
-// ---------------------------------------------------------------------------
-
-function parseContent(content: unknown): unknown {
-  if (typeof content === 'string') {
-    if (content.startsWith('{') || content.startsWith('[')) {
-      try {
-        return JSON.parse(content);
-      } catch {
-        return content;
-      }
-    }
-    return content;
-  }
-  return content;
-}
-
-function extractText(content: unknown): string {
-  const parsed = parseContent(content);
-
-  if (typeof parsed === 'string') return parsed;
-
-  if (Array.isArray(parsed)) {
-    return parsed
-      .map((p) => textPartSchema.safeParse(p))
-      .filter((r) => r.success)
-      .map((r) => r.data.text)
-      .join('');
-  }
-
-  const envelope = mastraContentSchema.safeParse(parsed);
-  if (envelope.success) {
-    if (envelope.data.parts) {
-      const text = envelope.data.parts
-        .map((p) => textPartSchema.safeParse(p))
-        .filter((r) => r.success)
-        .map((r) => r.data.text)
-        .join('');
-      if (text.length > 0) return text;
-    }
-    if (envelope.data.content) return envelope.data.content;
-  }
-
-  return '';
 }

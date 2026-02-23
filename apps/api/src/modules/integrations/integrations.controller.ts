@@ -342,7 +342,7 @@ export class IntegrationsController {
         createdById: userId,
       });
 
-      // Trigger initial sync (scheduled syncs handled by Inngest cron)
+      // Trigger initial sync
       await this.integrationsService.triggerSync(newConnection.id, orgId, 'INITIAL');
 
       res.redirect(`${this.frontendUrl}/dashboard/integrations?connected=${validatedProvider}`);
