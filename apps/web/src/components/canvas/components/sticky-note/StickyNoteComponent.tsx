@@ -3,11 +3,11 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { alpha, Box, useTheme } from '@mui/material';
 
 import { useEditMode } from '../../hooks/useEditMode';
-
 import { CanvasEditor } from '../CanvasEditor';
 import { MarkdownContent } from '../MarkdownContent';
-import { COLOR_MAP, COLOR_OPTIONS } from './constants';
+
 import type { StickyNoteColor } from './constants';
+import { COLOR_MAP, COLOR_OPTIONS } from './constants';
 
 interface StickyNoteComponentProps {
   data: {

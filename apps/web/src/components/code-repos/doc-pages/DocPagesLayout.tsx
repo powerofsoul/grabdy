@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
 import { Box, CircularProgress, Typography } from '@mui/material';
@@ -16,33 +16,29 @@ interface DocPagesLayoutProps {
   repoName: string;
 }
 
+function getDefaultPageId(
+  pages:
+    | ReadonlyArray<{ id: DbId<'DocPage'>; parentId: string | null; sortOrder: number }>
+    | null
+    | undefined
+): DbId<'DocPage'> | undefined {
+  if (!pages || pages.length === 0) return undefined;
+  const roots = pages.filter((p) => p.parentId === null).sort((a, b) => a.sortOrder - b.sortOrder);
+  return roots.length > 0 ? roots[0].id : pages[0].id;
+}
+
 export function DocPagesLayout({ orgId, dataSourceId, repoName }: DocPagesLayoutProps) {
   const { pages, loading } = useDocPages(orgId, dataSourceId);
+  const defaultPageId = useMemo(() => getDefaultPageId(pages), [pages]);
   const [selectedPageId, setSelectedPageId] = useState<DbId<'DocPage'> | undefined>(undefined);
   const [showVersions, setShowVersions] = useState(false);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
 
-  // Auto-select first page when pages load
-  useEffect(() => {
-    if (pages && pages.length > 0 && !selectedPageId) {
-      const roots = pages
-        .filter((p) => p.parentId === null)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
-      if (roots.length > 0) {
-        setSelectedPageId(roots[0].id);
-      } else {
-        setSelectedPageId(pages[0].id);
-      }
-    }
-  }, [pages, selectedPageId]);
-
-  // Reset version state when page changes
-  useEffect(() => {
-    setSelectedVersionId(null);
-  }, [selectedPageId]);
+  const effectivePageId = selectedPageId ?? defaultPageId;
 
   const handleSelectPage = useCallback((pageId: DbId<'DocPage'>) => {
     setSelectedPageId(pageId);
+    setSelectedVersionId(null);
   }, []);
 
   const handleToggleVersions = useCallback(() => {
@@ -84,35 +80,36 @@ export function DocPagesLayout({ orgId, dataSourceId, repoName }: DocPagesLayout
     <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
       <DocPageSidebar
         pages={pages}
-        selectedPageId={selectedPageId}
+        selectedPageId={effectivePageId}
         onSelectPage={handleSelectPage}
         repoName={repoName}
       />
 
       {/* Middle area: either diff or normal content */}
-      {selectedVersionId && selectedPageId ? (
+      {selectedVersionId && effectivePageId ? (
         <DocPageVersionDiff
           orgId={orgId}
           dataSourceId={dataSourceId}
-          pageId={selectedPageId}
+          pageId={effectivePageId}
           selectedVersionId={selectedVersionId}
         />
       ) : (
         <DocPageContent
+          key={effectivePageId}
           orgId={orgId}
           dataSourceId={dataSourceId}
-          pageId={selectedPageId}
+          pageId={effectivePageId}
           showVersions={showVersions}
           onToggleVersions={handleToggleVersions}
         />
       )}
 
       {/* Version sidebar on the right */}
-      {showVersions && selectedPageId && (
+      {showVersions && effectivePageId && (
         <DocPageVersionSidebar
           orgId={orgId}
           dataSourceId={dataSourceId}
-          pageId={selectedPageId}
+          pageId={effectivePageId}
           selectedVersionId={selectedVersionId}
           onSelectVersion={handleSelectVersion}
           onClose={handleCloseVersions}

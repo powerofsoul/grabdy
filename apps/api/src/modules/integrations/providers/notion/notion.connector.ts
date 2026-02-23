@@ -19,8 +19,8 @@ import {
 } from '../../connector.interface';
 import { getInitialSyncSince } from '../../integrations.constants';
 
-import type { NotionProviderData } from './notion.types';
 import { NotionPageWebhook } from './webhooks/page.webhook';
+import type { NotionProviderData } from './notion.types';
 
 // ---------------------------------------------------------------------------
 // OAuth token response schema (trust boundary)
@@ -135,11 +135,7 @@ export class NotionConnector extends IntegrationConnector<'NOTION'> {
     return this.pageWebhook.extractEvent(body);
   }
 
-  verifyWebhook(
-    headers: Record<string, string>,
-    _body: unknown,
-    rawBody?: string
-  ): boolean {
+  verifyWebhook(headers: Record<string, string>, _body: unknown, rawBody?: string): boolean {
     return this.verifySignature(headers, this.notionWebhookSecret, rawBody ?? '');
   }
 

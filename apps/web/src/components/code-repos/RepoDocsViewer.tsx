@@ -1,7 +1,8 @@
+import Markdown from 'react-markdown';
+
 import type { DbId } from '@grabdy/common';
 import { alpha, Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import { FileTextIcon } from '@phosphor-icons/react';
-import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { useRepoDocs } from './hooks/useRepoDocs';
@@ -28,8 +29,7 @@ export function RepoDocsViewer({ orgId, dataSourceId }: RepoDocsViewerProps) {
       <Box sx={{ py: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
         <FileTextIcon size={18} weight="light" color={theme.palette.text.secondary} />
         <Typography variant="body2" color="text.secondary">
-          No documentation generated yet. Documentation will be available after indexing
-          completes.
+          No documentation generated yet. Documentation will be available after indexing completes.
         </Typography>
       </Box>
     );

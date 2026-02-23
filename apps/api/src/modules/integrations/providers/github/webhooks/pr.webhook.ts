@@ -4,12 +4,12 @@ import type { Octokit } from '@octokit/rest';
 
 import type { SyncedItem, WebhookEvent } from '../../../connector.interface';
 import {
-  type GitHubPR,
-  type MessageList,
   buildContextHeader,
   buildSyncedItem,
   extractLabels,
   formatGitHubDate,
+  type GitHubPR,
+  type MessageList,
   prWebhookSchema,
 } from '../github.utils';
 
@@ -17,11 +17,7 @@ import {
 export class GitHubPrWebhook {
   private readonly logger = new Logger(GitHubPrWebhook.name);
 
-  extractEvent(
-    action: string | undefined,
-    body: unknown,
-    repo: string
-  ): WebhookEvent | null {
+  extractEvent(action: string | undefined, body: unknown, repo: string): WebhookEvent | null {
     const parsed = prWebhookSchema.safeParse(body);
     if (!parsed.success) return null;
 

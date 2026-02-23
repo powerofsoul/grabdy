@@ -11,10 +11,9 @@ const codeChildSchema = z.object({
 
 export function MarkdownPre({
   children,
-  ...props
+  node: _,
+  ...rest
 }: React.ComponentProps<'pre'> & { node?: unknown }) {
-  const { node: _node, ...rest } = props;
-
   // Check if the child <code> element has language-mermaid class
   const parsed = codeChildSchema.safeParse(children);
   if (parsed.success) {

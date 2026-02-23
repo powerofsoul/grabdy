@@ -210,7 +210,9 @@ The system posts your final text answer automatically. Focus on writing a great 
 
     const parsed = slackApiResponseSchema.safeParse(await response.json());
     if (!parsed.success || !parsed.data.ok) {
-      this.logger.warn(`Slack apps.uninstall failed: ${parsed.success ? (parsed.data.error ?? 'unknown') : 'invalid response'}`);
+      this.logger.warn(
+        `Slack apps.uninstall failed: ${parsed.success ? (parsed.data.error ?? 'unknown') : 'invalid response'}`
+      );
     }
   }
 
@@ -244,11 +246,7 @@ The system posts your final text answer automatically. Focus on writing a great 
 
   // ---- Webhooks ------------------------------------------------------------
 
-  verifyWebhook(
-    headers: Record<string, string>,
-    _body: unknown,
-    rawBody?: string
-  ): boolean {
+  verifyWebhook(headers: Record<string, string>, _body: unknown, rawBody?: string): boolean {
     // url_verification is handled by the controller before verifyWebhook is called
     return this.verifySignature(headers, rawBody ?? '');
   }
@@ -261,7 +259,7 @@ The system posts your final text answer automatically. Focus on writing a great 
       orgId: DbId<'Org'>;
       providerData: SlackProviderData;
     }>,
-    rawBody?: string
+    _rawBody?: string
   ): WebhookHandlerResult {
     // Delegate bot events (app_mention, member_joined, DM) to SlackBotService
     const botResult = this.slackBotService.handleWebhook(body, connections);
@@ -290,7 +288,7 @@ The system posts your final text answer automatically. Focus on writing a great 
 
   async sync(accessToken: string, providerData: SlackProviderData): Promise<SyncResult> {
     // Auto-join selected channels before fetching messages
-    const selectedIds = providerData.selectedChannelIds ?? [];
+    const selectedIds = providerData.selectedChannels ?? [];
     for (const channelId of selectedIds) {
       await this.joinChannel(accessToken, channelId);
     }
@@ -333,7 +331,7 @@ The system posts your final text answer automatically. Focus on writing a great 
     accessToken: string,
     providerData: SlackProviderData
   ): Promise<Array<{ id: string; name: string; selected: boolean }>> {
-    const selectedIds = new Set(providerData.selectedChannelIds ?? []);
+    const selectedIds = new Set(providerData.selectedChannels ?? []);
     const channels = await this.fetchAllPublicChannels(accessToken);
     return channels.map((ch) => ({
       id: ch.id,

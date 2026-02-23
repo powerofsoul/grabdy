@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
-import type { DbId } from '@grabdy/common';
-import { AiCallerType, type AiRequestSource, AiRequestType, CHAT_MODEL } from '@grabdy/contracts';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
+import type { DbId } from '@grabdy/common';
+import { AiCallerType, type AiRequestSource, AiRequestType, CHAT_MODEL } from '@grabdy/contracts';
 import type { ToolsInput } from '@mastra/core/agent';
 import type { Memory } from '@mastra/memory';
 

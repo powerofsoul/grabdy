@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
+import { sharedChatSchema } from '@grabdy/contracts';
 import {
   alpha,
   Box,
@@ -18,9 +19,8 @@ import {
 import { CheckIcon, CopyIcon, GlobeIcon, LinkBreakIcon, LockIcon } from '@phosphor-icons/react';
 import { z } from 'zod';
 
-import { sharedChatSchema } from '@grabdy/contracts';
-import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 
 type SharedChat = z.infer<typeof sharedChatSchema>;
 
@@ -92,9 +92,7 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
         body: {},
       });
       if (res.status === 200) {
-        setShares((prev) =>
-          prev.map((s) => (s.id === shareId ? { ...s, revoked: true } : s))
-        );
+        setShares((prev) => prev.map((s) => (s.id === shareId ? { ...s, revoked: true } : s)));
       }
     },
     [selectedOrgId, threadId]
@@ -107,8 +105,8 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
       <Stack spacing={2.5}>
         <Box>
           <Typography sx={{ fontSize: 13, color: alpha(ct, 0.5), mb: 1.5 }}>
-            Create a snapshot link for this conversation. The link captures the current messages
-            and canvas state.
+            Create a snapshot link for this conversation. The link captures the current messages and
+            canvas state.
           </Typography>
           <FormControlLabel
             control={
@@ -128,9 +126,7 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
             fullWidth
             sx={{ fontWeight: 600, fontSize: 13 }}
           >
-            {isCreating ? (
-              <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
-            ) : null}
+            {isCreating ? <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} /> : null}
             Create share link
           </Button>
         </Box>
@@ -141,7 +137,15 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
           </Box>
         ) : shares.length > 0 ? (
           <Stack spacing={1}>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: alpha(ct, 0.4), textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Typography
+              sx={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: alpha(ct, 0.4),
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
               Existing shares ({activeCount} active)
             </Typography>
             {shares.map((share) => (
@@ -173,7 +177,14 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, color: alpha(ct, 0.4) }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.25,
+                        color: alpha(ct, 0.4),
+                      }}
+                    >
                       {share.isPublic ? (
                         <GlobeIcon size={12} weight="light" color="currentColor" />
                       ) : (

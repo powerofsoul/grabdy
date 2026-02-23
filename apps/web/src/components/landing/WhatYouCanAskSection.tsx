@@ -5,13 +5,7 @@ import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import {
-  GmailLogo,
-  GoogleDriveLogo,
-  LinearLogo,
-  NotionLogo,
-  SlackLogo,
-} from './IntegrationLogos';
+import { GmailLogo, GoogleDriveLogo, LinearLogo, NotionLogo, SlackLogo } from './IntegrationLogos';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -81,22 +75,27 @@ export function WhatYouCanAskSection() {
     setTimeout(() => setShowAnswer(true), 400);
   }, []);
 
-  const scheduleNext = useCallback((idx: number) => {
-    clearTimeout(autoRotateRef.current);
-    autoRotateRef.current = setTimeout(() => {
-      const next = (idx + 1) % QUERY_CARDS.length;
-      showCard(next);
-      scheduleNext(next);
-    }, AUTO_ROTATE_MS);
-  }, [showCard]);
+  const scheduleNextRef = useRef<(idx: number) => void>(() => {});
+
+  const scheduleNext = useCallback(
+    (idx: number) => {
+      clearTimeout(autoRotateRef.current);
+      autoRotateRef.current = setTimeout(() => {
+        const next = (idx + 1) % QUERY_CARDS.length;
+        showCard(next);
+        scheduleNextRef.current(next);
+      }, AUTO_ROTATE_MS);
+    },
+    [showCard]
+  );
+
+  useEffect(() => {
+    scheduleNextRef.current = scheduleNext;
+  }, [scheduleNext]);
 
   // Auto-rotation on viewport entry
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      showCard(0);
-      return;
-    }
 
     const section = sectionRef.current;
     if (!section) return;
@@ -106,7 +105,9 @@ export function WhatYouCanAskSection() {
         if (entry.isIntersecting && !isInViewRef.current) {
           isInViewRef.current = true;
           showCard(0);
-          scheduleNext(0);
+          if (!prefersReducedMotion) {
+            scheduleNext(0);
+          }
         }
       },
       { threshold: 0.3 }
@@ -119,17 +120,20 @@ export function WhatYouCanAskSection() {
     };
   }, [showCard, scheduleNext]);
 
-  const goTo = useCallback((idx: number) => {
-    userInteractedRef.current = true;
-    clearTimeout(autoRotateRef.current);
-    showCard(idx);
-    // Resume auto-rotation after user interaction
-    autoRotateRef.current = setTimeout(() => {
-      const next = (idx + 1) % QUERY_CARDS.length;
-      showCard(next);
-      scheduleNext(next);
-    }, AUTO_ROTATE_MS * 2);
-  }, [showCard, scheduleNext]);
+  const goTo = useCallback(
+    (idx: number) => {
+      userInteractedRef.current = true;
+      clearTimeout(autoRotateRef.current);
+      showCard(idx);
+      // Resume auto-rotation after user interaction
+      autoRotateRef.current = setTimeout(() => {
+        const next = (idx + 1) % QUERY_CARDS.length;
+        showCard(next);
+        scheduleNext(next);
+      }, AUTO_ROTATE_MS * 2);
+    },
+    [showCard, scheduleNext]
+  );
 
   const goNext = useCallback(() => {
     goTo((activeIndex + 1) % QUERY_CARDS.length);
@@ -296,7 +300,11 @@ export function WhatYouCanAskSection() {
 
         {/* Navigation: arrows + dots */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5 }}>
-          <IconButton onClick={goPrev} size="small" sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}>
+          <IconButton
+            onClick={goPrev}
+            size="small"
+            sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
+          >
             <CaretLeftIcon size={16} weight="light" />
           </IconButton>
 
@@ -316,7 +324,11 @@ export function WhatYouCanAskSection() {
             />
           ))}
 
-          <IconButton onClick={goNext} size="small" sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}>
+          <IconButton
+            onClick={goNext}
+            size="small"
+            sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
+          >
             <CaretRightIcon size={16} weight="light" />
           </IconButton>
         </Box>

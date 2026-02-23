@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import type { CanvasState } from '@grabdy/contracts';
-import { Box, Button, CircularProgress, Typography, alpha, useTheme } from '@mui/material';
+import { alpha, Box, Button, CircularProgress, Typography, useTheme } from '@mui/material';
 import { LockIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
-import { SharedChatView } from '@/components/shared-chat/SharedChatView';
 import type { ChatMessage } from '@/components/chat/types';
+import { SharedChatView } from '@/components/shared-chat/SharedChatView';
 import { api, ApiError } from '@/lib/api';
 
 export const Route = createFileRoute('/share/$token')({
@@ -60,7 +60,9 @@ function SharedChatPage() {
 
   if (pageState === 'loading') {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+      >
         <CircularProgress size={28} />
       </Box>
     );
@@ -74,7 +76,9 @@ function SharedChatPage() {
     return <SharedChatNotFound />;
   }
 
-  return <SharedChatView title={data.title} messages={data.messages} canvasState={data.canvasState} />;
+  return (
+    <SharedChatView title={data.title} messages={data.messages} canvasState={data.canvasState} />
+  );
 }
 
 function SharedChatUnauthorized() {

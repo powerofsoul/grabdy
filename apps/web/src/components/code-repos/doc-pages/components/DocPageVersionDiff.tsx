@@ -1,14 +1,9 @@
+import Markdown from 'react-markdown';
+
 import type { DbId } from '@grabdy/common';
-import {
-  alpha,
-  Box,
-  CircularProgress,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { alpha, Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { diffLines } from 'diff';
-import Markdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
@@ -16,8 +11,8 @@ import remarkGfm from 'remark-gfm';
 import { usePageVersions } from '../hooks/usePageVersions';
 import { docPageMarkdownStyles } from '../styles';
 
-import { FONT_MONO } from '@/theme';
 import { api } from '@/lib/api';
+import { FONT_MONO } from '@/theme';
 
 interface DocPageVersionDiffProps {
   orgId: DbId<'Org'>;
@@ -48,7 +43,14 @@ export function DocPageVersionDiff({
   })();
 
   const { data: versionDetail, isLoading: loadingDetail } = useQuery({
-    queryKey: ['code-repos', 'doc-page-version-detail', orgId, dataSourceId, pageId, selectedVersionId],
+    queryKey: [
+      'code-repos',
+      'doc-page-version-detail',
+      orgId,
+      dataSourceId,
+      pageId,
+      selectedVersionId,
+    ],
     queryFn: async () => {
       const res = await api.codeRepos.getDocPageVersion({
         params: { orgId, dataSourceId, pageId, versionId: selectedVersionId },
@@ -60,7 +62,14 @@ export function DocPageVersionDiff({
   });
 
   const { data: previousVersionDetail, isLoading: loadingPrevious } = useQuery({
-    queryKey: ['code-repos', 'doc-page-version-detail', orgId, dataSourceId, pageId, previousVersionId],
+    queryKey: [
+      'code-repos',
+      'doc-page-version-detail',
+      orgId,
+      dataSourceId,
+      pageId,
+      previousVersionId,
+    ],
     queryFn: async () => {
       if (!previousVersionId) return null;
       const res = await api.codeRepos.getDocPageVersion({

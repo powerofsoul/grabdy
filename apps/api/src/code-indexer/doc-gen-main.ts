@@ -106,6 +106,7 @@ async function main(): Promise<void> {
       .selectFrom('data.data_sources')
       .select('connection_id')
       .where('id', '=', dataSourceId)
+      .where('org_id', '=', orgId)
       .executeTakeFirst();
 
     const connectionId = dsRow?.connection_id;

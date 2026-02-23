@@ -4,9 +4,9 @@ import { graphql } from '@octokit/graphql';
 
 import type { SyncedItem, WebhookEvent } from '../../../connector.interface';
 import {
+  buildDiscussionItem,
   DISCUSSION_FIELDS,
   type DiscussionNode,
-  buildDiscussionItem,
   discussionWebhookSchema,
 } from '../github.utils';
 
@@ -14,11 +14,7 @@ import {
 export class GitHubDiscussionWebhook {
   private readonly logger = new Logger(GitHubDiscussionWebhook.name);
 
-  extractEvent(
-    action: string | undefined,
-    body: unknown,
-    repo: string
-  ): WebhookEvent | null {
+  extractEvent(action: string | undefined, body: unknown, repo: string): WebhookEvent | null {
     const parsed = discussionWebhookSchema.safeParse(body);
     if (!parsed.success) return null;
 

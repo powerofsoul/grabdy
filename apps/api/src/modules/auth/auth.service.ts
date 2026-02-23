@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import { type DbId, GLOBAL_ORG, packId } from '@grabdy/common';
@@ -27,8 +22,8 @@ import {
 } from '../../config/constants';
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
-import { redisKeys } from '../../redis/redis-keys';
 import { RedisService } from '../../redis/redis.module';
+import { redisKeys } from '../../redis/redis-keys';
 import { EmailService } from '../email/email.service';
 import { NotificationService } from '../notification/notification.service';
 
@@ -191,7 +186,9 @@ export class AuthService {
       await this.redis.expire(redisKeys.signupRate(normalizedEmail), 3600);
     }
     if (rateCount > VERIFICATION_OTP_MAX_PER_HOUR) {
-      throw new BadRequestException('Too many verification codes requested. Please try again later.');
+      throw new BadRequestException(
+        'Too many verification codes requested. Please try again later.'
+      );
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
@@ -310,7 +307,9 @@ export class AuthService {
       await this.redis.expire(redisKeys.signupRate(normalizedEmail), 3600);
     }
     if (rateCount > VERIFICATION_OTP_MAX_PER_HOUR) {
-      throw new BadRequestException('Too many verification codes requested. Please try again later.');
+      throw new BadRequestException(
+        'Too many verification codes requested. Please try again later.'
+      );
     }
 
     const pending = JSON.parse(raw) as {

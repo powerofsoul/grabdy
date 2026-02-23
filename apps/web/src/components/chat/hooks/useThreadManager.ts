@@ -4,8 +4,8 @@ import { type DbId, dbIdSchema } from '@grabdy/common';
 import type { CanvasState } from '@grabdy/contracts';
 import { toast } from 'sonner';
 
-import type { ChatMessage } from '../types';
 import { parseBlocks } from '../parse-blocks';
+import type { ChatMessage } from '../types';
 
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';

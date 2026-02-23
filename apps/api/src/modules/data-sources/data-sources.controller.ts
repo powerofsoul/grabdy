@@ -15,7 +15,7 @@ import { type DbId, dbIdSchema } from '@grabdy/common';
 import { dataSourcesContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { Response } from 'express';
-import { Observable, concat, interval, map, of, switchMap, takeWhile } from 'rxjs';
+import { concat, interval, map, Observable, of, switchMap, takeWhile } from 'rxjs';
 
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
@@ -97,7 +97,11 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.list)
   async list() {
     return tsRestHandler(dataSourcesContract.list, async ({ params, query }) => {
-      const dataSources = await this.dataSourcesService.list(params.orgId, query.collectionId, query.type);
+      const dataSources = await this.dataSourcesService.list(
+        params.orgId,
+        query.collectionId,
+        query.type
+      );
       return {
         status: 200 as const,
         body: {

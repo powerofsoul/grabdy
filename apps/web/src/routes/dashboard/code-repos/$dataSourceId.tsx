@@ -2,10 +2,10 @@ import { dbIdSchema } from '@grabdy/common';
 import { Typography } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
 
+import { CodeRepoDocPages } from './CodeRepoDocPages';
+
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { useAuth } from '@/context/AuthContext';
-
-import { CodeRepoDocPages } from './CodeRepoDocPages';
 
 export const Route = createFileRoute('/dashboard/code-repos/$dataSourceId')({
   component: CodeRepoDetailPage,

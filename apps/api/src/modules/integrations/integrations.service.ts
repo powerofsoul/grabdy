@@ -92,7 +92,10 @@ export class IntegrationsService {
    * Returns a valid access token, refreshing it first if expired or near expiry.
    * Use this instead of getConnection() when you only need the token for API calls.
    */
-  async getValidAccessToken(orgId: DbId<'Org'>, provider: IntegrationProvider): Promise<string | null> {
+  async getValidAccessToken(
+    orgId: DbId<'Org'>,
+    provider: IntegrationProvider
+  ): Promise<string | null> {
     const connection = await this.getConnection(orgId, provider);
     if (!connection) return null;
 
@@ -102,7 +105,9 @@ export class IntegrationsService {
       const expiresAt = new Date(connection.token_expires_at).getTime();
       if (expiresAt - Date.now() < TOKEN_REFRESH_BUFFER_MS) {
         if (!connection.refresh_token) {
-          this.logger.warn(`${provider} token expired for org ${orgId} but no refresh token available`);
+          this.logger.warn(
+            `${provider} token expired for org ${orgId} but no refresh token available`
+          );
           return null;
         }
         this.logger.log(`Refreshing expired ${provider} token for org ${orgId}`);
@@ -301,6 +306,7 @@ export class IntegrationsService {
   async handleCodeRepoPush(repoFullName: string, ref: string): Promise<void> {
     const pushedBranch = ref.replace('refs/heads/', '');
 
+    // org-safe: webhook handler must find all orgs with this repo to trigger incremental sync
     const codeRepoSources = await this.db.kysely
       .selectFrom('data.data_sources')
       .innerJoin(
@@ -340,6 +346,7 @@ export class IntegrationsService {
         .updateTable('data.data_sources')
         .set({ status: 'PROCESSING', updated_at: new Date() })
         .where('id', '=', source.id)
+        .where('org_id', '=', source.org_id)
         .where('status', '!=', 'PROCESSING')
         .executeTakeFirst();
 

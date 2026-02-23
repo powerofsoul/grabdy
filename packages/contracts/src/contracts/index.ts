@@ -48,25 +48,7 @@ export {
   usersContract,
 };
 
-export { demoRequestBodySchema } from './demo-request.contract.js';
-
 export { type ChatSource, chatSourceSchema } from './chat.contract.js';
-export {
-  chatMessageSnapshotSchema,
-  sharedChatSchema,
-  sharedChatSnapshotSchema,
-} from './shared-chats.contract.js';
-export {
-  listCollectionsResponseSchema,
-  publicApiErrorSchema,
-  publicCollectionSchema,
-  publicSourceSchema,
-  queryBodySchema,
-  queryResponseSchema,
-  searchBodySchema,
-  searchResponseSchema,
-} from './public-api.contract.js';
-
 export type {
   AvailableRepo,
   DocPageDetail,
@@ -77,5 +59,21 @@ export type {
   IndexingStatus,
   RepoDocs,
 } from './code-repos.contract.js';
+export { demoRequestBodySchema } from './demo-request.contract.js';
+export {
+  listCollectionsResponseSchema,
+  publicApiErrorSchema,
+  publicCollectionSchema,
+  publicSourceSchema,
+  queryBodySchema,
+  queryResponseSchema,
+  searchBodySchema,
+  searchResponseSchema,
+} from './public-api.contract.js';
+export {
+  chatMessageSnapshotSchema,
+  sharedChatSchema,
+  sharedChatSnapshotSchema,
+} from './shared-chats.contract.js';
 
 export type Contract = typeof contract;

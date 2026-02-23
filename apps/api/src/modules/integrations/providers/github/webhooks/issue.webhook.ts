@@ -4,25 +4,21 @@ import type { Octokit } from '@octokit/rest';
 
 import type { SyncedItem, WebhookEvent } from '../../../connector.interface';
 import {
-  type GitHubIssue,
-  type GitHubItemType,
-  type MessageList,
   buildContextHeader,
   buildSyncedItem,
   extractLabels,
   formatGitHubDate,
+  type GitHubIssue,
+  type GitHubItemType,
   issueWebhookSchema,
+  type MessageList,
 } from '../github.utils';
 
 @Injectable()
 export class GitHubIssueWebhook {
   private readonly logger = new Logger(GitHubIssueWebhook.name);
 
-  extractEvent(
-    action: string | undefined,
-    body: unknown,
-    repo: string
-  ): WebhookEvent | null {
+  extractEvent(action: string | undefined, body: unknown, repo: string): WebhookEvent | null {
     const parsed = issueWebhookSchema.safeParse(body);
     if (!parsed.success) return null;
 

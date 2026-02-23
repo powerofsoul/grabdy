@@ -3,8 +3,8 @@ import { type Dispatch, type SetStateAction, useCallback, useState } from 'react
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import { toast } from 'sonner';
 
-import type { ChatMessage } from '../types';
 import { parseBlocks } from '../parse-blocks';
+import type { ChatMessage } from '../types';
 
 import { useAuth } from '@/context/AuthContext';
 import { type CanvasUpdate, streamChat } from '@/lib/api';

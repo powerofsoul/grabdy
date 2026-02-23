@@ -5,6 +5,7 @@ import type { DbId } from '@grabdy/common';
 import { Queue } from 'bullmq';
 
 import { SLACK_BOT_QUEUE } from '../../../queue/queue.constants';
+
 import type { SlackProviderData } from './slack.types';
 
 export interface SlackBotJobData {
@@ -45,9 +46,7 @@ export type SlackWebhookResult = { handled: true; challenge?: string } | { handl
 export class SlackBotService {
   private readonly logger = new Logger(SlackBotService.name);
 
-  constructor(
-    @InjectQueue(SLACK_BOT_QUEUE) private readonly botQueue: Queue
-  ) {}
+  constructor(@InjectQueue(SLACK_BOT_QUEUE) private readonly botQueue: Queue) {}
 
   /**
    * Handle an incoming Slack Events API request.

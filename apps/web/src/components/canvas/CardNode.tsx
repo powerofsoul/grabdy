@@ -15,9 +15,9 @@ import { SourceChips } from '../chat/components/source-chips';
 
 const parseCardId = nonDbIdSchema('CanvasCard').parse;
 
-import { cardSourcesToChat } from './canvas-helpers';
 import { EditActions } from './components/EditActions';
 import { EditModeContext } from './hooks/useEditMode';
+import { cardSourcesToChat } from './canvas-helpers';
 import { renderComponent } from './componentRegistry';
 
 interface CardNodeData extends Record<string, unknown> {

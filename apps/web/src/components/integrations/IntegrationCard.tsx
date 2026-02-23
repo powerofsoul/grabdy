@@ -1,5 +1,4 @@
 import type { IntegrationProvider } from '@grabdy/contracts';
-import { formatDistanceToNow } from 'date-fns';
 import { alpha, Box, Button, Typography, useTheme } from '@mui/material';
 import {
   CaretRightIcon,
@@ -8,6 +7,7 @@ import {
   PlugsConnectedIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react';
+import { formatDistanceToNow } from 'date-fns';
 
 import type { ConnectionSummary } from './IntegrationGrid';
 import type { ProviderKey } from './ProviderIcon';

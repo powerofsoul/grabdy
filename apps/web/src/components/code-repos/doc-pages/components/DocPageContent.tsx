@@ -42,15 +42,6 @@ export function DocPageContent({
   const lastSavedRef = useRef('');
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
-  // Reset editing state when page changes
-  useEffect(() => {
-    setIsEditing(false);
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-  }, [pageId]);
-
   // Track content for auto-save
   useEffect(() => {
     if (!isEditing || !page) return;

@@ -19,11 +19,11 @@ import {
 } from '../../connector.interface';
 import { getInitialSyncSince } from '../../integrations.constants';
 
-import type { GitHubProviderData } from './github.types';
-import { webhookBasePayloadSchema } from './github.utils';
 import { GitHubDiscussionWebhook } from './webhooks/discussion.webhook';
 import { GitHubIssueWebhook } from './webhooks/issue.webhook';
 import { GitHubPrWebhook } from './webhooks/pr.webhook';
+import type { GitHubProviderData } from './github.types';
+import { webhookBasePayloadSchema } from './github.utils';
 
 @Injectable()
 export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
@@ -108,11 +108,7 @@ export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
     return this.extractWebhookEvent(headers, body);
   }
 
-  verifyWebhook(
-    headers: Record<string, string>,
-    body: unknown,
-    rawBody?: string
-  ): boolean {
+  verifyWebhook(headers: Record<string, string>, body: unknown, rawBody?: string): boolean {
     return this.verifySignature(headers, body, rawBody);
   }
 
@@ -126,7 +122,6 @@ export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
     }>,
     _rawBody?: string
   ): WebhookHandlerResult {
-
     const eventType = headers['x-github-event'];
     const basePayload = webhookBasePayloadSchema.safeParse(body);
     const payloadInstallationId = basePayload.success

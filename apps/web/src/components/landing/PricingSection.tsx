@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react';
 
 import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
 import { ArrowRightIcon, CheckIcon, ClockIcon } from '@phosphor-icons/react';
+import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Link } from '@tanstack/react-router';
 
 import { SlackLogo } from './IntegrationLogos';
 
@@ -210,7 +210,11 @@ export function PricingSection() {
                 <Typography variant="h3" sx={{ fontWeight: 700, fontSize: '2rem', mt: 0.5, mb: 1 }}>
                   {tier.price}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: '0.82rem', mb: 2 }}
+                >
                   {tier.description}
                 </Typography>
                 <Link to="/auth/signup" style={{ textDecoration: 'none' }}>

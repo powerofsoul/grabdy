@@ -1,7 +1,8 @@
+import { useCallback, useState } from 'react';
+
 import type { DbId } from '@grabdy/common';
 import { alpha, Box, Chip, Typography, useTheme } from '@mui/material';
 import { CaretDownIcon, CaretRightIcon, FileTextIcon } from '@phosphor-icons/react';
-import { useCallback, useState } from 'react';
 
 interface PageNode {
   id: DbId<'DocPage'>;

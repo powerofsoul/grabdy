@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
+import { contract } from '@grabdy/contracts';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Box,
@@ -10,11 +13,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { contract } from '@grabdy/contracts';
 import { EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react';
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';

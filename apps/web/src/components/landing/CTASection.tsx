@@ -2,14 +2,14 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
 import { ArrowRightIcon } from '@phosphor-icons/react';
+import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Link } from '@tanstack/react-router';
 
-import { useDrawer } from '@/context/DrawerContext';
 import { DemoRequestDrawer } from './DemoRequestDrawer';
 
 import illustCrystals from '@/assets/illust-crystals.svg';
+import { useDrawer } from '@/context/DrawerContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -138,8 +138,8 @@ export function CTASection() {
             height: 3 + (i % 3) * 2,
             borderRadius: '50%',
             bgcolor: alpha(ct, 0.06 + (i % 4) * 0.02),
-            left: `${8 + (i * 7.5) % 85}%`,
-            top: `${10 + (i * 13) % 80}%`,
+            left: `${8 + ((i * 7.5) % 85)}%`,
+            top: `${10 + ((i * 13) % 80)}%`,
             animation: `ctaFloat${i % 3} ${6 + (i % 4) * 2}s ease-in-out infinite`,
             animationDelay: `${i * 0.5}s`,
             '@keyframes ctaFloat0': {

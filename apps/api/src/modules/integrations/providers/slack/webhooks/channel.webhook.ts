@@ -298,11 +298,11 @@ export class SlackChannelWebhook {
    */
   async expandThreads(
     accessToken: string,
-    channelId: string,
+    channel: string,
     messages: SlackMessage[],
     slackBotUserId?: string
   ): Promise<SlackMessage[]> {
-    // Identify thread parents (messages with replies) — sorted by most replies first
+    // Identify thread parents (messages with replies), sorted by most replies first
     const threadParents = messages
       .filter((m) => m.reply_count && m.reply_count > 0 && m.ts)
       .sort((a, b) => (b.reply_count ?? 0) - (a.reply_count ?? 0))
@@ -320,7 +320,7 @@ export class SlackChannelWebhook {
       const requestStart = Date.now();
       const replies = await this.fetchThreadReplies(
         accessToken,
-        channelId,
+        channel,
         parent.ts ?? '',
         slackBotUserId
       );
@@ -374,10 +374,9 @@ export class SlackChannelWebhook {
         params.set('cursor', cursor);
       }
 
-      const response = await fetch(
-        `${SLACK_API_URL}/conversations.replies?${params.toString()}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      const response = await fetch(`${SLACK_API_URL}/conversations.replies?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       const data: SlackConversationsRepliesResponse = await response.json();
 

@@ -2,13 +2,11 @@ import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 
 import { dbIdSchema } from '@grabdy/common';
-import type { DbId } from '@grabdy/common';
 import { Job } from 'bullmq';
 import { z } from 'zod';
 
 import { DbService } from '../../../db/db.module';
 import { CODE_REPO_DOC_GEN_QUEUE } from '../../queue/queue.constants';
-
 import { DocEmbeddingService } from '../services/doc-embedding.service';
 
 const reEmbedDocPageJobSchema = z.object({
@@ -25,7 +23,7 @@ export class DocGenProcessor extends WorkerHost {
 
   constructor(
     private db: DbService,
-    private docEmbeddingService: DocEmbeddingService,
+    private docEmbeddingService: DocEmbeddingService
   ) {
     super();
   }
@@ -91,7 +89,7 @@ export class DocGenProcessor extends WorkerHost {
       page.content,
       dataSourceId,
       orgId,
-      repoState.repo_full_name,
+      repoState.repo_full_name
     );
   }
 }

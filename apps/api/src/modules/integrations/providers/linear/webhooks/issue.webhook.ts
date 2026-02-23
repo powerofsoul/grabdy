@@ -4,8 +4,8 @@ import { LinearClient, PaginationOrderBy } from '@linear/sdk';
 
 import type { SyncedItem, WebhookEvent } from '../../../connector.interface';
 import {
-  type IssueFields,
   buildSyncedItemFromIssue,
+  type IssueFields,
   linearWebhookBodySchema,
 } from '../linear.utils';
 

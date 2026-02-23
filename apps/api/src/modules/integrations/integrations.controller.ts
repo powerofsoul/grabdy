@@ -11,8 +11,8 @@ import { CurrentUser, type JwtPayload } from '../../common/decorators/current-us
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { InjectEnv } from '../../config/env.config';
-import { redisKeys } from '../../redis/redis-keys';
 import { RedisService } from '../../redis/redis.module';
+import { redisKeys } from '../../redis/redis-keys';
 
 import { ProviderRegistry } from './providers/provider-registry';
 import { parseProviderData, parsePublicProviderData } from './connector.interface';
@@ -423,21 +423,15 @@ export class IntegrationsController {
       if (headers['x-github-event'] === 'push' && providerUpper === 'GITHUB') {
         const pushPayload = pushWebhookSchema.safeParse(body);
         if (pushPayload.success) {
-          void this.integrationsService.handleCodeRepoPush(
-            pushPayload.data.repository.full_name,
-            pushPayload.data.ref
-          ).catch((err) => {
-            this.logger.error(`handleCodeRepoPush failed: ${err}`);
-          });
+          void this.integrationsService
+            .handleCodeRepoPush(pushPayload.data.repository.full_name, pushPayload.data.ref)
+            .catch((err) => {
+              this.logger.error(`handleCodeRepoPush failed: ${err}`);
+            });
         }
       }
 
-      const result = connector.handleWebhookRequest(
-        headers,
-        req.body,
-        connections,
-        rawBodyStr
-      );
+      const result = connector.handleWebhookRequest(headers, req.body, connections, rawBodyStr);
 
       // Handle disconnection events (e.g. GitHub App uninstalled)
       if (result.disconnectConnections) {

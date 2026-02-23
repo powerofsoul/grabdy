@@ -1,6 +1,7 @@
+import Markdown from 'react-markdown';
+
 import type { DbId } from '@grabdy/common';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import Markdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 

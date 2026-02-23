@@ -6,12 +6,13 @@ import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 
-import { FONT_MONO } from '@/theme';
-
 import { parseBlocks } from '../parse-blocks';
-import { SourceChips } from './source-chips';
 import { markdownStyles } from '../styles';
 import type { ChatMessage } from '../types';
+
+import { SourceChips } from './source-chips';
+
+import { FONT_MONO } from '@/theme';
 
 interface MessageRowProps {
   message: ChatMessage;

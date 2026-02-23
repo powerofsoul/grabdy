@@ -6,7 +6,16 @@ import { AiCallerType, AiRequestType, type ChunkMeta, EMBEDDING_MODEL } from '@g
 import { createAppAuth } from '@octokit/auth-app';
 import { embedMany } from 'ai';
 import { execFileSync } from 'child_process';
-import { closeSync, existsSync, mkdirSync, openSync, readSync, readdirSync, readFileSync, statSync } from 'fs';
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  readSync,
+  statSync,
+} from 'fs';
 import { sql } from 'kysely';
 import pLimit from 'p-limit';
 import { extname, join, relative } from 'path';
@@ -73,13 +82,16 @@ export class CodeIndexerService {
 
     try {
       // Step 1: Get GitHub token
-      const token = await this.getGitHubToken(params.connectionId);
+      const token = await this.getGitHubToken(params.connectionId, params.orgId);
 
       // Step 2: Clone or pull
       const repoPath = await this.cloneOrPull(params, token);
 
       // Record HEAD commit
-      const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoPath, encoding: 'utf-8' }).trim();
+      const headSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: repoPath,
+        encoding: 'utf-8',
+      }).trim();
 
       // Step 3: Discover files
       const lastSha = await this.getLastCommitSha(params.dataSourceId);
@@ -141,7 +153,7 @@ export class CodeIndexerService {
           // Refresh token periodically (every 50 files)
           if (processedCount % 50 === 0) {
             try {
-              await this.getGitHubToken(params.connectionId);
+              await this.getGitHubToken(params.connectionId, params.orgId);
             } catch {
               // Token refresh failure is not critical mid-indexing
             }
@@ -174,6 +186,7 @@ export class CodeIndexerService {
         .updateTable('data.data_sources')
         .set({ status: 'READY', updated_at: new Date() })
         .where('id', '=', params.dataSourceId)
+        .where('org_id', '=', params.orgId)
         .execute();
 
       await this.db.kysely
@@ -193,17 +206,22 @@ export class CodeIndexerService {
         .updateTable('data.data_sources')
         .set({ status: 'FAILED', updated_at: new Date() })
         .where('id', '=', params.dataSourceId)
+        .where('org_id', '=', params.orgId)
         .execute();
 
       throw error;
     }
   }
 
-  private async getGitHubToken(connectionId: DbId<'Connection'>): Promise<string> {
+  private async getGitHubToken(
+    connectionId: DbId<'Connection'>,
+    orgId: DbId<'Org'>
+  ): Promise<string> {
     const connection = await this.db.kysely
       .selectFrom('integration.connections')
       .select(['access_token', 'refresh_token'])
       .where('id', '=', connectionId)
+      .where('org_id', '=', orgId)
       .executeTakeFirst();
 
     if (!connection) {
@@ -343,11 +361,11 @@ export class CodeIndexerService {
   ): string {
     if (files.length === 0) return '';
     try {
-      const diff = execFileSync(
-        'git',
-        ['diff', `${lastSha}..${headSha}`, '--', ...files],
-        { cwd: repoPath, encoding: 'utf-8', maxBuffer: 1024 * 1024 }
-      );
+      const diff = execFileSync('git', ['diff', `${lastSha}..${headSha}`, '--', ...files], {
+        cwd: repoPath,
+        encoding: 'utf-8',
+        maxBuffer: 1024 * 1024,
+      });
       // Truncate if too large to keep prompt within token limits
       const maxDiffLength = 15000;
       if (diff.length > maxDiffLength) {

@@ -12,11 +12,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import {
-  FloppyDiskIcon,
-  HashIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react';
+import { FloppyDiskIcon, HashIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -71,24 +67,27 @@ export function ChannelPicker({
     return false;
   }, [selectedIds, serverSelectedIds]);
 
-  const toggleChannel = useCallback((channelId: string) => {
-    setSelectedIds((prev) => {
-      const base = prev ?? new Set(serverSelectedIds);
-      const next = new Set(base);
-      if (next.has(channelId)) {
-        next.delete(channelId);
-      } else {
-        next.add(channelId);
-      }
-      return next;
-    });
-  }, [serverSelectedIds]);
+  const toggleChannel = useCallback(
+    (channelId: string) => {
+      setSelectedIds((prev) => {
+        const base = prev ?? new Set(serverSelectedIds);
+        const next = new Set(base);
+        if (next.has(channelId)) {
+          next.delete(channelId);
+        } else {
+          next.add(channelId);
+        }
+        return next;
+      });
+    },
+    [serverSelectedIds]
+  );
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const res = await api.integrations.updateConfig({
         params: { orgId, provider },
-        body: { config: { provider: 'SLACK', selectedChannelIds: [...effectiveSelectedIds] } },
+        body: { config: { provider: 'SLACK', selectedChannels: [...effectiveSelectedIds] } },
       });
       if (res.status !== 200) throw new Error('Failed to save channels');
     },

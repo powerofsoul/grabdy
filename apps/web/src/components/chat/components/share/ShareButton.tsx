@@ -4,11 +4,11 @@ import type { DbId } from '@grabdy/common';
 import { alpha, Badge, IconButton, Tooltip, useTheme } from '@mui/material';
 import { ShareNetworkIcon } from '@phosphor-icons/react';
 
-import { useDrawer } from '@/context/DrawerContext';
-import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
-
 import { ShareDrawerContent } from './ShareDrawerContent';
+
+import { useAuth } from '@/context/AuthContext';
+import { useDrawer } from '@/context/DrawerContext';
+import { api } from '@/lib/api';
 
 interface ShareButtonProps {
   threadId: DbId<'ChatThread'>;
@@ -34,10 +34,7 @@ export function ShareButton({ threadId }: ShareButtonProps) {
   }, [selectedOrgId, threadId]);
 
   const handleClick = useCallback(() => {
-    pushDrawer(
-      () => <ShareDrawerContent threadId={threadId} />,
-      { title: 'Share conversation' }
-    );
+    pushDrawer(() => <ShareDrawerContent threadId={threadId} />, { title: 'Share conversation' });
   }, [pushDrawer, threadId]);
 
   return (

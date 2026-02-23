@@ -14,8 +14,8 @@ import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useEditMode } from '../../hooks/useEditMode';
 
-import { STATUS_OPTIONS, TIMELINE_ICONS } from './constants';
 import type { StatusItem, StatusType } from './constants';
+import { STATUS_OPTIONS, TIMELINE_ICONS } from './constants';
 
 interface StatusListComponentProps {
   data: {

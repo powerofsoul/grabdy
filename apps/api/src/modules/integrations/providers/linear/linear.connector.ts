@@ -18,8 +18,8 @@ import {
 } from '../../connector.interface';
 import { getInitialSyncSince } from '../../integrations.constants';
 
-import type { LinearProviderData } from './linear.types';
 import { LinearIssueWebhook } from './webhooks/issue.webhook';
+import type { LinearProviderData } from './linear.types';
 
 const LINEAR_AUTH_URL = 'https://linear.app/oauth/authorize';
 const LINEAR_TOKEN_URL = 'https://api.linear.app/oauth/token';
@@ -141,16 +141,14 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
     return this.issueWebhook.extractEvent(body);
   }
 
-  verifyWebhook(
-    headers: Record<string, string>,
-    _body: unknown,
-    rawBody?: string
-  ): boolean {
+  verifyWebhook(headers: Record<string, string>, _body: unknown, rawBody?: string): boolean {
     const signature = headers['linear-signature'];
     if (!signature || !this.linearWebhookSecret) return false;
 
     const bodyString = rawBody ?? '';
-    const expected = createHmac('sha256', this.linearWebhookSecret).update(bodyString).digest('hex');
+    const expected = createHmac('sha256', this.linearWebhookSecret)
+      .update(bodyString)
+      .digest('hex');
 
     const sigBuffer = Buffer.from(signature);
     const expectedBuffer = Buffer.from(expected);

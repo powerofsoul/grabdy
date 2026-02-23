@@ -1,10 +1,10 @@
 import { nonDbIdSchema } from '@grabdy/common';
 import type { Card } from '@grabdy/contracts';
-import type { Node, Edge } from '@xyflow/react';
-
-import type { ChatMessage } from '@/components/chat/types';
+import type { Edge, Node } from '@xyflow/react';
 
 import type { DemoSource } from './types';
+
+import type { ChatMessage } from '@/components/chat/types';
 
 // ── ID helpers for demo data ──
 // Construct valid packed UUIDs with correct entity type bytes.
@@ -161,10 +161,34 @@ export const DEMO_NODES: Node[] = DEMO_CARD_DEFS.map((card) => ({
 }));
 
 export const DEMO_EDGES: Edge[] = [
-  { id: edgeId(1), source: cardId(1), target: cardId(3), sourceHandle: 'bottom', targetHandle: 'top' },
-  { id: edgeId(2), source: cardId(2), target: cardId(4), sourceHandle: 'bottom', targetHandle: 'top' },
-  { id: edgeId(3), source: cardId(1), target: cardId(2), sourceHandle: 'right', targetHandle: 'left' },
-  { id: edgeId(4), source: cardId(3), target: cardId(4), sourceHandle: 'right', targetHandle: 'left' },
+  {
+    id: edgeId(1),
+    source: cardId(1),
+    target: cardId(3),
+    sourceHandle: 'bottom',
+    targetHandle: 'top',
+  },
+  {
+    id: edgeId(2),
+    source: cardId(2),
+    target: cardId(4),
+    sourceHandle: 'bottom',
+    targetHandle: 'top',
+  },
+  {
+    id: edgeId(3),
+    source: cardId(1),
+    target: cardId(2),
+    sourceHandle: 'right',
+    targetHandle: 'left',
+  },
+  {
+    id: edgeId(4),
+    source: cardId(3),
+    target: cardId(4),
+    sourceHandle: 'right',
+    targetHandle: 'left',
+  },
 ].map((e) => ({ ...e, type: 'custom' satisfies string, data: { strokeWidth: 2 } }));
 
 // ── Slack demo data ──

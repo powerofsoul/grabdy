@@ -11,7 +11,7 @@ const slackProviderDataSchema = z.object({
   slackBotUserId: z.string().optional(),
   teamDomain: z.string().optional(),
   channelTimestamps: z.record(z.string(), z.string()),
-  selectedChannelIds: z.array(z.string()).optional(),
+  selectedChannels: z.array(z.string()).optional(),
 });
 
 const linearProviderDataSchema = z.object({

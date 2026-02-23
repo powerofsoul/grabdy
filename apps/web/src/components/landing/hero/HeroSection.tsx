@@ -3,7 +3,13 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
 import { ArrowDownIcon, ArrowRightIcon, FileTextIcon, HashIcon } from '@phosphor-icons/react';
 import { Link } from '@tanstack/react-router';
-import { ReactFlow, Background, ConnectionMode, type NodeTypes, type EdgeTypes } from '@xyflow/react';
+import {
+  Background,
+  ConnectionMode,
+  type EdgeTypes,
+  type NodeTypes,
+  ReactFlow,
+} from '@xyflow/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -11,11 +17,8 @@ import '@xyflow/react/dist/style.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
-import { MessageRow } from '@/components/chat/components/MessageRow';
-import { ChatInput } from '@/components/chat/components/ChatInput';
-import { CardNode } from '@/components/canvas/CardNode';
-import { CustomEdge } from '@/components/canvas/CustomEdge';
-import botLogo from '@/assets/grabdy-logo.jpg';
+import { DemoRequestDrawer } from '../DemoRequestDrawer';
+import { BRAND_LOGOS, SlackLogo } from '../IntegrationLogos';
 
 import { DEMO_EDGES, DEMO_MESSAGES, DEMO_NODES, DEMO_SOURCES, SLACK_DEMO } from './constants';
 import { HeroBackground } from './HeroBackground';
@@ -23,9 +26,12 @@ import { LinearIcon } from './LinearIcon';
 import { SlackIcon } from './SlackIcon';
 import type { DemoSource } from './types';
 
+import botLogo from '@/assets/grabdy-logo.jpg';
+import { CardNode } from '@/components/canvas/CardNode';
+import { CustomEdge } from '@/components/canvas/CustomEdge';
+import { ChatInput } from '@/components/chat/components/ChatInput';
+import { MessageRow } from '@/components/chat/components/MessageRow';
 import { useDrawer } from '@/context/DrawerContext';
-import { DemoRequestDrawer } from '../DemoRequestDrawer';
-import { BRAND_LOGOS, SlackLogo } from '../IntegrationLogos';
 
 const FONT_SLACK = '"Lato", "Helvetica Neue", Helvetica, sans-serif';
 
@@ -52,8 +58,7 @@ export function HeroSection() {
   }, [pushDrawer]);
 
   const prefersReducedMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ── Hero entrance animations ──
   useEffect(() => {
@@ -140,15 +145,12 @@ export function HeroSection() {
       });
 
       // Crossfade: App out, Slack in
-      pinTl.to(
-        appView,
-        { opacity: 0, y: -12, duration: 0.8, ease: 'power2.inOut' },
-      );
+      pinTl.to(appView, { opacity: 0, y: -12, duration: 0.8, ease: 'power2.inOut' });
       pinTl.fromTo(
         slackView,
         { opacity: 0, y: 12 },
         { opacity: 1, y: 0, duration: 0.8, ease: 'power2.inOut' },
-        '<',
+        '<'
       );
 
       // Labels: swap active state
@@ -169,9 +171,10 @@ export function HeroSection() {
         bgcolor: 'background.default',
         position: 'relative',
         overflow: 'hidden',
-        background: theme.palette.mode === 'dark'
-          ? `radial-gradient(ellipse 80% 50% at 50% 0%, ${alpha(ct, 0.04)} 0%, transparent 70%)`
-          : `radial-gradient(ellipse 80% 50% at 50% 0%, ${alpha(ct, 0.03)} 0%, transparent 70%)`,
+        background:
+          theme.palette.mode === 'dark'
+            ? `radial-gradient(ellipse 80% 50% at 50% 0%, ${alpha(ct, 0.04)} 0%, transparent 70%)`
+            : `radial-gradient(ellipse 80% 50% at 50% 0%, ${alpha(ct, 0.03)} 0%, transparent 70%)`,
       }}
     >
       {/* ── Full-screen hero (above the fold) ── */}
@@ -374,18 +377,12 @@ export function HeroSection() {
             {/* Demo viewport — fixed height */}
             <Box sx={{ maxWidth: 1200, mx: 'auto', position: 'relative', height: 560 }}>
               {/* App view — visible initially */}
-              <Box
-                className="demo-app-view"
-                sx={{ position: 'absolute', inset: 0 }}
-              >
+              <Box className="demo-app-view" sx={{ position: 'absolute', inset: 0 }}>
                 <AppDemoView ct={ct} />
               </Box>
 
               {/* Slack view — hidden initially, revealed by scroll */}
-              <Box
-                className="demo-slack-view"
-                sx={{ position: 'absolute', inset: 0, opacity: 0 }}
-              >
+              <Box className="demo-slack-view" sx={{ position: 'absolute', inset: 0, opacity: 0 }}>
                 <SlackDemoView />
               </Box>
             </Box>
@@ -838,15 +835,7 @@ function SlackDemoView() {
 
 /* ── Slack sidebar channel ── */
 
-function SlackChannel({
-  name,
-  color,
-  active,
-}: {
-  name: string;
-  color: string;
-  active?: boolean;
-}) {
+function SlackChannel({ name, color, active }: { name: string; color: string; active?: boolean }) {
   const theme = useTheme();
   const codeText = theme.palette.kindle.codeBlockText;
 

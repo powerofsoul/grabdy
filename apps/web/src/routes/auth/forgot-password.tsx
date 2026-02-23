@@ -13,17 +13,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {
-  EnvelopeIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  KeyIcon,
-} from '@phosphor-icons/react';
+import { EnvelopeIcon, EyeIcon, EyeSlashIcon, KeyIcon } from '@phosphor-icons/react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 
-import { OtpInput } from '@/components/ui/OtpInput';
 import { AuthLayout } from '@/components/ui/AuthLayout';
+import { OtpInput } from '@/components/ui/OtpInput';
 import { useAuth } from '@/context/AuthContext';
 
 const emailSchema = contract.auth.forgotPassword.body;

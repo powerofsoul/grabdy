@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Box,
@@ -12,10 +14,8 @@ import {
   Typography,
 } from '@mui/material';
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { GoogleLogin } from '@react-oauth/google';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { AuthLayout } from '@/components/ui/AuthLayout';

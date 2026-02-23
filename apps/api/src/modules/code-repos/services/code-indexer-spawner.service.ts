@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import type { DbId } from '@grabdy/common';
 import { ECSClient, RunTaskCommand } from '@aws-sdk/client-ecs';
+import type { DbId } from '@grabdy/common';
 import { fork } from 'child_process';
 import { resolve } from 'path';
 

@@ -6,7 +6,6 @@ import { Job } from 'bullmq';
 
 import { DbService } from '../../../db/db.module';
 import { CODE_REPO_QUEUE } from '../../queue/queue.constants';
-
 import { CodeIndexerSpawnerService } from '../services/code-indexer-spawner.service';
 
 export interface CodeRepoSyncJobData {
@@ -45,11 +44,14 @@ export class CodeRepoSyncProcessor extends WorkerHost {
 
   @OnWorkerEvent('failed')
   async onFailed(job: Job<CodeRepoSyncJobData>) {
-    this.logger.warn(`Job ${job.id} exhausted retries for ${job.data.repoFullName}, resetting status to FAILED`);
+    this.logger.warn(
+      `Job ${job.id} exhausted retries for ${job.data.repoFullName}, resetting status to FAILED`
+    );
     await this.db.kysely
       .updateTable('data.data_sources')
       .set({ status: 'FAILED', updated_at: new Date() })
       .where('id', '=', job.data.dataSourceId)
+      .where('org_id', '=', job.data.orgId)
       .where('status', '=', 'PROCESSING')
       .execute();
   }

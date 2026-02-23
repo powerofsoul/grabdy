@@ -25,7 +25,6 @@ import {
 import { EnvModule } from './config/env.config';
 import { env } from './config/env.config';
 import { DbModule } from './db/db.module';
-import { RedisModule } from './redis/redis.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -45,6 +44,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { OrgsModule } from './modules/orgs/orgs.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { UsersModule } from './modules/users/users.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [

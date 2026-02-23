@@ -5,8 +5,8 @@ import { Box, MenuItem, Select, TextField, Typography, useTheme } from '@mui/mat
 import { resolveColor } from '../../hooks/resolveColor';
 import { useEditMode } from '../../hooks/useEditMode';
 
-import { AFFIX_RATIO, SIZE_FONT_MAP, SIZE_OPTIONS } from './constants';
 import type { SizeOption } from './constants';
+import { AFFIX_RATIO, SIZE_FONT_MAP, SIZE_OPTIONS } from './constants';
 
 interface NumberComponentProps {
   data: {

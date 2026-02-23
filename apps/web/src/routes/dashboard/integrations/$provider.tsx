@@ -1,19 +1,8 @@
 import { useState } from 'react';
 
 import { integrationProviderEnum } from '@grabdy/contracts';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Typography,
-  useTheme,
-} from '@mui/material';
-import {
-  ClockIcon,
-  PlugIcon,
-  PlugsConnectedIcon,
-  TrashIcon,
-} from '@phosphor-icons/react';
+import { Box, Button, CircularProgress, Typography, useTheme } from '@mui/material';
+import { ClockIcon, PlugIcon, PlugsConnectedIcon, TrashIcon } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
@@ -79,7 +68,7 @@ function IntegrationDetailPage() {
       return res.body.data.redirectUrl;
     },
     onSuccess: (redirectUrl) => {
-      window.location.href = redirectUrl;
+      window.location.assign(redirectUrl);
     },
     onError: () => {
       toast.error('Failed to start connection');
@@ -144,7 +133,7 @@ function IntegrationDetailPage() {
       <DashboardPage
         title={providerLabel}
         showBack
-               icon={<ProviderIcon provider={provider} size={22} />}
+        icon={<ProviderIcon provider={provider} size={22} />}
       >
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress size={32} />
@@ -158,7 +147,7 @@ function IntegrationDetailPage() {
       <DashboardPage
         title={providerLabel}
         showBack
-               icon={<ProviderIcon provider={provider} size={22} />}
+        icon={<ProviderIcon provider={provider} size={22} />}
       >
         <Box
           sx={{
@@ -191,9 +180,16 @@ function IntegrationDetailPage() {
     <DashboardPage
       title={providerLabel}
       showBack
-           icon={<ProviderIcon provider={provider} size={22} />}
+      icon={<ProviderIcon provider={provider} size={22} />}
     >
-      <Box sx={{ maxWidth: provider === 'GITHUB' ? 720 : 560, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Box
+        sx={{
+          maxWidth: provider === 'GITHUB' ? 720 : 560,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2.5,
+        }}
+      >
         <Section title="Overview">
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {connection.externalAccountName && (
@@ -221,9 +217,7 @@ function IntegrationDetailPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <ClockIcon size={14} weight="light" color={theme.palette.text.secondary} />
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {connection.lastSyncedAt
-                    ? formatRelativeTime(connection.lastSyncedAt)
-                    : 'Never'}
+                  {connection.lastSyncedAt ? formatRelativeTime(connection.lastSyncedAt) : 'Never'}
                 </Typography>
               </Box>
             </Box>
@@ -242,11 +236,7 @@ function IntegrationDetailPage() {
         </Section>
 
         {provider === 'SLACK' && isActive && selectedOrgId && (
-          <ChannelPicker
-            provider={provider}
-            orgId={selectedOrgId}
-            onRefresh={refreshConnections}
-          />
+          <ChannelPicker provider={provider} orgId={selectedOrgId} onRefresh={refreshConnections} />
         )}
 
         {provider === 'GITHUB' && isActive && selectedOrgId && (
@@ -263,9 +253,7 @@ function IntegrationDetailPage() {
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                 <Button
                   variant="outlined"
-                  startIcon={
-                    <PlugsConnectedIcon size={15} weight="light" color="currentColor" />
-                  }
+                  startIcon={<PlugsConnectedIcon size={15} weight="light" color="currentColor" />}
                   onClick={() => connectMutation.mutate()}
                   size="small"
                   sx={{ borderRadius: 1.5 }}
@@ -300,11 +288,13 @@ function IntegrationDetailPage() {
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Disconnecting will stop syncing new data. Existing data remains searchable. You can delete all synced data after disconnecting.
+                Disconnecting will stop syncing new data. Existing data remains searchable. You can
+                delete all synced data after disconnecting.
               </Typography>
               {provider === 'NOTION' && (
                 <Typography variant="caption" color="warning.main">
-                  Notion does not support automatic removal. After disconnecting, you will also need to remove Grabdy from your Notion integrations settings manually.
+                  Notion does not support automatic removal. After disconnecting, you will also need
+                  to remove Grabdy from your Notion integrations settings manually.
                 </Typography>
               )}
               <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -312,9 +302,7 @@ function IntegrationDetailPage() {
                   <Button
                     variant="outlined"
                     color="error"
-                    startIcon={
-                      <PlugsConnectedIcon size={15} weight="light" color="currentColor" />
-                    }
+                    startIcon={<PlugsConnectedIcon size={15} weight="light" color="currentColor" />}
                     onClick={() => setConfirmDisconnect(true)}
                     size="small"
                     sx={{ borderRadius: 1.5 }}

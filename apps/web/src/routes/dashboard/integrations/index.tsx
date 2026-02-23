@@ -9,8 +9,8 @@ import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { IntegrationGrid } from '@/components/integrations';
 import type { ProviderKey } from '@/components/integrations';
+import { IntegrationGrid } from '@/components/integrations';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -74,7 +74,10 @@ function IntegrationsPage() {
 
   const handleManage = useCallback(
     (provider: IntegrationProvider) => {
-      navigate({ to: '/dashboard/integrations/$provider', params: { provider: provider.toLowerCase() } });
+      navigate({
+        to: '/dashboard/integrations/$provider',
+        params: { provider: provider.toLowerCase() },
+      });
     },
     [navigate]
   );

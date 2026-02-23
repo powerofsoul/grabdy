@@ -1,5 +1,11 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 import { Octokit } from '@octokit/rest';
@@ -87,7 +93,11 @@ export class CodeReposService {
     // Check for existing data source
     const existing = await this.db.kysely
       .selectFrom('data.data_sources')
-      .innerJoin('data.code_repo_state', 'data.code_repo_state.data_source_id', 'data.data_sources.id')
+      .innerJoin(
+        'data.code_repo_state',
+        'data.code_repo_state.data_source_id',
+        'data.data_sources.id'
+      )
       .select(['data.data_sources.id'])
       .where('data.code_repo_state.repo_full_name', '=', params.repoFullName)
       .where('data.data_sources.org_id', '=', orgId)
@@ -103,6 +113,7 @@ export class CodeReposService {
         .updateTable('data.data_sources')
         .set({ status: 'PROCESSING', updated_at: new Date() })
         .where('id', '=', dataSourceId)
+        .where('org_id', '=', orgId)
         .where('status', '!=', 'PROCESSING')
         .executeTakeFirst();
 
@@ -177,7 +188,11 @@ export class CodeReposService {
   async getIndexingStatus(orgId: DbId<'Org'>, dataSourceId: DbId<'DataSource'>) {
     const row = await this.db.kysely
       .selectFrom('data.data_sources')
-      .innerJoin('data.code_repo_state', 'data.code_repo_state.data_source_id', 'data.data_sources.id')
+      .innerJoin(
+        'data.code_repo_state',
+        'data.code_repo_state.data_source_id',
+        'data.data_sources.id'
+      )
       .select([
         'data.data_sources.id as dataSourceId',
         'data.data_sources.status',
@@ -258,7 +273,11 @@ export class CodeReposService {
     }));
   }
 
-  async getDocsDiff(orgId: DbId<'Org'>, dataSourceId: DbId<'DataSource'>, versionId: DbId<'CodeRepoDoc'>) {
+  async getDocsDiff(
+    orgId: DbId<'Org'>,
+    dataSourceId: DbId<'DataSource'>,
+    versionId: DbId<'CodeRepoDoc'>
+  ) {
     const currentDoc = await this.db.kysely
       .selectFrom('data.code_repo_docs')
       .select(['content', 'version'])
@@ -287,7 +306,9 @@ export class CodeReposService {
     let lineNumber = 1;
 
     for (const change of changes) {
-      const changeLines = change.value.split('\n').filter((l) => l.length > 0 || change.value === '\n');
+      const changeLines = change.value
+        .split('\n')
+        .filter((l) => l.length > 0 || change.value === '\n');
       for (const line of changeLines) {
         if (change.added) {
           lines.push({ type: 'addition', content: line, lineNumber });
@@ -311,15 +332,7 @@ export class CodeReposService {
   async listDocPages(orgId: DbId<'Org'>, dataSourceId: DbId<'DataSource'>) {
     const pages = await this.db.kysely
       .selectFrom('data.code_repo_doc_pages')
-      .select([
-        'id',
-        'parent_id',
-        'title',
-        'slug',
-        'sort_order',
-        'is_user_edited',
-        'version',
-      ])
+      .select(['id', 'parent_id', 'title', 'slug', 'sort_order', 'is_user_edited', 'version'])
       .where('data_source_id', '=', dataSourceId)
       .where('org_id', '=', orgId)
       .orderBy('sort_order', 'asc')
@@ -437,13 +450,15 @@ export class CodeReposService {
     } catch {
       // Job lookup failure is non-critical
     }
-    await this.docGenQueue.add(
-      're-embed-doc-page',
-      { orgId, dataSourceId, pageId },
-      { jobId: reEmbedJobId, delay: 5 * 60 * 1000 },
-    ).catch(() => {
-      // Duplicate jobId means another edit already scheduled, safe to ignore
-    });
+    await this.docGenQueue
+      .add(
+        're-embed-doc-page',
+        { orgId, dataSourceId, pageId },
+        { jobId: reEmbedJobId, delay: 5 * 60 * 1000 }
+      )
+      .catch(() => {
+        // Duplicate jobId means another edit already scheduled, safe to ignore
+      });
 
     return this.getDocPage(orgId, dataSourceId, pageId);
   }

@@ -2,8 +2,6 @@ import { type NonDbId, nonDbIdSchema } from '@grabdy/common';
 
 import { SourceChips } from '../chat/components/source-chips';
 
-import { cardSourcesToChat } from './canvas-helpers';
-
 import { AccordionComponent } from './components/AccordionComponent';
 import { BookmarkComponent } from './components/BookmarkComponent';
 import { CalloutComponent } from './components/callout';
@@ -36,6 +34,7 @@ import { TagCloudComponent } from './components/TagCloudComponent';
 import { TextComponent } from './components/TextComponent';
 import { TimelineComponent } from './components/TimelineComponent';
 import { TopicMapComponent } from './components/TopicMapComponent';
+import { cardSourcesToChat } from './canvas-helpers';
 
 const parseComponentId = nonDbIdSchema('CanvasComponent').parse;
 import type { ComponentNode } from '@grabdy/contracts';

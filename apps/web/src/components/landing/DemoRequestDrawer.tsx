@@ -1,11 +1,12 @@
-import { Box, Button, TextField, Typography } from '@mui/material';
+import { useForm } from 'react-hook-form';
+
 import { demoRequestBodySchema } from '@grabdy/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { Box, Button, TextField, Typography } from '@mui/material';
 import { z } from 'zod';
 
-import { api } from '@/lib/api';
 import type { DrawerProps } from '@/context/DrawerContext';
+import { api } from '@/lib/api';
 
 type DemoRequestForm = z.infer<typeof demoRequestBodySchema>;
 
@@ -87,13 +88,7 @@ export function DemoRequestDrawer({ onClose }: DrawerProps) {
         </Typography>
       )}
 
-      <Button
-        type="submit"
-        variant="contained"
-        size="large"
-        disabled={isSubmitting}
-        sx={{ mt: 1 }}
-      >
+      <Button type="submit" variant="contained" size="large" disabled={isSubmitting} sx={{ mt: 1 }}>
         {isSubmitting ? 'Sending...' : 'Request a demo'}
       </Button>
     </Box>
