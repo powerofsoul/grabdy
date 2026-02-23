@@ -557,58 +557,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-lambda@npm:^3.995.0":
-  version: 3.995.0
-  resolution: "@aws-sdk/client-lambda@npm:3.995.0"
-  dependencies:
-    "@aws-crypto/sha256-browser": "npm:5.2.0"
-    "@aws-crypto/sha256-js": "npm:5.2.0"
-    "@aws-sdk/core": "npm:^3.973.11"
-    "@aws-sdk/credential-provider-node": "npm:^3.972.10"
-    "@aws-sdk/middleware-host-header": "npm:^3.972.3"
-    "@aws-sdk/middleware-logger": "npm:^3.972.3"
-    "@aws-sdk/middleware-recursion-detection": "npm:^3.972.3"
-    "@aws-sdk/middleware-user-agent": "npm:^3.972.11"
-    "@aws-sdk/region-config-resolver": "npm:^3.972.3"
-    "@aws-sdk/types": "npm:^3.973.1"
-    "@aws-sdk/util-endpoints": "npm:3.995.0"
-    "@aws-sdk/util-user-agent-browser": "npm:^3.972.3"
-    "@aws-sdk/util-user-agent-node": "npm:^3.972.10"
-    "@smithy/config-resolver": "npm:^4.4.6"
-    "@smithy/core": "npm:^3.23.2"
-    "@smithy/eventstream-serde-browser": "npm:^4.2.8"
-    "@smithy/eventstream-serde-config-resolver": "npm:^4.3.8"
-    "@smithy/eventstream-serde-node": "npm:^4.2.8"
-    "@smithy/fetch-http-handler": "npm:^5.3.9"
-    "@smithy/hash-node": "npm:^4.2.8"
-    "@smithy/invalid-dependency": "npm:^4.2.8"
-    "@smithy/middleware-content-length": "npm:^4.2.8"
-    "@smithy/middleware-endpoint": "npm:^4.4.16"
-    "@smithy/middleware-retry": "npm:^4.4.33"
-    "@smithy/middleware-serde": "npm:^4.2.9"
-    "@smithy/middleware-stack": "npm:^4.2.8"
-    "@smithy/node-config-provider": "npm:^4.3.8"
-    "@smithy/node-http-handler": "npm:^4.4.10"
-    "@smithy/protocol-http": "npm:^5.3.8"
-    "@smithy/smithy-client": "npm:^4.11.5"
-    "@smithy/types": "npm:^4.12.0"
-    "@smithy/url-parser": "npm:^4.2.8"
-    "@smithy/util-base64": "npm:^4.3.0"
-    "@smithy/util-body-length-browser": "npm:^4.2.0"
-    "@smithy/util-body-length-node": "npm:^4.2.1"
-    "@smithy/util-defaults-mode-browser": "npm:^4.3.32"
-    "@smithy/util-defaults-mode-node": "npm:^4.2.35"
-    "@smithy/util-endpoints": "npm:^3.2.8"
-    "@smithy/util-middleware": "npm:^4.2.8"
-    "@smithy/util-retry": "npm:^4.2.8"
-    "@smithy/util-stream": "npm:^4.5.12"
-    "@smithy/util-utf8": "npm:^4.2.0"
-    "@smithy/util-waiter": "npm:^4.2.8"
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/97fef10419b9aac7f8d16550a6de4422609af6c5b0f65b161c9d8b4082e903072e36785a36aa20b27563e2aee3bc05b630c89b21e487b079482428044ae215f0
-  languageName: node
-  linkType: hard
-
 "@aws-sdk/client-s3@npm:^3.989.0":
   version: 3.989.0
   resolution: "@aws-sdk/client-s3@npm:3.989.0"
@@ -3716,7 +3664,6 @@ __metadata:
     "@aws-sdk/client-bedrock-runtime": "npm:^3.994.0"
     "@aws-sdk/client-ecs": "npm:^3.995.0"
     "@aws-sdk/client-kms": "npm:^3.992.0"
-    "@aws-sdk/client-lambda": "npm:^3.995.0"
     "@aws-sdk/client-s3": "npm:^3.989.0"
     "@aws-sdk/client-secrets-manager": "npm:^3.992.0"
     "@aws-sdk/client-ssm": "npm:^3.992.0"

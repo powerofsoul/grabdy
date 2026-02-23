@@ -30,12 +30,15 @@ new aws.ecr.LifecyclePolicy('grabdy-api-lifecycle', {
   }),
 });
 
+const deployTag = `deploy-${Date.now()}`;
+
 const image = new awsx.ecr.Image('grabdy-api-image', {
   repositoryUrl: repo.repositoryUrl,
   context: monorepoRoot,
   dockerfile: path.join(monorepoRoot, 'apps/api/Dockerfile'),
   platform: 'linux/arm64',
-  imageTag: `deploy-${Date.now()}`,
+  imageTag: deployTag,
+  args: { CACHE_BUST: deployTag },
 });
 
 export const imageUri = image.imageUri;

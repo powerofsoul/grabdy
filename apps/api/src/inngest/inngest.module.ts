@@ -44,7 +44,7 @@ export class InngestModule implements OnModuleInit {
     const handler = serve({
       client: inngest,
       functions,
-      serveHost: env.apiUrl,
+      serveHost: process.env.INNGEST_SERVE_HOST || env.apiUrl,
       servePath: '/api/inngest',
     });
 

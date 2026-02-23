@@ -5,6 +5,8 @@ import * as path from 'path';
 
 import { Env } from './src/env';
 import { alb } from './src/compute/ecs';
+import './src/compute/services/api.service';
+import './src/compute/services/inngest.service';
 import { db } from './src/data/database';
 import { frontendBucket } from './src/storage/buckets';
 import { distribution } from './src/storage/cdn';
