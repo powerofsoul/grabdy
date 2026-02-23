@@ -22,6 +22,7 @@ import {
 } from '../../config/constants';
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
+import { InngestService } from '../../inngest/inngest.service';
 import { RedisService } from '../../redis/redis.module';
 import { redisKeys } from '../../redis/redis-keys';
 import { EmailService } from '../email/email.service';
@@ -86,6 +87,7 @@ export class AuthService {
     private jwtService: JwtService,
     private emailService: EmailService,
     private notificationService: NotificationService,
+    private inngestService: InngestService,
     @InjectEnv('jwtSecret') private readonly jwtSecret: string,
     @InjectEnv('googleClientId') private readonly googleClientId: string
   ) {
@@ -203,7 +205,12 @@ export class AuthService {
       ttlSeconds
     );
 
-    await this.emailService.sendEmailVerificationOTP(normalizedEmail, firstName, otp);
+    await this.inngestService.send('app/email.send', {
+      orgId: null,
+      type: 'verification-otp',
+      to: normalizedEmail,
+      payload: { name: firstName, otp },
+    });
 
     return { email: normalizedEmail };
   }
@@ -278,7 +285,12 @@ export class AuthService {
       memberships: toJwtMemberships(memberships),
     });
 
-    await this.emailService.sendWelcomeEmail(result.user.email, result.user.first_name);
+    await this.inngestService.send('app/email.send', {
+      orgId: null,
+      type: 'welcome',
+      to: result.user.email,
+      payload: { name: result.user.first_name },
+    });
     this.notificationService.notifyNewSignup(result.user.email, result.user.first_name, 'email');
 
     return {
@@ -330,7 +342,12 @@ export class AuthService {
       ttlSeconds
     );
 
-    await this.emailService.sendEmailVerificationOTP(normalizedEmail, pending.firstName, otp);
+    await this.inngestService.send('app/email.send', {
+      orgId: null,
+      type: 'verification-otp',
+      to: normalizedEmail,
+      payload: { name: pending.firstName, otp },
+    });
   }
 
   async googleAuth(credential: string): Promise<{ user: UserData; token: string }> {
@@ -471,7 +488,12 @@ export class AuthService {
       memberships: toJwtMemberships(memberships),
     });
 
-    await this.emailService.sendWelcomeEmail(result.user.email, result.user.first_name);
+    await this.inngestService.send('app/email.send', {
+      orgId: null,
+      type: 'welcome',
+      to: result.user.email,
+      payload: { name: result.user.first_name },
+    });
     this.notificationService.notifyNewSignup(result.user.email, result.user.first_name, 'google');
 
     return {
@@ -588,7 +610,12 @@ export class AuthService {
       })
       .execute();
 
-    await this.emailService.sendPasswordResetOTP(email, user.first_name, otp);
+    await this.inngestService.send('app/email.send', {
+      orgId: null,
+      type: 'password-reset',
+      to: email,
+      payload: { name: user.first_name, otp },
+    });
   }
 
   async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {

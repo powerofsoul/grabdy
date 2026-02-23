@@ -1,30 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { InjectEnv } from '../../config/env.config';
+import { InngestService } from '../../inngest/inngest.service';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
-  constructor(@InjectEnv('slackWebhookUrl') private readonly slackWebhookUrl: string) {}
+  constructor(private inngestService: InngestService) {}
 
   notifyNewSignup(email: string, name: string, method: 'email' | 'google'): void {
-    this.sendSlack(`🎉 New signup: *${name}* (${email}) via ${method}`);
+    this.inngestService
+      .send('app/notification.slack', {
+        orgId: null,
+        type: 'new-signup',
+        text: `New signup: *${name}* (${email}) via ${method}`,
+      })
+      .catch((err) => {
+        this.logger.error(`Failed to queue signup notification: ${err}`);
+      });
   }
 
   notifyDemoRequest(name: string, company: string, email: string): void {
-    this.sendSlack(`📅 Demo request: *${name}* from *${company}* (${email})`);
-  }
-
-  private sendSlack(text: string): void {
-    if (!this.slackWebhookUrl) return;
-
-    fetch(this.slackWebhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    }).catch((err) => {
-      this.logger.warn(`Slack notification failed: ${err}`);
-    });
+    this.inngestService
+      .send('app/notification.slack', {
+        orgId: null,
+        type: 'demo-request',
+        text: `Demo request: *${name}* from *${company}* (${email})`,
+      })
+      .catch((err) => {
+        this.logger.error(`Failed to queue demo request notification: ${err}`);
+      });
   }
 }

@@ -253,14 +253,10 @@ export class DataSourcesController {
 
         const status = row?.status ?? 'FAILED';
 
-        // Progress is estimated from status: UPLOADED=0, PROCESSING=50, READY/FAILED=100
-        const progress =
-          status === 'READY' || status === 'FAILED' ? 100 : status === 'PROCESSING' ? 50 : 0;
-
-        return { status, progress };
+        return { status };
       }),
-      map(({ status, progress }) => ({
-        data: { status, progress: Math.round(progress) },
+      map(({ status }) => ({
+        data: { status },
       })),
       takeWhile(({ data }) => data.status !== 'READY' && data.status !== 'FAILED', true)
     );

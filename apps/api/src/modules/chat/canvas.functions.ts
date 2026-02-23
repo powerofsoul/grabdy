@@ -1,0 +1,202 @@
+import { Logger } from '@nestjs/common';
+
+import { type CanvasState, canvasStateSchema } from '@grabdy/contracts';
+import { sql } from 'kysely';
+
+import { DbService } from '../../db/db.module';
+import { inngest } from '../../inngest/inngest.client';
+import { InngestFunctions } from '../../inngest/inngest.decorator';
+
+import { mergeComponentData } from './processors/canvas-ops.helpers';
+import type { BatchInnerOp, CanvasOp } from './processors/canvas-ops.types';
+
+// Inngest serializes step errors as plain Error objects, losing the original
+// class. We use this prefix so the service can reliably re-throw as NotFoundException.
+export const NOT_FOUND_PREFIX = 'NOT_FOUND:';
+
+function notFound(detail: string): Error {
+  return new Error(`${NOT_FOUND_PREFIX}${detail}`);
+}
+
+function emptyCanvas(): CanvasState {
+  return { version: 1, viewport: { x: 0, y: 0, zoom: 1 }, cards: [], edges: [] };
+}
+
+function applyInnerOp(state: CanvasState, innerOp: BatchInnerOp): void {
+  switch (innerOp.op) {
+    case 'add_card': {
+      state.cards.push(...innerOp.cards);
+      break;
+    }
+    case 'remove_card': {
+      const idx = state.cards.findIndex((c) => c.id === innerOp.cardId);
+      if (idx === -1) throw notFound('Card not found');
+      state.cards.splice(idx, 1);
+      state.edges = state.edges.filter(
+        (e) => e.source !== innerOp.cardId && e.target !== innerOp.cardId
+      );
+      break;
+    }
+    case 'move_card': {
+      const card = state.cards.find((c) => c.id === innerOp.cardId);
+      if (!card) throw notFound('Card not found');
+      if (innerOp.position) card.position = innerOp.position;
+      if (innerOp.width !== undefined) card.width = innerOp.width;
+      if (innerOp.height !== undefined) card.height = innerOp.height;
+      break;
+    }
+    case 'update_component': {
+      const card = state.cards.find((c) => c.id === innerOp.cardId);
+      if (!card) throw notFound('Card not found');
+      const found = mergeComponentData(card, innerOp.componentId, innerOp.data);
+      if (!found) throw notFound('Component not found');
+      break;
+    }
+    case 'add_edge': {
+      const sourceExists = state.cards.some((c) => c.id === innerOp.edge.source);
+      const targetExists = state.cards.some((c) => c.id === innerOp.edge.target);
+      if (!sourceExists || !targetExists) {
+        throw notFound('Edge source or target card not found');
+      }
+      const exists = state.edges.some(
+        (e) =>
+          (e.source === innerOp.edge.source && e.target === innerOp.edge.target) ||
+          (e.source === innerOp.edge.target && e.target === innerOp.edge.source)
+      );
+      if (!exists) {
+        state.edges.push(innerOp.edge);
+      }
+      break;
+    }
+    case 'remove_edge': {
+      state.edges = state.edges.filter((e) => e.id !== innerOp.edgeId);
+      break;
+    }
+  }
+}
+
+@InngestFunctions()
+export class CanvasFunctions {
+  private readonly logger = new Logger(CanvasFunctions.name);
+
+  constructor(private db: DbService) {}
+
+  definitions() {
+    return [this.canvasOpsExecute()];
+  }
+
+  private canvasOpsExecute() {
+    return inngest.createFunction(
+      {
+        id: 'canvas-ops-execute',
+        concurrency: [
+          { scope: 'fn', limit: 10 },
+          { scope: 'fn', key: 'event.data.threadId', limit: 1 },
+        ],
+        retries: 0,
+      },
+      { event: 'app/canvas-ops.execute' },
+      async ({ event, step }) => {
+        const { op } = event.data;
+
+        await step.run('apply-op', async () => {
+          return this.db.kysely.transaction().execute(async (trx) => {
+            const thread = await trx
+              .selectFrom('data.chat_threads')
+              .select('canvas_state')
+              .where('id', '=', op.threadId)
+              .where('org_id', '=', op.orgId)
+              .forUpdate()
+              .executeTakeFirst();
+
+            if (!thread) {
+              this.logger.error(`Thread not found: ${op.threadId}`);
+              throw notFound('Thread not found');
+            }
+
+            const state = thread.canvas_state
+              ? canvasStateSchema.parse(thread.canvas_state)
+              : emptyCanvas();
+
+            this.applyOp(state, op);
+
+            const jsonStr = JSON.stringify(state);
+            await trx
+              .updateTable('data.chat_threads')
+              .set({ canvas_state: sql`${jsonStr}::jsonb` })
+              .where('id', '=', op.threadId)
+              .where('org_id', '=', op.orgId)
+              .execute();
+
+            this.logger.log(`Canvas op ${op.type} completed: ${state.cards.length} cards`);
+
+            return state;
+          });
+        });
+      }
+    );
+  }
+
+  private applyOp(state: CanvasState, op: CanvasOp): void {
+    switch (op.type) {
+      case 'add_card': {
+        state.cards.push(...op.cards);
+        break;
+      }
+      case 'remove_card': {
+        const idx = state.cards.findIndex((c) => c.id === op.cardId);
+        if (idx === -1) throw notFound('Card not found');
+        state.cards.splice(idx, 1);
+        state.edges = state.edges.filter((e) => e.source !== op.cardId && e.target !== op.cardId);
+        break;
+      }
+      case 'move_card': {
+        const card = state.cards.find((c) => c.id === op.cardId);
+        if (!card) throw notFound('Card not found');
+        if (op.position) card.position = op.position;
+        if (op.width !== undefined) card.width = op.width;
+        if (op.height !== undefined) card.height = op.height;
+        if (op.title !== undefined) card.title = op.title || undefined;
+        if (op.zIndex !== undefined) card.zIndex = op.zIndex;
+        break;
+      }
+      case 'update_edges': {
+        state.edges = op.edges;
+        break;
+      }
+      case 'add_edge': {
+        const sourceExists = state.cards.some((c) => c.id === op.edge.source);
+        const targetExists = state.cards.some((c) => c.id === op.edge.target);
+        if (!sourceExists || !targetExists) {
+          throw notFound('Edge source or target card not found');
+        }
+        const exists = state.edges.some(
+          (e) =>
+            (e.source === op.edge.source && e.target === op.edge.target) ||
+            (e.source === op.edge.target && e.target === op.edge.source)
+        );
+        if (!exists) {
+          state.edges.push(op.edge);
+        }
+        break;
+      }
+      case 'delete_edge': {
+        state.edges = state.edges.filter((e) => e.id !== op.edgeId);
+        break;
+      }
+      case 'update_component': {
+        const card = state.cards.find((c) => c.id === op.cardId);
+        if (!card) throw notFound('Card not found');
+        const found = mergeComponentData(card, op.componentId, op.data);
+        if (!found) throw notFound('Component not found');
+        break;
+      }
+      case 'batch': {
+        for (const innerOp of op.operations) {
+          applyInnerOp(state, innerOp);
+        }
+        break;
+      }
+    }
+  }
+}

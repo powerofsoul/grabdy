@@ -1,15 +1,13 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
 import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '@grabdy/contracts';
-import { Queue } from 'bullmq';
 import { sql } from 'kysely';
 
 import { EncryptionService } from '../../common/encryption/encryption.service';
 import { DbService } from '../../db/db.module';
-import { CODE_REPO_QUEUE, INTEGRATIONS_QUEUE } from '../queue/queue.constants';
+import { InngestService } from '../../inngest/inngest.service';
 
 import { ProviderRegistry } from './providers/provider-registry';
 import {
@@ -47,8 +45,7 @@ export class IntegrationsService {
     private db: DbService,
     private encryption: EncryptionService,
     private providerRegistry: ProviderRegistry,
-    @InjectQueue(INTEGRATIONS_QUEUE) private integrationsQueue: Queue,
-    @InjectQueue(CODE_REPO_QUEUE) private codeRepoQueue: Queue
+    private inngestService: InngestService
   ) {}
 
   async listConnections(orgId: DbId<'Org'>) {
@@ -280,7 +277,7 @@ export class IntegrationsService {
   }
 
   async triggerSync(connectionId: DbId<'Connection'>, orgId: DbId<'Org'>, trigger: SyncTrigger) {
-    await this.integrationsQueue.add('discover', {
+    await this.inngestService.send('app/integration.discover', {
       connectionId,
       orgId,
       trigger,
@@ -294,7 +291,7 @@ export class IntegrationsService {
     orgId: DbId<'Org'>,
     event: WebhookEvent
   ) {
-    await this.integrationsQueue.add('process-item', {
+    await this.inngestService.send('app/integration.process-item', {
       connectionId,
       orgId,
       event,
@@ -303,67 +300,6 @@ export class IntegrationsService {
     this.logger.log(
       `Queued process-item for connection ${connectionId}: ${event.action} ${event.externalId}`
     );
-  }
-
-  /** Handle a GitHub push webhook by spawning incremental indexer jobs for matching CODE_REPO data sources. */
-  async handleCodeRepoPush(repoFullName: string, ref: string): Promise<void> {
-    const pushedBranch = ref.replace('refs/heads/', '');
-
-    // org-safe: webhook handler must find all orgs with this repo to trigger incremental sync
-    const codeRepoSources = await this.db.kysely
-      .selectFrom('data.data_sources')
-      .innerJoin(
-        'data.code_repo_state',
-        'data.code_repo_state.data_source_id',
-        'data.data_sources.id'
-      )
-      .select([
-        'data.data_sources.id',
-        'data.data_sources.org_id',
-        'data.data_sources.status',
-        'data.code_repo_state.branch',
-        'data.code_repo_state.repo_full_name',
-      ])
-      .where('data.code_repo_state.repo_full_name', '=', repoFullName)
-      .where('data.data_sources.type', '=', 'CODE_REPO')
-      .where('data.data_sources.status', '!=', 'PROCESSING')
-      .execute();
-
-    for (const source of codeRepoSources) {
-      if (source.branch !== pushedBranch) continue;
-
-      const connection = await this.db.kysely
-        .selectFrom('integration.connections')
-        .select(['id'])
-        .where('org_id', '=', source.org_id)
-        .where('provider', '=', 'GITHUB')
-        .where('status', '=', 'ACTIVE')
-        .executeTakeFirst();
-      if (!connection) continue;
-
-      this.logger.log(
-        `Push event for ${repoFullName}:${pushedBranch}, spawning incremental indexer`
-      );
-
-      const claimed = await this.db.kysely
-        .updateTable('data.data_sources')
-        .set({ status: 'PROCESSING', updated_at: new Date() })
-        .where('id', '=', source.id)
-        .where('org_id', '=', source.org_id)
-        .where('status', '!=', 'PROCESSING')
-        .executeTakeFirst();
-
-      if (!claimed || claimed.numUpdatedRows === 0n) continue;
-
-      await this.codeRepoQueue.add('sync', {
-        dataSourceId: source.id,
-        orgId: source.org_id,
-        repoFullName,
-        branch: pushedBranch,
-        connectionId: connection.id,
-        mode: 'incremental',
-      });
-    }
   }
 
   async listConnectionsByProvider(provider: IntegrationProvider) {

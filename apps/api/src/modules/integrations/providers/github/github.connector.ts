@@ -85,8 +85,6 @@ export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
 
   async revoke(_accessToken: string, _providerData: GitHubProviderData): Promise<void> {
     // No-op: GitHub App installations are managed by the user in GitHub settings.
-    // Calling deleteInstallation would remove the app entirely, breaking push webhooks
-    // for CODE_REPO data sources that depend on the same installation.
   }
 
   async getAccountInfo(accessToken: string): Promise<AccountInfo<'GITHUB'>> {

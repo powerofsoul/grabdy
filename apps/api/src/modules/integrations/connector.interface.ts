@@ -145,7 +145,7 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
   abstract readonly provider: P;
   abstract readonly rateLimits: RateLimitConfig;
 
-  /** If non-null, the provider needs periodic full syncs. BullMQ repeat pattern (milliseconds). */
+  /** If non-null, the provider needs periodic full syncs. Repeat interval in milliseconds. */
   abstract readonly syncSchedule: { every: number } | null;
 
   /** Custom system prompt prepended to the AI agent when responding via this integration. */
@@ -168,11 +168,7 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
   /** Verify the webhook signature/HMAC. Called by the controller BEFORE handleWebhookRequest.
    *  Must return true for the webhook to be processed. Implementations should use timing-safe
    *  comparison. Return true for providers that handle verification inline (e.g. delegated services). */
-  abstract verifyWebhook(
-    headers: Record<string, string>,
-    body: unknown,
-    rawBody?: string
-  ): boolean;
+  abstract verifyWebhook(headers: Record<string, string>, body: unknown, rawBody?: string): boolean;
 
   abstract handleWebhookRequest(
     headers: Record<string, string>,

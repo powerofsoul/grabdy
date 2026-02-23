@@ -19,14 +19,6 @@ export const THROTTLE_MEDIUM_LIMIT = 100;
 export const THROTTLE_LONG_TTL_MS = 3_600_000;
 export const THROTTLE_LONG_LIMIT = 1000;
 
-// ── Queue / Job Processing ──────────────────────────────────────────
-export const JOB_REMOVE_ON_COMPLETE_AGE_S = 3600;
-export const JOB_REMOVE_ON_COMPLETE_COUNT = 100;
-export const JOB_REMOVE_ON_FAIL_AGE_S = 86400;
-export const JOB_REMOVE_ON_FAIL_COUNT = 200;
-export const JOB_MAX_ATTEMPTS = 3;
-export const JOB_BACKOFF_DELAY_MS = 1000;
-
 // ── Data Source Processing (token-based) ────────────────────────────
 export const CHUNK_SIZE_TOKENS = 400;
 export const CHUNK_OVERLAP_TOKENS = 80;

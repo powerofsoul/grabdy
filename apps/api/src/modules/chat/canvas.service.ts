@@ -1,13 +1,11 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId, NonDbId } from '@grabdy/common';
 import type { CanvasEdge, CanvasState, Card } from '@grabdy/contracts';
 import { canvasStateSchema } from '@grabdy/contracts';
-import { Queue } from 'bullmq';
 
 import { DbService } from '../../db/db.module';
-import { CANVAS_OPS_QUEUE } from '../queue/queue.constants';
+import { InngestService } from '../../inngest/inngest.service';
 
 import type { CanvasOp } from './processors/canvas-ops.types';
 
@@ -17,7 +15,7 @@ export class CanvasService {
 
   constructor(
     private db: DbService,
-    @InjectQueue(CANVAS_OPS_QUEUE) private canvasQueue: Queue<CanvasOp>
+    private inngestService: InngestService
   ) {}
 
   async getState(
@@ -36,9 +34,11 @@ export class CanvasService {
   }
 
   private enqueueOp(op: CanvasOp): void {
-    this.canvasQueue.add(op.type, op, { attempts: 1 }).catch((err) => {
-      this.logger.error(`Failed to enqueue canvas op ${op.type}: ${err}`);
-    });
+    this.inngestService
+      .send('app/canvas-ops.execute', { op, orgId: op.orgId, threadId: op.threadId })
+      .catch((err) => {
+        this.logger.error(`Failed to enqueue canvas op ${op.type}: ${err}`);
+      });
   }
 
   moveCard(

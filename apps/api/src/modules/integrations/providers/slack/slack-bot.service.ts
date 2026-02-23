@@ -1,10 +1,8 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
-import { Queue } from 'bullmq';
 
-import { SLACK_BOT_QUEUE } from '../../../queue/queue.constants';
+import { InngestService } from '../../../../inngest/inngest.service';
 
 import type { SlackProviderData } from './slack.types';
 
@@ -46,7 +44,7 @@ export type SlackWebhookResult = { handled: true; challenge?: string } | { handl
 export class SlackBotService {
   private readonly logger = new Logger(SlackBotService.name);
 
-  constructor(@InjectQueue(SLACK_BOT_QUEUE) private readonly botQueue: Queue) {}
+  constructor(private readonly inngestService: InngestService) {}
 
   /**
    * Handle an incoming Slack Events API request.
@@ -135,7 +133,7 @@ export class SlackBotService {
         text,
       };
 
-      void this.botQueue.add('app_mention', jobData);
+      void this.inngestService.send('app/slack-bot.handle', jobData);
       this.logger.log(`Queued app_mention job for org ${conn.orgId} in channel ${slackChannelId}`);
     }
   }
@@ -166,7 +164,7 @@ export class SlackBotService {
         text,
       };
 
-      void this.botQueue.add('dm', jobData);
+      void this.inngestService.send('app/slack-bot.handle', jobData);
       this.logger.log(`Queued dm job for org ${conn.orgId} in channel ${slackChannelId}`);
     }
   }
@@ -194,7 +192,7 @@ export class SlackBotService {
           slackChannelId,
         };
 
-        void this.botQueue.add('channel_joined', jobData);
+        void this.inngestService.send('app/slack-bot.handle', jobData);
         this.logger.log(
           `Queued channel_joined job for org ${conn.orgId} in channel ${slackChannelId}`
         );

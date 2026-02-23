@@ -1,15 +1,13 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
 import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
-import { Queue } from 'bullmq';
 
 import { getMaxFileSizeForMime } from '../../config/constants';
 import { env } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
-import { DATA_SOURCE_QUEUE } from '../queue/queue.constants';
+import { InngestService } from '../../inngest/inngest.service';
 import type { FileStorage } from '../storage/file-storage.interface';
 import { FILE_STORAGE } from '../storage/file-storage.interface';
 
@@ -20,7 +18,7 @@ export class DataSourcesService {
   constructor(
     private db: DbService,
     @Inject(FILE_STORAGE) private storage: FileStorage,
-    @InjectQueue(DATA_SOURCE_QUEUE) private dataSourceQueue: Queue<DataSourceJobData>
+    private inngestService: InngestService
   ) {}
 
   async upload(
@@ -78,7 +76,7 @@ export class DataSourcesService {
       collectionId,
     };
 
-    await this.dataSourceQueue.add('process', jobData);
+    await this.inngestService.send('app/data-source.process', jobData);
 
     return this.toResponse(dataSource);
   }
@@ -226,9 +224,9 @@ export class DataSourcesService {
       collectionId: dataSource.collection_id,
     };
 
-    await this.dataSourceQueue.add('process', jobData);
+    await this.inngestService.send('app/data-source.process', jobData);
 
-    return this.toResponse({ ...dataSource, status: 'UPLOADED' as const });
+    return this.toResponse({ ...dataSource, status: 'UPLOADED' });
   }
 
   private toResponse(ds: {

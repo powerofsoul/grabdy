@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { type DbId, packId } from '@grabdy/common';
+import type { DbId } from '@grabdy/common';
 import {
   type AiCallerType,
   type AiRequestSource,
@@ -10,7 +10,7 @@ import {
   type ModelKey,
 } from '@grabdy/contracts';
 
-import { DbService } from '../../db/db.module';
+import { InngestService } from '../../inngest/inngest.service';
 
 export interface UsageContext {
   orgId: DbId<'Org'>;
@@ -28,7 +28,7 @@ interface UsageExtras {
 export class AiUsageService {
   private readonly logger = new Logger(AiUsageService.name);
 
-  constructor(private db: DbService) {}
+  constructor(private inngestService: InngestService) {}
 
   async logUsage(
     model: ModelKey,
@@ -42,28 +42,25 @@ export class AiUsageService {
     try {
       const modelInfo = MODEL_INFO[model];
       const cost = calculateCost(model, inputTokens, outputTokens);
-      await this.db.kysely
-        .insertInto('analytics.ai_usage_logs')
-        .values({
-          id: packId('AiUsageLog', context.orgId),
-          model,
-          provider: modelInfo.provider,
-          caller_type: callerType,
-          request_type: requestType,
-          source: context.source,
-          input_tokens: inputTokens,
-          output_tokens: outputTokens,
-          total_tokens: inputTokens + outputTokens,
-          cost,
-          duration_ms: extras?.durationMs ?? null,
-          finish_reason: extras?.finishReason ?? null,
-          streaming: extras?.streaming ?? false,
-          org_id: context.orgId,
-          user_id: context.userId ?? null,
-        })
-        .execute();
+
+      await this.inngestService.send('app/ai-usage.log', {
+        orgId: context.orgId,
+        model,
+        provider: modelInfo.provider,
+        callerType,
+        requestType,
+        source: context.source,
+        inputTokens,
+        outputTokens,
+        totalTokens: inputTokens + outputTokens,
+        cost,
+        userId: context.userId ?? null,
+        durationMs: extras?.durationMs ?? null,
+        finishReason: extras?.finishReason ?? null,
+        streaming: extras?.streaming ?? false,
+      });
     } catch (error) {
-      this.logger.error(`Failed to log AI usage: ${error}`);
+      this.logger.error(`Failed to send AI usage event: ${error}`);
     }
   }
 }

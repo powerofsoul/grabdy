@@ -12,6 +12,7 @@ import { randomBytes } from 'crypto';
 import { authLinks } from '../../common/auth-links';
 import { INVITE_EXPIRY_MS, INVITE_TOKEN_BYTES } from '../../config/constants';
 import { DbService } from '../../db/db.module';
+import { InngestService } from '../../inngest/inngest.service';
 import { EmailService } from '../email/email.service';
 
 function generateInviteToken(): string {
@@ -22,7 +23,8 @@ function generateInviteToken(): string {
 export class OrgsService {
   constructor(
     private db: DbService,
-    private emailService: EmailService
+    private emailService: EmailService,
+    private inngestService: InngestService
   ) {}
 
   async create(data: { name: string }, userId: DbId<'User'>) {
@@ -159,7 +161,12 @@ export class OrgsService {
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    await this.emailService.sendOrgInviteEmail(normalizedEmail, org.name, token);
+    await this.inngestService.send('app/email.send', {
+      orgId,
+      type: 'org-invite',
+      to: normalizedEmail,
+      payload: { orgName: org.name, token },
+    });
 
     return {
       id: invitation.id,

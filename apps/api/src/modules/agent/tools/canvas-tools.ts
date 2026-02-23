@@ -1,15 +1,13 @@
-import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { nonDbIdSchema, packNonDbId } from '@grabdy/common';
 import { canvasEdgeSchema, cardSchema, chunkMetaTypeEnum } from '@grabdy/contracts';
 import { tool } from 'ai';
-import { Queue } from 'bullmq';
 import { z } from 'zod';
 
-import { batchInnerOpSchema, type CanvasOp } from '../../chat/processors/canvas-ops.types';
-import { CANVAS_OPS_QUEUE } from '../../queue/queue.constants';
+import { InngestService } from '../../../inngest/inngest.service';
+import { batchInnerOpSchema } from '../../chat/processors/canvas-ops.types';
 
 // ---------------------------------------------------------------------------
 // AI-friendly input schemas
@@ -144,10 +142,10 @@ function resolveComponentId(id: string, idMap: Map<string, string>): ResolveResu
 export class CanvasTools {
   private readonly logger = new Logger(CanvasTools.name);
 
-  constructor(@InjectQueue(CANVAS_OPS_QUEUE) private canvasQueue: Queue<CanvasOp>) {}
+  constructor(private inngestService: InngestService) {}
 
   create(threadId: DbId<'ChatThread'>, orgId: DbId<'Org'>) {
-    const queue = this.canvasQueue;
+    const inngest = this.inngestService;
     const logger = this.logger;
 
     const canvasUpdate = tool({
@@ -178,16 +176,11 @@ export class CanvasTools {
         try {
           const batchOps = results.map((r) => batchInnerOpSchema.parse(r));
 
-          await queue.add(
-            'batch',
-            {
-              type: 'batch',
-              threadId,
-              orgId,
-              operations: batchOps,
-            },
-            { attempts: 1 }
-          );
+          await inngest.send('app/canvas-ops.execute', {
+            op: { type: 'batch', threadId, orgId, operations: batchOps },
+            orgId,
+            threadId,
+          });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           logger.error(`[canvas_update] Failed to queue batch: ${msg}`);

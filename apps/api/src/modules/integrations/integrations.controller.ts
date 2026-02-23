@@ -28,11 +28,6 @@ const OAUTH_STATE_TTL_SECONDS = 600; // 10 minutes
 
 const notionVerificationSchema = z.object({ verification_token: z.string() });
 
-const pushWebhookSchema = z.object({
-  ref: z.string(),
-  repository: z.object({ full_name: z.string() }),
-});
-
 function toISOStringOrNull(date: Date | null | undefined): string | null {
   if (!date) return null;
   return date instanceof Date ? date.toISOString() : String(date);
@@ -417,18 +412,6 @@ export class IntegrationsController {
         this.logger.warn(`Webhook signature verification failed for ${validProvider}`);
         res.status(200).json({ ok: true });
         return;
-      }
-
-      // Handle push events for code repo incremental indexing (fire-and-forget, independent of main webhook flow)
-      if (headers['x-github-event'] === 'push' && providerUpper === 'GITHUB') {
-        const pushPayload = pushWebhookSchema.safeParse(body);
-        if (pushPayload.success) {
-          void this.integrationsService
-            .handleCodeRepoPush(pushPayload.data.repository.full_name, pushPayload.data.ref)
-            .catch((err) => {
-              this.logger.error(`handleCodeRepoPush failed: ${err}`);
-            });
-        }
       }
 
       const result = connector.handleWebhookRequest(headers, req.body, connections, rawBodyStr);
