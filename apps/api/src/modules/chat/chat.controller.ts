@@ -15,20 +15,14 @@ import {
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
-import { CanvasService } from '../canvas/canvas.service';
 
 import { ChatService } from './chat.service';
-
-const CANVAS_TOOL_NAME_SET = new Set(['canvas_update', 'canvas_delegate']);
 
 @Controller()
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
 
-  constructor(
-    private chatService: ChatService,
-    private canvasService: CanvasService
-  ) {}
+  constructor(private chatService: ChatService) {}
 
   @OrgAccess(chatContract.chat, { params: ['orgId'] })
   @TsRestHandler(chatContract.chat)
@@ -180,75 +174,6 @@ export class ChatController {
     });
   }
 
-  @OrgAccess(chatContract.moveCanvasCard, { params: ['orgId'] })
-  @TsRestHandler(chatContract.moveCanvasCard)
-  async moveCanvasCard() {
-    return tsRestHandler(chatContract.moveCanvasCard, async ({ params, body }) => {
-      this.canvasService.moveCard(params.orgId, params.threadId, params.cardId, body);
-      return { status: 200 as const, body: { success: true as const } };
-    });
-  }
-
-  @OrgAccess(chatContract.updateCanvasEdges, { params: ['orgId'] })
-  @TsRestHandler(chatContract.updateCanvasEdges)
-  async updateCanvasEdges() {
-    return tsRestHandler(chatContract.updateCanvasEdges, async ({ params, body }) => {
-      this.canvasService.updateEdges(params.orgId, params.threadId, body.edges);
-      return { status: 200 as const, body: { success: true as const } };
-    });
-  }
-
-  @OrgAccess(chatContract.deleteCanvasCard, { params: ['orgId'] })
-  @TsRestHandler(chatContract.deleteCanvasCard)
-  async deleteCanvasCard() {
-    return tsRestHandler(chatContract.deleteCanvasCard, async ({ params }) => {
-      this.canvasService.deleteCard(params.orgId, params.threadId, params.cardId);
-      return { status: 200 as const, body: { success: true as const } };
-    });
-  }
-
-  @OrgAccess(chatContract.addCanvasEdge, { params: ['orgId'] })
-  @TsRestHandler(chatContract.addCanvasEdge)
-  async addCanvasEdge() {
-    return tsRestHandler(chatContract.addCanvasEdge, async ({ params, body }) => {
-      this.canvasService.addEdge(params.orgId, params.threadId, body.edge);
-      return { status: 200 as const, body: { success: true as const } };
-    });
-  }
-
-  @OrgAccess(chatContract.deleteCanvasEdge, { params: ['orgId'] })
-  @TsRestHandler(chatContract.deleteCanvasEdge)
-  async deleteCanvasEdge() {
-    return tsRestHandler(chatContract.deleteCanvasEdge, async ({ params }) => {
-      this.canvasService.deleteEdge(params.orgId, params.threadId, params.edgeId);
-      return { status: 200 as const, body: { success: true as const } };
-    });
-  }
-
-  @OrgAccess(chatContract.updateCanvasComponent, { params: ['orgId'] })
-  @TsRestHandler(chatContract.updateCanvasComponent)
-  async updateCanvasComponent() {
-    return tsRestHandler(chatContract.updateCanvasComponent, async ({ params, body }) => {
-      this.canvasService.updateComponent(
-        params.orgId,
-        params.threadId,
-        params.cardId,
-        params.componentId,
-        body.data
-      );
-      return { status: 200 as const, body: { success: true as const } };
-    });
-  }
-
-  @OrgAccess(chatContract.addCanvasCard, { params: ['orgId'] })
-  @TsRestHandler(chatContract.addCanvasCard)
-  async addCanvasCard() {
-    return tsRestHandler(chatContract.addCanvasCard, async ({ params, body }) => {
-      this.canvasService.addCard(params.orgId, params.threadId, body.card);
-      return { status: 200 as const, body: { success: true as const } };
-    });
-  }
-
   @OrgAccess({ params: ['orgId'] })
   @Post('/orgs/:orgId/chat/stream')
   async streamChat(
@@ -275,7 +200,6 @@ export class ChatController {
       const streamStart = Date.now();
       let textChunks = 0;
       let stepCount = 0;
-      let sentTextDone = false;
       let fullText = '';
 
       for await (const part of result.streamResult.fullStream) {
@@ -289,11 +213,6 @@ export class ChatController {
           fullText += part.text;
           res.write(`0:${JSON.stringify(part.text)}\n`);
         } else if (part.type === 'tool-call') {
-          // Send text_done before the first canvas tool call so the frontend can unlock input
-          if (!sentTextDone && textChunks > 0 && CANVAS_TOOL_NAME_SET.has(part.toolName)) {
-            sentTextDone = true;
-            res.write(`8:${JSON.stringify({ type: 'text_done' })}\n`);
-          }
           this.logger.log(
             `[stream] Tool call: ${part.toolName} at +${elapsed}ms args=${JSON.stringify(part.input).slice(0, 1000)}`
           );
@@ -302,48 +221,6 @@ export class ChatController {
           this.logger.log(
             `[stream] Tool result: ${part.toolName} OK at +${elapsed}ms → ${resultStr}`
           );
-          if (part.toolName === 'canvas_delegate') {
-            const delegateResult = part.output;
-            this.logger.log(
-              `[stream] canvas_delegate result type=${typeof delegateResult} keys=${delegateResult && typeof delegateResult === 'object' ? Object.keys(delegateResult).join(',') : 'N/A'}`
-            );
-            if (
-              delegateResult &&
-              typeof delegateResult === 'object' &&
-              'operations' in delegateResult &&
-              Array.isArray(delegateResult.operations)
-            ) {
-              this.logger.log(
-                `[stream] canvas_delegate has ${delegateResult.operations.length} operations`
-              );
-              for (const op of delegateResult.operations) {
-                this.logger.log(
-                  `[stream] Emitting canvas_update from delegate: args=${JSON.stringify(op.args).slice(0, 200)} result=${JSON.stringify(op.result).slice(0, 200)}`
-                );
-                res.write(
-                  `8:${JSON.stringify({
-                    type: 'canvas_update',
-                    tool: 'canvas_update',
-                    args: op.args,
-                    result: op.result,
-                  })}\n`
-                );
-              }
-            } else {
-              this.logger.warn(
-                `[stream] canvas_delegate result has unexpected shape: ${JSON.stringify(delegateResult).slice(0, 500)}`
-              );
-            }
-          } else if (part.toolName === 'canvas_update') {
-            res.write(
-              `8:${JSON.stringify({
-                type: 'canvas_update',
-                tool: part.toolName,
-                args: part.input,
-                result: part.output,
-              })}\n`
-            );
-          }
         } else if (part.type === 'tool-error') {
           this.logger.error(
             `[stream] Tool ERROR: ${part.toolName} at +${elapsed}ms error=${part.error instanceof Error ? part.error.message : JSON.stringify(part.error)} args=${JSON.stringify(part.input).slice(0, 500)}`

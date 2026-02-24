@@ -105,8 +105,7 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
       <Stack spacing={2.5}>
         <Box>
           <Typography sx={{ fontSize: 13, color: alpha(ct, 0.5), mb: 1.5 }}>
-            Create a snapshot link for this conversation. The link captures the current messages and
-            canvas state.
+            Create a snapshot link for this conversation. The link captures the current messages.
           </Typography>
           <FormControlLabel
             control={

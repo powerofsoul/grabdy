@@ -1,16 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import { canvasStateSchema } from '@grabdy/contracts';
 import { sql } from 'kysely';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { DataAgent } from '../agent/agents/data/data-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
-import { CanvasDelegateTool } from '../agent/tools/canvas-delegate.tool';
-import { buildBlockInstructionsPrompt } from '../canvas/block-registry';
-import { CanvasService } from '../canvas/canvas.service';
 
 @Injectable()
 export class ChatService {
@@ -19,9 +15,7 @@ export class ChatService {
   constructor(
     private db: DbService,
     private dataAgent: DataAgent,
-    private agentMemory: AgentMemoryService,
-    private canvasDelegateTool: CanvasDelegateTool,
-    private canvasService: CanvasService
+    private agentMemory: AgentMemoryService
   ) {}
 
   private async ensureThread(
@@ -59,23 +53,6 @@ export class ChatService {
     return thread.id;
   }
 
-  private buildChatInstructions(): string {
-    const parts = [buildBlockInstructionsPrompt()];
-
-    parts.push(`## Canvas -- MANDATORY
-**You MUST call \`canvas_delegate\` on every response where you found an answer.** If you answered the user's question using knowledge base results, you MUST visualize it. No exceptions. Text-only answers are broken. The canvas is how users consume information.
-
-**Only skip \`canvas_delegate\` when you literally cannot answer:** greetings, "I couldn't find anything", clarifying questions, or single-sentence acknowledgments like "Happy to help."
-
-Execution order, non-negotiable:
-1. Search the knowledge base
-2. Write your complete chat answer (including the sources block)
-3. Call \`canvas_delegate\` as your VERY LAST action, after all text is finished
-- Pass ALL relevant search results as context so the canvas agent can visualize them.`);
-
-    return parts.join('\n\n');
-  }
-
   async chat(
     orgId: DbId<'Org'>,
     membershipId: DbId<'OrgMembership'>,
@@ -91,23 +68,12 @@ Execution order, non-negotiable:
     sources: never[];
   }> {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
-    const canvasState = await this.canvasService.getState(threadId, orgId);
 
     const session = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
-      instructions: this.buildChatInstructions(),
-      tools: [
-        this.canvasDelegateTool.create({
-          orgId,
-          userId,
-          threadId,
-          source: 'WEB',
-          canvasState,
-        }),
-      ],
     });
 
     const result = await session.generate({ threadId, message });
@@ -130,23 +96,12 @@ Execution order, non-negotiable:
     }
   ) {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
-    const canvasState = await this.canvasService.getState(threadId, orgId);
 
     const session = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
-      instructions: this.buildChatInstructions(),
-      tools: [
-        this.canvasDelegateTool.create({
-          orgId,
-          userId,
-          threadId,
-          source: 'WEB',
-          canvasState,
-        }),
-      ],
     });
 
     const { streamResult, saveAssistant } = await session.stream({ threadId, message });
@@ -219,7 +174,6 @@ Execution order, non-negotiable:
       collectionId: thread.collection_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
-      canvasState: thread.canvas_state ? canvasStateSchema.parse(thread.canvas_state) : null,
       messages: messages.map((m) => ({
         id: m.id,
         role: m.role,

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
-import type { CanvasState } from '@grabdy/contracts';
 import { toast } from 'sonner';
 
 import { parseBlocks } from '../parse-blocks';
@@ -21,7 +20,6 @@ interface UseThreadManagerParams {
   initialThreadId?: string;
   onThreadChange?: (threadId: string | undefined) => void;
   onLoadMessages: (messages: ChatMessage[]) => void;
-  onLoadCanvas: (canvasState: CanvasState | null) => void;
   onClearState: () => void;
 }
 
@@ -29,7 +27,6 @@ export function useThreadManager({
   initialThreadId,
   onThreadChange,
   onLoadMessages,
-  onLoadCanvas,
   onClearState,
 }: UseThreadManagerParams) {
   const { selectedOrgId } = useAuth();
@@ -111,7 +108,6 @@ export function useThreadManager({
               };
             })
           );
-          onLoadCanvas(res.body.data.canvasState);
         }
       } catch {
         toast.error('Failed to load thread');
@@ -119,7 +115,7 @@ export function useThreadManager({
         setIsLoadingMessages(false);
       }
     },
-    [selectedOrgId, onLoadMessages, onLoadCanvas]
+    [selectedOrgId, onLoadMessages]
   );
 
   // Load initial thread from URL on mount, clear on org switch

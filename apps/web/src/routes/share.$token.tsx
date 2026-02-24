@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 
-import type { CanvasState } from '@grabdy/contracts';
 import { alpha, Box, Button, CircularProgress, Typography, useTheme } from '@mui/material';
 import { LockIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
@@ -16,7 +15,6 @@ export const Route = createFileRoute('/share/$token')({
 interface SnapshotData {
   title: string | null;
   messages: ChatMessage[];
-  canvasState: CanvasState | null;
 }
 
 type PageState = 'loading' | 'success' | 'not_found' | 'unauthorized';
@@ -41,7 +39,6 @@ function SharedChatPage() {
               content: m.content,
               sources: m.sources ?? undefined,
             })),
-            canvasState: res.body.data.canvasState,
           });
           setPageState('success');
         } else {
@@ -76,9 +73,7 @@ function SharedChatPage() {
     return <SharedChatNotFound />;
   }
 
-  return (
-    <SharedChatView title={data.title} messages={data.messages} canvasState={data.canvasState} />
-  );
+  return <SharedChatView title={data.title} messages={data.messages} />;
 }
 
 function SharedChatUnauthorized() {

@@ -24,7 +24,6 @@ import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { CanvasModule } from './modules/canvas/canvas.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
@@ -80,7 +79,6 @@ import { RedisModule } from './redis/redis.module';
     CollectionsModule,
     DataSourcesModule,
     DemoRequestModule,
-    CanvasModule,
     ChatModule,
     ApiKeysModule,
     IntegrationsModule,

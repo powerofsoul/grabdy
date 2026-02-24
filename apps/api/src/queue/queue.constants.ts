@@ -10,7 +10,6 @@ export const QUEUE_NAMES = [
   'email',
   'notification',
   'ai-usage',
-  'canvas-ops',
   'integration-discover',
   'integration-process-item',
   'integration-cleanup',

@@ -1,1 +1,0 @@
-export { MatrixComponent } from './MatrixComponent';

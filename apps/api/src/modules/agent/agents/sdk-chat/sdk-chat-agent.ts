@@ -4,8 +4,8 @@ import type { DbId } from '@grabdy/common';
 import type { ToolSet } from 'ai';
 
 import { AiUsageService } from '../../../ai/ai-usage.service';
-import { buildBlockInstructionsPrompt } from '../../../canvas/block-registry';
 import { BaseAgent } from '../../base-agent';
+import { buildBlockInstructionsPrompt } from '../../block-registry';
 import { AgentMemoryService } from '../../services/memory.service';
 import { RagSearchTool } from '../../tools/rag-search.tool';
 

@@ -30,11 +30,8 @@ export type TableIdName =
 
 // ── Entity Type Maps ─────────────────────────────────────────────────────
 
-/**
- * All entity names — DB tables + non-table entities.
- * Non-table names listed inline to avoid circular dependency with non-db-id.ts.
- */
-export type EntityIdName = TableIdName | 'CanvasCard' | 'CanvasEdge' | 'CanvasComponent';
+/** All entity names. */
+export type EntityIdName = TableIdName;
 
 /**
  * Maps each entity type to a unique byte value embedded in packed UUIDs.
@@ -58,9 +55,6 @@ export const ENTITY_TYPE_MAP = {
   UsageLog: 0x21,
   // Chat
   ChatThread: 0x30,
-  CanvasCard: 0x31,
-  CanvasEdge: 0x32,
-  CanvasComponent: 0x33,
   SharedChat: 0x34,
   ChatMessage: 0x38,
   // Analytics

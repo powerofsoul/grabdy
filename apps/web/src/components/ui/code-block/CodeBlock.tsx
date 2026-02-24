@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { common, createLowlight } from 'lowlight';
 
-import type { HastNode } from '@/components/canvas/components/code/constants';
+import type { HastNode } from './code-constants';
 import {
   CODE_FONT,
   CODE_FONT_SIZE,
@@ -11,7 +11,8 @@ import {
   hastToReact,
   HIGHLIGHT_SX_DARK,
   HIGHLIGHT_SX_LIGHT,
-} from '@/components/canvas/components/code/constants';
+} from './code-constants';
+
 import { CopyButton } from '@/components/ui/CopyButton';
 
 const lowlight = createLowlight(common);

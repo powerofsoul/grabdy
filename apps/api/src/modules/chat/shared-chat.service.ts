@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
-import { canvasStateSchema, sharedChatSnapshotSchema } from '@grabdy/contracts';
+import { sharedChatSnapshotSchema } from '@grabdy/contracts';
 import { nanoid } from 'nanoid';
 
 import { DbService } from '../../db/db.module';
@@ -14,18 +14,18 @@ const MAX_TOKEN_RETRIES = 3;
 export class SharedChatService {
   constructor(
     private db: DbService,
-    private agentMemory: AgentMemoryService,
+    private agentMemory: AgentMemoryService
   ) {}
 
   async createShare(
     orgId: DbId<'Org'>,
     threadId: DbId<'ChatThread'>,
     membershipId: DbId<'OrgMembership'>,
-    options: { isPublic?: boolean },
+    options: { isPublic?: boolean }
   ) {
     const thread = await this.db.kysely
       .selectFrom('data.chat_threads')
-      .select(['id', 'title', 'canvas_state'])
+      .select(['id', 'title'])
       .where('id', '=', threadId)
       .where('org_id', '=', orgId)
       .executeTakeFirst();
@@ -43,12 +43,7 @@ export class SharedChatService {
       createdAt: m.createdAt ? m.createdAt.toISOString() : new Date().toISOString(),
     }));
 
-    const canvasState = thread.canvas_state
-      ? canvasStateSchema.parse(thread.canvas_state)
-      : null;
-
     const snapshotJson = JSON.stringify(messagesSnapshot);
-    const canvasJson = canvasState ? JSON.stringify(canvasState) : null;
     const isPublicVal = options.isPublic ?? false;
 
     let lastError: unknown;
@@ -66,7 +61,6 @@ export class SharedChatService {
             membership_id: membershipId,
             title: thread.title,
             messages_snapshot: snapshotJson,
-            canvas_state_snapshot: canvasJson,
             share_token: shareToken,
             is_public: isPublicVal,
           })
@@ -99,15 +93,7 @@ export class SharedChatService {
     // org-safe: public share lookup by token, org unknown until token is resolved
     const row = await this.db.kysely
       .selectFrom('data.shared_chats')
-      .select([
-        'title',
-        'messages_snapshot',
-        'canvas_state_snapshot',
-        'is_public',
-        'org_id',
-        'revoked',
-        'created_at',
-      ])
+      .select(['title', 'messages_snapshot', 'is_public', 'org_id', 'revoked', 'created_at'])
       .where('share_token', '=', shareToken)
       .where('revoked', '=', false)
       .executeTakeFirst();
@@ -122,9 +108,7 @@ export class SharedChatService {
         throw new UnauthorizedException('Authentication required to view this shared chat');
       }
       const shareOrgNum = extractOrgNumericId(row.org_id);
-      const hasAccess = viewerMembershipIds.some(
-        (mid) => extractOrgNumericId(mid) === shareOrgNum,
-      );
+      const hasAccess = viewerMembershipIds.some((mid) => extractOrgNumericId(mid) === shareOrgNum);
       if (!hasAccess) {
         throw new UnauthorizedException('You do not have access to this shared chat');
       }
@@ -134,16 +118,9 @@ export class SharedChatService {
       ? row.messages_snapshot
       : JSON.parse(row.messages_snapshot as string);
 
-    const canvasSnapshot = row.canvas_state_snapshot
-      ? (typeof row.canvas_state_snapshot === 'string'
-          ? JSON.parse(row.canvas_state_snapshot)
-          : row.canvas_state_snapshot)
-      : null;
-
     return sharedChatSnapshotSchema.parse({
       title: row.title,
       messages: messagesSnapshot,
-      canvasState: canvasSnapshot,
       createdAt: new Date(row.created_at).toISOString(),
     });
   }
@@ -168,11 +145,7 @@ export class SharedChatService {
     }));
   }
 
-  async revokeShare(
-    orgId: DbId<'Org'>,
-    threadId: DbId<'ChatThread'>,
-    shareId: DbId<'SharedChat'>,
-  ) {
+  async revokeShare(orgId: DbId<'Org'>, threadId: DbId<'ChatThread'>, shareId: DbId<'SharedChat'>) {
     const result = await this.db.kysely
       .updateTable('data.shared_chats')
       .set({ revoked: true })

@@ -1,5 +1,4 @@
-import type { CanvasEdge, Card } from '@grabdy/contracts';
-import { canvasEdgeSchema, contract } from '@grabdy/contracts';
+import { contract } from '@grabdy/contracts';
 import { ApiFetcherArgs, initClient } from '@ts-rest/core';
 import { z } from 'zod';
 
@@ -94,29 +93,10 @@ export const api = initClient(contract, {
   api: customFetcher,
 });
 
-export type CanvasOpResult =
-  | { op: 'add_card'; cards: Card[] }
-  | { op: 'remove_card'; cardId: string }
-  | {
-      op: 'move_card';
-      cardId: string;
-      position?: { x: number; y: number };
-      width?: number;
-      height?: number;
-    }
-  | { op: 'update_component'; cardId: string; componentId: string; data: Record<string, unknown> }
-  | { op: 'add_edge'; edge: CanvasEdge }
-  | { op: 'remove_edge'; edgeId: string };
-
-export interface CanvasUpdate {
-  results: CanvasOpResult[];
-}
-
 interface StreamCallbacks {
   onText: (text: string) => void;
   onTextDone?: () => void;
   onDone: (metadata: { threadId?: string; durationMs?: number }) => void;
-  onCanvasUpdate?: (update: CanvasUpdate) => void;
   onError?: (error: Error) => void;
 }
 
@@ -125,69 +105,7 @@ const metadataEventSchema = z.object({
   type: z.string(),
   threadId: z.string().optional(),
   durationMs: z.number().optional(),
-  tool: z.string().optional(),
-  args: z.unknown().optional(),
-  result: z.unknown().optional(),
 });
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null;
-}
-
-function rec(v: unknown): Record<string, unknown> {
-  return isRecord(v) ? v : {};
-}
-
-function parseOpResult(r: unknown): CanvasOpResult | null {
-  if (!isRecord(r)) return null;
-  const op = r['op'];
-  switch (op) {
-    case 'add_card':
-      return Array.isArray(r['cards']) ? { op: 'add_card', cards: r['cards'] } : null;
-    case 'remove_card':
-      return { op: 'remove_card', cardId: String(r['cardId'] ?? '') };
-    case 'move_card': {
-      const pos = isRecord(r['position'])
-        ? { x: Number(r['position']['x']), y: Number(r['position']['y']) }
-        : undefined;
-      return {
-        op: 'move_card',
-        cardId: String(r['cardId'] ?? ''),
-        position: pos,
-        width: typeof r['width'] === 'number' ? r['width'] : undefined,
-        height: typeof r['height'] === 'number' ? r['height'] : undefined,
-      };
-    }
-    case 'update_component':
-      return {
-        op: 'update_component',
-        cardId: String(r['cardId'] ?? ''),
-        componentId: String(r['componentId'] ?? ''),
-        data: rec(r['data']),
-      };
-    case 'add_edge': {
-      const parsed = canvasEdgeSchema.safeParse(r['edge']);
-      if (!parsed.success) return null;
-      return { op: 'add_edge', edge: parsed.data };
-    }
-    case 'remove_edge':
-      return { op: 'remove_edge', edgeId: String(r['edgeId'] ?? '') };
-    default:
-      return null;
-  }
-}
-
-function toCanvasUpdate(tool: string, _args: unknown, result: unknown): CanvasUpdate | null {
-  if (tool !== 'canvas_update') return null;
-  const r = rec(result);
-  const rawResults = Array.isArray(r['results']) ? r['results'] : [];
-  const results: CanvasOpResult[] = [];
-  for (const item of rawResults) {
-    const parsed = parseOpResult(item);
-    if (parsed) results.push(parsed);
-  }
-  return { results };
-}
 
 function parseStreamLine(line: string, callbacks: StreamCallbacks): void {
   if (!line.trim()) return;
@@ -213,11 +131,6 @@ function parseStreamLine(line: string, callbacks: StreamCallbacks): void {
         });
       } else if (metadata.type === 'text_done') {
         callbacks.onTextDone?.();
-      } else if (metadata.type === 'canvas_update' && callbacks.onCanvasUpdate && metadata.tool) {
-        const update = toCanvasUpdate(metadata.tool, metadata.args, metadata.result);
-        if (update) {
-          callbacks.onCanvasUpdate(update);
-        }
       }
     }
   } catch (e) {

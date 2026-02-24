@@ -7,8 +7,6 @@ import { DataAgent } from './agents/data/data-agent';
 import { SdkChatAgent } from './agents/sdk-chat/sdk-chat-agent';
 import { SlackAgent } from './agents/slack-agent';
 import { AgentMemoryService } from './services/memory.service';
-import { CanvasDelegateTool } from './tools/canvas-delegate.tool';
-import { CanvasTools } from './tools/canvas-tools';
 import { RagSearchTool } from './tools/rag-search.tool';
 import { SlackReplyTool } from './tools/slack-reply.tool';
 
@@ -19,21 +17,10 @@ import { SlackReplyTool } from './tools/slack-reply.tool';
     AgentMemoryService,
     RagSearchTool,
     SlackReplyTool,
-    CanvasTools,
-    CanvasDelegateTool,
     DataAgent,
     SdkChatAgent,
     SlackAgent,
   ],
-  exports: [
-    AgentMemoryService,
-    RagSearchTool,
-    DataAgent,
-    SdkChatAgent,
-    SlackAgent,
-    CanvasTools,
-    CanvasDelegateTool,
-    SlackReplyTool,
-  ],
+  exports: [AgentMemoryService, RagSearchTool, DataAgent, SdkChatAgent, SlackAgent, SlackReplyTool],
 })
 export class AgentModule {}

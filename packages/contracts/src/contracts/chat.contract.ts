@@ -1,9 +1,8 @@
-import { dbIdSchema, nonDbIdSchema } from '@grabdy/common';
+import { dbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
 import type { DataSourceType } from '../enums/data-source.js';
-import { canvasEdgeSchema, canvasStateSchema, cardSchema } from '../schemas/canvas.js';
 import { chunkMetaSchema } from '../schemas/chunk-meta.js';
 
 const c = initContract();
@@ -89,7 +88,6 @@ const threadSchema = z.object({
 
 const threadWithMessagesSchema = threadSchema.extend({
   messages: z.array(chatMessageSchema),
-  canvasState: canvasStateSchema.nullable(),
 });
 
 export const chatContract = c.router(
@@ -172,116 +170,6 @@ export const chatContract = c.router(
       responses: {
         200: z.object({ success: z.literal(true), data: threadSchema }),
         400: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    moveCanvasCard: {
-      method: 'PATCH',
-      path: '/orgs/:orgId/chat/threads/:threadId/canvas/cards/:cardId',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        threadId: dbIdSchema('ChatThread'),
-        cardId: nonDbIdSchema('CanvasCard'),
-      }),
-      body: z.object({
-        position: z.object({ x: z.number(), y: z.number() }).optional(),
-        width: z.number().optional(),
-        height: z.number().optional(),
-        title: z.string().optional(),
-        zIndex: z.number().optional(),
-      }),
-      responses: {
-        200: z.object({ success: z.literal(true) }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    deleteCanvasCard: {
-      method: 'DELETE',
-      path: '/orgs/:orgId/chat/threads/:threadId/canvas/cards/:cardId',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        threadId: dbIdSchema('ChatThread'),
-        cardId: nonDbIdSchema('CanvasCard'),
-      }),
-      body: z.object({}),
-      responses: {
-        200: z.object({ success: z.literal(true) }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    updateCanvasEdges: {
-      method: 'PUT',
-      path: '/orgs/:orgId/chat/threads/:threadId/canvas/edges',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        threadId: dbIdSchema('ChatThread'),
-      }),
-      body: z.object({
-        edges: z.array(canvasEdgeSchema),
-      }),
-      responses: {
-        200: z.object({ success: z.literal(true) }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    addCanvasEdge: {
-      method: 'POST',
-      path: '/orgs/:orgId/chat/threads/:threadId/canvas/edges',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        threadId: dbIdSchema('ChatThread'),
-      }),
-      body: z.object({
-        edge: canvasEdgeSchema,
-      }),
-      responses: {
-        200: z.object({ success: z.literal(true) }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    deleteCanvasEdge: {
-      method: 'DELETE',
-      path: '/orgs/:orgId/chat/threads/:threadId/canvas/edges/:edgeId',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        threadId: dbIdSchema('ChatThread'),
-        edgeId: nonDbIdSchema('CanvasEdge'),
-      }),
-      body: z.object({}),
-      responses: {
-        200: z.object({ success: z.literal(true) }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    updateCanvasComponent: {
-      method: 'PATCH',
-      path: '/orgs/:orgId/chat/threads/:threadId/canvas/cards/:cardId/components/:componentId',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        threadId: dbIdSchema('ChatThread'),
-        cardId: nonDbIdSchema('CanvasCard'),
-        componentId: nonDbIdSchema('CanvasComponent'),
-      }),
-      body: z.object({
-        data: z.record(z.string(), z.unknown()),
-      }),
-      responses: {
-        200: z.object({ success: z.literal(true) }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    addCanvasCard: {
-      method: 'POST',
-      path: '/orgs/:orgId/chat/threads/:threadId/canvas/cards',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        threadId: dbIdSchema('ChatThread'),
-      }),
-      body: z.object({
-        card: cardSchema,
-      }),
-      responses: {
-        200: z.object({ success: z.literal(true) }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
   },

@@ -1,34 +1,23 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { alpha, Box, Button, Container, Typography, useTheme } from '@mui/material';
 import { ArrowDownIcon, ArrowRightIcon, FileTextIcon, HashIcon } from '@phosphor-icons/react';
 import { Link } from '@tanstack/react-router';
-import {
-  Background,
-  ConnectionMode,
-  type EdgeTypes,
-  type NodeTypes,
-  ReactFlow,
-} from '@xyflow/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-import '@xyflow/react/dist/style.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
 import { DemoRequestDrawer } from '../DemoRequestDrawer';
 import { BRAND_LOGOS, SlackLogo } from '../IntegrationLogos';
 
-import { DEMO_EDGES, DEMO_MESSAGES, DEMO_NODES, DEMO_SOURCES, SLACK_DEMO } from './constants';
+import { DEMO_MESSAGES, DEMO_SOURCES, SLACK_DEMO } from './constants';
 import { HeroBackground } from './HeroBackground';
 import { LinearIcon } from './LinearIcon';
 import { SlackIcon } from './SlackIcon';
 import type { DemoSource } from './types';
 
 import botLogo from '@/assets/grabdy-logo.jpg';
-import { CardNode } from '@/components/canvas/CardNode';
-import { CustomEdge } from '@/components/canvas/CustomEdge';
 import { ChatInput } from '@/components/chat/components/ChatInput';
 import { MessageRow } from '@/components/chat/components/MessageRow';
 import { useDrawer } from '@/context/DrawerContext';
@@ -374,14 +363,14 @@ export function HeroSection() {
               </Typography>
             </Box>
 
-            {/* Demo viewport — fixed height */}
+            {/* Demo viewport */}
             <Box sx={{ maxWidth: 1200, mx: 'auto', position: 'relative', height: 560 }}>
-              {/* App view — visible initially */}
+              {/* App view */}
               <Box className="demo-app-view" sx={{ position: 'absolute', inset: 0 }}>
                 <AppDemoView ct={ct} />
               </Box>
 
-              {/* Slack view — hidden initially, revealed by scroll */}
+              {/* Slack view */}
               <Box className="demo-slack-view" sx={{ position: 'absolute', inset: 0, opacity: 0 }}>
                 <SlackDemoView />
               </Box>
@@ -395,13 +384,8 @@ export function HeroSection() {
 
 /* ── App Demo View ── */
 
-const NODE_TYPES: NodeTypes = { card: CardNode };
-const EDGE_TYPES: EdgeTypes = { custom: CustomEdge };
-
 function AppDemoView({ ct }: { ct: string }) {
   const theme = useTheme();
-
-  const defaultViewport = useMemo(() => ({ x: 20, y: 20, zoom: 0.85 }), []);
 
   return (
     <Box
@@ -446,115 +430,81 @@ function AppDemoView({ ct }: { ct: string }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 2,
           }}
         >
           <Typography sx={{ color: alpha(ct, 0.45), fontSize: '0.72rem', fontWeight: 600 }}>
             Chat
           </Typography>
-          <Box sx={{ width: '1px', height: 12, bgcolor: alpha(ct, 0.1) }} />
-          <Typography sx={{ color: alpha(ct, 0.25), fontSize: '0.72rem', fontWeight: 500 }}>
-            Canvas
-          </Typography>
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
-        {/* Chat Panel */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 520,
+        }}
+      >
         <Box
           sx={{
-            flex: '1 1 38%',
+            flex: 1,
+            p: 2.5,
+            overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            height: 520,
+            gap: 2,
+            '&::-webkit-scrollbar': { width: 3 },
+            '&::-webkit-scrollbar-thumb': { bgcolor: alpha(ct, 0.08), borderRadius: 2 },
           }}
         >
-          <Box
-            sx={{
-              flex: 1,
-              p: 2.5,
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-              '&::-webkit-scrollbar': { width: 3 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: alpha(ct, 0.08), borderRadius: 2 },
-            }}
-          >
-            {DEMO_MESSAGES.map((msg) => (
-              <Box key={msg.id}>
-                <MessageRow message={msg} />
-                {msg.role === 'assistant' && (
-                  <Box
-                    sx={{
-                      mt: 0.75,
-                      pl: 2,
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 1,
-                      alignItems: 'center',
-                    }}
-                  >
-                    {DEMO_SOURCES.map((s) => (
-                      <Box
-                        key={s.name}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                          px: 0.75,
-                          py: 0.25,
-                          borderRadius: 1,
-                          bgcolor: alpha(ct, 0.04),
-                        }}
+          {DEMO_MESSAGES.map((msg) => (
+            <Box key={msg.id}>
+              <MessageRow message={msg} />
+              {msg.role === 'assistant' && (
+                <Box
+                  sx={{
+                    mt: 0.75,
+                    pl: 2,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    alignItems: 'center',
+                  }}
+                >
+                  {DEMO_SOURCES.map((s) => (
+                    <Box
+                      key={s.name}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        px: 0.75,
+                        py: 0.25,
+                        borderRadius: 1,
+                        bgcolor: alpha(ct, 0.04),
+                      }}
+                    >
+                      {SOURCE_ICONS[s.type](11)}
+                      <Typography
+                        sx={{ fontSize: '0.65rem', color: 'text.secondary', lineHeight: 1.2 }}
                       >
-                        {SOURCE_ICONS[s.type](11)}
-                        <Typography
-                          sx={{ fontSize: '0.65rem', color: 'text.secondary', lineHeight: 1.2 }}
-                        >
-                          {s.name}
-                          {s.detail ? ` (${s.detail})` : ''}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                )}
-              </Box>
-            ))}
-          </Box>
-
-          <ChatInput
-            onSend={noop}
-            isStreaming={false}
-            disabled
-            placeholder="Ask anything about your documents..."
-          />
+                        {s.name}
+                        {s.detail ? ` (${s.detail})` : ''}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          ))}
         </Box>
 
-        {/* Canvas Panel — real ReactFlow */}
-        <Box
-          sx={{
-            flex: '1 1 62%',
-            borderLeft: '1px solid',
-            borderColor: alpha(ct, 0.08),
-            height: 520,
-            '& .react-flow__resize-control': { display: 'none' },
-          }}
-        >
-          <ReactFlow
-            nodes={DEMO_NODES}
-            edges={DEMO_EDGES}
-            nodeTypes={NODE_TYPES}
-            edgeTypes={EDGE_TYPES}
-            defaultViewport={defaultViewport}
-            connectionMode={ConnectionMode.Loose}
-            nodesConnectable={false}
-            preventScrolling={false}
-            proOptions={{ hideAttribution: true }}
-          >
-            <Background gap={24} size={1} color={alpha(ct, 0.06)} />
-          </ReactFlow>
-        </Box>
+        <ChatInput
+          onSend={noop}
+          isStreaming={false}
+          disabled
+          placeholder="Ask anything about your documents..."
+        />
       </Box>
     </Box>
   );

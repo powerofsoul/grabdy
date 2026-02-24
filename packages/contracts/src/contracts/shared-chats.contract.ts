@@ -2,7 +2,6 @@ import { dbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
-import { canvasStateSchema } from '../schemas/canvas.js';
 import { chatSourceSchema } from './chat.contract.js';
 
 const c = initContract();
@@ -28,7 +27,6 @@ const sharedChatSchema = z.object({
 const sharedChatSnapshotSchema = z.object({
   title: z.string().nullable(),
   messages: z.array(chatMessageSnapshotSchema),
-  canvasState: canvasStateSchema.nullable(),
   createdAt: z.string(),
 });
 

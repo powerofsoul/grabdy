@@ -179,11 +179,6 @@ export interface DB {
     org_id: DbId<'Org'>;
     title: string | null;
     collection_id: DbId<'Collection'> | null;
-    canvas_state: ColumnType<
-      Record<string, unknown> | null,
-      Record<string, unknown> | null | undefined,
-      Record<string, unknown> | null
-    >;
     membership_id: DbId<'OrgMembership'> | null;
     source: Generated<'dashboard' | 'sdk' | 'api'>;
     sdk_chat_id: DbId<'SdkChat'> | null;
@@ -260,7 +255,6 @@ export interface DB {
     membership_id: DbId<'OrgMembership'>;
     title: string | null;
     messages_snapshot: unknown;
-    canvas_state_snapshot: unknown | null;
     share_token: string;
     is_public: Generated<boolean>;
     revoked: Generated<boolean>;

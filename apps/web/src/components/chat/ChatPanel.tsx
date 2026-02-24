@@ -7,8 +7,6 @@ import {
   Drawer,
   IconButton,
   Stack,
-  Tab,
-  Tabs,
   TextField,
   Tooltip,
   Typography,
@@ -21,7 +19,6 @@ import {
   ListIcon,
   PencilSimpleIcon,
   PlusIcon,
-  SidebarSimpleIcon,
   TrashIcon,
   XIcon,
 } from '@phosphor-icons/react';
@@ -30,16 +27,12 @@ import { ChatEmptyState } from './components/ChatEmptyState';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessages } from './components/ChatMessages';
 import { ShareButton } from './components/share';
-import { useCanvasOps } from './hooks/useCanvasOps';
 import { useChatStream } from './hooks/useChatStream';
 import { useThreadManager } from './hooks/useThreadManager';
 import type { ChatMessage } from './types';
 
-import { Canvas, useCanvasState } from '@/components/canvas';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ResizablePanel } from '@/components/ui/ResizablePanel';
 import { useMobileSidebar } from '@/components/ui/Sidebar';
-import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 interface ChatPanelProps {
   headerSlot?: ReactNode;
@@ -64,70 +57,23 @@ export function ChatPanel({
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [threadPanelOpen, setThreadPanelOpen] = useState(false);
-  const [canvasMaximized, setCanvasMaximized] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.CANVAS_MAXIMIZED) === 'true'
-  );
-  const [layoutMode, setLayoutMode] = useState<
-    'chat-left' | 'chat-right' | 'chat-top' | 'chat-bottom'
-  >(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.CHAT_LAYOUT_MODE);
-    if (stored === 'chat-right' || stored === 'chat-top' || stored === 'chat-bottom') return stored;
-    if (stored === 'vertical') return 'chat-top'; // migrate old value
-    return 'chat-left';
-  });
-  const [mobileTab, setMobileTab] = useState<'chat' | 'canvas'>('chat');
-
-  const canvasActions = useCanvasState();
-  const { nodes, edges, loadState, applyUpdate, clearCanvas } = canvasActions;
 
   const threadManager = useThreadManager({
     initialThreadId,
     onThreadChange,
     onLoadMessages: setMessages,
-    onLoadCanvas: loadState,
     onClearState: useCallback(() => {
       setMessages([]);
-      clearCanvas();
       setThreadPanelOpen(false);
-    }, [clearCanvas]),
+    }, []),
   });
 
   const chatStream = useChatStream({
     ensureThread: threadManager.ensureThread,
     setActiveThreadId: threadManager.setActiveThreadId,
     setMessages,
-    onCanvasUpdate: applyUpdate,
     fetchThreads: threadManager.fetchThreads,
   });
-
-  const canvasOps = useCanvasOps({
-    activeThreadId: threadManager.activeThreadId,
-    ensureThread: threadManager.ensureThread,
-    canvasActions,
-  });
-
-  const handleToggleMaximize = useCallback(() => {
-    setCanvasMaximized((prev) => {
-      const next = !prev;
-      localStorage.setItem(STORAGE_KEYS.CANVAS_MAXIMIZED, String(next));
-      return next;
-    });
-  }, []);
-
-  const handleToggleLayout = useCallback(() => {
-    setLayoutMode((prev) => {
-      const cycle = [
-        'chat-left',
-        'chat-right',
-        'chat-top',
-        'chat-bottom',
-      ] satisfies (typeof prev)[];
-      const idx = cycle.indexOf(prev);
-      const next = cycle[(idx + 1) % cycle.length];
-      localStorage.setItem(STORAGE_KEYS.CHAT_LAYOUT_MODE, next);
-      return next;
-    });
-  }, []);
 
   const isEmpty = messages.length === 0 && !chatStream.isStreaming;
   const activeThread = threadManager.threads.find((t) => t.id === threadManager.activeThreadId);
@@ -146,12 +92,7 @@ export function ChatPanel({
       >
         <ChatEmptyState />
         <Box sx={{ width: '100%', maxWidth: 680 }}>
-          <ChatInput
-              onSend={chatStream.handleSend}
-              isStreaming={chatStream.isStreaming}
-              placeholder={chatStream.isUpdatingCanvas ? 'Updating canvas…' : undefined}
-              elevated
-            />
+          <ChatInput onSend={chatStream.handleSend} isStreaming={chatStream.isStreaming} elevated />
         </Box>
       </Stack>
     ) : (
@@ -161,33 +102,9 @@ export function ChatPanel({
           isLoading={threadManager.isLoadingMessages}
           isStreaming={chatStream.isStreaming}
         />
-        <ChatInput
-          onSend={chatStream.handleSend}
-          isStreaming={chatStream.isStreaming}
-          placeholder={chatStream.isUpdatingCanvas ? 'Updating canvas…' : undefined}
-        />
+        <ChatInput onSend={chatStream.handleSend} isStreaming={chatStream.isStreaming} />
       </Stack>
     );
-
-  const canvasContent = (
-    <Canvas
-      nodes={nodes}
-      edges={edges}
-      onDeleteCard={canvasOps.handleDeleteCard}
-      onMoveCard={canvasOps.handleMoveCard}
-      onEdgesChange={canvasOps.handleEdgesChange}
-      onAddEdge={canvasOps.handleAddEdge}
-      onDeleteEdge={canvasOps.handleDeleteEdge}
-      onComponentEdit={canvasOps.handleComponentEdit}
-      onTitleEdit={canvasOps.handleTitleEdit}
-      onResizeCard={canvasOps.handleResizeCard}
-      onReorderCard={canvasOps.handleReorderCard}
-      onAddCard={canvasOps.handleAddCard}
-      isMaximized={canvasMaximized}
-      onToggleMaximize={handleToggleMaximize}
-      isUpdatingCanvas={chatStream.isUpdatingCanvas}
-    />
-  );
 
   const threadDrawer = (
     <Drawer
@@ -362,7 +279,6 @@ export function ChatPanel({
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Top bar */}
       {isMobile ? (
-        /* Mobile: single row — [Chat|Canvas] tabs + actions + hamburger */
         <Box
           sx={{
             display: 'flex',
@@ -375,27 +291,7 @@ export function ChatPanel({
             gap: 0.5,
           }}
         >
-          <Tabs
-            value={mobileTab}
-            onChange={(_, v) => setMobileTab(v)}
-            sx={{
-              flex: 1,
-              minHeight: 36,
-              '& .MuiTabs-indicator': { height: 2 },
-              '& .MuiTab-root': {
-                minHeight: 36,
-                minWidth: 0,
-                py: 0,
-                px: 1.5,
-                fontSize: '0.8rem',
-                textTransform: 'none',
-                fontWeight: 500,
-              },
-            }}
-          >
-            <Tab label="Chat" value="chat" />
-            <Tab label="Canvas" value="canvas" />
-          </Tabs>
+          <Typography sx={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, pl: 1 }}>Chat</Typography>
           <IconButton
             size="small"
             onClick={threadManager.handleNewThread}
@@ -420,7 +316,6 @@ export function ChatPanel({
           )}
         </Box>
       ) : (
-        /* Desktop: standard top bar */
         <Box
           sx={{
             display: 'flex',
@@ -468,54 +363,6 @@ export function ChatPanel({
             {threadManager.activeThreadId && (
               <ShareButton threadId={threadManager.activeThreadId} />
             )}
-            <Tooltip
-              title={
-                {
-                  'chat-left': 'Chat left',
-                  'chat-right': 'Chat right',
-                  'chat-top': 'Chat top',
-                  'chat-bottom': 'Chat bottom',
-                }[layoutMode]
-              }
-            >
-              <IconButton
-                size="small"
-                onClick={handleToggleLayout}
-                sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
-              >
-                {
-                  {
-                    'chat-left': (
-                      <SidebarSimpleIcon size={18} weight="light" color="currentColor" />
-                    ),
-                    'chat-right': (
-                      <SidebarSimpleIcon
-                        size={18}
-                        weight="light"
-                        color="currentColor"
-                        style={{ transform: 'scaleX(-1)' }}
-                      />
-                    ),
-                    'chat-top': (
-                      <SidebarSimpleIcon
-                        size={18}
-                        weight="light"
-                        color="currentColor"
-                        style={{ transform: 'rotate(90deg)' }}
-                      />
-                    ),
-                    'chat-bottom': (
-                      <SidebarSimpleIcon
-                        size={18}
-                        weight="light"
-                        color="currentColor"
-                        style={{ transform: 'rotate(-90deg)' }}
-                      />
-                    ),
-                  }[layoutMode]
-                }
-              </IconButton>
-            </Tooltip>
             {trailingSlot}
           </Box>
         </Box>
@@ -524,60 +371,9 @@ export function ChatPanel({
       {threadDrawer}
 
       {/* Main content */}
-      {isMobile ? (
-        /* Mobile: show one panel at a time */
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          {mobileTab === 'chat' ? (
-            chatContent
-          ) : (
-            <Box sx={{ flex: 1, minHeight: 0 }}>{canvasContent}</Box>
-          )}
-        </Box>
-      ) : (
-        /* Desktop: resizable split layout */
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: {
-              'chat-left': 'row',
-              'chat-right': 'row-reverse',
-              'chat-top': 'column',
-              'chat-bottom': 'column-reverse',
-            }[layoutMode],
-            flex: 1,
-            minHeight: 0,
-          }}
-        >
-          {!canvasMaximized && (
-            <ResizablePanel
-              key={layoutMode}
-              direction={
-                layoutMode === 'chat-left' || layoutMode === 'chat-right'
-                  ? 'horizontal'
-                  : 'vertical'
-              }
-              defaultSize={
-                layoutMode === 'chat-left' || layoutMode === 'chat-right'
-                  ? Math.round(window.innerWidth * 0.4)
-                  : Math.round(window.innerHeight * 0.4)
-              }
-              minSize={layoutMode === 'chat-left' || layoutMode === 'chat-right' ? 320 : 200}
-              maxSize={layoutMode === 'chat-left' || layoutMode === 'chat-right' ? 900 : 800}
-              storageKey={
-                layoutMode === 'chat-left' || layoutMode === 'chat-right'
-                  ? STORAGE_KEYS.CHAT_PANEL_WIDTH
-                  : STORAGE_KEYS.CHAT_PANEL_HEIGHT
-              }
-              resizeFrom={layoutMode === 'chat-left' || layoutMode === 'chat-top' ? 'end' : 'start'}
-              sx={{ minWidth: 0, minHeight: 0 }}
-            >
-              {chatContent}
-            </ResizablePanel>
-          )}
-
-          <Box sx={{ flex: 1, minWidth: 0, minHeight: 0 }}>{canvasContent}</Box>
-        </Box>
-      )}
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {chatContent}
+      </Box>
 
       <ConfirmDialog
         open={!!threadManager.deleteTarget}
