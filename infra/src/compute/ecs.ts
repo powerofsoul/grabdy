@@ -2,7 +2,7 @@ import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
 import { Env } from '../env';
-import { apiCertArn, inngestCertArn } from '../network/certificates';
+import { apiCertArn } from '../network/certificates';
 import { albSg, vpc } from '../network/vpc';
 
 // ─── Cluster ───
@@ -34,7 +34,7 @@ export const apiTargetGroup = new aws.lb.TargetGroup('grabdy-api-tg', {
     interval: 30,
     timeout: 10,
   },
-  deregistrationDelay: 30,
+  deregistrationDelay: 300,
 });
 
 // HTTP -> redirect to HTTPS
@@ -60,70 +60,27 @@ const httpsListener = new aws.lb.Listener('grabdy-https-listener', {
   defaultActions: [{ type: 'forward', targetGroupArn: apiTargetGroup.arn }],
 });
 
-// ─── Inngest ALB routing ───
+// ─── Cloud Map service discovery ───
 
-const inngestSdNamespace = new aws.servicediscovery.PrivateDnsNamespace('grabdy-local-ns', {
+const sdNamespace = new aws.servicediscovery.PrivateDnsNamespace('grabdy-local-ns', {
   name: 'grabdy.local',
   vpc: vpc.vpcId,
 });
 
-const inngestSdServiceName = 'inngest';
-
-export const inngestServiceDiscovery = new aws.servicediscovery.Service('grabdy-inngest-sd', {
-  name: inngestSdServiceName,
-  dnsConfig: {
-    namespaceId: inngestSdNamespace.id,
-    dnsRecords: [{ ttl: 10, type: 'A' }],
-    routingPolicy: 'MULTIVALUE',
-  },
-  healthCheckCustomConfig: { failureThreshold: 1 },
-});
-
-// ─── API Cloud Map service discovery ───
-
-const apiSdServiceName = 'api';
-
 export const apiServiceDiscovery = new aws.servicediscovery.Service('grabdy-api-sd', {
-  name: apiSdServiceName,
+  name: 'api',
   dnsConfig: {
-    namespaceId: inngestSdNamespace.id,
+    namespaceId: sdNamespace.id,
     dnsRecords: [{ ttl: 10, type: 'A' }],
     routingPolicy: 'MULTIVALUE',
   },
   healthCheckCustomConfig: { failureThreshold: 1 },
 });
 
-/** Internal URL for Inngest to reach the API via Cloud Map DNS (bypasses ALB). */
-export const apiInternalUrl = pulumi.interpolate`http://${apiSdServiceName}.${inngestSdNamespace.name}:4000`;
+// ─── Cognito auth for admin dashboard ───
 
-/** Internal URL for the API to reach Inngest via Cloud Map DNS. */
-export const inngestInternalUrl = pulumi.interpolate`http://${inngestSdServiceName}.${inngestSdNamespace.name}:8288`;
-
-export const inngestTargetGroup = new aws.lb.TargetGroup('grabdy-inngest-tg', {
-  port: 8288,
-  protocol: 'HTTP',
-  targetType: 'ip',
-  vpcId: vpc.vpcId,
-  healthCheck: {
-    path: '/health',
-    port: '8288',
-    protocol: 'HTTP',
-    healthyThreshold: 2,
-    unhealthyThreshold: 3,
-    interval: 30,
-    timeout: 10,
-  },
-  deregistrationDelay: 30,
-});
-
-new aws.lb.ListenerCertificate('grabdy-inngest-listener-cert', {
-  listenerArn: httpsListener.arn,
-  certificateArn: inngestCertArn,
-});
-
-// Cognito user pool for Inngest dashboard auth
-const inngestUserPool = new aws.cognito.UserPool('grabdy-inngest-auth-pool', {
-  name: 'grabdy-inngest-auth',
+const adminUserPool = new aws.cognito.UserPool('grabdy-admin-auth-pool', {
+  name: 'grabdy-admin-auth',
   adminCreateUserConfig: { allowAdminCreateUserOnly: true },
   passwordPolicy: {
     minimumLength: 12,
@@ -134,41 +91,36 @@ const inngestUserPool = new aws.cognito.UserPool('grabdy-inngest-auth-pool', {
   },
 });
 
-const inngestUserPoolDomain = new aws.cognito.UserPoolDomain('grabdy-inngest-auth-domain', {
-  domain: 'grabdy-inngest-auth',
-  userPoolId: inngestUserPool.id,
+const adminUserPoolDomain = new aws.cognito.UserPoolDomain('grabdy-admin-auth-domain', {
+  domain: 'grabdy-admin-auth',
+  userPoolId: adminUserPool.id,
 });
 
-const inngestUserPoolClient = new aws.cognito.UserPoolClient('grabdy-inngest-auth-client', {
-  userPoolId: inngestUserPool.id,
-  name: 'inngest-dashboard',
+const adminUserPoolClient = new aws.cognito.UserPoolClient('grabdy-admin-auth-client', {
+  userPoolId: adminUserPool.id,
+  name: 'admin-dashboard',
   generateSecret: true,
   allowedOauthFlows: ['code'],
   allowedOauthFlowsUserPoolClient: true,
   allowedOauthScopes: ['openid'],
-  callbackUrls: [pulumi.interpolate`https://${Env.inngestDomain}/oauth2/idpresponse`],
+  callbackUrls: [pulumi.interpolate`https://${Env.apiDomain}/oauth2/idpresponse`],
   supportedIdentityProviders: ['COGNITO'],
 });
 
-new aws.lb.ListenerRule('grabdy-inngest-rule', {
+new aws.lb.ListenerRule('grabdy-admin-queues-rule', {
   listenerArn: httpsListener.arn,
-  priority: 10,
+  priority: 20,
   actions: [
     {
       type: 'authenticate-cognito',
       authenticateCognito: {
-        userPoolArn: inngestUserPool.arn,
-        userPoolClientId: inngestUserPoolClient.id,
-        userPoolDomain: inngestUserPoolDomain.domain,
+        userPoolArn: adminUserPool.arn,
+        userPoolClientId: adminUserPoolClient.id,
+        userPoolDomain: adminUserPoolDomain.domain,
       },
       order: 1,
     },
-    { type: 'forward', targetGroupArn: inngestTargetGroup.arn, order: 2 },
+    { type: 'forward', targetGroupArn: apiTargetGroup.arn, order: 2 },
   ],
-  conditions: [{ hostHeader: { values: [Env.inngestDomain] } }],
+  conditions: [{ pathPattern: { values: ['/admin/queues*'] } }],
 });
-
-// ─── Shared SSM secret ARNs ───
-
-export const inngestSigningKeyArn = pulumi.interpolate`arn:aws:ssm:${Env.region.name}:${aws.getCallerIdentity().then((id) => id.accountId)}:parameter/grabdy/prod/INNGEST_SIGNING_KEY`;
-export const inngestEventKeyArn = pulumi.interpolate`arn:aws:ssm:${Env.region.name}:${aws.getCallerIdentity().then((id) => id.accountId)}:parameter/grabdy/prod/INNGEST_EVENT_KEY`;
