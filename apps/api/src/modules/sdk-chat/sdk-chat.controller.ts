@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, NotFoundException } from '@nestjs/common';
 
 import { type DbId } from '@grabdy/common';
 import { sdkChatsContract } from '@grabdy/contracts';
@@ -106,11 +106,14 @@ export class SdkChatController {
           status: 200 as const,
           body: { success: true as const },
         };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'SDK Chat not found' },
-        };
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          return {
+            status: 404 as const,
+            body: { success: false as const, error: 'SDK Chat not found' },
+          };
+        }
+        throw error;
       }
     });
   }
