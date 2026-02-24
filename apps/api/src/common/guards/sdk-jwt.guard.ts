@@ -11,7 +11,7 @@ import { DbService } from '../../db/db.module';
 import { EncryptionService } from '../encryption/encryption.service';
 
 const jwtPayloadSchema = z.object({
-  sub: z.string().min(1),
+  sub: z.string().min(1).max(256),
   chatId: dbIdSchema('SdkChat'),
   iat: z.number().optional(),
   exp: z.number().optional(),
@@ -67,7 +67,7 @@ export class SdkJwtGuard implements CanActivate {
     request: Request
   ): Promise<boolean> {
     try {
-      jwt.verify(token, this.jwtSecret, { algorithms: ['HS256'] });
+      jwt.verify(token, this.jwtSecret, { algorithms: ['HS256'], maxAge: '24h' });
     } catch {
       throw new UnauthorizedException('Invalid preview token');
     }
@@ -88,7 +88,7 @@ export class SdkJwtGuard implements CanActivate {
     request.sdkAuth = {
       orgId: sdkChat.org_id,
       sdkChatId: sdkChat.id,
-      externalUserId: payload.sub,
+      externalUser: payload.sub,
       dataSourceConfig,
       systemPrompt: sdkChat.system_prompt,
     };
@@ -114,37 +114,28 @@ export class SdkJwtGuard implements CanActivate {
       throw new UnauthorizedException('SDK Chat not found or inactive');
     }
 
-    // Look up non-revoked signing keys
+    // Look up non-revoked signing key by kid (required for RS256)
     const kid = decoded.header.kid;
-    let keysQuery = this.db.kysely
+    if (typeof kid !== 'string') {
+      throw new UnauthorizedException('RS256 tokens must include a kid header');
+    }
+
+    const key = await this.db.kysely
       .selectFrom('sdk.sdk_signing_keys')
       .selectAll()
       .where('sdk_chat_id', '=', payload.chatId)
-      .where('revoked_at', 'is', null);
+      .where('key_fingerprint', '=', kid)
+      .where('revoked_at', 'is', null)
+      .executeTakeFirst();
 
-    if (typeof kid === 'string') {
-      keysQuery = keysQuery.where('key_fingerprint', '=', kid);
+    if (!key) {
+      throw new UnauthorizedException('No valid signing key found');
     }
 
-    const keys = await keysQuery.execute();
-    if (keys.length === 0) {
-      throw new UnauthorizedException('No valid signing keys found');
-    }
-
-    // Try each key until one verifies
-    let verified = false;
-    for (const key of keys) {
-      try {
-        const publicKeyPem = await this.encryptionService.decrypt(key.public_key);
-        jwt.verify(token, publicKeyPem, { algorithms: ['RS256'] });
-        verified = true;
-        break;
-      } catch {
-        // Try next key
-      }
-    }
-
-    if (!verified) {
+    try {
+      const publicKeyPem = await this.encryptionService.decrypt(key.public_key);
+      jwt.verify(token, publicKeyPem, { algorithms: ['RS256'] });
+    } catch {
       throw new UnauthorizedException('JWT signature verification failed');
     }
 
@@ -155,7 +146,7 @@ export class SdkJwtGuard implements CanActivate {
     request.sdkAuth = {
       orgId: sdkChat.org_id,
       sdkChatId: sdkChat.id,
-      externalUserId: payload.sub,
+      externalUser: payload.sub,
       dataSourceConfig,
       systemPrompt: sdkChat.system_prompt,
     };

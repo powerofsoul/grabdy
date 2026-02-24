@@ -189,25 +189,44 @@ function toCanvasUpdate(tool: string, _args: unknown, result: unknown): CanvasUp
   return { results };
 }
 
-export async function streamChat(
-  orgId: string,
-  body: { message: string; threadId?: string; collectionId?: string },
-  callbacks: StreamCallbacks
-): Promise<void> {
-  const response = await fetch(`${baseUrl}/orgs/${orgId}/chat/stream`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(body),
-  });
+function parseStreamLine(line: string, callbacks: StreamCallbacks): void {
+  if (!line.trim()) return;
 
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    const msg = data?.error ?? `Stream failed with status ${response.status}`;
-    callbacks.onError?.(new Error(msg));
-    return;
+  const colonIndex = line.indexOf(':');
+  if (colonIndex === -1) return;
+
+  const typeCode = line.slice(0, colonIndex);
+  const jsonStr = line.slice(colonIndex + 1);
+
+  try {
+    if (typeCode === '0') {
+      const parsed = textDeltaSchema.safeParse(JSON.parse(jsonStr));
+      if (parsed.success) callbacks.onText(parsed.data);
+    } else if (typeCode === '8') {
+      const parsed = metadataEventSchema.safeParse(JSON.parse(jsonStr));
+      if (!parsed.success) return;
+      const metadata = parsed.data;
+      if (metadata.type === 'done') {
+        callbacks.onDone({
+          threadId: metadata.threadId,
+          durationMs: metadata.durationMs,
+        });
+      } else if (metadata.type === 'text_done') {
+        callbacks.onTextDone?.();
+      } else if (metadata.type === 'canvas_update' && callbacks.onCanvasUpdate && metadata.tool) {
+        const update = toCanvasUpdate(metadata.tool, metadata.args, metadata.result);
+        if (update) {
+          callbacks.onCanvasUpdate(update);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[stream] Failed to parse line:', typeCode, e);
+    callbacks.onError?.(e instanceof Error ? e : new Error(String(e)));
   }
+}
 
+async function readStream(response: Response, callbacks: StreamCallbacks): Promise<void> {
   const reader = response.body?.getReader();
   if (!reader) {
     callbacks.onError?.(new Error('No response body'));
@@ -227,50 +246,97 @@ export async function streamChat(
       buffer = lines.pop() ?? '';
 
       for (const line of lines) {
-        if (!line.trim()) continue;
-
-        // AI SDK v5 data stream protocol: TYPE:JSON_VALUE
-        const colonIndex = line.indexOf(':');
-        if (colonIndex === -1) continue;
-
-        const typeCode = line.slice(0, colonIndex);
-        const jsonStr = line.slice(colonIndex + 1);
-
-        try {
-          if (typeCode === '0') {
-            // Text delta
-            const parsed = textDeltaSchema.safeParse(JSON.parse(jsonStr));
-            if (parsed.success) callbacks.onText(parsed.data);
-          } else if (typeCode === '8') {
-            // Metadata event
-            const parsed = metadataEventSchema.safeParse(JSON.parse(jsonStr));
-            if (!parsed.success) continue;
-            const metadata = parsed.data;
-            if (metadata.type === 'done') {
-              callbacks.onDone({
-                threadId: metadata.threadId,
-                durationMs: metadata.durationMs,
-              });
-            } else if (metadata.type === 'text_done') {
-              callbacks.onTextDone?.();
-            } else if (
-              metadata.type === 'canvas_update' &&
-              callbacks.onCanvasUpdate &&
-              metadata.tool
-            ) {
-              const update = toCanvasUpdate(metadata.tool, metadata.args, metadata.result);
-              if (update) {
-                callbacks.onCanvasUpdate(update);
-              }
-            }
-          }
-        } catch (e) {
-          console.error('[stream] Failed to parse line:', typeCode, e);
-          callbacks.onError?.(e instanceof Error ? e : new Error(String(e)));
-        }
+        parseStreamLine(line, callbacks);
       }
     }
   } finally {
     reader.releaseLock();
   }
+}
+
+export async function streamChat(
+  orgId: string,
+  body: { message: string; threadId?: string; collectionId?: string },
+  callbacks: StreamCallbacks
+): Promise<void> {
+  const response = await fetch(`${baseUrl}/orgs/${orgId}/chat/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const msg = data?.error ?? `Stream failed with status ${response.status}`;
+    callbacks.onError?.(new Error(msg));
+    return;
+  }
+
+  await readStream(response, callbacks);
+}
+
+const sdkHistoryResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.object({
+    messages: z.array(
+      z.object({
+        id: z.string(),
+        role: z.enum(['user', 'assistant']),
+        content: z.string(),
+        createdAt: z.string().nullable(),
+      })
+    ),
+    threadId: z.string().nullable(),
+  }),
+});
+
+export type SdkHistoryResponse = z.infer<typeof sdkHistoryResponseSchema>;
+
+export class SdkApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message);
+    this.name = 'SdkApiError';
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+// Note: uses raw fetch because SDK endpoints use Bearer JWT auth, not cookie-based ts-rest client
+export async function fetchSdkHistory(jwt: string): Promise<SdkHistoryResponse> {
+  const response = await fetch(`${baseUrl}/sdk/chat/history`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  if (!response.ok) {
+    throw new SdkApiError(`Failed to fetch history: ${response.status}`, response.status);
+  }
+  const json: unknown = await response.json();
+  return sdkHistoryResponseSchema.parse(json);
+}
+
+// Note: uses raw fetch because SDK endpoints use Bearer JWT auth, not cookie-based ts-rest client
+export async function streamSdkChat(
+  jwt: string,
+  body: { message: string; threadId?: string },
+  callbacks: StreamCallbacks
+): Promise<void> {
+  const response = await fetch(`${baseUrl}/sdk/chat/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${jwt}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const msg = data?.error ?? `Stream failed with status ${response.status}`;
+    callbacks.onError?.(new SdkApiError(msg, response.status));
+    return;
+  }
+
+  await readStream(response, callbacks);
 }

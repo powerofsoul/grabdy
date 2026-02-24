@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as EmbedPreviewRouteImport } from './routes/embed-preview'
+import { Route as EmbedRouteImport } from './routes/embed'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
@@ -19,6 +21,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as DashboardUsageRouteImport } from './routes/dashboard/usage'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardSdkDeveloperRouteImport } from './routes/dashboard/sdk-developer'
 import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
 import { Route as DashboardChatRouteImport } from './routes/dashboard/chat'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
@@ -26,8 +29,10 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthCompleteAccountRouteImport } from './routes/auth/complete-account'
 import { Route as DashboardSourcesIndexRouteImport } from './routes/dashboard/sources/index'
+import { Route as DashboardSdkChatsIndexRouteImport } from './routes/dashboard/sdk-chats/index'
 import { Route as DashboardIntegrationsIndexRouteImport } from './routes/dashboard/integrations/index'
 import { Route as DashboardSourcesCollectionIdRouteImport } from './routes/dashboard/sources/$collectionId'
+import { Route as DashboardSdkChatsSdkChatIdRouteImport } from './routes/dashboard/sdk-chats/$sdkChatId'
 import { Route as DashboardIntegrationsProviderRouteImport } from './routes/dashboard/integrations/$provider'
 import { Route as DashboardApiMcpRouteImport } from './routes/dashboard/api/mcp'
 import { Route as DashboardApiKeysRouteImport } from './routes/dashboard/api/keys'
@@ -41,6 +46,16 @@ const TermsRoute = TermsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmbedPreviewRoute = EmbedPreviewRouteImport.update({
+  id: '/embed-preview',
+  path: '/embed-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmbedRoute = EmbedRouteImport.update({
+  id: '/embed',
+  path: '/embed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -83,6 +98,11 @@ const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSdkDeveloperRoute = DashboardSdkDeveloperRouteImport.update({
+  id: '/sdk-developer',
+  path: '/sdk-developer',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardMembersRoute = DashboardMembersRouteImport.update({
   id: '/members',
   path: '/members',
@@ -118,6 +138,11 @@ const DashboardSourcesIndexRoute = DashboardSourcesIndexRouteImport.update({
   path: '/sources/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSdkChatsIndexRoute = DashboardSdkChatsIndexRouteImport.update({
+  id: '/sdk-chats/',
+  path: '/sdk-chats/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardIntegrationsIndexRoute =
   DashboardIntegrationsIndexRouteImport.update({
     id: '/integrations/',
@@ -128,6 +153,12 @@ const DashboardSourcesCollectionIdRoute =
   DashboardSourcesCollectionIdRouteImport.update({
     id: '/sources/$collectionId',
     path: '/sources/$collectionId',
+    getParentRoute: () => DashboardRoute,
+  } as any)
+const DashboardSdkChatsSdkChatIdRoute =
+  DashboardSdkChatsSdkChatIdRouteImport.update({
+    id: '/sdk-chats/$sdkChatId',
+    path: '/sdk-chats/$sdkChatId',
     getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardIntegrationsProviderRoute =
@@ -157,6 +188,8 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRouteWithChildren
+  '/embed': typeof EmbedRoute
+  '/embed-preview': typeof EmbedPreviewRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/auth/complete-account': typeof AuthCompleteAccountRoute
@@ -165,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/sdk-developer': typeof DashboardSdkDeveloperRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
   '/share/$token': typeof ShareTokenRoute
@@ -173,14 +207,18 @@ export interface FileRoutesByFullPath {
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
   '/dashboard/api/mcp': typeof DashboardApiMcpRoute
   '/dashboard/integrations/$provider': typeof DashboardIntegrationsProviderRoute
+  '/dashboard/sdk-chats/$sdkChatId': typeof DashboardSdkChatsSdkChatIdRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
   '/dashboard/integrations/': typeof DashboardIntegrationsIndexRoute
+  '/dashboard/sdk-chats/': typeof DashboardSdkChatsIndexRoute
   '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
+  '/embed': typeof EmbedRoute
+  '/embed-preview': typeof EmbedPreviewRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/auth/complete-account': typeof AuthCompleteAccountRoute
@@ -189,6 +227,7 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/sdk-developer': typeof DashboardSdkDeveloperRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
   '/share/$token': typeof ShareTokenRoute
@@ -197,8 +236,10 @@ export interface FileRoutesByTo {
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
   '/dashboard/api/mcp': typeof DashboardApiMcpRoute
   '/dashboard/integrations/$provider': typeof DashboardIntegrationsProviderRoute
+  '/dashboard/sdk-chats/$sdkChatId': typeof DashboardSdkChatsSdkChatIdRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
   '/dashboard/integrations': typeof DashboardIntegrationsIndexRoute
+  '/dashboard/sdk-chats': typeof DashboardSdkChatsIndexRoute
   '/dashboard/sources': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesById {
@@ -207,6 +248,8 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRouteWithChildren
+  '/embed': typeof EmbedRoute
+  '/embed-preview': typeof EmbedPreviewRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/auth/complete-account': typeof AuthCompleteAccountRoute
@@ -215,6 +258,7 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/sdk-developer': typeof DashboardSdkDeveloperRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/usage': typeof DashboardUsageRoute
   '/share/$token': typeof ShareTokenRoute
@@ -223,8 +267,10 @@ export interface FileRoutesById {
   '/dashboard/api/keys': typeof DashboardApiKeysRoute
   '/dashboard/api/mcp': typeof DashboardApiMcpRoute
   '/dashboard/integrations/$provider': typeof DashboardIntegrationsProviderRoute
+  '/dashboard/sdk-chats/$sdkChatId': typeof DashboardSdkChatsSdkChatIdRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
   '/dashboard/integrations/': typeof DashboardIntegrationsIndexRoute
+  '/dashboard/sdk-chats/': typeof DashboardSdkChatsIndexRoute
   '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRouteTypes {
@@ -234,6 +280,8 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/dashboard'
+    | '/embed'
+    | '/embed-preview'
     | '/privacy'
     | '/terms'
     | '/auth/complete-account'
@@ -242,6 +290,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/dashboard/chat'
     | '/dashboard/members'
+    | '/dashboard/sdk-developer'
     | '/dashboard/settings'
     | '/dashboard/usage'
     | '/share/$token'
@@ -250,14 +299,18 @@ export interface FileRouteTypes {
     | '/dashboard/api/keys'
     | '/dashboard/api/mcp'
     | '/dashboard/integrations/$provider'
+    | '/dashboard/sdk-chats/$sdkChatId'
     | '/dashboard/sources/$collectionId'
     | '/dashboard/integrations/'
+    | '/dashboard/sdk-chats/'
     | '/dashboard/sources/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/app'
     | '/auth'
+    | '/embed'
+    | '/embed-preview'
     | '/privacy'
     | '/terms'
     | '/auth/complete-account'
@@ -266,6 +319,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/dashboard/chat'
     | '/dashboard/members'
+    | '/dashboard/sdk-developer'
     | '/dashboard/settings'
     | '/dashboard/usage'
     | '/share/$token'
@@ -274,8 +328,10 @@ export interface FileRouteTypes {
     | '/dashboard/api/keys'
     | '/dashboard/api/mcp'
     | '/dashboard/integrations/$provider'
+    | '/dashboard/sdk-chats/$sdkChatId'
     | '/dashboard/sources/$collectionId'
     | '/dashboard/integrations'
+    | '/dashboard/sdk-chats'
     | '/dashboard/sources'
   id:
     | '__root__'
@@ -283,6 +339,8 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/dashboard'
+    | '/embed'
+    | '/embed-preview'
     | '/privacy'
     | '/terms'
     | '/auth/complete-account'
@@ -291,6 +349,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/dashboard/chat'
     | '/dashboard/members'
+    | '/dashboard/sdk-developer'
     | '/dashboard/settings'
     | '/dashboard/usage'
     | '/share/$token'
@@ -299,8 +358,10 @@ export interface FileRouteTypes {
     | '/dashboard/api/keys'
     | '/dashboard/api/mcp'
     | '/dashboard/integrations/$provider'
+    | '/dashboard/sdk-chats/$sdkChatId'
     | '/dashboard/sources/$collectionId'
     | '/dashboard/integrations/'
+    | '/dashboard/sdk-chats/'
     | '/dashboard/sources/'
   fileRoutesById: FileRoutesById
 }
@@ -309,6 +370,8 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRouteWithChildren
   DashboardRoute: typeof DashboardRouteWithChildren
+  EmbedRoute: typeof EmbedRoute
+  EmbedPreviewRoute: typeof EmbedPreviewRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   ShareTokenRoute: typeof ShareTokenRoute
@@ -328,6 +391,20 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/embed-preview': {
+      id: '/embed-preview'
+      path: '/embed-preview'
+      fullPath: '/embed-preview'
+      preLoaderRoute: typeof EmbedPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/embed': {
+      id: '/embed'
+      path: '/embed'
+      fullPath: '/embed'
+      preLoaderRoute: typeof EmbedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -386,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/sdk-developer': {
+      id: '/dashboard/sdk-developer'
+      path: '/sdk-developer'
+      fullPath: '/dashboard/sdk-developer'
+      preLoaderRoute: typeof DashboardSdkDeveloperRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/members': {
       id: '/dashboard/members'
       path: '/members'
@@ -435,6 +519,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSourcesIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/sdk-chats/': {
+      id: '/dashboard/sdk-chats/'
+      path: '/sdk-chats'
+      fullPath: '/dashboard/sdk-chats/'
+      preLoaderRoute: typeof DashboardSdkChatsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/integrations/': {
       id: '/dashboard/integrations/'
       path: '/integrations'
@@ -447,6 +538,13 @@ declare module '@tanstack/react-router' {
       path: '/sources/$collectionId'
       fullPath: '/dashboard/sources/$collectionId'
       preLoaderRoute: typeof DashboardSourcesCollectionIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/sdk-chats/$sdkChatId': {
+      id: '/dashboard/sdk-chats/$sdkChatId'
+      path: '/sdk-chats/$sdkChatId'
+      fullPath: '/dashboard/sdk-chats/$sdkChatId'
+      preLoaderRoute: typeof DashboardSdkChatsSdkChatIdRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/integrations/$provider': {
@@ -499,6 +597,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface DashboardRouteChildren {
   DashboardChatRoute: typeof DashboardChatRoute
   DashboardMembersRoute: typeof DashboardMembersRoute
+  DashboardSdkDeveloperRoute: typeof DashboardSdkDeveloperRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardUsageRoute: typeof DashboardUsageRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -506,14 +605,17 @@ interface DashboardRouteChildren {
   DashboardApiKeysRoute: typeof DashboardApiKeysRoute
   DashboardApiMcpRoute: typeof DashboardApiMcpRoute
   DashboardIntegrationsProviderRoute: typeof DashboardIntegrationsProviderRoute
+  DashboardSdkChatsSdkChatIdRoute: typeof DashboardSdkChatsSdkChatIdRoute
   DashboardSourcesCollectionIdRoute: typeof DashboardSourcesCollectionIdRoute
   DashboardIntegrationsIndexRoute: typeof DashboardIntegrationsIndexRoute
+  DashboardSdkChatsIndexRoute: typeof DashboardSdkChatsIndexRoute
   DashboardSourcesIndexRoute: typeof DashboardSourcesIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardChatRoute: DashboardChatRoute,
   DashboardMembersRoute: DashboardMembersRoute,
+  DashboardSdkDeveloperRoute: DashboardSdkDeveloperRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardUsageRoute: DashboardUsageRoute,
   DashboardIndexRoute: DashboardIndexRoute,
@@ -521,8 +623,10 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardApiKeysRoute: DashboardApiKeysRoute,
   DashboardApiMcpRoute: DashboardApiMcpRoute,
   DashboardIntegrationsProviderRoute: DashboardIntegrationsProviderRoute,
+  DashboardSdkChatsSdkChatIdRoute: DashboardSdkChatsSdkChatIdRoute,
   DashboardSourcesCollectionIdRoute: DashboardSourcesCollectionIdRoute,
   DashboardIntegrationsIndexRoute: DashboardIntegrationsIndexRoute,
+  DashboardSdkChatsIndexRoute: DashboardSdkChatsIndexRoute,
   DashboardSourcesIndexRoute: DashboardSourcesIndexRoute,
 }
 
@@ -535,6 +639,8 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   AuthRoute: AuthRouteWithChildren,
   DashboardRoute: DashboardRouteWithChildren,
+  EmbedRoute: EmbedRoute,
+  EmbedPreviewRoute: EmbedPreviewRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   ShareTokenRoute: ShareTokenRoute,

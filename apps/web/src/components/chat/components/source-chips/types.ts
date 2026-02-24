@@ -17,6 +17,8 @@ export interface SourceGroup {
 export interface SourceItemProps {
   source: ChatSource;
   onOpen: (source: ChatSource) => void;
+  /** When true, show only the location (e.g. "p. 5") instead of the full filename. */
+  compact?: boolean;
 }
 
 export interface SourceChipsProps {

@@ -26,8 +26,18 @@ const chatSourceBase = {
 };
 
 export const chatSourceSchema = z.discriminatedUnion('type', [
-  z.object({ ...chatSourceBase, type: z.literal('PDF'), pages: z.array(z.number()) }),
-  z.object({ ...chatSourceBase, type: z.literal('DOCX'), pages: z.array(z.number()) }),
+  z.object({
+    ...chatSourceBase,
+    type: z.literal('PDF'),
+    pages: z.array(z.number()),
+    content: z.string().optional(),
+  }),
+  z.object({
+    ...chatSourceBase,
+    type: z.literal('DOCX'),
+    pages: z.array(z.number()),
+    content: z.string().optional(),
+  }),
   z.object({
     ...chatSourceBase,
     type: z.literal('XLSX'),

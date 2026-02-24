@@ -9,9 +9,8 @@ import { DbService } from '../../db/db.module';
 import { DataAgent } from '../agent/agents/data/data-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
 import { CanvasDelegateTool } from '../agent/tools/canvas-delegate.tool';
-
-import { buildBlockInstructionsPrompt } from './block-registry';
-import { CanvasService } from './canvas.service';
+import { buildBlockInstructionsPrompt } from '../canvas/block-registry';
+import { CanvasService } from '../canvas/canvas.service';
 
 @Injectable()
 export class ChatService {

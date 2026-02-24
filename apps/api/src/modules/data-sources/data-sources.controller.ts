@@ -2,26 +2,26 @@ import {
   Controller,
   Get,
   Logger,
-  type MessageEvent,
   Param,
+  Req,
   Res,
-  Sse,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-import { type DbId, dbIdSchema } from '@grabdy/common';
+import { dbIdSchema, extractOrgNumericId } from '@grabdy/common';
 import { dataSourcesContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
-import { Response } from 'express';
-import { concat, interval, map, Observable, of, switchMap, takeWhile } from 'rxjs';
+import type { Request, Response } from 'express';
 
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
-import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import { Public } from '../../common/decorators/public.decorator';
+import { StorageAuthGuard } from '../../common/guards/storage-auth.guard';
 import { MAX_FILE_SIZE_BYTES } from '../../config/constants';
-import { DbService } from '../../db/db.module';
+import { S3FileStorage } from '../storage/s3-file-storage';
 
 import { DataSourcesService } from './data-sources.service';
 
@@ -35,7 +35,7 @@ export class DataSourcesController {
 
   constructor(
     private dataSourcesService: DataSourcesService,
-    private db: DbService
+    private storage: S3FileStorage
   ) {}
 
   @OrgAccess(dataSourcesContract.upload, { params: ['orgId'] })
@@ -236,78 +236,55 @@ export class DataSourcesController {
     });
   }
 
-  @OrgAccess({ params: ['orgId'] })
-  @Sse('/orgs/:orgId/data-sources/:id/progress')
-  progress(
-    @Param('orgId', new ZodValidationPipe(dbIdSchema('Org'))) orgId: DbId<'Org'>,
-    @Param('id', new ZodValidationPipe(dbIdSchema('DataSource'))) id: DbId<'DataSource'>
-  ): Observable<MessageEvent> {
-    const poll$ = interval(1000).pipe(
-      switchMap(async () => {
-        const row = await this.db.kysely
-          .selectFrom('data.data_sources')
-          .select('status')
-          .where('id', '=', id)
-          .where('org_id', '=', orgId)
-          .executeTakeFirst();
-
-        const status = row?.status ?? 'FAILED';
-
-        return { status };
-      }),
-      map(({ status }) => ({
-        data: { status },
-      })),
-      takeWhile(({ data }) => data.status !== 'READY' && data.status !== 'FAILED', true)
-    );
-
-    return concat(poll$, of({ data: { done: true } }));
-  }
-
-  @Get('/files/:orgNum/:filename')
-  async serveFile(
-    @Param('orgNum') orgNum: string,
-    @Param('filename') filename: string,
+  /**
+   * Stable image proxy: redirects to a fresh presigned S3 URL.
+   * The AI embeds these URLs in markdown so they must not expire.
+   * The key is base64url-encoded to avoid path issues with slashes.
+   *
+   * Accepts both dashboard cookie auth and SDK Bearer auth.
+   */
+  @Public()
+  @UseGuards(StorageAuthGuard)
+  @Get('orgs/:orgId/storage/:encodedKey')
+  async storageProxy(
+    @Param('orgId') orgIdRaw: string,
+    @Param('encodedKey') encodedKey: string,
+    @Req() req: Request,
     @Res() res: Response
   ) {
+    const orgId = dbIdSchema('Org').parse(orgIdRaw);
+
+    // Verify the caller has access to this org
+    if (req.user) {
+      const orgNum = extractOrgNumericId(orgId);
+      const hasMembership = req.user.memberships.some((m) => extractOrgNumericId(m.id) === orgNum);
+      if (!hasMembership) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+    } else if (req.sdkAuth) {
+      if (req.sdkAuth.orgId !== orgId) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+    } else {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const key = Buffer.from(encodedKey, 'base64url').toString('utf-8');
+
+    // Verify the key belongs to this org (keys start with orgId/)
+    if (!key.startsWith(`${orgId}/`)) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
     try {
-      const key = `${orgNum}/${filename}`;
-      const buffer = await this.dataSourcesService.getFileBuffer(key);
-      const ext = filename.split('.').pop()?.toLowerCase() ?? '';
-      type ServableExt =
-        | 'pdf'
-        | 'csv'
-        | 'txt'
-        | 'json'
-        | 'docx'
-        | 'xlsx'
-        | 'xls'
-        | 'png'
-        | 'jpg'
-        | 'jpeg'
-        | 'webp'
-        | 'gif';
-      const mimeMap: Record<ServableExt, string> = {
-        pdf: 'application/pdf',
-        csv: 'text/csv',
-        txt: 'text/plain',
-        json: 'application/json',
-        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        xls: 'application/vnd.ms-excel',
-        png: 'image/png',
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        webp: 'image/webp',
-        gif: 'image/gif',
-      };
-      const isServableExt = (e: string): e is ServableExt => e in mimeMap;
-      res.setHeader('Content-Type', isServableExt(ext) ? mimeMap[ext] : 'application/octet-stream');
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-      res.send(buffer);
-    } catch (error) {
-      this.logger.warn(`File serve failed: ${error instanceof Error ? error.message : error}`);
-      res.status(404).json({ error: 'File not found' });
+      const url = await this.storage.getUrl(key);
+      res.redirect(url);
+    } catch {
+      res.status(404).json({ error: 'Not found' });
     }
   }
 }

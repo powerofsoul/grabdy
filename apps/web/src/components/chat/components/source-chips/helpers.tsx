@@ -43,6 +43,24 @@ export function getFileIcon(name: string): IconComponent {
   return isFileExt(ext) ? ICON_BY_EXT[ext] : FileTextIcon;
 }
 
+/**
+ * Expand sources so each page in a multi-page PDF/DOCX becomes its own entry.
+ * Other source types are passed through unchanged.
+ */
+export function expandGroupPages(sources: ChatSource[]): ChatSource[] {
+  const expanded: ChatSource[] = [];
+  for (const source of sources) {
+    if ('pages' in source && source.pages.length > 1) {
+      for (const page of source.pages) {
+        expanded.push({ ...source, pages: [page] });
+      }
+    } else {
+      expanded.push(source);
+    }
+  }
+  return expanded;
+}
+
 export function groupSources(
   sources: ChatSource[],
   FileIcon: React.ComponentType<{ name: string; size: number }>
@@ -53,10 +71,7 @@ export function groupSources(
     const type = isExternalSource(source.type) ? source.type : 'UPLOAD';
     const existing = groups.get(type);
     if (existing) {
-      const isDuplicate = existing.some((s) => s.dataSourceId === source.dataSourceId);
-      if (!isDuplicate) {
-        existing.push(source);
-      }
+      existing.push(source);
     } else {
       groups.set(type, [source]);
     }

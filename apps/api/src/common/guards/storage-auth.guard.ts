@@ -27,7 +27,7 @@ export class StorageAuthGuard implements CanActivate {
     const cookieToken = request.cookies?.['auth_token'];
     if (typeof cookieToken === 'string') {
       try {
-        const decoded = jwt.verify(cookieToken, this.jwtSecret);
+        const decoded = jwt.verify(cookieToken, this.jwtSecret, { algorithms: ['HS256'] });
         const payload = parseJwtPayload(decoded);
         if (payload) {
           request.user = payload;

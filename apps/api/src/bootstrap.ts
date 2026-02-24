@@ -27,10 +27,11 @@ export async function bootstrap() {
   // Build OpenAPI spec from Zod schemas
   const openApiDocument = buildOpenApiDocument();
 
-  const isDev = env.nodeEnv === 'development';
-
+  // SDK endpoints use Bearer JWT from customer domains, so allow all origins.
+  // Dashboard uses cookie auth with credentials: true (browser only sends
+  // cookies when the response includes the matching origin, not '*').
   app.enableCors({
-    origin: isDev ? true : env.frontendUrl,
+    origin: true,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
@@ -51,7 +52,9 @@ export async function bootstrap() {
     res.json(openApiDocument);
   });
 
+  app.enableShutdownHooks();
+
   await app.listen(env.port);
   console.log(`Server running at http://localhost:${env.port}`);
-  console.log(`CORS: ${isDev ? 'development mode (all origins)' : env.frontendUrl}`);
+  console.log(`CORS: all origins (SDK embeds on customer domains)`);
 }

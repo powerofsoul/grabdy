@@ -2,7 +2,6 @@ import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@
 import {
   BookOpenIcon,
   CaretDoubleLeftIcon,
-  CaretRightIcon,
   ChartBarIcon,
   ChatCircleIcon,
   EyeIcon,
@@ -18,169 +17,16 @@ import {
   SunIcon,
   UsersIcon,
 } from '@phosphor-icons/react';
-import { Link, useLocation } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 
+import { CountBadge } from './CountBadge';
+import { NavItem } from './NavItem';
+import { SectionHeader } from './SectionHeader';
 import { useSidebarSources } from './useSidebarSources';
 
 import { getProviderLabel, ProviderIcon } from '@/components/integrations';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
-import { FONT_MONO } from '@/theme';
-
-function NavItem({
-  to,
-  label,
-  exact,
-  icon,
-  trailing,
-  activePrefix,
-}: {
-  to: string;
-  label: string;
-  exact?: boolean;
-  icon?: React.ReactNode;
-  trailing?: React.ReactNode;
-  activePrefix?: string;
-}) {
-  const location = useLocation();
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
-  const matchPath = activePrefix ?? to;
-  const isActive = exact
-    ? location.pathname === matchPath
-    : location.pathname.startsWith(matchPath);
-
-  return (
-    <Link to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          height: 34,
-          px: 2,
-          mx: '8px',
-
-          cursor: 'pointer',
-          borderRadius: 1,
-          bgcolor: isActive ? alpha(ct, 0.06) : 'transparent',
-          transition: 'color 120ms ease, background-color 120ms ease',
-          '&:hover': {
-            bgcolor: alpha(ct, isActive ? 0.08 : 0.03),
-            borderRadius: 1,
-          },
-        }}
-      >
-        {icon && (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              color: isActive ? 'text.primary' : 'text.secondary',
-            }}
-          >
-            {icon}
-          </Box>
-        )}
-        <Typography
-          noWrap
-          sx={{
-            flex: 1,
-            fontSize: 13.5,
-            fontWeight: isActive ? 600 : 400,
-            color: isActive ? 'text.primary' : 'text.secondary',
-            lineHeight: 1.4,
-          }}
-        >
-          {label}
-        </Typography>
-        {trailing}
-      </Box>
-    </Link>
-  );
-}
-
-function SectionHeader({
-  label,
-  to,
-  action,
-}: {
-  label: string;
-  to?: string;
-  action?: React.ReactNode;
-}) {
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
-
-  const content = (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.5,
-        ...(to && {
-          cursor: 'pointer',
-          '&:hover .section-label': { color: alpha(ct, 0.5) },
-        }),
-      }}
-    >
-      <Typography
-        variant="overline"
-        className="section-label"
-        sx={{
-          color: alpha(ct, 0.25),
-          transition: 'color 120ms ease',
-        }}
-      >
-        {label}
-      </Typography>
-      {to && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            color: alpha(ct, 0.2),
-          }}
-        >
-          <CaretRightIcon size={10} weight="light" color="currentColor" />
-        </Box>
-      )}
-    </Box>
-  );
-
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', px: '20px', mb: 0.5 }}>
-      {to ? (
-        <Link to={to} style={{ textDecoration: 'none' }}>
-          {content}
-        </Link>
-      ) : (
-        content
-      )}
-      {action && <Box sx={{ ml: 'auto' }}>{action}</Box>}
-    </Box>
-  );
-}
-
-function CountBadge({ count }: { count: number }) {
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
-  return (
-    <Typography
-      component="span"
-      sx={{
-        fontFamily: FONT_MONO,
-        fontSize: 11,
-        fontWeight: 500,
-        color: alpha(ct, 0.35),
-        lineHeight: 1,
-        flexShrink: 0,
-      }}
-    >
-      {count}
-    </Typography>
-  );
-}
 
 export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
@@ -331,6 +177,22 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               icon={<ProviderIcon provider={conn.provider} size={15} />}
             />
           ))}
+        </Box>
+
+        {/* SDK */}
+        <Box>
+          <SectionHeader label="SDK" />
+          <NavItem
+            to="/dashboard/sdk-chats"
+            label="Chats"
+            icon={<ChatCircleIcon size={16} weight="light" color="currentColor" />}
+            activePrefix="/dashboard/sdk-chats"
+          />
+          <NavItem
+            to="/dashboard/sdk-developer"
+            label="Developer"
+            icon={<BookOpenIcon size={16} weight="light" color="currentColor" />}
+          />
         </Box>
 
         {/* Developer */}

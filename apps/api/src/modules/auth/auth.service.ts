@@ -4,9 +4,11 @@ import { JwtService } from '@nestjs/jwt';
 import { type DbId, GLOBAL_ORG, packId } from '@grabdy/common';
 import { isWorkEmail, type OrgRole, orgRoleEnum, type UserStatus } from '@grabdy/contracts';
 import * as bcrypt from 'bcryptjs';
+import type { Queue } from 'bullmq';
 import * as crypto from 'crypto';
 import type { CookieOptions } from 'express';
 import { OAuth2Client } from 'google-auth-library';
+import { z } from 'zod';
 
 import type { JwtMembership, JwtPayload } from '../../common/guards/auth.guard';
 import {
@@ -22,8 +24,15 @@ import {
 } from '../../config/constants';
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
-import { InngestService } from '../../inngest/inngest.service';
+import { InjectTypedQueue } from '../../queue/queue.decorators';
 import { RedisService } from '../../redis/redis.module';
+
+const pendingSignupSchema = z.object({
+  passwordHash: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  otp: z.string(),
+});
 import { redisKeys } from '../../redis/redis-keys';
 import { EmailService } from '../email/email.service';
 import { NotificationService } from '../notification/notification.service';
@@ -87,7 +96,7 @@ export class AuthService {
     private jwtService: JwtService,
     private emailService: EmailService,
     private notificationService: NotificationService,
-    private inngestService: InngestService,
+    @InjectTypedQueue('email') private emailQueue: Queue,
     @InjectEnv('jwtSecret') private readonly jwtSecret: string,
     @InjectEnv('googleClientId') private readonly googleClientId: string
   ) {
@@ -205,7 +214,7 @@ export class AuthService {
       ttlSeconds
     );
 
-    await this.inngestService.send('app/email.send', {
+    await this.emailQueue.add('send', {
       orgId: null,
       type: 'verification-otp',
       to: normalizedEmail,
@@ -223,12 +232,7 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired code');
     }
 
-    const pending = JSON.parse(raw) as {
-      passwordHash: string;
-      firstName: string;
-      lastName: string;
-      otp: string;
-    };
+    const pending = pendingSignupSchema.parse(JSON.parse(raw));
 
     if (pending.otp !== otp) {
       throw new BadRequestException('Invalid or expired code');
@@ -285,7 +289,7 @@ export class AuthService {
       memberships: toJwtMemberships(memberships),
     });
 
-    await this.inngestService.send('app/email.send', {
+    await this.emailQueue.add('send', {
       orgId: null,
       type: 'welcome',
       to: result.user.email,
@@ -324,12 +328,7 @@ export class AuthService {
       );
     }
 
-    const pending = JSON.parse(raw) as {
-      passwordHash: string;
-      firstName: string;
-      lastName: string;
-      otp: string;
-    };
+    const pending = pendingSignupSchema.parse(JSON.parse(raw));
 
     const otp = this.generateOTP();
     const ttlSeconds = OTP_EXPIRY_MINUTES * 60;
@@ -342,7 +341,7 @@ export class AuthService {
       ttlSeconds
     );
 
-    await this.inngestService.send('app/email.send', {
+    await this.emailQueue.add('send', {
       orgId: null,
       type: 'verification-otp',
       to: normalizedEmail,
@@ -488,7 +487,7 @@ export class AuthService {
       memberships: toJwtMemberships(memberships),
     });
 
-    await this.inngestService.send('app/email.send', {
+    await this.emailQueue.add('send', {
       orgId: null,
       type: 'welcome',
       to: result.user.email,
@@ -610,7 +609,7 @@ export class AuthService {
       })
       .execute();
 
-    await this.inngestService.send('app/email.send', {
+    await this.emailQueue.add('send', {
       orgId: null,
       type: 'password-reset',
       to: email,

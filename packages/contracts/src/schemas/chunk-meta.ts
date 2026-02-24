@@ -7,6 +7,7 @@ import { dataSourceTypeEnum } from '../enums/data-source.js';
 const pdfChunkMetaSchema = z.object({
   type: z.literal('PDF'),
   pages: z.array(z.number()),
+  imageStorageKey: z.string().optional(),
 });
 
 const docxChunkMetaSchema = z.object({
@@ -100,8 +101,8 @@ export const CHUNK_META_DESCRIPTIONS: Record<DataSourceType, string> = {
   TXT: '{ type }',
   JSON: '{ type }',
   IMAGE: '{ type }',
-  SLACK: '{ type, slackChannelId, slackMessageTs, slackAuthors[] }',
-  LINEAR: '{ type, linearIssueId, linearCommentId, linearTimestamp }',
-  GITHUB: '{ type, githubItemType (issue|pull_request|discussion), githubCommentId }',
-  NOTION: '{ type, notionPageId, notionBlockId }',
+  SLACK: '{ type, slackAuthors[] }',
+  LINEAR: '{ type }',
+  GITHUB: '{ type, githubItemType (issue|pull_request|discussion) }',
+  NOTION: '{ type }',
 };

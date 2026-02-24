@@ -9,13 +9,16 @@ import {
   MODEL_INFO,
   type ModelKey,
 } from '@grabdy/contracts';
+import type { Queue } from 'bullmq';
 
-import { InngestService } from '../../inngest/inngest.service';
+import { InjectTypedQueue } from '../../queue/queue.decorators';
 
 export interface UsageContext {
   orgId: DbId<'Org'>;
   userId?: DbId<'User'> | null;
   source: AiRequestSource;
+  sdkChatId?: DbId<'SdkChat'> | null;
+  externalUser?: string | null;
 }
 
 interface UsageExtras {
@@ -28,7 +31,7 @@ interface UsageExtras {
 export class AiUsageService {
   private readonly logger = new Logger(AiUsageService.name);
 
-  constructor(private inngestService: InngestService) {}
+  constructor(@InjectTypedQueue('ai-usage') private aiUsageQueue: Queue) {}
 
   async logUsage(
     model: ModelKey,
@@ -43,7 +46,7 @@ export class AiUsageService {
       const modelInfo = MODEL_INFO[model];
       const cost = calculateCost(model, inputTokens, outputTokens);
 
-      await this.inngestService.send('app/ai-usage.log', {
+      await this.aiUsageQueue.add('log', {
         orgId: context.orgId,
         model,
         provider: modelInfo.provider,
@@ -58,6 +61,8 @@ export class AiUsageService {
         durationMs: extras?.durationMs ?? null,
         finishReason: extras?.finishReason ?? null,
         streaming: extras?.streaming ?? false,
+        sdkChatId: context.sdkChatId ?? null,
+        externalUser: context.externalUser ?? null,
       });
     } catch (error) {
       this.logger.error(`Failed to send AI usage event: ${error}`);

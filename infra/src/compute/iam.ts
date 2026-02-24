@@ -1,7 +1,7 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
-import { dbSecretArn, inngestDbSecretArn } from '../data/database';
+import { dbSecretArn } from '../data/database';
 import { kmsKey } from '../secrets/kms';
 import { uploadsBucket } from '../storage/buckets';
 
@@ -37,7 +37,7 @@ new aws.iam.RolePolicy('grabdy-exec-secrets-policy', {
       {
         Effect: 'Allow',
         Action: ['secretsmanager:GetSecretValue'],
-        Resource: [dbSecretArn, inngestDbSecretArn],
+        Resource: [dbSecretArn],
       },
       {
         Effect: 'Allow',
@@ -108,28 +108,3 @@ new aws.iam.RolePolicy('grabdy-task-policy', {
   }),
 });
 
-// Inngest task role — minimal permissions for reading DB credentials
-export const inngestTaskRole = new aws.iam.Role('grabdy-inngest-task-role', {
-  assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
-    Service: 'ecs-tasks.amazonaws.com',
-  }),
-});
-
-new aws.iam.RolePolicy('grabdy-inngest-task-policy', {
-  role: inngestTaskRole.name,
-  policy: pulumi.jsonStringify({
-    Version: '2012-10-17',
-    Statement: [
-      {
-        Effect: 'Allow',
-        Action: ['secretsmanager:GetSecretValue'],
-        Resource: [inngestDbSecretArn],
-      },
-      {
-        Effect: 'Allow',
-        Action: ['kms:Decrypt'],
-        Resource: [kmsKey.arn],
-      },
-    ],
-  }),
-});

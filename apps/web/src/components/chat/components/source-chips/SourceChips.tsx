@@ -1,12 +1,18 @@
 import { useCallback, useMemo, useState } from 'react';
 
+import type { ChatSource } from '@grabdy/contracts';
 import { Box, Typography } from '@mui/material';
 
 import { FileIcon } from './FileIcon';
-import { groupSources } from './helpers';
+import { expandGroupPages, groupSources } from './helpers';
 import { SourceItem } from './SourceItem';
 import type { SourceChipsProps, SourceGroup, SourceGroupType } from './types';
 import { useOpenSource } from './useOpenSource';
+
+/** Check if a source has multiple pages that should be expandable. */
+function hasMultiplePages(source: ChatSource): boolean {
+  return 'pages' in source && source.pages.length > 1;
+}
 
 export function SourceChips({ sources }: SourceChipsProps) {
   const openSource = useOpenSource();
@@ -15,11 +21,12 @@ export function SourceChips({ sources }: SourceChipsProps) {
 
   const handleGroupClick = useCallback(
     (group: SourceGroup) => {
-      if (group.count === 1) {
-        openSource(group.sources[0]);
+      // Multiple sources or a single source with multiple pages: expand
+      if (group.count > 1 || (group.count === 1 && hasMultiplePages(group.sources[0]))) {
+        setExpandedType((prev) => (prev === group.type ? null : group.type));
         return;
       }
-      setExpandedType((prev) => (prev === group.type ? null : group.type));
+      openSource(group.sources[0]);
     },
     [openSource]
   );
@@ -55,11 +62,16 @@ export function SourceChips({ sources }: SourceChipsProps) {
 
       {expandedType && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, pl: 0.25 }}>
-          {groups
-            .find((g) => g.type === expandedType)
-            ?.sources.map((source) => (
-              <SourceItem key={source.dataSourceId} source={source} onOpen={openSource} />
-            ))}
+          {expandGroupPages(groups.find((g) => g.type === expandedType)?.sources ?? []).map(
+            (source, idx) => (
+              <SourceItem
+                key={`${source.dataSourceId}-${idx}`}
+                source={source}
+                onOpen={openSource}
+                compact
+              />
+            )
+          )}
         </Box>
       )}
     </Box>

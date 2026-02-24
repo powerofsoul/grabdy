@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 import type { DbId } from '@grabdy/common';
+import { contract } from '@grabdy/contracts';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Box,
@@ -13,9 +16,10 @@ import {
   Typography,
 } from '@mui/material';
 import { KeyIcon, PlusIcon } from '@phosphor-icons/react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import type { z } from 'zod';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CopyButton } from '@/components/ui/CopyButton';
@@ -25,6 +29,7 @@ import { MainTable } from '@/components/ui/main-table';
 import { useAuth } from '@/context/AuthContext';
 import { type DrawerProps, useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
+import { relativeDate } from '@/lib/date';
 import { FONT_MONO } from '@/theme';
 
 interface ApiKey {
@@ -36,46 +41,51 @@ interface ApiKey {
   createdAt: string;
 }
 
+const createKeySchema = contract.apiKeys.create.body;
+type CreateKeyForm = z.infer<typeof createKeySchema>;
+
 export const Route = createFileRoute('/dashboard/api/keys')({
   component: ApiKeysPage,
 });
 
-function relativeDate(iso: string): string {
-  return formatDistanceToNow(new Date(iso), { addSuffix: true });
-}
-
 function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () => void }) {
   const { selectedOrgId } = useAuth();
-  const [name, setName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
 
-  const handleCreate = async () => {
-    if (!selectedOrgId || !name.trim()) return;
-    setIsCreating(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+    reset,
+  } = useForm<CreateKeyForm>({
+    resolver: zodResolver(createKeySchema),
+    mode: 'onBlur',
+  });
+
+  const onSubmit = async (data: CreateKeyForm) => {
+    if (!selectedOrgId) return;
     try {
       const res = await api.apiKeys.create({
         params: { orgId: selectedOrgId },
-        body: { name: name.trim() },
+        body: { name: data.name },
       });
       if (res.status === 200) {
         setNewKeyValue(res.body.data.key);
-        setName('');
+        reset();
         onCreated();
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create API key');
-    } finally {
-      setIsCreating(false);
+      setError('root', {
+        message: err instanceof Error ? err.message : 'Failed to create API key',
+      });
     }
   };
 
   if (newKeyValue) {
     return (
       <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Alert severity="warning">
-          CopyIcon this key now. You will not be able to see it again.
-        </Alert>
+        <Alert severity="warning">Copy this key now. You will not be able to see it again.</Alert>
         <Box
           sx={{
             fontFamily: FONT_MONO,
@@ -100,20 +110,30 @@ function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () =
   }
 
   return (
-    <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit(onSubmit)}
+      sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}
+    >
       <TextField
-        label="KeyIcon Name"
+        label="Key Name"
         fullWidth
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        {...register('name')}
+        error={!!errors.name}
+        helperText={errors.name?.message}
         placeholder="e.g. Production, Development"
         required
         autoFocus
       />
+      {errors.root?.message && (
+        <Typography color="error" variant="body2">
+          {errors.root.message}
+        </Typography>
+      )}
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleCreate} disabled={isCreating || !name.trim()}>
-          {isCreating ? 'Creating...' : 'Create'}
+        <Button variant="contained" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating...' : 'Create'}
         </Button>
       </Box>
     </Box>
@@ -123,66 +143,53 @@ function CreateKeyDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () =
 function ApiKeysPage() {
   const { selectedOrgId } = useAuth();
   const { pushDrawer } = useDrawer();
-  const [keys, setKeys] = useState<ApiKey[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showRevoked, setShowRevoked] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<ApiKey | null>(null);
-  const [isRevoking, setIsRevoking] = useState(false);
 
-  const fetchKeys = async () => {
-    if (!selectedOrgId) return;
-    setIsLoading(true);
-    try {
+  const { data: keys = [], isLoading } = useQuery({
+    queryKey: ['apiKeys', selectedOrgId, showRevoked],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
       const res = await api.apiKeys.list({
         params: { orgId: selectedOrgId },
         query: { includeRevoked: showRevoked },
       });
-      if (res.status === 200) {
-        setKeys(res.body.data);
-      }
-    } catch {
-      toast.error('Failed to load API keys');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      if (res.status === 200) return res.body.data;
+      return [];
+    },
+    enabled: !!selectedOrgId,
+  });
 
-  useEffect(() => {
-    fetchKeys();
-  }, [selectedOrgId, showRevoked]);
-
-  const openCreateDrawer = () => {
-    pushDrawer(
-      (onClose) => (
-        <CreateKeyDrawer
-          onClose={onClose}
-          onCreated={() => {
-            fetchKeys();
-          }}
-        />
-      ),
-      { title: 'Create API KeyIcon', mode: 'dialog', maxWidth: 'sm' }
-    );
-  };
-
-  const handleRevoke = async () => {
-    if (!selectedOrgId || !revokeTarget) return;
-    setIsRevoking(true);
-    try {
+  const revokeMutation = useMutation({
+    mutationFn: async (key: ApiKey) => {
+      if (!selectedOrgId) return;
       const res = await api.apiKeys.revoke({
-        params: { orgId: selectedOrgId, keyId: revokeTarget.id },
+        params: { orgId: selectedOrgId, keyId: key.id },
         body: {},
       });
-      if (res.status === 200) {
-        toast.success('API key revoked');
-        fetchKeys();
-      }
-    } catch (err) {
+      if (res.status !== 200) throw new Error('Failed to revoke key');
+    },
+    onSuccess: () => {
+      toast.success('API key revoked');
+      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+    },
+    onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Failed to revoke key');
-    } finally {
-      setIsRevoking(false);
-      setRevokeTarget(null);
-    }
+    },
+    onSettled: () => setRevokeTarget(null),
+  });
+
+  const invalidateKeys = () => {
+    queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+  };
+
+  const openCreateDrawer = () => {
+    pushDrawer((onClose) => <CreateKeyDrawer onClose={onClose} onCreated={invalidateKeys} />, {
+      title: 'Create API Key',
+      mode: 'dialog',
+      maxWidth: 'sm',
+    });
   };
 
   const activeKeys = keys.filter((k) => !k.revokedAt);
@@ -223,7 +230,7 @@ function ApiKeysPage() {
             startIcon={<PlusIcon size={18} weight="light" color="currentColor" />}
             onClick={openCreateDrawer}
           >
-            Create KeyIcon
+            Create Key
           </Button>
         </Box>
       }
@@ -232,7 +239,7 @@ function ApiKeysPage() {
         data={activeKeys}
         headerNames={{
           name: 'Name',
-          prefix: 'KeyIcon',
+          prefix: 'Key',
           lastUsed: 'Last Used',
           created: 'Created',
           actions: '',
@@ -299,7 +306,7 @@ function ApiKeysPage() {
             data={revokedKeys}
             headerNames={{
               name: 'Name',
-              prefix: 'KeyIcon',
+              prefix: 'Key',
               lastUsed: 'Last Used',
               revokedAt: 'Revoked',
               created: 'Created',
@@ -346,12 +353,14 @@ function ApiKeysPage() {
 
       <ConfirmDialog
         open={!!revokeTarget}
-        title="Revoke API KeyIcon"
+        title="Revoke API Key"
         message={`Are you sure you want to revoke "${revokeTarget?.name}"? Any requests using this key will stop working.`}
         confirmLabel="Revoke"
-        onConfirm={handleRevoke}
+        onConfirm={() => {
+          if (revokeTarget) revokeMutation.mutate(revokeTarget);
+        }}
         onCancel={() => setRevokeTarget(null)}
-        isLoading={isRevoking}
+        isLoading={revokeMutation.isPending}
       />
     </DashboardPage>
   );

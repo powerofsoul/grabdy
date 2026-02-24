@@ -13,6 +13,7 @@ const dataSourceSchema = z.object({
   fileSize: z.number(),
   type: dataSourceTypeEnum,
   status: dataSourceStatusEnum,
+  processingProgress: z.number().nullable(),
   pageCount: z.number().nullable(),
   collectionId: dbIdSchema('Collection').nullable(),
   orgId: dbIdSchema('Org'),

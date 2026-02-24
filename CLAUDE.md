@@ -16,7 +16,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - **Backend**: NestJS, Kysely, PostgreSQL + pgvector
 - **Frontend**: React, TanStack Router, MUI v7
 - **AI**: OpenAI embeddings (text-embedding-3-small), AI SDK for chat
-- **Workflows**: Inngest for durable background jobs (dashboard at localhost:8288)
+- **Workflows**: BullMQ for background jobs (dashboard at localhost:4000/admin/queues)
 - **Animations**: GSAP + ScrollTrigger for landing page
 
 ## Package Manager - CRITICAL
@@ -80,9 +80,8 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 - **NEVER make injected services optional.**
 - Never use `forwardRef()`. Fix circular dependencies properly.
-- **Use Inngest for all background/async work.** Event naming: `app/{entity}.{action}` (e.g., `app/data-source.process`). Define events in `inngest.client.ts`, create function providers with `@InngestFunctions()` decorator, send events via `InngestService.send()`. Each module owns its `*.functions.ts` file. Auto-discovery picks up all decorated providers.
-- **NEVER call AI SDK functions (`generateText`, `streamText`, `embed`, `embedMany`) directly.** Always use an injectable service that tracks usage via `AiUsageService`. The only exceptions are inside dedicated service classes (e.g., `RagSearchTool`) that inject `AiUsageService` and log usage themselves, and **Inngest `*.functions.ts` files** which use `step.ai.wrap()` for AI observability and log usage via `AiUsageService` in a durable `step.run`.
-- **Inside Inngest functions, ALWAYS use `step.ai.wrap()` for AI calls** and `step.run()` for usage logging. Never call AI SDK functions inside `step.run()` since `step.ai.wrap` provides AI-specific observability (token counts, latency) in the Inngest dashboard.
+- **Use BullMQ for all background/async work.** Queue names are typed in `QueueService` (e.g., `data-source-process`, `email`, `notification`). Each module owns its `*.workers.ts` file which registers processors in `onModuleInit()`. Send jobs via `QueueService.addJob()`. Bull Board dashboard at `/admin/queues`.
+- **NEVER call AI SDK functions (`generateText`, `streamText`, `embed`, `embedMany`) directly.** Always use an injectable service that tracks usage via `AiUsageService`. The only exceptions are inside dedicated service classes (e.g., `RagSearchTool`) that inject `AiUsageService` and log usage themselves, and **BullMQ `*.workers.ts` files** which call AI functions directly and log usage via `AiUsageService`.
 
 ### API Calls (ts-rest) - CRITICAL
 

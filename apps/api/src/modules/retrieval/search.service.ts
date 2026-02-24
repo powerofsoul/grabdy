@@ -23,6 +23,7 @@ import {
 } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { AiService } from '../ai/ai.service';
+import { storageProxyUrl } from '../data-sources/data-source.types';
 
 import { reciprocalRankFusion } from './hybrid-search';
 
@@ -55,6 +56,7 @@ export interface SearchResult {
 
 export interface SearchOptions {
   collectionIds?: DbId<'Collection'>[];
+  dataSourceIds?: DbId<'DataSource'>[];
   limit?: number;
   filters?: MetadataFilter[];
   callerType: AiCallerType;
@@ -130,6 +132,14 @@ export class SearchService {
     options: SearchOptions
   ): Promise<{ results: SearchResult[]; queryTimeMs: number }> {
     const start = Date.now();
+
+    // Both scopes explicitly empty = no data sources configured, return no results
+    const hasCollections = options.collectionIds && options.collectionIds.length > 0;
+    const hasDataSources = options.dataSourceIds && options.dataSourceIds.length > 0;
+    if (options.collectionIds && !hasCollections && !hasDataSources) {
+      return { results: [], queryTimeMs: 0 };
+    }
+
     const limit = options.limit ?? DEFAULT_SEARCH_LIMIT;
 
     // HyDE: generate hypothetical answer and blend with original query for better vector search
@@ -256,14 +266,29 @@ export class SearchService {
         'data.chunks.content',
         'data.chunks.metadata',
         'data.chunks.source_url',
+        'data.chunks.source_key',
         'data.data_sources.title as data_source_name',
         'data.data_sources.id as data_source_id',
         'data.chunks.collection_id',
+        'data.chunks.org_id',
       ])
       .where('data.chunks.org_id', '=', orgId);
 
-    if (options.collectionIds && options.collectionIds.length > 0) {
-      query = query.where('data.chunks.collection_id', 'in', options.collectionIds);
+    const cIds = options.collectionIds ?? [];
+    const dsIds = options.dataSourceIds ?? [];
+
+    if (cIds.length > 0 && dsIds.length > 0) {
+      // OR: match chunks in selected collections OR specific data sources
+      query = query.where((eb) =>
+        eb.or([
+          eb('data.chunks.collection_id', 'in', cIds),
+          eb('data.chunks.data_source_id', 'in', dsIds),
+        ])
+      );
+    } else if (cIds.length > 0) {
+      query = query.where('data.chunks.collection_id', 'in', cIds);
+    } else if (dsIds.length > 0) {
+      query = query.where('data.chunks.data_source_id', 'in', dsIds);
     }
 
     if (options.filters && options.filters.length > 0) {
@@ -284,7 +309,9 @@ export class SearchService {
       data_source_name: string;
       data_source_id: DbId<'DataSource'>;
       source_url: string | null;
+      source_key: string | null;
       collection_id: DbId<'Collection'> | null;
+      org_id: DbId<'Org'>;
     }>
   ): SearchResult[] {
     return rows.map((r) => ({
@@ -294,7 +321,7 @@ export class SearchService {
       metadata: r.metadata,
       dataSourceName: r.data_source_name,
       dataSourceId: r.data_source_id,
-      sourceUrl: r.source_url,
+      sourceUrl: r.source_key ? storageProxyUrl(r.org_id, r.source_key) : r.source_url,
       collectionId: r.collection_id,
     }));
   }

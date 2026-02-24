@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { AiUsageService } from '../../ai/ai-usage.service';
 import { CHAT_LANGUAGE_MODEL } from '../../ai/bedrock.provider';
-import { CANVAS_INSTRUCTIONS, summarizeCanvas } from '../../chat/canvas-prompt';
+import { CANVAS_INSTRUCTIONS, summarizeCanvas } from '../../canvas/canvas-prompt';
 
 import { CanvasTools } from './canvas-tools';
 

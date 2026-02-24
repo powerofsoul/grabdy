@@ -1,24 +1,24 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import { type DbId, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
-import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
+import { chunkMetaSchema, isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
 
 import { getMaxFileSizeForMime } from '../../config/constants';
-import { env } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
-import { InngestService } from '../../inngest/inngest.service';
-import type { FileStorage } from '../storage/file-storage.interface';
-import { FILE_STORAGE } from '../storage/file-storage.interface';
+import { StorageKeys } from '../storage/file-storage.interface';
+import { S3FileStorage } from '../storage/s3-file-storage';
 
 import type { DataSourceJobData } from './data-source.types';
+import { storageProxyUrl } from './data-source.types';
+import { DataSourceDispatchService } from './data-source-dispatch.service';
 
 @Injectable()
 export class DataSourcesService {
   constructor(
     private db: DbService,
-    @Inject(FILE_STORAGE) private storage: FileStorage,
-    private inngestService: InngestService
+    private storage: S3FileStorage,
+    private dispatch: DataSourceDispatchService
   ) {}
 
   async upload(
@@ -39,15 +39,13 @@ export class DataSourcesService {
       throw new Error(`File too large. Maximum size for ${type} files is ${limitMB} MB`);
     }
 
-    // Storage key: {orgNumericId}/{timestamp}-{originalname}
-    const orgNum = extractOrgNumericId(orgId).toString();
-    const filename = `${Date.now()}-${file.originalname}`;
-    const storageKey = `${orgNum}/${filename}`;
-
-    await this.storage.put(storageKey, file.buffer, file.mimetype);
-
     const collectionId = options.collectionId ?? null;
     const dataSourceId = packId('DataSource', orgId);
+
+    const ext = file.originalname.split('.').pop()?.toLowerCase() ?? 'bin';
+    const storageKey = StorageKeys.fileDataSource(orgId, collectionId, dataSourceId, ext);
+
+    await this.storage.put(storageKey, file.buffer, file.mimetype);
 
     const dataSource = await this.db.kysely
       .insertInto('data.data_sources')
@@ -58,7 +56,7 @@ export class DataSourcesService {
         file_size: file.size,
         storage_path: storageKey,
         type,
-        source_url: `${env.frontendUrl}/dashboard/sources?preview=${dataSourceId}&org=${orgId}`,
+        source_url: storageProxyUrl(orgId, storageKey),
         collection_id: collectionId,
         org_id: orgId,
         uploaded_by_id: userId,
@@ -76,7 +74,7 @@ export class DataSourcesService {
       collectionId,
     };
 
-    await this.inngestService.send('app/data-source.process', jobData);
+    await this.dispatch.dispatch(jobData);
 
     return this.toResponse(dataSource);
   }
@@ -126,6 +124,9 @@ export class DataSourcesService {
       throw new NotFoundException('Data source not found');
     }
 
+    // Collect extracted image keys before deleting chunks
+    const imageKeys = await this.collectImageKeys(orgId, id);
+
     // Delete chunks first
     await this.db.kysely
       .deleteFrom('data.chunks')
@@ -140,8 +141,11 @@ export class DataSourcesService {
       .where('org_id', '=', orgId)
       .execute();
 
-    // Delete file from storage
+    // Delete file and extracted images from storage
     await this.storage.delete(dataSource.storage_path);
+    if (imageKeys.length > 0) {
+      await Promise.all(imageKeys.map((key) => this.storage.delete(key).catch(() => {})));
+    }
   }
 
   async rename(orgId: DbId<'Org'>, id: DbId<'DataSource'>, title: string) {
@@ -158,10 +162,6 @@ export class DataSourcesService {
     }
 
     return this.toResponse(dataSource);
-  }
-
-  async getFileBuffer(key: string): Promise<Buffer> {
-    return this.storage.get(key);
   }
 
   async getPreviewUrl(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
@@ -197,6 +197,12 @@ export class DataSourcesService {
       throw new NotFoundException('Data source not found');
     }
 
+    // Collect and delete extracted images before deleting chunks
+    const imageKeys = await this.collectImageKeys(orgId, id);
+    if (imageKeys.length > 0) {
+      await Promise.all(imageKeys.map((key) => this.storage.delete(key).catch(() => {})));
+    }
+
     // Delete existing chunks
     await this.db.kysely
       .deleteFrom('data.chunks')
@@ -224,9 +230,30 @@ export class DataSourcesService {
       collectionId: dataSource.collection_id,
     };
 
-    await this.inngestService.send('app/data-source.process', jobData);
+    await this.dispatch.dispatch(jobData);
 
     return this.toResponse({ ...dataSource, status: 'UPLOADED' });
+  }
+
+  private async collectImageKeys(
+    orgId: DbId<'Org'>,
+    dataSourceId: DbId<'DataSource'>
+  ): Promise<string[]> {
+    const chunks = await this.db.kysely
+      .selectFrom('data.chunks')
+      .select('metadata')
+      .where('data_source_id', '=', dataSourceId)
+      .where('org_id', '=', orgId)
+      .execute();
+
+    const keys: string[] = [];
+    for (const chunk of chunks) {
+      const parsed = chunkMetaSchema.safeParse(chunk.metadata);
+      if (parsed.success && parsed.data.type === 'PDF' && parsed.data.imageStorageKey) {
+        keys.push(parsed.data.imageStorageKey);
+      }
+    }
+    return keys;
   }
 
   private toResponse(ds: {
@@ -236,6 +263,7 @@ export class DataSourcesService {
     file_size: number;
     type: DataSourceType;
     status: DataSourceStatus;
+    processing_progress: number | null;
     page_count: number | null;
     collection_id: DbId<'Collection'> | null;
     org_id: DbId<'Org'>;
@@ -250,6 +278,7 @@ export class DataSourcesService {
       fileSize: ds.file_size,
       type: ds.type,
       status: ds.status,
+      processingProgress: ds.processing_progress,
       pageCount: ds.page_count,
       collectionId: ds.collection_id,
       orgId: ds.org_id,

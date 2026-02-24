@@ -19,6 +19,8 @@ export interface AgentCallOptions {
   callerType?: AiCallerType;
   requestType?: AiRequestType;
   userId?: DbId<'User'>;
+  sdkChatId?: DbId<'SdkChat'>;
+  externalUser?: string;
   tools: ToolSet;
   instructions: string;
   maxSteps?: number;
@@ -55,7 +57,13 @@ export abstract class BaseAgent {
             usage.outputTokens ?? 0,
             opts.callerType ?? 'MEMBER',
             opts.requestType ?? 'CHAT',
-            { orgId: opts.orgId, userId: opts.userId, source: opts.source }
+            {
+              orgId: opts.orgId,
+              userId: opts.userId,
+              source: opts.source,
+              sdkChatId: opts.sdkChatId,
+              externalUser: opts.externalUser,
+            }
           )
           .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
       },

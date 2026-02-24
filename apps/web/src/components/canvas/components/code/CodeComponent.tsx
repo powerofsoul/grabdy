@@ -13,6 +13,7 @@ import {
   CODE_LINE_HEIGHT,
   hastToReact,
   HIGHLIGHT_SX_DARK,
+  HIGHLIGHT_SX_LIGHT,
   LANGUAGES,
 } from './constants';
 
@@ -27,28 +28,6 @@ interface CodeComponentProps {
 }
 
 const lowlight = createLowlight(common);
-
-const HIGHLIGHT_SX_LIGHT = {
-  '& .hljs-keyword': { color: '#a626a4' },
-  '& .hljs-string': { color: '#50a14f' },
-  '& .hljs-number': { color: '#986801' },
-  '& .hljs-comment': { color: '#a0a1a7', fontStyle: 'italic' },
-  '& .hljs-function': { color: '#4078f2' },
-  '& .hljs-title': { color: '#4078f2' },
-  '& .hljs-params': { color: '#383a42' },
-  '& .hljs-built_in': { color: '#c18401' },
-  '& .hljs-literal': { color: '#0184bc' },
-  '& .hljs-type': { color: '#c18401' },
-  '& .hljs-attr': { color: '#986801' },
-  '& .hljs-selector-class': { color: '#986801' },
-  '& .hljs-selector-tag': { color: '#e45649' },
-  '& .hljs-tag': { color: '#e45649' },
-  '& .hljs-name': { color: '#e45649' },
-  '& .hljs-variable': { color: '#e45649' },
-  '& .hljs-meta': { color: '#4078f2' },
-  '& .hljs-property': { color: '#e45649' },
-  '& .hljs-punctuation': { color: '#383a42' },
-} as const;
 
 export function CodeComponent({ data, onSave }: CodeComponentProps) {
   const theme = useTheme();

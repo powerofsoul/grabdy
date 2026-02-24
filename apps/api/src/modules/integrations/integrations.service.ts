@@ -3,11 +3,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
 import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '@grabdy/contracts';
+import type { Queue } from 'bullmq';
 import { sql } from 'kysely';
 
 import { EncryptionService } from '../../common/encryption/encryption.service';
 import { DbService } from '../../db/db.module';
-import { InngestService } from '../../inngest/inngest.service';
+import { InjectTypedQueue } from '../../queue/queue.decorators';
 
 import { ProviderRegistry } from './providers/provider-registry';
 import {
@@ -45,7 +46,8 @@ export class IntegrationsService {
     private db: DbService,
     private encryption: EncryptionService,
     private providerRegistry: ProviderRegistry,
-    private inngestService: InngestService
+    @InjectTypedQueue('integration-discover') private discoverQueue: Queue,
+    @InjectTypedQueue('integration-process-item') private processItemQueue: Queue
   ) {}
 
   async listConnections(orgId: DbId<'Org'>) {
@@ -277,11 +279,15 @@ export class IntegrationsService {
   }
 
   async triggerSync(connectionId: DbId<'Connection'>, orgId: DbId<'Org'>, trigger: SyncTrigger) {
-    await this.inngestService.send('app/integration.discover', {
-      connectionId,
-      orgId,
-      trigger,
-    });
+    await this.discoverQueue.add(
+      'discover',
+      {
+        connectionId,
+        orgId,
+        trigger,
+      },
+      { jobId: `discover-${connectionId}` }
+    );
 
     this.logger.log(`Queued ${trigger} discovery for connection ${connectionId}`);
   }
@@ -291,7 +297,7 @@ export class IntegrationsService {
     orgId: DbId<'Org'>,
     event: WebhookEvent
   ) {
-    await this.inngestService.send('app/integration.process-item', {
+    await this.processItemQueue.add('process', {
       connectionId,
       orgId,
       event,

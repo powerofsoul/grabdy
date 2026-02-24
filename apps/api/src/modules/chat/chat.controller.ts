@@ -15,8 +15,8 @@ import {
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import { CanvasService } from '../canvas/canvas.service';
 
-import { CanvasService } from './canvas.service';
 import { ChatService } from './chat.service';
 
 const CANVAS_TOOL_NAME_SET = new Set(['canvas_update', 'canvas_delegate']);

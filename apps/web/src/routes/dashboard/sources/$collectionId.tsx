@@ -1,17 +1,9 @@
 import type { ComponentType } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 import { dbIdSchema } from '@grabdy/common';
-import type { DataSourceStatus, UploadsExt } from '@grabdy/contracts';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  IconButton,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import type { UploadsExt } from '@grabdy/contracts';
+import { Box, Button, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
 import type { IconProps } from '@phosphor-icons/react';
 import {
   ArrowsClockwiseIcon,
@@ -27,14 +19,13 @@ import {
   PencilSimpleIcon,
   TrashIcon,
 } from '@phosphor-icons/react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router';
-import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
-import {
-  canPreview,
-  DocumentPreviewDrawer,
-} from '@/components/chat/components/DocumentPreviewDrawer';
+import { type RenameDataSource, RenameDrawer } from './RenameDrawer';
+
+import { canPreview, DocumentPreviewDrawer } from '@/components/chat/components/document-preview';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -42,28 +33,11 @@ import { FileUpload } from '@/components/ui/FileUpload';
 import { MainTable } from '@/components/ui/main-table';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { useAuth } from '@/context/AuthContext';
-import { type DrawerProps, useDrawer } from '@/context/DrawerContext';
-import { api, baseUrl, uploadDataSource } from '@/lib/api';
+import { useDrawer } from '@/context/DrawerContext';
+import { api, uploadDataSource } from '@/lib/api';
+import { relativeDate } from '@/lib/date';
 
-interface DataSource {
-  id: string;
-  title: string;
-  type: string;
-  mimeType: string;
-  status: DataSourceStatus;
-  fileSize: number;
-  pageCount: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Collection {
-  id: string;
-  name: string;
-  description: string | null;
-  sourceCount: number;
-  chunkCount: number;
-}
+type DataSource = RenameDataSource;
 
 export const Route = createFileRoute('/dashboard/sources/$collectionId')({
   component: CollectionDetailPage,
@@ -73,10 +47,6 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function relativeDate(iso: string): string {
-  return formatDistanceToNow(new Date(iso), { addSuffix: true });
 }
 
 const ICON_BY_EXT: Record<UploadsExt, ComponentType<IconProps>> = {
@@ -112,178 +82,105 @@ const headerNames = {
   actions: '',
 } as const;
 
-// ── Rename Drawer ──────────────────────────────────────────────────
-
-interface RenameDrawerProps extends DrawerProps {
-  dataSource: DataSource;
-  onRenamed: () => void;
-}
-
-function RenameDrawer({ onClose, dataSource, onRenamed }: RenameDrawerProps) {
-  const { selectedOrgId } = useAuth();
-  const [title, setTitle] = useState(dataSource.title);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!selectedOrgId || !title.trim()) return;
-    setIsSaving(true);
-    try {
-      const parsed = dbIdSchema('DataSource').safeParse(dataSource.id);
-      if (!parsed.success) return;
-      const res = await api.dataSources.rename({
-        params: { orgId: selectedOrgId, id: parsed.data },
-        body: { title: title.trim() },
-      });
-      if (res.status === 200) {
-        toast.success('File renamed');
-        onRenamed();
-        onClose();
-      }
-    } catch {
-      toast.error('Failed to rename');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <TextField
-        label="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        fullWidth
-        autoFocus
-        size="small"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSave();
-        }}
-      />
-      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-        <Button variant="outlined" onClick={onClose} disabled={isSaving}>
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          disabled={isSaving || !title.trim() || title.trim() === dataSource.title}
-        >
-          {isSaving ? 'Saving...' : 'Save'}
-        </Button>
-      </Box>
-    </Box>
-  );
-}
-
 // ── Main Page ──────────────────────────────────────────────────────
 
 function CollectionDetailPage() {
   const { collectionId } = Route.useParams();
   const { selectedOrgId } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { pushDrawer } = useDrawer();
-  const [collection, setCollection] = useState<Collection | null>(null);
-  const [dataSources, setDataSources] = useState<DataSource[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [deleteCollectionConfirm, setDeleteCollectionConfirm] = useState(false);
-  const [isDeletingCollection, setIsDeletingCollection] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DataSource | null>(null);
-  const [isDeletingSource, setIsDeletingSource] = useState(false);
-  const eventSourcesRef = useRef<Map<string, EventSource>>(new Map());
-  const fetchDataRef = useRef<() => void>(() => {});
 
-  const fetchData = useCallback(async () => {
-    if (!selectedOrgId) return;
-    setIsLoading(true);
-    try {
-      const [collRes, sourcesRes] = await Promise.all([
-        api.collections.get({
-          params: { orgId: selectedOrgId, collectionId: collectionId as never },
-        }),
-        api.dataSources.list({
-          params: { orgId: selectedOrgId },
-          query: { collectionId },
-        }),
-      ]);
-
-      if (collRes.status === 200) {
-        setCollection(collRes.body.data);
-      }
-      if (sourcesRes.status === 200) {
-        setDataSources(sourcesRes.body.data);
-      }
-    } catch {
-      toast.error('Failed to load source');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedOrgId, collectionId]);
-
-  fetchDataRef.current = fetchData;
-
-  const connectProgress = useCallback(
-    (dsId: string) => {
-      if (!selectedOrgId) return;
-      if (eventSourcesRef.current.has(dsId)) return;
-
-      const es = new EventSource(`${baseUrl}/orgs/${selectedOrgId}/data-sources/${dsId}/progress`, {
-        withCredentials: true,
+  const { data: collection, isLoading: isCollectionLoading } = useQuery({
+    queryKey: ['collections', collectionId, selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return null;
+      const res = await api.collections.get({
+        params: { orgId: selectedOrgId, collectionId },
       });
-
-      eventSourcesRef.current.set(dsId, es);
-
-      es.onmessage = (event) => {
-        const parsed = JSON.parse(event.data) as { status: DataSourceStatus } | { done: boolean };
-
-        if ('done' in parsed) {
-          es.close();
-          eventSourcesRef.current.delete(dsId);
-          return;
-        }
-
-        setDataSources((prev) =>
-          prev.map((ds) => (ds.id === dsId ? { ...ds, status: parsed.status } : ds))
-        );
-
-        if (parsed.status === 'READY' || parsed.status === 'FAILED') {
-          es.close();
-          eventSourcesRef.current.delete(dsId);
-          fetchDataRef.current();
-        }
-      };
-
-      es.onerror = () => {
-        es.close();
-        eventSourcesRef.current.delete(dsId);
-      };
+      if (res.status === 200) return res.body.data;
+      return null;
     },
-    [selectedOrgId]
-  );
+    enabled: !!selectedOrgId,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data: dataSources = [], isLoading: isSourcesLoading } = useQuery({
+    queryKey: ['dataSources', collectionId, selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
+      const res = await api.dataSources.list({
+        params: { orgId: selectedOrgId },
+        query: { collectionId },
+      });
+      if (res.status === 200) return res.body.data;
+      return [];
+    },
+    enabled: !!selectedOrgId,
+  });
 
-  // Connect to SSE for any in-progress data sources
-  useEffect(() => {
-    for (const ds of dataSources) {
-      if (ds.status === 'PROCESSING' || ds.status === 'UPLOADED') {
-        connectProgress(ds.id);
-      }
-    }
-  }, [dataSources, connectProgress]);
+  const invalidateSources = () => {
+    queryClient.invalidateQueries({ queryKey: ['dataSources', collectionId] });
+    queryClient.invalidateQueries({ queryKey: ['collections', collectionId] });
+  };
 
-  // Cleanup all EventSources on unmount
-  useEffect(() => {
-    const sources = eventSourcesRef.current;
-    return () => {
-      for (const es of sources.values()) {
-        es.close();
-      }
-      sources.clear();
-    };
-  }, []);
+  const deleteCollectionMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrgId) return;
+      const res = await api.collections.delete({
+        params: { orgId: selectedOrgId, collectionId },
+        body: {},
+      });
+      if (res.status !== 200) throw new Error('Delete failed');
+    },
+    onSuccess: () => {
+      toast.success('Source deleted');
+      navigate({ to: '/dashboard/sources' });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
+    },
+    onSettled: () => setDeleteCollectionConfirm(false),
+  });
+
+  const deleteSourceMutation = useMutation({
+    mutationFn: async (ds: DataSource) => {
+      if (!selectedOrgId) return;
+      const parsed = dbIdSchema('DataSource').safeParse(ds.id);
+      if (!parsed.success) return;
+      const res = await api.dataSources.delete({
+        params: { orgId: selectedOrgId, id: parsed.data },
+        body: {},
+      });
+      if (res.status !== 200) throw new Error('Delete failed');
+    },
+    onSuccess: () => {
+      toast.success('File deleted');
+      invalidateSources();
+    },
+    onError: () => toast.error('Failed to delete file'),
+    onSettled: () => setDeleteTarget(null),
+  });
+
+  const reprocessMutation = useMutation({
+    mutationFn: async (ds: DataSource) => {
+      if (!selectedOrgId) return;
+      const parsed = dbIdSchema('DataSource').safeParse(ds.id);
+      if (!parsed.success) return;
+      const res = await api.dataSources.reprocess({
+        params: { orgId: selectedOrgId, id: parsed.data },
+        body: {},
+      });
+      if (res.status !== 200) throw new Error('Reprocess failed');
+    },
+    onSuccess: () => {
+      toast.success('Reprocessing started');
+      invalidateSources();
+    },
+    onError: () => toast.error('Failed to reprocess'),
+  });
 
   const handleUpload = async (file: File) => {
     if (!selectedOrgId) return;
@@ -293,72 +190,12 @@ function CollectionDetailPage() {
 
       if (res.status === 200) {
         toast.success('File uploaded');
-        fetchData();
+        invalidateSources();
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploadProgress(null);
-    }
-  };
-
-  const handleDeleteCollection = async () => {
-    if (!selectedOrgId) return;
-    setIsDeletingCollection(true);
-    try {
-      const res = await api.collections.delete({
-        params: { orgId: selectedOrgId, collectionId: collectionId as never },
-        body: {},
-      });
-      if (res.status === 200) {
-        toast.success('Source deleted');
-        navigate({ to: '/dashboard/sources' });
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed');
-    } finally {
-      setIsDeletingCollection(false);
-      setDeleteCollectionConfirm(false);
-    }
-  };
-
-  const handleDeleteSource = async () => {
-    if (!selectedOrgId || !deleteTarget) return;
-    setIsDeletingSource(true);
-    try {
-      const parsed = dbIdSchema('DataSource').safeParse(deleteTarget.id);
-      if (!parsed.success) return;
-      const res = await api.dataSources.delete({
-        params: { orgId: selectedOrgId, id: parsed.data },
-        body: {},
-      });
-      if (res.status === 200) {
-        toast.success('File deleted');
-        fetchData();
-      }
-    } catch {
-      toast.error('Failed to delete file');
-    } finally {
-      setIsDeletingSource(false);
-      setDeleteTarget(null);
-    }
-  };
-
-  const handleReprocess = async (ds: DataSource) => {
-    if (!selectedOrgId) return;
-    try {
-      const parsed = dbIdSchema('DataSource').safeParse(ds.id);
-      if (!parsed.success) return;
-      const res = await api.dataSources.reprocess({
-        params: { orgId: selectedOrgId, id: parsed.data },
-        body: {},
-      });
-      if (res.status === 200) {
-        toast.success('Reprocessing started');
-        fetchData();
-      }
-    } catch {
-      toast.error('Failed to reprocess');
     }
   };
 
@@ -392,10 +229,12 @@ function CollectionDetailPage() {
 
   const handleRename = (ds: DataSource) => {
     pushDrawer(
-      (onClose) => <RenameDrawer onClose={onClose} dataSource={ds} onRenamed={fetchData} />,
+      (onClose) => <RenameDrawer onClose={onClose} dataSource={ds} onRenamed={invalidateSources} />,
       { title: 'Rename File' }
     );
   };
+
+  const isLoading = isCollectionLoading || isSourcesLoading;
 
   if (isLoading) {
     return (
@@ -495,7 +334,9 @@ function CollectionDetailPage() {
                 {ds.type}
               </Typography>
             ),
-            status: (ds) => <StatusChip status={ds.status} />,
+            status: (ds) => (
+              <StatusChip status={ds.status} progress={ds.processingProgress ?? undefined} />
+            ),
             size: (ds) => formatFileSize(ds.fileSize),
             uploaded: (ds) => relativeDate(ds.createdAt),
             actions: (ds) => (
@@ -541,7 +382,7 @@ function CollectionDetailPage() {
                     size="small"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleReprocess(ds);
+                      reprocessMutation.mutate(ds);
                     }}
                     disabled={ds.status === 'PROCESSING'}
                   >
@@ -571,9 +412,9 @@ function CollectionDetailPage() {
         title="Delete Collection"
         message="Are you sure you want to delete this collection? All files and indexed content will be permanently removed."
         confirmLabel="Delete"
-        onConfirm={handleDeleteCollection}
+        onConfirm={() => deleteCollectionMutation.mutate()}
         onCancel={() => setDeleteCollectionConfirm(false)}
-        isLoading={isDeletingCollection}
+        isLoading={deleteCollectionMutation.isPending}
       />
 
       <ConfirmDialog
@@ -581,9 +422,11 @@ function CollectionDetailPage() {
         title="Delete File"
         message={`Are you sure you want to delete "${deleteTarget?.title}"? This will remove the file and all its indexed content.`}
         confirmLabel="Delete"
-        onConfirm={handleDeleteSource}
+        onConfirm={() => {
+          if (deleteTarget) deleteSourceMutation.mutate(deleteTarget);
+        }}
         onCancel={() => setDeleteTarget(null)}
-        isLoading={isDeletingSource}
+        isLoading={deleteSourceMutation.isPending}
       />
     </DashboardPage>
   );

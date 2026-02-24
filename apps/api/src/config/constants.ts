@@ -22,7 +22,7 @@ export const THROTTLE_LONG_LIMIT = 1000;
 // ── Data Source Processing (token-based) ────────────────────────────
 export const PDF_PAGE_RANGE_SIZE = 5;
 export const PDF_PAGE_OVERLAP = 5;
-export const DS_CONCURRENCY_GLOBAL = 25;
+export const DS_CONCURRENCY_GLOBAL = 4;
 export const DS_LOCK_DURATION_MS = 15 * 60 * 1000; // 15 min before BullMQ considers a job stalled
 export const DS_CONCURRENCY_PER_ORG = 5;
 export const CHUNK_SIZE_TOKENS = 400;

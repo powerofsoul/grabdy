@@ -5,23 +5,28 @@ import {
   CHUNK_SIZE_TOKENS,
   MIN_CHUNK_SIZE_TOKENS,
 } from '../../../config/constants';
-import type { PageText, SheetData, SheetRow } from '../../extractors/extractor.interface';
 import type { ChunkWithMeta, SyncedMessageData } from '../data-source.types';
 
+import type { PageText, SheetData, SheetRow } from './extractor.interface';
 import { splitText } from './recursive-text-splitter';
 import { countTokens, decodeTokens, encodeTokens } from './tokenizer';
+
+export interface ChunkSource {
+  sourceUrl: string | null;
+  sourceKey: string | null;
+}
 
 export function chunkPlainText(
   text: string,
   metadata: ChunkMeta,
-  sourceUrl: string
+  source: ChunkSource
 ): ChunkWithMeta[] {
   const segments = splitText(text, {
     maxSizeTokens: CHUNK_SIZE_TOKENS,
     overlapTokens: CHUNK_OVERLAP_TOKENS,
     minSizeTokens: MIN_CHUNK_SIZE_TOKENS,
   });
-  return segments.map((content) => ({ content, metadata, sourceUrl }));
+  return segments.map((content) => ({ content, metadata, ...source }));
 }
 
 /**
@@ -76,7 +81,7 @@ export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
       buffer.length > 0
     ) {
       // Flush current buffer as a chunk
-      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
+      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl, sourceKey: null });
       buffer = '';
       bufferTokens = 0;
       chunkMeta = msg.metadata;
@@ -91,7 +96,7 @@ export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
 
     // If a single message exceeds CHUNK_SIZE_TOKENS, flush and split it
     if (bufferTokens > CHUNK_SIZE_TOKENS) {
-      chunks.push(...chunkPlainText(buffer, chunkMeta, anchorUrl));
+      chunks.push(...chunkPlainText(buffer, chunkMeta, { sourceUrl: anchorUrl, sourceKey: null }));
       buffer = '';
       bufferTokens = 0;
       chunkMeta = msg.metadata;
@@ -101,7 +106,7 @@ export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
 
   if (buffer.length > 0) {
     if (bufferTokens >= MIN_CHUNK_SIZE_TOKENS) {
-      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
+      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl, sourceKey: null });
     } else if (chunks.length > 0) {
       // Append undersized tail to the last chunk and merge authors
       const last = chunks[chunks.length - 1];
@@ -112,7 +117,7 @@ export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
       };
     } else {
       // Only chunk — keep it regardless of size
-      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl });
+      chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl, sourceKey: null });
     }
   }
 
@@ -122,7 +127,7 @@ export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
 export function chunkPages(
   pages: PageText[],
   metaType: 'PDF' | 'DOCX',
-  sourceUrl: string
+  source: ChunkSource
 ): ChunkWithMeta[] {
   // Build a flat string with page boundary tracking
   const boundaries: Array<{ offset: number; page: number }> = [];
@@ -178,7 +183,7 @@ export function chunkPages(
     chunks.push({
       content,
       metadata: { type: metaType, pages: pageNums },
-      sourceUrl,
+      ...source,
     });
 
     offset = end;
@@ -187,7 +192,7 @@ export function chunkPages(
   return chunks;
 }
 
-export function chunkSheets(sheets: SheetData[], sourceUrl: string): ChunkWithMeta[] {
+export function chunkSheets(sheets: SheetData[], source: ChunkSource): ChunkWithMeta[] {
   const chunks: ChunkWithMeta[] = [];
   for (const sheet of sheets) {
     let buffer = '';
@@ -199,7 +204,7 @@ export function chunkSheets(sheets: SheetData[], sourceUrl: string): ChunkWithMe
         chunks.push({
           content: buffer,
           metadata: { type: 'XLSX', sheet: sheet.sheet, row: startRow, columns: sheet.columns },
-          sourceUrl,
+          ...source,
         });
         buffer = '';
         bufferTokens = 0;
@@ -212,7 +217,7 @@ export function chunkSheets(sheets: SheetData[], sourceUrl: string): ChunkWithMe
       chunks.push({
         content: buffer,
         metadata: { type: 'XLSX', sheet: sheet.sheet, row: startRow, columns: sheet.columns },
-        sourceUrl,
+        ...source,
       });
     }
   }
@@ -222,7 +227,7 @@ export function chunkSheets(sheets: SheetData[], sourceUrl: string): ChunkWithMe
 export function chunkCsv(
   rows: SheetRow[],
   columns: string[],
-  sourceUrl: string
+  source: ChunkSource
 ): ChunkWithMeta[] {
   const chunks: ChunkWithMeta[] = [];
   let buffer = '';
@@ -234,7 +239,7 @@ export function chunkCsv(
       chunks.push({
         content: buffer,
         metadata: { type: 'CSV', row: startRow, columns },
-        sourceUrl,
+        ...source,
       });
       buffer = '';
       bufferTokens = 0;
@@ -247,7 +252,7 @@ export function chunkCsv(
     chunks.push({
       content: buffer,
       metadata: { type: 'CSV', row: startRow, columns },
-      sourceUrl,
+      ...source,
     });
   }
   return chunks;

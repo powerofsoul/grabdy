@@ -7,10 +7,13 @@ import type { SourceItemProps } from './types';
 
 import { ProviderIcon } from '@/components/integrations/ProviderIcon';
 
-export function SourceItem({ source, onOpen }: SourceItemProps) {
+export function SourceItem({ source, onOpen, compact }: SourceItemProps) {
   const isExternal = isExternalSource(source.type);
   const hasUrl = Boolean(source.sourceUrl);
   const clickable = hasUrl || !isExternal;
+
+  const location = formatLocation(source);
+  const label = compact && location ? location.trim() : `${source.dataSourceName}${location}`;
 
   return (
     <Box
@@ -42,7 +45,7 @@ export function SourceItem({ source, onOpen }: SourceItemProps) {
           maxWidth: 200,
         }}
       >
-        {`${source.dataSourceName}${formatLocation(source)}`}
+        {label}
       </Typography>
       {hasUrl && (
         <ArrowSquareOutIcon size={9} weight="light" style={{ flexShrink: 0, opacity: 0.4 }} />

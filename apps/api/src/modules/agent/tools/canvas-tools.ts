@@ -4,10 +4,11 @@ import type { DbId } from '@grabdy/common';
 import { nonDbIdSchema, packNonDbId } from '@grabdy/common';
 import { canvasEdgeSchema, cardSchema, chunkMetaTypeEnum } from '@grabdy/contracts';
 import { tool } from 'ai';
+import type { Queue } from 'bullmq';
 import { z } from 'zod';
 
-import { InngestService } from '../../../inngest/inngest.service';
-import { batchInnerOpSchema } from '../../chat/processors/canvas-ops.types';
+import { InjectTypedQueue } from '../../../queue/queue.decorators';
+import { batchInnerOpSchema } from '../../canvas/processors/canvas-ops.types';
 
 // ---------------------------------------------------------------------------
 // AI-friendly input schemas
@@ -15,11 +16,11 @@ import { batchInnerOpSchema } from '../../chat/processors/canvas-ops.types';
 // The AI cannot generate packed UUIDs, so we accept z.string() for IDs that
 // the server will replace. IDs of *existing* entities (remove, move, update)
 // still come from prior server output but may also be placeholder IDs from
-// earlier ops in the same batch — resolution happens at execution time.
+// earlier ops in the same batch. Resolution happens at execution time.
 // ---------------------------------------------------------------------------
 
 const aiComponentSchema = z.object({
-  id: z.string().describe('Placeholder component ID — the server will replace it'),
+  id: z.string().describe('Placeholder component ID (the server will replace it)'),
   type: z.string().describe('Component type (table, chart, kpi_row, summary, checklist, etc.)'),
   data: z.record(z.string(), z.unknown()).describe('Component data matching the type schema'),
   citations: z
@@ -45,7 +46,7 @@ const aiCardSourceSchema = z.object({
 });
 
 const aiCardSchema = z.object({
-  id: z.string().describe('Placeholder card ID — the server will replace it'),
+  id: z.string().describe('Placeholder card ID (the server will replace it)'),
   position: z.object({ x: z.number(), y: z.number() }),
   width: z.number(),
   height: z.number(),
@@ -73,7 +74,7 @@ const aiCardSchema = z.object({
 });
 
 const aiEdgeSchema = z.object({
-  id: z.string().describe('Placeholder edge ID — the server will replace it'),
+  id: z.string().describe('Placeholder edge ID (the server will replace it)'),
   source: z.string().describe('Source card ID (placeholder from this batch or existing server ID)'),
   target: z.string().describe('Target card ID (placeholder from this batch or existing server ID)'),
   label: z.string().optional(),
@@ -114,7 +115,7 @@ function resolveCardId(id: string, idMap: Map<string, string>): ResolveResult {
   if (cardIdValidator.safeParse(id).success) return { ok: true, id };
   return {
     ok: false,
-    error: `Invalid card ID "${id}" — not a placeholder from this batch and not a valid server ID`,
+    error: `Invalid card ID "${id}": not a placeholder from this batch and not a valid server ID`,
   };
 }
 
@@ -124,7 +125,7 @@ function resolveEdgeId(id: string, idMap: Map<string, string>): ResolveResult {
   if (edgeIdValidator.safeParse(id).success) return { ok: true, id };
   return {
     ok: false,
-    error: `Invalid edge ID "${id}" — not a placeholder from this batch and not a valid server ID`,
+    error: `Invalid edge ID "${id}": not a placeholder from this batch and not a valid server ID`,
   };
 }
 
@@ -134,7 +135,7 @@ function resolveComponentId(id: string, idMap: Map<string, string>): ResolveResu
   if (componentIdValidator.safeParse(id).success) return { ok: true, id };
   return {
     ok: false,
-    error: `Invalid component ID "${id}" — not a placeholder from this batch and not a valid server ID`,
+    error: `Invalid component ID "${id}": not a placeholder from this batch and not a valid server ID`,
   };
 }
 
@@ -142,15 +143,15 @@ function resolveComponentId(id: string, idMap: Map<string, string>): ResolveResu
 export class CanvasTools {
   private readonly logger = new Logger(CanvasTools.name);
 
-  constructor(private inngestService: InngestService) {}
+  constructor(@InjectTypedQueue('canvas-ops') private canvasQueue: Queue) {}
 
   create(threadId: DbId<'ChatThread'>, orgId: DbId<'Org'>) {
-    const inngest = this.inngestService;
+    const canvasQueue = this.canvasQueue;
     const logger = this.logger;
 
     const canvasUpdate = tool({
       description:
-        'Apply one or more canvas operations in a single batch. Use placeholder IDs for new cards/edges — the server replaces them with real IDs. Later operations in the same batch can reference placeholder IDs from earlier operations.',
+        'Apply one or more canvas operations in a single batch. Use placeholder IDs for new cards/edges. The server replaces them with real IDs. Later operations in the same batch can reference placeholder IDs from earlier operations.',
       inputSchema: z.object({
         operations: z
           .array(canvasOpInputSchema)
@@ -176,7 +177,7 @@ export class CanvasTools {
         try {
           const batchOps = results.map((r) => batchInnerOpSchema.parse(r));
 
-          await inngest.send('app/canvas-ops.execute', {
+          await canvasQueue.add('execute', {
             op: { type: 'batch', threadId, orgId, operations: batchOps },
             orgId,
             threadId,

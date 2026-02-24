@@ -24,28 +24,38 @@ const apiCertWaiter = new aws.acm.CertificateValidation('grabdy-api-cert-wait', 
   validationRecordFqdns: [apiCertValidation.fqdn],
 });
 
-// ACM cert for ALB (inngest.grabdy.com) — same region
-const inngestCert = new aws.acm.Certificate('grabdy-inngest-cert', {
-  domainName: Env.inngestDomain,
-  validationMethod: 'DNS',
-});
 
-const inngestCertValidation = new aws.route53.Record('grabdy-inngest-cert-validation', {
+// ACM cert for CloudFront (sdk.grabdy.com) — MUST be us-east-1
+const usEast1 = new aws.Provider('us-east-1', { region: 'us-east-1' });
+
+const sdkCert = new aws.acm.Certificate(
+  'grabdy-sdk-cert',
+  {
+    domainName: Env.sdkDomain,
+    validationMethod: 'DNS',
+  },
+  { provider: usEast1 }
+);
+
+const sdkCertValidation = new aws.route53.Record('grabdy-sdk-cert-validation', {
   zoneId: zone.then((z) => z.zoneId),
-  name: inngestCert.domainValidationOptions[0].resourceRecordName,
-  type: inngestCert.domainValidationOptions[0].resourceRecordType,
-  records: [inngestCert.domainValidationOptions[0].resourceRecordValue],
+  name: sdkCert.domainValidationOptions[0].resourceRecordName,
+  type: sdkCert.domainValidationOptions[0].resourceRecordType,
+  records: [sdkCert.domainValidationOptions[0].resourceRecordValue],
   ttl: 60,
   allowOverwrite: true,
 });
 
-const inngestCertWaiter = new aws.acm.CertificateValidation('grabdy-inngest-cert-wait', {
-  certificateArn: inngestCert.arn,
-  validationRecordFqdns: [inngestCertValidation.fqdn],
-});
+const sdkCertWaiter = new aws.acm.CertificateValidation(
+  'grabdy-sdk-cert-wait',
+  {
+    certificateArn: sdkCert.arn,
+    validationRecordFqdns: [sdkCertValidation.fqdn],
+  },
+  { provider: usEast1 }
+);
 
-// ACM cert for CloudFront (grabdy.com + www) — MUST be us-east-1
-const usEast1 = new aws.Provider('us-east-1', { region: 'us-east-1' });
+// ACM cert for CloudFront (grabdy.com + www)
 
 const frontendCert = new aws.acm.Certificate(
   'grabdy-frontend-cert',
@@ -95,5 +105,5 @@ const frontendCertWaiter = new aws.acm.CertificateValidation(
 );
 
 export const apiCertArn = apiCertWaiter.certificateArn;
-export const inngestCertArn = inngestCertWaiter.certificateArn;
 export const frontendCertArn = frontendCertWaiter.certificateArn;
+export const sdkCertArn = sdkCertWaiter.certificateArn;

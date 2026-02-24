@@ -1,16 +1,14 @@
 import * as aws from '@pulumi/aws';
 
 import { apiSg } from '../compute/services/api.sg';
-import { inngestSg } from '../compute/services/inngest.sg';
 import { vpc } from '../network/vpc';
 
-// Cache security group — Fargate + Inngest -> ElastiCache on 6379
+// Cache security group — Fargate API -> ElastiCache on 6379
 const cacheSg = new aws.ec2.SecurityGroup('grabdy-cache-sg', {
   vpcId: vpc.vpcId,
   description: 'ElastiCache security group',
   ingress: [
     { protocol: 'tcp', fromPort: 6379, toPort: 6379, securityGroups: [apiSg.id] },
-    { protocol: 'tcp', fromPort: 6379, toPort: 6379, securityGroups: [inngestSg.id] },
   ],
   egress: [{ protocol: '-1', fromPort: 0, toPort: 0, cidrBlocks: ['0.0.0.0/0'] }],
 });

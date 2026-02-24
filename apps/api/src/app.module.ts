@@ -6,6 +6,7 @@ import { EncryptionModule } from './common/encryption/encryption.module';
 import { ApiKeyModule } from './common/guards/api-key.module';
 import { AuthGuard } from './common/guards/auth.guard';
 import { OrgAccessGuard } from './common/guards/org-access.guard';
+import { SdkJwtModule } from './common/guards/sdk-jwt.module';
 import { TokenRefreshInterceptor } from './common/interceptors/token-refresh.interceptor';
 import {
   THROTTLE_LONG_LIMIT,
@@ -17,13 +18,13 @@ import {
 } from './config/constants';
 import { EnvModule } from './config/env.config';
 import { DbModule } from './db/db.module';
-import { InngestModule } from './inngest/inngest.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CanvasModule } from './modules/canvas/canvas.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
@@ -35,7 +36,9 @@ import { McpModule } from './modules/mcp/mcp.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { OrgsModule } from './modules/orgs/orgs.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
+import { SdkChatModule } from './modules/sdk-chat/sdk-chat.module';
 import { UsersModule } from './modules/users/users.module';
+import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -45,6 +48,7 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
     EncryptionModule,
     ApiKeyModule,
+    SdkJwtModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',
@@ -62,7 +66,7 @@ import { RedisModule } from './redis/redis.module';
         limit: THROTTLE_LONG_LIMIT,
       },
     ]),
-    InngestModule.forRoot(),
+    QueueModule,
     AdminModule,
     AgentModule,
     AiModule,
@@ -76,11 +80,13 @@ import { RedisModule } from './redis/redis.module';
     CollectionsModule,
     DataSourcesModule,
     DemoRequestModule,
+    CanvasModule,
     ChatModule,
     ApiKeysModule,
     IntegrationsModule,
     PublicApiModule,
     McpModule,
+    SdkChatModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },

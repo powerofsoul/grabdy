@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { DataSourcesModule } from '../data-sources/data-sources.module';
+
 import { GitHubConnector } from './providers/github/github.connector';
 import { GitHubDiscussionWebhook } from './providers/github/webhooks/discussion.webhook';
 import { GitHubIssueWebhook } from './providers/github/webhooks/issue.webhook';
@@ -10,14 +12,18 @@ import { NotionConnector } from './providers/notion/notion.connector';
 import { NotionPageWebhook } from './providers/notion/webhooks/page.webhook';
 import { ProviderRegistry } from './providers/provider-registry';
 import { SlackConnector } from './providers/slack/slack.connector';
-import { SlackBotFunctions } from './providers/slack/slack-bot.functions';
+import { SlackBotProcessor } from './providers/slack/slack-bot.processor';
 import { SlackBotService } from './providers/slack/slack-bot.service';
 import { SlackChannelWebhook } from './providers/slack/webhooks/channel.webhook';
-import { IntegrationFunctions } from './integration.functions';
+import { IntegrationCleanupProcessor } from './integration-cleanup.processor';
+import { IntegrationDiscoverProcessor } from './integration-discover.processor';
+import { IntegrationProcessItemProcessor } from './integration-process-item.processor';
+import { IntegrationScheduledSyncProcessor } from './integration-scheduled-sync.processor';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
 
 @Module({
+  imports: [DataSourcesModule],
   controllers: [IntegrationsController],
   providers: [
     IntegrationsService,
@@ -35,8 +41,12 @@ import { IntegrationsService } from './integrations.service';
     LinearConnector,
     GitHubConnector,
     NotionConnector,
-    IntegrationFunctions,
-    SlackBotFunctions,
+    // Processors
+    IntegrationDiscoverProcessor,
+    IntegrationProcessItemProcessor,
+    IntegrationCleanupProcessor,
+    IntegrationScheduledSyncProcessor,
+    SlackBotProcessor,
   ],
   exports: [IntegrationsService],
 })

@@ -1,16 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { InngestService } from '../../inngest/inngest.service';
+import type { Queue } from 'bullmq';
+
+import { InjectTypedQueue } from '../../queue/queue.decorators';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
-  constructor(private inngestService: InngestService) {}
+  constructor(@InjectTypedQueue('notification') private notificationQueue: Queue) {}
 
   notifyNewSignup(email: string, name: string, method: 'email' | 'google'): void {
-    this.inngestService
-      .send('app/notification.slack', {
+    this.notificationQueue
+      .add('slack', {
         orgId: null,
         type: 'new-signup',
         text: `New signup: *${name}* (${email}) via ${method}`,
@@ -21,8 +23,8 @@ export class NotificationService {
   }
 
   notifyDemoRequest(name: string, company: string, email: string): void {
-    this.inngestService
-      .send('app/notification.slack', {
+    this.notificationQueue
+      .add('slack', {
         orgId: null,
         type: 'demo-request',
         text: `Demo request: *${name}* from *${company}* (${email})`,

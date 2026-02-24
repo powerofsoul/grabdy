@@ -10,6 +10,7 @@ import { demoRequestContract } from './demo-request.contract.js';
 import { integrationsContract } from './integrations.contract.js';
 import { orgsContract } from './orgs.contract.js';
 import { publicApiContract } from './public-api.contract.js';
+import { sdkChatsContract } from './sdk-chats.contract.js';
 import { sharedChatsContract } from './shared-chats.contract.js';
 import { usersContract } from './users.contract.js';
 
@@ -26,6 +27,7 @@ export const contract = c.router({
   chat: chatContract,
   sharedChats: sharedChatsContract,
   apiKeys: apiKeysContract,
+  sdkChats: sdkChatsContract,
   users: usersContract,
 });
 
@@ -40,6 +42,7 @@ export {
   integrationsContract,
   orgsContract,
   publicApiContract,
+  sdkChatsContract,
   sharedChatsContract,
   streamChatBodySchema,
   usersContract,
@@ -57,6 +60,15 @@ export {
   searchBodySchema,
   searchResponseSchema,
 } from './public-api.contract.js';
+export {
+  type SdkChatSource,
+  type SdkChatSourceConfig,
+  sdkChatSourceConfigSchema,
+  type SdkChatStyle,
+  sdkChatStyleSchema,
+  type SdkStreamBody,
+  sdkStreamBodySchema,
+} from './sdk-chats.contract.js';
 export {
   chatMessageSnapshotSchema,
   sharedChatSchema,

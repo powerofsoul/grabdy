@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
+import type { Queue } from 'bullmq';
 
-import { InngestService } from '../../../../inngest/inngest.service';
+import { InjectTypedQueue } from '../../../../queue/queue.decorators';
 
 import type { SlackProviderData } from './slack.types';
 
@@ -11,7 +12,7 @@ export interface SlackBotJobData {
   connectionId: DbId<'Connection'>;
   orgId: DbId<'Org'>;
   slackChannelId: string;
-  /** Thread timestamp — bot replies in a thread under the mention. */
+  /** Thread timestamp. Bot replies in a thread under the mention. */
   threadTs?: string;
   /** The user's question text with @mention stripped. */
   text?: string;
@@ -44,7 +45,7 @@ export type SlackWebhookResult = { handled: true; challenge?: string } | { handl
 export class SlackBotService {
   private readonly logger = new Logger(SlackBotService.name);
 
-  constructor(private readonly inngestService: InngestService) {}
+  constructor(@InjectTypedQueue('slack-bot') private readonly slackBotQueue: Queue) {}
 
   /**
    * Handle an incoming Slack Events API request.
@@ -95,7 +96,7 @@ export class SlackBotService {
       return { handled: true };
     }
 
-    // Not a bot event — let the controller handle it as a normal sync webhook
+    // Not a bot event. Let the controller handle it as a normal sync webhook
     return { handled: false };
   }
 
@@ -133,7 +134,9 @@ export class SlackBotService {
         text,
       };
 
-      void this.inngestService.send('app/slack-bot.handle', jobData);
+      this.slackBotQueue
+        .add('handle', jobData)
+        .catch((e) => this.logger.error('Failed to enqueue slack-bot job', e));
       this.logger.log(`Queued app_mention job for org ${conn.orgId} in channel ${slackChannelId}`);
     }
   }
@@ -164,7 +167,9 @@ export class SlackBotService {
         text,
       };
 
-      void this.inngestService.send('app/slack-bot.handle', jobData);
+      this.slackBotQueue
+        .add('handle', jobData)
+        .catch((e) => this.logger.error('Failed to enqueue slack-bot job', e));
       this.logger.log(`Queued dm job for org ${conn.orgId} in channel ${slackChannelId}`);
     }
   }
@@ -192,7 +197,11 @@ export class SlackBotService {
           slackChannelId,
         };
 
-        void this.inngestService.send('app/slack-bot.handle', jobData);
+        this.slackBotQueue
+          .add('handle', jobData, {
+            jobId: `channel-joined-${conn.id}-${slackChannelId}`,
+          })
+          .catch((e) => this.logger.error('Failed to enqueue slack-bot job', e));
         this.logger.log(
           `Queued channel_joined job for org ${conn.orgId} in channel ${slackChannelId}`
         );
