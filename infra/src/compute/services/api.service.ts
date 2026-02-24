@@ -1,3 +1,4 @@
+import * as aws from '@pulumi/aws';
 import * as awsx from '@pulumi/awsx';
 import * as command from '@pulumi/command';
 import * as pulumi from '@pulumi/pulumi';
@@ -7,7 +8,7 @@ import { cacheHost, cachePort } from '../../data/cache';
 import { db, dbSecretArn } from '../../data/database';
 import { vpc } from '../../network/vpc';
 import { apiSg } from './api.sg';
-import { apiInternalUrl, apiServiceDiscovery, apiTargetGroup, cluster, inngestInternalUrl } from '../ecs';
+import { apiServiceDiscovery, apiTargetGroup, cluster } from '../ecs';
 import { imageUri } from '../ecr';
 import { executionRole, kmsKey, taskRole } from '../iam';
 
@@ -28,49 +29,47 @@ const baseEnvironment = [
   { name: 'DB_ENDPOINT', value: db.endpoint },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
-const apiService = new awsx.ecs.FargateService('grabdy-api', {
-  cluster: cluster.arn,
-  desiredCount: 1,
-  networkConfiguration: {
-    subnets: vpc.publicSubnetIds,
-    securityGroups: [apiSg.id],
-    assignPublicIp: true,
-  },
-  loadBalancers: [
-    { targetGroupArn: apiTargetGroup.arn, containerName: 'api', containerPort: 4000 },
-  ],
-  serviceRegistries: { registryArn: apiServiceDiscovery.arn },
-  forceNewDeployment: true,
-  taskDefinitionArgs: {
-    family: 'grabdy-api',
-    cpu: '1024',
-    memory: '4096',
-    runtimePlatform: { cpuArchitecture: 'ARM64', operatingSystemFamily: 'LINUX' },
-    executionRole: { roleArn: executionRole.arn },
-    taskRole: { roleArn: taskRole.arn },
-    logGroup: { args: { retentionInDays: 14 } },
-    container: {
-      name: 'api',
-      image: imageUri,
-      portMappings: [{ containerPort: 4000 }],
-      environment: [
-        ...baseEnvironment,
-        { name: 'INNGEST_BASE_URL', value: inngestInternalUrl },
-        { name: 'INNGEST_SERVE_HOST', value: apiInternalUrl },
-        { name: 'INNGEST_DEV', value: '0' },
-      ],
-    },
-  },
+// Separate task definition so migrations can run before the service updates
+const apiLogGroup = new aws.cloudwatch.LogGroup('grabdy-api-logs', {
+  retentionInDays: 14,
 });
 
-// Run migrations before deploying the API service
-new command.local.Command(
+const apiTaskDefinition = new aws.ecs.TaskDefinition('grabdy-api-task', {
+  family: 'grabdy-api',
+  cpu: '1024',
+  memory: '4096',
+  networkMode: 'awsvpc',
+  requiresCompatibilities: ['FARGATE'],
+  runtimePlatform: { cpuArchitecture: 'ARM64', operatingSystemFamily: 'LINUX' },
+  executionRoleArn: executionRole.arn,
+  taskRoleArn: taskRole.arn,
+  containerDefinitions: pulumi.jsonStringify([
+    {
+      name: 'api',
+      image: imageUri,
+      portMappings: [{ containerPort: 4000, protocol: 'tcp' }],
+      environment: baseEnvironment,
+      stopTimeout: 120,
+      logConfiguration: {
+        logDriver: 'awslogs',
+        options: {
+          'awslogs-group': apiLogGroup.name,
+          'awslogs-region': Env.region.name,
+          'awslogs-stream-prefix': 'api',
+        },
+      },
+    },
+  ]),
+});
+
+// Run migrations using the new image before updating the service
+const runMigration = new command.local.Command(
   'run-migration',
   {
     create: pulumi.interpolate`
     TASK_ARN=$(aws ecs run-task \
       --cluster ${cluster.arn} \
-      --task-definition ${apiService.taskDefinition.apply((td) => td?.arn ?? '')} \
+      --task-definition ${apiTaskDefinition.arn} \
       --launch-type FARGATE \
       --network-configuration "awsvpcConfiguration={subnets=[${vpc.publicSubnetIds.apply((ids) => ids.join(','))}],securityGroups=[${apiSg.id}],assignPublicIp=ENABLED}" \
       --overrides '{"containerOverrides":[{"name":"api","command":["node","apps/api/dist/db/migrate.js"]}]}' \
@@ -91,5 +90,23 @@ new command.local.Command(
   `,
     triggers: [Date.now().toString()],
   },
-  { dependsOn: [apiService] }
+  { dependsOn: [apiTaskDefinition] }
 );
+
+// Deploy the service only after migrations succeed
+const apiService = new aws.ecs.Service('grabdy-api', {
+  cluster: cluster.arn,
+  desiredCount: 1,
+  taskDefinition: apiTaskDefinition.arn,
+  launchType: 'FARGATE',
+  networkConfiguration: {
+    subnets: vpc.publicSubnetIds,
+    securityGroups: [apiSg.id],
+    assignPublicIp: true,
+  },
+  loadBalancers: [
+    { targetGroupArn: apiTargetGroup.arn, containerName: 'api', containerPort: 4000 },
+  ],
+  serviceRegistries: { registryArn: apiServiceDiscovery.arn },
+  forceNewDeployment: true,
+}, { dependsOn: [runMigration] });
