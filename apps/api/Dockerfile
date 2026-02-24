@@ -11,6 +11,7 @@ COPY package.json yarn.lock .yarnrc.yml ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/common/package.json packages/common/
+COPY apps/sdk/package.json apps/sdk/
 COPY packages/contracts/package.json packages/contracts/
 
 RUN yarn install --immutable
@@ -26,7 +27,7 @@ RUN turbo build --filter=@grabdy/api
 # Stage 2: Production image
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils git && \
+RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils qpdf git && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -9,3 +9,4 @@ dist
 infra
 .docker
 docker-compose.yml
+**/.uploads

@@ -152,6 +152,7 @@ export interface DB {
     collection_id: DbId<'Collection'> | null;
     connection_id: DbId<'Connection'> | null;
     external_id: string | null;
+    processing_progress: Generated<number>;
     source_url: string;
     uploaded_by_id: DbId<'User'> | null;
     created_at: Generated<Timestamp>;
@@ -164,7 +165,8 @@ export interface DB {
     content: string;
     chunk_index: number;
     metadata: ChunkMeta;
-    source_url: string;
+    source_url: string | null;
+    source_key: string | null;
     embedding: string;
     tsv: ColumnType<string, never, never>;
     data_source_id: DbId<'DataSource'>;
@@ -182,7 +184,10 @@ export interface DB {
       Record<string, unknown> | null | undefined,
       Record<string, unknown> | null
     >;
-    membership_id: DbId<'OrgMembership'>;
+    membership_id: DbId<'OrgMembership'> | null;
+    source: Generated<'dashboard' | 'sdk' | 'api'>;
+    sdk_chat_id: DbId<'SdkChat'> | null;
+    external_user_id: string | null;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
   };
@@ -232,9 +237,9 @@ export interface DB {
     org_id: DbId<'Org'>;
     model: string;
     provider: string;
-    caller_type: 'MEMBER' | 'SYSTEM' | 'API_KEY';
+    caller_type: 'MEMBER' | 'SYSTEM' | 'API_KEY' | 'SDK_JWT';
     request_type: 'CHAT' | 'EMBEDDING' | 'RERANK' | 'HYDE' | 'SUMMARY';
-    source: 'WEB' | 'SLACK' | 'API' | 'MCP' | 'SYSTEM';
+    source: 'WEB' | 'SLACK' | 'API' | 'MCP' | 'SYSTEM' | 'SDK';
     input_tokens: Generated<number>;
     output_tokens: Generated<number>;
     total_tokens: Generated<number>;
@@ -243,6 +248,8 @@ export interface DB {
     finish_reason: string | null;
     streaming: Generated<boolean>;
     user_id: DbId<'User'> | null;
+    sdk_chat_id: DbId<'SdkChat'> | null;
+    external_user_id: string | null;
     created_at: Generated<Timestamp>;
   };
 
@@ -257,6 +264,31 @@ export interface DB {
     share_token: string;
     is_public: Generated<boolean>;
     revoked: Generated<boolean>;
+    created_at: Generated<Timestamp>;
+  };
+
+  'sdk.sdk_chats': {
+    id: Generated<DbId<'SdkChat'>>;
+    org_id: DbId<'Org'>;
+    name: string;
+    data_source_config: ColumnType<unknown, unknown, unknown>;
+    system_prompt: string | null;
+    settings: ColumnType<unknown, unknown, unknown>;
+    is_active: Generated<boolean>;
+    created_by_id: DbId<'User'>;
+    created_at: Generated<Timestamp>;
+    updated_at: Timestamp;
+  };
+
+  'sdk.sdk_signing_keys': {
+    id: Generated<DbId<'SdkSigningKey'>>;
+    sdk_chat_id: DbId<'SdkChat'>;
+    org_id: DbId<'Org'>;
+    name: string;
+    public_key: string;
+    key_fingerprint: string;
+    revoked_at: Timestamp | null;
+    created_by_id: DbId<'User'>;
     created_at: Generated<Timestamp>;
   };
 
