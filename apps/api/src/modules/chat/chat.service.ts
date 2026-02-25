@@ -6,8 +6,8 @@ import { sql } from 'kysely';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
-import { DataAgent } from '../agent/agents/data/data-agent';
-import type { AttachmentContext } from '../agent/agents/data/data-agent-session';
+import { DataAgent } from '../agent/agents/data-agent';
+import type { AttachmentContext } from '../agent/base-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
 
 @Injectable()
@@ -71,14 +71,14 @@ export class ChatService {
   }> {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
 
-    const session = this.dataAgent.create({
+    const ctx = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
     });
 
-    const result = await session.generate({ threadId, message });
+    const result = await this.dataAgent.generate(ctx, { threadId, message });
 
     return {
       answer: result.text,
@@ -101,21 +101,19 @@ export class ChatService {
   ) {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
 
-    const session = this.dataAgent.create({
+    const ctx = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
     });
 
-    const { streamResult, saveAssistant } = await session.stream({
+    return this.dataAgent.stream(ctx, {
       threadId,
       message,
       attachments: options.attachments,
       attachmentContext: options.attachmentContext,
     });
-
-    return { threadId, streamResult, orgId, saveAssistant };
   }
 
   async createThread(

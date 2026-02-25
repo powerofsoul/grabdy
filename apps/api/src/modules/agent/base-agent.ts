@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
+import type { ChatAttachment } from '@grabdy/contracts';
 import {
   type AiCallerType,
   type AiRequestSource,
@@ -12,6 +13,35 @@ import { type PrepareStepFunction, stepCountIs, ToolLoopAgent, type ToolSet } fr
 
 import type { AiUsageService } from '../ai/ai-usage.service';
 import { CHAT_LANGUAGE_MODEL } from '../ai/bedrock.provider';
+
+import type { AgentMemoryService, CoreMessage } from './services/memory.service';
+import type { ImageStore } from './tools/image-analysis.tool';
+import type { Tool } from './base-tool';
+import { processStream } from './stream-processor';
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+export type AttachmentContext = Array<
+  { type: 'text'; text: string } | { type: 'image'; image: Buffer; mimeType: string }
+>;
+
+export interface StreamInput {
+  threadId?: DbId<'ChatThread'>;
+  message: string;
+  attachments?: ChatAttachment[];
+  attachmentContext?: AttachmentContext;
+}
+
+export interface AgentContext {
+  callOptions: AgentCallOptions;
+  /** Tools with stream hooks (onToolCall/onToolResult). Only tools that emit text. */
+  hooks: Record<string, Tool>;
+  /** Mutable image store shared with the analyze-image tool definition. */
+  imageStore?: ImageStore;
+  logPrefix?: string;
+}
 
 export interface AgentCallOptions {
   orgId: DbId<'Org'>;
@@ -27,12 +57,71 @@ export interface AgentCallOptions {
   prepareStep?: PrepareStepFunction;
 }
 
+// ---------------------------------------------------------------------------
+// Helpers (module-private)
+// ---------------------------------------------------------------------------
+
+function buildUserContent(
+  message: string,
+  attachmentContext?: AttachmentContext,
+  imageFileNames?: string[]
+): string {
+  if (!attachmentContext || attachmentContext.length === 0) {
+    return message;
+  }
+
+  const textParts = attachmentContext.filter(
+    (p): p is { type: 'text'; text: string } => p.type === 'text'
+  );
+
+  const textPrefix = textParts.map((p) => p.text).join('\n\n');
+  let fullMessage = textPrefix ? `${textPrefix}\n\n${message}` : message;
+
+  if (imageFileNames && imageFileNames.length > 0) {
+    const imageList = imageFileNames.join(', ');
+    fullMessage += `\n\n[The user attached ${imageFileNames.length} image(s): ${imageList}. Use the \`analyze-image\` tool to inspect them.]`;
+  }
+
+  return fullMessage;
+}
+
+function extractImages(
+  attachmentContext?: AttachmentContext,
+  attachments?: ChatAttachment[]
+): Array<{ fileName: string; image: Buffer; mimeType: string }> {
+  if (!attachmentContext || !attachments) return [];
+  const imageAttachments = attachments.filter((a) => a.mimeType.startsWith('image/'));
+  const imageParts = attachmentContext.filter(
+    (p): p is { type: 'image'; image: Buffer; mimeType: string } => p.type === 'image'
+  );
+  return imageParts.map((part, i) => ({
+    fileName: imageAttachments[i]?.fileName ?? `image-${i + 1}`,
+    image: part.image,
+    mimeType: part.mimeType,
+  }));
+}
+
+function sseText(text: string): string {
+  return `0:${JSON.stringify(text)}\n`;
+}
+
+function sseMeta(data: Record<string, unknown>): string {
+  return `8:${JSON.stringify(data)}\n`;
+}
+
+// ---------------------------------------------------------------------------
+// Base agent
+// ---------------------------------------------------------------------------
+
 export abstract class BaseAgent {
   protected abstract readonly agentId: string;
   protected abstract readonly defaultMaxSteps: number;
   protected readonly logger = new Logger(this.constructor.name);
 
-  constructor(protected readonly aiUsageService: AiUsageService) {}
+  constructor(
+    protected readonly aiUsageService: AiUsageService,
+    protected readonly agentMemory: AgentMemoryService
+  ) {}
 
   protected buildAgent(opts: AgentCallOptions): ToolLoopAgent {
     const modelKey: ModelKey = CHAT_MODEL;
@@ -68,5 +157,86 @@ export abstract class BaseAgent {
           .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
       },
     });
+  }
+
+  private prepareInput(ctx: AgentContext, input: StreamInput): string {
+    const images = extractImages(input.attachmentContext, input.attachments);
+    if (ctx.imageStore) {
+      ctx.imageStore.images = images;
+    }
+    const imageFileNames = images.map((img) => img.fileName);
+    return buildUserContent(input.message, input.attachmentContext, imageFileNames);
+  }
+
+  async stream(ctx: AgentContext, input: StreamInput): Promise<AsyncIterable<string>> {
+    const agent = this.buildAgent(ctx.callOptions);
+    const { orgId } = ctx.callOptions;
+
+    const history: CoreMessage[] = input.threadId
+      ? await this.agentMemory.getMessagesForContext(input.threadId)
+      : [];
+
+    const userContent = this.prepareInput(ctx, input);
+
+    const streamResult = await agent.stream({
+      messages: [...history, { role: 'user' as const, content: userContent }],
+    });
+
+    if (input.threadId) {
+      await this.agentMemory.saveMessages(input.threadId, orgId, [
+        { role: 'user', content: input.message, attachments: input.attachments },
+      ]);
+    }
+
+    const processed = processStream(streamResult.fullStream, ctx.hooks, ctx.logPrefix);
+    const agentMemory = this.agentMemory;
+    const { threadId } = input;
+
+    async function* generateSSE(): AsyncIterable<string> {
+      const streamStart = Date.now();
+
+      for await (const text of processed.textStream) {
+        yield sseText(text);
+      }
+
+      yield sseMeta({ type: 'text_done' });
+
+      const fullText = processed.getFullText();
+      if (threadId && fullText.trim()) {
+        await agentMemory.saveMessages(threadId, orgId, [{ role: 'assistant', content: fullText }]);
+      }
+
+      yield sseMeta({
+        type: 'done',
+        threadId: threadId ?? null,
+        durationMs: Date.now() - streamStart,
+      });
+    }
+
+    return generateSSE();
+  }
+
+  async generate(ctx: AgentContext, input: StreamInput) {
+    const agent = this.buildAgent(ctx.callOptions);
+    const { orgId } = ctx.callOptions;
+
+    const history: CoreMessage[] = input.threadId
+      ? await this.agentMemory.getMessagesForContext(input.threadId)
+      : [];
+
+    const userContent = this.prepareInput(ctx, input);
+
+    const result = await agent.generate({
+      messages: [...history, { role: 'user' as const, content: userContent }],
+    });
+
+    if (input.threadId) {
+      await this.agentMemory.saveMessages(input.threadId, orgId, [
+        { role: 'user', content: input.message, attachments: input.attachments },
+        { role: 'assistant', content: result.text },
+      ]);
+    }
+
+    return result;
   }
 }

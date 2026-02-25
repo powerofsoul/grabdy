@@ -6,7 +6,7 @@ import { AiCallerType, CHAT_MODEL, type ChunkMeta, type MetadataFilter } from '@
 import { chunkMetaSchema } from '@grabdy/contracts';
 import { z } from 'zod';
 
-import { DataAgent } from '../agent/agents/data/data-agent';
+import { DataAgent } from '../agent/agents/data-agent';
 import type { SearchResult } from '../retrieval/search.service';
 import { SearchService } from '../retrieval/search.service';
 
@@ -69,7 +69,7 @@ export class RetrievalService {
     model: string;
     usage: { promptTokens: number; completionTokens: number; totalTokens: number };
   }> {
-    const session = this.dataAgent.create({
+    const ctx = this.dataAgent.create({
       orgId,
       source: 'API',
       collectionIds: options.collectionIds,
@@ -77,7 +77,7 @@ export class RetrievalService {
       defaultTopK: options.topK,
     });
 
-    const result = await session.generate({ message: queryText });
+    const result = await this.dataAgent.generate(ctx, { message: queryText });
 
     // Extract sources from rag-search tool results across all steps
     const sources: Array<{

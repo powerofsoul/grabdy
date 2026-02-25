@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { AiUsageService } from '../../ai/ai-usage.service';
 import { BaseAgent } from '../base-agent';
 import type { CoreMessage } from '../services/memory.service';
+import { AgentMemoryService } from '../services/memory.service';
 import { RagSearchTool } from '../tools/rag-search.tool';
 import { SlackReplyTool } from '../tools/slack-reply.tool';
 
@@ -95,10 +96,11 @@ export class SlackAgent extends BaseAgent {
 
   constructor(
     aiUsageService: AiUsageService,
+    agentMemory: AgentMemoryService,
     private ragSearchTool: RagSearchTool,
     private slackReplyTool: SlackReplyTool
   ) {
-    super(aiUsageService);
+    super(aiUsageService, agentMemory);
   }
 
   async run(opts: {

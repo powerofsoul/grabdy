@@ -4,7 +4,7 @@ import { type DbId, packId } from '@grabdy/common';
 import type { ChatAttachment, SdkChatSourceConfig } from '@grabdy/contracts';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
-import type { AttachmentContext } from '../agent/agents/data/data-agent-session';
+import type { AttachmentContext } from '../agent/base-agent';
 
 function hasErrorCode(err: unknown): err is Error & { code: string } {
   if (!(err instanceof Error) || !('code' in err)) return false;
@@ -12,7 +12,7 @@ function hasErrorCode(err: unknown): err is Error & { code: string } {
   return typeof candidate.code === 'string';
 }
 import { DbService } from '../../db/db.module';
-import { SdkChatAgent } from '../agent/agents/sdk-chat/sdk-chat-agent';
+import { SdkChatAgent } from '../agent/agents/sdk-chat-agent';
 
 @Injectable()
 export class SdkChatStreamService {
@@ -155,7 +155,7 @@ export class SdkChatStreamService {
       )
       .map((s) => s.dataSourceId);
 
-    const session = this.sdkChatAgent.create({
+    const ctx = this.sdkChatAgent.create({
       orgId: sdkAuth.orgId,
       collectionIds,
       dataSourceIds,
@@ -164,13 +164,11 @@ export class SdkChatStreamService {
       externalUser: sdkAuth.externalUser,
     });
 
-    const { streamResult, saveAssistant } = await session.stream({
+    return this.sdkChatAgent.stream(ctx, {
       threadId: resolvedThreadId,
       message,
       attachments: options?.attachments,
       attachmentContext: options?.attachmentContext,
     });
-
-    return { threadId: resolvedThreadId, streamResult, saveAssistant };
   }
 }
