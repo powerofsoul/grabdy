@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
   Param,
   Post,
   Query,
@@ -34,8 +33,6 @@ import { ChatAttachmentService } from './chat-attachment.service';
 
 @Controller()
 export class ChatController {
-  private readonly logger = new Logger(ChatController.name);
-
   constructor(
     private chatService: ChatService,
     private chatAttachmentService: ChatAttachmentService
@@ -243,82 +240,28 @@ export class ChatController {
           ? await this.chatAttachmentService.buildAttachmentContext(body.attachments)
           : undefined;
 
-      const result = await this.chatService.streamChat(orgId, membership.id, userId, body.message, {
-        threadId: body.threadId,
-        collectionId: body.collectionId,
-        attachments: body.attachments,
-        attachmentContext,
-      });
+      const sseStream = await this.chatService.streamChat(
+        orgId,
+        membership.id,
+        userId,
+        body.message,
+        {
+          threadId: body.threadId,
+          collectionId: body.collectionId,
+          attachments: body.attachments,
+          attachmentContext,
+        }
+      );
 
-      // AI SDK v6 data stream protocol
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Vercel-AI-Data-Stream', 'v1');
       res.flushHeaders();
 
-      const streamStart = Date.now();
-      let textChunks = 0;
-      let stepCount = 0;
-      let fullText = '';
-
-      for await (const part of result.streamResult.fullStream) {
-        const elapsed = Date.now() - streamStart;
-
-        if (part.type === 'text-delta') {
-          if (textChunks === 0) {
-            this.logger.log(`[stream] First text chunk at +${elapsed}ms`);
-          }
-          textChunks++;
-          fullText += part.text;
-          res.write(`0:${JSON.stringify(part.text)}\n`);
-        } else if (part.type === 'tool-call') {
-          this.logger.log(
-            `[stream] Tool call: ${part.toolName} at +${elapsed}ms args=${JSON.stringify(part.input).slice(0, 1000)}`
-          );
-        } else if (part.type === 'tool-result') {
-          const resultStr = JSON.stringify(part.output).slice(0, 500);
-          this.logger.log(
-            `[stream] Tool result: ${part.toolName} OK at +${elapsed}ms → ${resultStr}`
-          );
-        } else if (part.type === 'tool-error') {
-          this.logger.error(
-            `[stream] Tool ERROR: ${part.toolName} at +${elapsed}ms error=${part.error instanceof Error ? part.error.message : JSON.stringify(part.error)} args=${JSON.stringify(part.input).slice(0, 500)}`
-          );
-        } else if (part.type === 'error') {
-          this.logger.error(
-            `[stream] Stream ERROR at +${elapsed}ms: ${part.error instanceof Error ? part.error.message : JSON.stringify(part.error)}`
-          );
-        } else if (part.type === 'finish-step') {
-          stepCount++;
-          this.logger.log(
-            `[stream] Step ${stepCount} finished at +${elapsed}ms (${textChunks} text chunks)`
-          );
-        } else if (
-          part.type === 'tool-input-start' ||
-          part.type === 'tool-input-delta' ||
-          part.type === 'tool-input-end'
-        ) {
-          // Suppress noisy streaming events
-        } else if (part.type === 'text-start' || part.type === 'text-end') {
-          // Suppress text boundary events
-        }
+      for await (const line of sseStream) {
+        res.write(line);
       }
-
-      // Save assistant message after stream completes
-      await result.saveAssistant(fullText);
-
-      this.logger.log(
-        `[stream] Complete at +${Date.now() - streamStart}ms, ${textChunks} text chunks total`
-      );
-
-      res.write(
-        `8:${JSON.stringify({
-          type: 'done',
-          threadId: result.threadId,
-          durationMs: Date.now() - streamStart,
-        })}\n`
-      );
 
       res.end();
     } catch (error) {

@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -37,8 +36,6 @@ import { SdkChatStreamService } from './sdk-chat-stream.service';
 
 @Controller()
 export class SdkChatStreamController {
-  private readonly logger = new Logger(SdkChatStreamController.name);
-
   constructor(
     private sdkChatStreamService: SdkChatStreamService,
     private agentMemory: AgentMemoryService,
@@ -143,62 +140,21 @@ export class SdkChatStreamController {
           ? await this.chatAttachmentService.buildAttachmentContext(body.attachments)
           : undefined;
 
-      const result = await this.sdkChatStreamService.streamChat(sdkAuth, body.message, {
+      const sseStream = await this.sdkChatStreamService.streamChat(sdkAuth, body.message, {
         threadId: body.threadId,
         attachments: body.attachments,
         attachmentContext,
       });
 
-      // AI SDK v6 data stream protocol
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Vercel-AI-Data-Stream', 'v1');
       res.flushHeaders();
 
-      const streamStart = Date.now();
-      let textChunks = 0;
-      let fullText = '';
-
-      for await (const part of result.streamResult.fullStream) {
-        if (part.type === 'text-delta') {
-          textChunks++;
-          fullText += part.text;
-          res.write(`0:${JSON.stringify(part.text)}\n`);
-        } else if (part.type === 'tool-call') {
-          this.logger.log(
-            `[sdk-stream] Tool call: ${part.toolName} args=${JSON.stringify(part.input).slice(0, 500)}`
-          );
-        } else if (part.type === 'tool-result') {
-          this.logger.log(`[sdk-stream] Tool result: ${part.toolName} OK`);
-        } else if (part.type === 'tool-error') {
-          this.logger.error(
-            `[sdk-stream] Tool ERROR: ${part.toolName} error=${part.error instanceof Error ? part.error.message : JSON.stringify(part.error)}`
-          );
-        } else if (part.type === 'error') {
-          this.logger.error(
-            `[sdk-stream] Stream ERROR: ${part.error instanceof Error ? part.error.message : JSON.stringify(part.error)}`
-          );
-        }
+      for await (const line of sseStream) {
+        res.write(line);
       }
-
-      // Signal text streaming complete (enables parseBlocks in embed)
-      res.write(`8:${JSON.stringify({ type: 'text_done' })}\n`);
-
-      // Save assistant message after stream completes
-      await result.saveAssistant(fullText);
-
-      this.logger.log(
-        `[sdk-stream] Complete at +${Date.now() - streamStart}ms, ${textChunks} text chunks`
-      );
-
-      res.write(
-        `8:${JSON.stringify({
-          type: 'done',
-          threadId: result.threadId,
-          durationMs: Date.now() - streamStart,
-        })}\n`
-      );
 
       res.end();
     } catch (error) {
