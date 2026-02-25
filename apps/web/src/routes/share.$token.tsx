@@ -58,7 +58,7 @@ function SharedChatPage() {
   if (pageState === 'loading') {
     return (
       <Box
-        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}
       >
         <CircularProgress size={28} />
       </Box>
@@ -88,7 +88,7 @@ function SharedChatUnauthorized() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100dvh',
         textAlign: 'center',
         bgcolor: 'background.default',
         px: 3,
@@ -136,7 +136,7 @@ function SharedChatNotFound() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100dvh',
         textAlign: 'center',
         bgcolor: 'background.default',
         px: 3,

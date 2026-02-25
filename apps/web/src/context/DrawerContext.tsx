@@ -147,7 +147,7 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
                 zIndex: drawerZ,
                 ...(!isMobile && {
                   '& .MuiDialog-paper': {
-                    maxHeight: '90vh',
+                    maxHeight: '90dvh',
                     display: 'flex',
                     flexDirection: 'column',
                   },

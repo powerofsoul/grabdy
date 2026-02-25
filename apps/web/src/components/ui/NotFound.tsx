@@ -27,7 +27,7 @@ export function NotFound() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        height: '100dvh',
         textAlign: 'center',
         bgcolor: 'background.default',
         px: 3,

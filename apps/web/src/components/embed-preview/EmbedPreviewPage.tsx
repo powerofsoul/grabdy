@@ -45,7 +45,7 @@ export function EmbedPreviewPage() {
   if (!dataSourceId) {
     return (
       <Box
-        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}
       >
         <Typography color="error">Missing dataSourceId parameter</Typography>
       </Box>
@@ -55,7 +55,7 @@ export function EmbedPreviewPage() {
   if (!jwt || isLoading) {
     return (
       <Box
-        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}
       >
         <CircularProgress size={28} />
       </Box>
@@ -65,7 +65,7 @@ export function EmbedPreviewPage() {
   if (error || !data) {
     return (
       <Box
-        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}
       >
         <Typography color="text.secondary">
           {error instanceof Error ? error.message : 'Unknown error'}
@@ -75,7 +75,7 @@ export function EmbedPreviewPage() {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
       <DocumentPreview url={data.url} mimeType={data.mimeType} title={data.title} page={page} />
     </Box>
   );

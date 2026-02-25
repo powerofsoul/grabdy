@@ -294,7 +294,7 @@ export default function App() {
   ];
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", minHeight: "100vh", backgroundColor: "#fafafa" }}>
+    <div style={{ fontFamily: "system-ui, sans-serif", minHeight: "100dvh", backgroundColor: "#fafafa" }}>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>Grabdy Chat Demo</h1>
         <p style={{ color: "#666", lineHeight: 1.6, marginBottom: 32 }}>

@@ -94,7 +94,11 @@ export function DocumentPreview({ url, mimeType, title, page }: DocumentPreviewP
     const pdfUrl = page ? `${url}#page=${page}` : url;
     return (
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <iframe src={pdfUrl} title={title} style={{ flex: 1, border: 'none', minHeight: '75vh' }} />
+        <iframe
+          src={pdfUrl}
+          title={title}
+          style={{ flex: 1, border: 'none', minHeight: '75dvh' }}
+        />
       </Box>
     );
   }
@@ -130,7 +134,7 @@ export function DocumentPreview({ url, mimeType, title, page }: DocumentPreviewP
             component="img"
             src={url}
             alt={title}
-            sx={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}
+            sx={{ maxWidth: '100%', maxHeight: '70dvh', objectFit: 'contain' }}
           />
         </Box>
       </Box>
