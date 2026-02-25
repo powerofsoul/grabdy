@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
-
-import { alpha, Box, Divider, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Divider, Skeleton, Typography, useTheme } from '@mui/material';
 import {
   ArrowRightIcon,
   ChatCircleIcon,
@@ -9,6 +7,7 @@ import {
   LinkIcon,
   PlusIcon,
 } from '@phosphor-icons/react';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
@@ -146,71 +145,70 @@ function StepRow({
   );
 }
 
-function StatsBar({ stats }: { stats: Stats }) {
+function StatItem({
+  value,
+  label,
+  to,
+  isLoading,
+}: {
+  value: number;
+  label: string;
+  to: string;
+  isLoading: boolean;
+}) {
+  return (
+    <Link to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Box sx={{ cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
+        {isLoading ? (
+          <Skeleton variant="text" width={48} sx={{ fontSize: '3rem', lineHeight: 1 }} />
+        ) : (
+          <Typography
+            sx={{
+              fontFamily: FONT_MONO,
+              fontSize: '3rem',
+              fontWeight: 400,
+              lineHeight: 1,
+              letterSpacing: '0.02em',
+              color: 'text.primary',
+            }}
+          >
+            {value}
+          </Typography>
+        )}
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {label}
+        </Typography>
+      </Box>
+    </Link>
+  );
+}
+
+function StatsBar({ stats, isLoading }: { stats: Stats; isLoading: boolean }) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 4, mb: 5 }}>
-      <Link to="/dashboard/sources" style={{ textDecoration: 'none', color: 'inherit' }}>
-        <Box sx={{ cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
-          <Typography
-            sx={{
-              fontFamily: FONT_MONO,
-              fontSize: '3rem',
-              fontWeight: 400,
-              lineHeight: 1,
-              letterSpacing: '0.02em',
-              color: 'text.primary',
-            }}
-          >
-            {stats.collections}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Sources
-          </Typography>
-        </Box>
-      </Link>
+      <StatItem
+        value={stats.collections}
+        label="Sources"
+        to="/dashboard/sources"
+        isLoading={isLoading}
+      />
       <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
-      <Link to="/dashboard/integrations" style={{ textDecoration: 'none', color: 'inherit' }}>
-        <Box sx={{ cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
-          <Typography
-            sx={{
-              fontFamily: FONT_MONO,
-              fontSize: '3rem',
-              fontWeight: 400,
-              lineHeight: 1,
-              letterSpacing: '0.02em',
-              color: 'text.primary',
-            }}
-          >
-            {stats.connections}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Integrations
-          </Typography>
-        </Box>
-      </Link>
+      <StatItem
+        value={stats.connections}
+        label="Integrations"
+        to="/dashboard/integrations"
+        isLoading={isLoading}
+      />
       <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
-      <Link to="/dashboard/api/keys" style={{ textDecoration: 'none', color: 'inherit' }}>
-        <Box sx={{ cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
-          <Typography
-            sx={{
-              fontFamily: FONT_MONO,
-              fontSize: '3rem',
-              fontWeight: 400,
-              lineHeight: 1,
-              letterSpacing: '0.02em',
-              color: 'text.primary',
-            }}
-          >
-            {stats.apiKeys}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            API Keys
-          </Typography>
-        </Box>
-      </Link>
+      <StatItem
+        value={stats.apiKeys}
+        label="API Keys"
+        to="/dashboard/api/keys"
+        isLoading={isLoading}
+      />
     </Box>
   );
 }
@@ -313,10 +311,10 @@ function HowItWorks() {
   );
 }
 
-function GettingStarted({ stats }: { stats: Stats }) {
+function GettingStarted({ stats, isLoading }: { stats: Stats; isLoading: boolean }) {
   return (
     <Box>
-      <StatsBar stats={stats} />
+      <StatsBar stats={stats} isLoading={isLoading} />
       <StepRow
         number={1}
         title="Connect your data"
@@ -360,10 +358,10 @@ function GettingStarted({ stats }: { stats: Stats }) {
   );
 }
 
-function Overview({ stats }: { stats: Stats }) {
+function Overview({ stats, isLoading }: { stats: Stats; isLoading: boolean }) {
   return (
     <>
-      <StatsBar stats={stats} />
+      <StatsBar stats={stats} isLoading={isLoading} />
 
       <Typography
         variant="caption"
@@ -409,44 +407,46 @@ function Overview({ stats }: { stats: Stats }) {
 
 function DashboardIndex() {
   const { user, selectedOrgId } = useAuth();
-  const [stats, setStats] = useState<Stats>({ collections: 0, apiKeys: 0, connections: 0 });
 
-  useEffect(() => {
-    if (!selectedOrgId) return;
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['dashboard-stats', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return { collections: 0, apiKeys: 0, connections: 0 };
 
-    const fetchStats = async () => {
-      try {
-        const [collectionsRes, keysRes, connectionsRes] = await Promise.all([
-          api.collections.list({ params: { orgId: selectedOrgId } }),
-          api.apiKeys.list({ params: { orgId: selectedOrgId } }),
-          api.integrations.listConnections({ params: { orgId: selectedOrgId } }),
-        ]);
+      const [collectionsRes, keysRes, connectionsRes] = await Promise.all([
+        api.collections.list({ params: { orgId: selectedOrgId } }),
+        api.apiKeys.list({ params: { orgId: selectedOrgId } }),
+        api.integrations.listConnections({ params: { orgId: selectedOrgId } }),
+      ]);
 
-        setStats({
-          collections: collectionsRes.status === 200 ? collectionsRes.body.data.length : 0,
-          apiKeys: keysRes.status === 200 ? keysRes.body.data.length : 0,
-          connections: connectionsRes.status === 200 ? connectionsRes.body.data.length : 0,
-        });
-      } catch {
-        // Stats will remain at 0
-      }
-    };
+      return {
+        collections: collectionsRes.status === 200 ? collectionsRes.body.data.length : 0,
+        apiKeys: keysRes.status === 200 ? keysRes.body.data.length : 0,
+        connections: connectionsRes.status === 200 ? connectionsRes.body.data.length : 0,
+      };
+    },
+    enabled: !!selectedOrgId,
+  });
 
-    fetchStats();
-  }, [selectedOrgId]);
-
-  const isSetupComplete = stats.collections > 0 && stats.apiKeys > 0;
+  const resolved = stats ?? { collections: 0, apiKeys: 0, connections: 0 };
+  const isSetupComplete = !isLoading && resolved.collections > 0 && resolved.apiKeys > 0;
 
   return (
     <DashboardPage
       title={`Welcome back, ${user?.firstName ?? ''}`}
       subtitle={
-        isSetupComplete
-          ? "Here's what's happening in your workspace"
-          : "Let's get your workspace set up."
+        isLoading
+          ? ''
+          : isSetupComplete
+            ? "Here's what's happening in your workspace"
+            : "Let's get your workspace set up."
       }
     >
-      {isSetupComplete ? <Overview stats={stats} /> : <GettingStarted stats={stats} />}
+      {isSetupComplete ? (
+        <Overview stats={resolved} isLoading={isLoading} />
+      ) : (
+        <GettingStarted stats={resolved} isLoading={isLoading} />
+      )}
     </DashboardPage>
   );
 }
