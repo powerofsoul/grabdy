@@ -1,7 +1,6 @@
 import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
-import { dbSecretArn } from '../data/database';
 import { kmsKey } from '../secrets/kms';
 import { uploadsBucket } from '../storage/buckets';
 
@@ -33,11 +32,6 @@ new aws.iam.RolePolicy('grabdy-exec-secrets-policy', {
         Resource: [
           pulumi.interpolate`arn:aws:ssm:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:parameter/grabdy/prod/*`,
         ],
-      },
-      {
-        Effect: 'Allow',
-        Action: ['secretsmanager:GetSecretValue'],
-        Resource: [dbSecretArn],
       },
       {
         Effect: 'Allow',
@@ -75,13 +69,7 @@ new aws.iam.RolePolicy('grabdy-task-policy', {
           pulumi.interpolate`arn:aws:ssm:${aws.getRegionOutput().name}:${aws.getCallerIdentity().then((id) => id.accountId)}:parameter/grabdy/prod/*`,
         ],
       },
-      // Secrets Manager — read RDS-managed master password
-      {
-        Effect: 'Allow',
-        Action: ['secretsmanager:GetSecretValue'],
-        Resource: [dbSecretArn],
-      },
-      // KMS — decrypt SSM SecureString parameters, RDS secret, and manage data encryption keys
+      // KMS — decrypt SSM SecureString parameters and manage data encryption keys
       {
         Effect: 'Allow',
         Action: ['kms:Encrypt', 'kms:Decrypt', 'kms:GenerateDataKey'],

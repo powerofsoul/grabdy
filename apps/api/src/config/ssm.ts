@@ -1,15 +1,11 @@
-import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { z } from 'zod';
-
-const rdsSecretSchema = z.object({ username: z.string(), password: z.string() });
 
 /**
  * Fetches secrets from AWS SSM Parameter Store and populates process.env.
- * Also constructs DATABASE_URL from the RDS Secrets Manager secret.
+ * Also constructs DATABASE_URL from DB_USERNAME, DB_PASSWORD, and DB_ENDPOINT.
  * Only runs when SSM_PREFIX is set (production). In dev, .env is used as-is.
  *
- * Parameter naming: /grabdy/{stage}/PARAMETER_NAME → process.env.PARAMETER_NAME
+ * Parameter naming: /grabdy/{stage}/PARAMETER_NAME -> process.env.PARAMETER_NAME
  */
 export async function loadSsmParameters(): Promise<void> {
   const prefix = process.env.SSM_PREFIX;
@@ -17,7 +13,9 @@ export async function loadSsmParameters(): Promise<void> {
 
   const region = process.env.AWS_REGION || 'eu-central-1';
 
-  await Promise.all([loadFromSsm(prefix, region), loadDatabaseUrl(region)]);
+  await loadFromSsm(prefix, region);
+
+  buildDatabaseUrl();
 }
 
 async function loadFromSsm(prefix: string, region: string): Promise<void> {
@@ -49,7 +47,7 @@ async function loadFromSsm(prefix: string, region: string): Promise<void> {
   } while (nextToken);
 
   // Map parameter names to env var keys
-  // e.g., /grabdy/prod/JWT_SECRET → JWT_SECRET
+  // e.g., /grabdy/prod/JWT_SECRET -> JWT_SECRET
   const prefixWithSlash = prefix.endsWith('/') ? prefix : `${prefix}/`;
 
   for (const param of parameters) {
@@ -61,25 +59,21 @@ async function loadFromSsm(prefix: string, region: string): Promise<void> {
 }
 
 /**
- * Fetches the RDS master password from Secrets Manager and constructs DATABASE_URL.
- * The secret ARN and DB endpoint are passed as ECS env vars by Pulumi.
+ * Constructs DATABASE_URL from SSM-provided DB_USERNAME, DB_PASSWORD, and
+ * the ECS-injected DB_ENDPOINT environment variable.
  */
-async function loadDatabaseUrl(region: string): Promise<void> {
-  const secretArn = process.env.DB_SECRET_ARN;
+function buildDatabaseUrl(): void {
+  const username = process.env.DB_USERNAME;
+  const password = process.env.DB_PASSWORD;
   const endpoint = process.env.DB_ENDPOINT;
-  if (!secretArn || !endpoint) return;
 
-  const client = new SecretsManagerClient({ region });
-  const response = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
-
-  if (!response.SecretString) {
-    throw new Error('RDS secret is empty');
+  if (!username || !password || !endpoint) {
+    throw new Error(
+      'Missing DB_USERNAME, DB_PASSWORD (from SSM), or DB_ENDPOINT (from ECS env). Cannot construct DATABASE_URL.'
+    );
   }
-
-  // RDS-managed secrets have shape: { username, password, engine, host, port, dbname, ... }
-  const { username, password } = rdsSecretSchema.parse(JSON.parse(response.SecretString));
 
   process.env.DATABASE_URL = `postgresql://${username}:${encodeURIComponent(password)}@${endpoint}/grabdy`;
 
-  console.log('Constructed DATABASE_URL from Secrets Manager');
+  console.log('Constructed DATABASE_URL from SSM parameters');
 }

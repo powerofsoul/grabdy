@@ -1,6 +1,5 @@
 import * as aws from '@pulumi/aws';
 
-import { kmsKey } from '../secrets/kms';
 import { apiSg } from '../compute/services/api.sg';
 import { vpc } from '../network/vpc';
 
@@ -30,8 +29,6 @@ export const db = new aws.rds.Instance('grabdy-db', {
 
   dbName: 'grabdy',
   username: 'grabdy',
-  manageMasterUserPassword: true,
-  masterUserSecretKmsKeyId: kmsKey.keyId,
 
   dbSubnetGroupName: subnetGroup.name,
   vpcSecurityGroupIds: [dbSg.id],
@@ -46,11 +43,4 @@ export const db = new aws.rds.Instance('grabdy-db', {
   performanceInsightsRetentionPeriod: 7,
 });
 
-/** ARN of the Secrets Manager secret containing the RDS master password. */
-export const dbSecretArn = db.masterUserSecrets.apply((secrets) => {
-  if (!secrets || secrets.length === 0) {
-    throw new Error('Main RDS master user secret not available. Has the RDS instance been created?');
-  }
-  return secrets[0].secretArn;
-});
 

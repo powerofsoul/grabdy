@@ -5,7 +5,7 @@ import * as pulumi from '@pulumi/pulumi';
 
 import { Env } from '../../env';
 import { cacheHost, cachePort } from '../../data/cache';
-import { db, dbSecretArn } from '../../data/database';
+import { db } from '../../data/database';
 import { vpc } from '../../network/vpc';
 import { apiSg } from './api.sg';
 import { apiServiceDiscovery, apiTargetGroup, cluster } from '../ecs';
@@ -25,7 +25,6 @@ const baseEnvironment = [
   { name: 'EMAIL_FROM', value: Env.emailFrom },
   { name: 'SSM_PREFIX', value: '/grabdy/prod' },
   { name: 'KMS_KEY_ARN', value: kmsKey.arn },
-  { name: 'DB_SECRET_ARN', value: dbSecretArn },
   { name: 'DB_ENDPOINT', value: db.endpoint },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
