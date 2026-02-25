@@ -28,27 +28,17 @@ export class SharedChatController {
   @TsRestHandler(sharedChatsContract.createShare)
   async createShare(@CurrentMembership() membership: JwtMembership) {
     return tsRestHandler(sharedChatsContract.createShare, async ({ params, body }) => {
-      try {
-        const share = await this.sharedChatService.createShare(
-          params.orgId,
-          params.threadId,
-          membership.id,
-          { isPublic: body.isPublic }
-        );
+      const share = await this.sharedChatService.createShare(
+        params.orgId,
+        params.threadId,
+        membership.id,
+        { isPublic: body.isPublic }
+      );
 
-        return {
-          status: 200 as const,
-          body: { success: true as const, data: share },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to create share',
-          },
-        };
-      }
+      return {
+        status: 200 as const,
+        body: { success: true as const, data: share },
+      };
     });
   }
 
@@ -58,37 +48,15 @@ export class SharedChatController {
     return tsRestHandler(sharedChatsContract.getSharedChat, async ({ params }) => {
       const viewerMembershipIds = this.extractMembershipIds(req);
 
-      try {
-        const snapshot = await this.sharedChatService.getByToken(
-          params.shareToken,
-          viewerMembershipIds
-        );
+      const snapshot = await this.sharedChatService.getByToken(
+        params.shareToken,
+        viewerMembershipIds
+      );
 
-        return {
-          status: 200 as const,
-          body: { success: true as const, data: snapshot },
-        };
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('Authentication required')) {
-          return {
-            status: 401 as const,
-            body: {
-              success: false as const,
-              error: 'Authentication required to view this shared chat',
-            },
-          };
-        }
-        if (error instanceof Error && error.message.includes('do not have access')) {
-          return {
-            status: 401 as const,
-            body: { success: false as const, error: 'You do not have access to this shared chat' },
-          };
-        }
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Shared chat not found' },
-        };
-      }
+      return {
+        status: 200 as const,
+        body: { success: true as const, data: snapshot },
+      };
     });
   }
 
@@ -109,19 +77,12 @@ export class SharedChatController {
   @TsRestHandler(sharedChatsContract.revokeShare)
   async revokeShare() {
     return tsRestHandler(sharedChatsContract.revokeShare, async ({ params }) => {
-      try {
-        await this.sharedChatService.revokeShare(params.orgId, params.threadId, params.shareId);
+      await this.sharedChatService.revokeShare(params.orgId, params.threadId, params.shareId);
 
-        return {
-          status: 200 as const,
-          body: { success: true as const },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Share not found' },
-        };
-      }
+      return {
+        status: 200 as const,
+        body: { success: true as const },
+      };
     });
   }
 

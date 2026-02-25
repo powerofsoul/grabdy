@@ -45,34 +45,24 @@ export class ChatController {
     @CurrentUser('sub') userId: DbId<'User'>
   ) {
     return tsRestHandler(chatContract.chat, async ({ params, body }) => {
-      try {
-        const result = await this.chatService.chat(
-          params.orgId,
-          membership.id,
-          userId,
-          body.message,
-          {
-            threadId: body.threadId,
-            collectionId: body.collectionId,
-          }
-        );
+      const result = await this.chatService.chat(
+        params.orgId,
+        membership.id,
+        userId,
+        body.message,
+        {
+          threadId: body.threadId,
+          collectionId: body.collectionId,
+        }
+      );
 
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: result,
-          },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Chat failed',
-          },
-        };
-      }
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: result,
+        },
+      };
     });
   }
 
@@ -80,25 +70,15 @@ export class ChatController {
   @TsRestHandler(chatContract.createThread)
   async createThread(@CurrentMembership() membership: JwtMembership) {
     return tsRestHandler(chatContract.createThread, async ({ params, body }) => {
-      try {
-        const thread = await this.chatService.createThread(params.orgId, membership.id, {
-          title: body.title,
-          collectionId: body.collectionId,
-        });
+      const thread = await this.chatService.createThread(params.orgId, membership.id, {
+        title: body.title,
+        collectionId: body.collectionId,
+      });
 
-        return {
-          status: 200 as const,
-          body: { success: true as const, data: thread },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to create thread',
-          },
-        };
-      }
+      return {
+        status: 200 as const,
+        body: { success: true as const, data: thread },
+      };
     });
   }
 
@@ -119,22 +99,12 @@ export class ChatController {
   @TsRestHandler(chatContract.getThread)
   async getThread() {
     return tsRestHandler(chatContract.getThread, async ({ params }) => {
-      try {
-        const thread = await this.chatService.getThread(params.orgId, params.threadId);
+      const thread = await this.chatService.getThread(params.orgId, params.threadId);
 
-        return {
-          status: 200 as const,
-          body: { success: true as const, data: thread },
-        };
-      } catch (error) {
-        return {
-          status: 404 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Thread not found',
-          },
-        };
-      }
+      return {
+        status: 200 as const,
+        body: { success: true as const, data: thread },
+      };
     });
   }
 
@@ -142,22 +112,12 @@ export class ChatController {
   @TsRestHandler(chatContract.deleteThread)
   async deleteThread() {
     return tsRestHandler(chatContract.deleteThread, async ({ params }) => {
-      try {
-        await this.chatService.deleteThread(params.orgId, params.threadId);
+      await this.chatService.deleteThread(params.orgId, params.threadId);
 
-        return {
-          status: 200 as const,
-          body: { success: true as const },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Delete failed',
-          },
-        };
-      }
+      return {
+        status: 200 as const,
+        body: { success: true as const },
+      };
     });
   }
 
@@ -165,26 +125,12 @@ export class ChatController {
   @TsRestHandler(chatContract.renameThread)
   async renameThread() {
     return tsRestHandler(chatContract.renameThread, async ({ params, body }) => {
-      try {
-        const thread = await this.chatService.renameThread(
-          params.orgId,
-          params.threadId,
-          body.title
-        );
+      const thread = await this.chatService.renameThread(params.orgId, params.threadId, body.title);
 
-        return {
-          status: 200 as const,
-          body: { success: true as const, data: thread },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Rename failed',
-          },
-        };
-      }
+      return {
+        status: 200 as const,
+        body: { success: true as const, data: thread },
+      };
     });
   }
 
@@ -268,7 +214,7 @@ export class ChatController {
       if (!res.headersSent) {
         res.status(500).json({
           success: false,
-          error: error instanceof Error ? error.message : 'Stream failed',
+          error: 'Stream failed',
         });
       } else {
         res.end();

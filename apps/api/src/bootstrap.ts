@@ -3,6 +3,7 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 
 import cookieParser from 'cookie-parser';
 import express from 'express';
+import { Logger } from 'nestjs-pino';
 
 import { env } from './config/env.config';
 import { buildOpenApiDocument } from './config/openapi';
@@ -20,7 +21,11 @@ export async function bootstrap() {
     })
   );
 
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
+    bufferLogs: true,
+  });
+  const logger = app.get(Logger);
+  app.useLogger(logger);
 
   app.use(cookieParser());
 
@@ -55,6 +60,6 @@ export async function bootstrap() {
   app.enableShutdownHooks();
 
   await app.listen(env.port);
-  console.log(`Server running at http://localhost:${env.port}`);
-  console.log(`CORS: all origins (SDK embeds on customer domains)`);
+  logger.log(`Server running at http://localhost:${env.port}`);
+  logger.log(`CORS: all origins (SDK embeds on customer domains)`);
 }

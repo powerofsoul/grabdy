@@ -4,6 +4,7 @@ import { type DbId, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
 import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
 
+import { UserFacingError } from '../../common/errors/user-facing.error';
 import { getMaxFileSizeForMime } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { StorageKeys } from '../storage/file-storage.interface';
@@ -28,7 +29,7 @@ export class DataSourcesService {
     options: { name?: string; collectionId?: DbId<'Collection'> }
   ) {
     if (!isUploadsMime(file.mimetype)) {
-      throw new Error(`Unsupported file type: ${file.mimetype}`);
+      throw new UserFacingError(`Unsupported file type: ${file.mimetype}`);
     }
     const mimeType = file.mimetype;
     const type = UPLOADS_MIME_TO_TYPE[mimeType];
@@ -36,7 +37,7 @@ export class DataSourcesService {
     const maxSize = getMaxFileSizeForMime(file.mimetype);
     if (file.size > maxSize) {
       const limitMB = Math.round(maxSize / (1024 * 1024));
-      throw new Error(`File too large. Maximum size for ${type} files is ${limitMB} MB`);
+      throw new UserFacingError(`File too large. Maximum size for ${type} files is ${limitMB} MB`);
     }
 
     const collectionId = options.collectionId ?? null;
@@ -47,23 +48,33 @@ export class DataSourcesService {
 
     await this.storage.put(storageKey, file.buffer, file.mimetype);
 
-    const dataSource = await this.db.kysely
-      .insertInto('data.data_sources')
-      .values({
-        id: dataSourceId,
-        title: options.name ?? file.originalname,
-        mime_type: file.mimetype,
-        file_size: file.size,
-        storage_path: storageKey,
-        type,
-        source_url: storageProxyUrl(orgId, storageKey),
-        collection_id: collectionId,
-        org_id: orgId,
-        uploaded_by_id: userId,
-        updated_at: new Date(),
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+    let dataSource;
+    try {
+      dataSource = await this.db.kysely
+        .insertInto('data.data_sources')
+        .values({
+          id: dataSourceId,
+          title: options.name ?? file.originalname,
+          mime_type: file.mimetype,
+          file_size: file.size,
+          storage_path: storageKey,
+          type,
+          source_url: storageProxyUrl(orgId, storageKey),
+          collection_id: collectionId,
+          org_id: orgId,
+          uploaded_by_id: userId,
+          updated_at: new Date(),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('invalid input value for enum')) {
+        throw new UserFacingError(
+          'This file type is not yet supported. Please run database migrations.'
+        );
+      }
+      throw error;
+    }
 
     // Queue processing job
     const jobData: DataSourceJobData = {
@@ -205,7 +216,7 @@ export class DataSourcesService {
 
     // Re-queue
     if (!isUploadsMime(dataSource.mime_type)) {
-      throw new Error(`Unsupported mime type in database: ${dataSource.mime_type}`);
+      throw new UserFacingError(`Unsupported file type: ${dataSource.mime_type}`);
     }
     const jobData: DataSourceJobData = {
       dataSourceId: dataSource.id,

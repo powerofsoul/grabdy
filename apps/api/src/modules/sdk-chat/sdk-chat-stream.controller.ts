@@ -171,7 +171,7 @@ export class SdkChatStreamController {
       if (!res.headersSent) {
         res.status(500).json({
           success: false,
-          error: error instanceof Error ? error.message : 'Stream failed',
+          error: 'Stream failed',
         });
       } else {
         res.end();

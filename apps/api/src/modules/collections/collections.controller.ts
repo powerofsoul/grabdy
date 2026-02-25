@@ -19,28 +19,18 @@ export class CollectionsController {
   @TsRestHandler(collectionsContract.create)
   async create() {
     return tsRestHandler(collectionsContract.create, async ({ params, body }) => {
-      try {
-        const collection = await this.collectionsService.create(params.orgId, body);
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              ...collection,
-              createdAt: toISOString(collection.createdAt),
-              updatedAt: toISOString(collection.updatedAt),
-            },
+      const collection = await this.collectionsService.create(params.orgId, body);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            ...collection,
+            createdAt: toISOString(collection.createdAt),
+            updatedAt: toISOString(collection.updatedAt),
           },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to create collection',
-          },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -67,28 +57,18 @@ export class CollectionsController {
   @TsRestHandler(collectionsContract.get)
   async get() {
     return tsRestHandler(collectionsContract.get, async ({ params }) => {
-      try {
-        const collection = await this.collectionsService.findById(
-          params.orgId,
-          params.collectionId
-        );
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              ...collection,
-              createdAt: toISOString(collection.createdAt),
-              updatedAt: toISOString(collection.updatedAt),
-            },
+      const collection = await this.collectionsService.findById(params.orgId, params.collectionId);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            ...collection,
+            createdAt: toISOString(collection.createdAt),
+            updatedAt: toISOString(collection.updatedAt),
           },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Collection not found' },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -96,29 +76,22 @@ export class CollectionsController {
   @TsRestHandler(collectionsContract.update)
   async update() {
     return tsRestHandler(collectionsContract.update, async ({ params, body }) => {
-      try {
-        const collection = await this.collectionsService.update(
-          params.orgId,
-          params.collectionId,
-          body
-        );
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              ...collection,
-              createdAt: toISOString(collection.createdAt),
-              updatedAt: toISOString(collection.updatedAt),
-            },
+      const collection = await this.collectionsService.update(
+        params.orgId,
+        params.collectionId,
+        body
+      );
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            ...collection,
+            createdAt: toISOString(collection.createdAt),
+            updatedAt: toISOString(collection.updatedAt),
           },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Collection not found' },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -126,18 +99,11 @@ export class CollectionsController {
   @TsRestHandler(collectionsContract.delete)
   async delete() {
     return tsRestHandler(collectionsContract.delete, async ({ params }) => {
-      try {
-        await this.collectionsService.delete(params.orgId, params.collectionId);
-        return {
-          status: 200 as const,
-          body: { success: true as const },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Collection not found' },
-        };
-      }
+      await this.collectionsService.delete(params.orgId, params.collectionId);
+      return {
+        status: 200 as const,
+        body: { success: true as const },
+      };
     });
   }
 }

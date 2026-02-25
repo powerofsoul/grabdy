@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 
 import { type DbId, dbIdSchema, extractOrgNumericId, idBelongsToOrg } from '@grabdy/common';
 import { type MetadataFilter, metadataFilterSchema } from '@grabdy/contracts';
@@ -12,7 +12,7 @@ import { RetrievalService } from '../public-api/retrieval.service';
 // ApiKeyGuard guarantees request.apiKey is set before any tool runs.
 function getApiKeyContext(request: Request) {
   const ctx = request.apiKey;
-  if (!ctx) throw new Error('ApiKeyGuard did not set request.apiKey');
+  if (!ctx) throw new InternalServerErrorException('ApiKeyGuard did not set request.apiKey');
   return ctx;
 }
 
@@ -67,7 +67,7 @@ export class McpTools {
       const orgNumericId = extractOrgNumericId(ctx.orgId);
       for (const id of rawCollectionIds) {
         if (!idBelongsToOrg(id, orgNumericId)) {
-          throw new Error('Invalid collection ID');
+          throw new BadRequestException('Invalid collection ID');
         }
       }
     }

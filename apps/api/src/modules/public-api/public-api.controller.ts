@@ -1,4 +1,11 @@
-import { Controller, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  HttpException,
+  InternalServerErrorException,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 
 import { type DbId, extractOrgNumericId, idBelongsToOrg } from '@grabdy/common';
 import { publicApiContract } from '@grabdy/contracts';
@@ -6,6 +13,7 @@ import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { Request } from 'express';
 
 import { Public } from '../../common/decorators/public.decorator';
+import { UserFacingError } from '../../common/errors/user-facing.error';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { CollectionsService } from '../collections/collections.service';
 
@@ -15,11 +23,17 @@ function apiError(code: string, message: string) {
   return { success: false as const, error: { code, message } };
 }
 
+function safeApiMessage(error: unknown, fallback: string): string {
+  if (error instanceof HttpException) return error.message;
+  if (error instanceof UserFacingError) return error.message;
+  return fallback;
+}
+
 function ensureCollectionsBelongToOrg(ids: DbId<'Collection'>[], orgId: DbId<'Org'>) {
   const orgNumericId = extractOrgNumericId(orgId);
   for (const id of ids) {
     if (!idBelongsToOrg(id, orgNumericId)) {
-      throw new Error('Invalid collection ID');
+      throw new BadRequestException('Invalid collection ID');
     }
   }
 }
@@ -28,7 +42,7 @@ function ensureCollectionsBelongToOrg(ids: DbId<'Collection'>[], orgId: DbId<'Or
 // Helper to access it without redundant null checks.
 function getApiKeyContext(req: Request) {
   const ctx = req.apiKey;
-  if (!ctx) throw new Error('ApiKeyGuard did not set request.apiKey');
+  if (!ctx) throw new InternalServerErrorException('ApiKeyGuard did not set request.apiKey');
   return ctx;
 }
 
@@ -73,9 +87,10 @@ export class PublicApiController {
           },
         };
       } catch (error) {
+        const message = safeApiMessage(error, 'Search failed');
         return {
           status: 400 as const,
-          body: apiError('SEARCH_FAILED', error instanceof Error ? error.message : 'Search failed'),
+          body: apiError('SEARCH_FAILED', message),
         };
       }
     });
@@ -100,9 +115,10 @@ export class PublicApiController {
           body: { success: true as const, data: result },
         };
       } catch (error) {
+        const message = safeApiMessage(error, 'Query failed');
         return {
           status: 400 as const,
-          body: apiError('QUERY_FAILED', error instanceof Error ? error.message : 'Query failed'),
+          body: apiError('QUERY_FAILED', message),
         };
       }
     });
@@ -131,12 +147,10 @@ export class PublicApiController {
           },
         };
       } catch (error) {
+        const message = safeApiMessage(error, 'Failed to list collections');
         return {
           status: 400 as const,
-          body: apiError(
-            'LIST_FAILED',
-            error instanceof Error ? error.message : 'Failed to list collections'
-          ),
+          body: apiError('LIST_FAILED', message),
         };
       }
     });

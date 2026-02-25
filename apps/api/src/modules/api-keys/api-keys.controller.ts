@@ -20,32 +20,22 @@ export class ApiKeysController {
   @TsRestHandler(apiKeysContract.create)
   async create(@CurrentUser() user: JwtPayload) {
     return tsRestHandler(apiKeysContract.create, async ({ params, body }) => {
-      try {
-        const apiKey = await this.apiKeysService.create(params.orgId, user.sub, body.name);
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              id: apiKey.id,
-              name: apiKey.name,
-              keyPrefix: apiKey.keyPrefix,
-              key: apiKey.key,
-              lastUsedAt: toISOStringOrNull(apiKey.lastUsedAt),
-              revokedAt: toISOStringOrNull(apiKey.revokedAt),
-              createdAt: apiKey.createdAt.toISOString(),
-            },
+      const apiKey = await this.apiKeysService.create(params.orgId, user.sub, body.name);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            id: apiKey.id,
+            name: apiKey.name,
+            keyPrefix: apiKey.keyPrefix,
+            key: apiKey.key,
+            lastUsedAt: toISOStringOrNull(apiKey.lastUsedAt),
+            revokedAt: toISOStringOrNull(apiKey.revokedAt),
+            createdAt: apiKey.createdAt.toISOString(),
           },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to create API key',
-          },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -75,18 +65,11 @@ export class ApiKeysController {
   @TsRestHandler(apiKeysContract.revoke)
   async revoke() {
     return tsRestHandler(apiKeysContract.revoke, async ({ params }) => {
-      try {
-        await this.apiKeysService.revoke(params.orgId, params.keyId);
-        return {
-          status: 200 as const,
-          body: { success: true as const },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'API key not found' },
-        };
-      }
+      await this.apiKeysService.revoke(params.orgId, params.keyId);
+      return {
+        status: 200 as const,
+        body: { success: true as const },
+      };
     });
   }
 }

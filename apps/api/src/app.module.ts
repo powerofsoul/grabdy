@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { LoggerModule } from 'nestjs-pino';
+
 import { EncryptionModule } from './common/encryption/encryption.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ApiKeyModule } from './common/guards/api-key.module';
 import { AuthGuard } from './common/guards/auth.guard';
 import { OrgAccessGuard } from './common/guards/org-access.guard';
@@ -42,6 +45,13 @@ import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
+        redact: ['req.headers.authorization', 'req.headers.cookie'],
+        autoLogging: false,
+      },
+    }),
     EnvModule,
     DbModule,
     RedisModule,
@@ -87,6 +97,7 @@ import { RedisModule } from './redis/redis.module';
     SdkChatModule,
   ],
   providers: [
+    { provide: APP_FILTER, useClass: GlobalExceptionFilter },
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: OrgAccessGuard },
     { provide: APP_INTERCEPTOR, useClass: TokenRefreshInterceptor },

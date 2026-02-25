@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Logger,
   Param,
   Req,
   Res,
@@ -31,8 +30,6 @@ function toISOString(date: Date): string {
 
 @Controller()
 export class DataSourcesController {
-  private readonly logger = new Logger(DataSourcesController.name);
-
   constructor(
     private dataSourcesService: DataSourcesService,
     private storage: S3FileStorage
@@ -43,53 +40,35 @@ export class DataSourcesController {
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }))
   async upload(@CurrentUser() user: JwtPayload, @UploadedFile() file: Express.Multer.File) {
     return tsRestHandler(dataSourcesContract.upload, async ({ params, body }) => {
-      try {
-        if (!file) {
-          return {
-            status: 400 as const,
-            body: { success: false as const, error: 'No file uploaded' },
-          };
-        }
-
-        // Multipart form fields may arrive JSON-encoded (double-quoted strings).
-        // Strip surrounding quotes if present.
-        const rawCollectionId = body.collectionId
-          ? body.collectionId.replace(/^"|"$/g, '')
-          : undefined;
-
-        const dataSource = await this.dataSourcesService.upload(params.orgId, user.sub, file, {
-          name: body.name ? body.name.replace(/^"|"$/g, '') : undefined,
-          collectionId: rawCollectionId
-            ? dbIdSchema('Collection').parse(rawCollectionId)
-            : undefined,
-        });
-
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              ...dataSource,
-              createdAt: toISOString(dataSource.createdAt),
-              updatedAt: toISOString(dataSource.updatedAt),
-            },
-          },
-        };
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Upload failed';
-        // Improve raw Postgres enum errors
-        const userMsg = msg.includes('invalid input value for enum')
-          ? 'This file type is not yet supported. Please run database migrations.'
-          : msg;
-        this.logger.error(`Upload failed: ${msg}`);
+      if (!file) {
         return {
           status: 400 as const,
-          body: {
-            success: false as const,
-            error: userMsg,
-          },
+          body: { success: false as const, error: 'No file uploaded' },
         };
       }
+
+      // Multipart form fields may arrive JSON-encoded (double-quoted strings).
+      // Strip surrounding quotes if present.
+      const rawCollectionId = body.collectionId
+        ? body.collectionId.replace(/^"|"$/g, '')
+        : undefined;
+
+      const dataSource = await this.dataSourcesService.upload(params.orgId, user.sub, file, {
+        name: body.name ? body.name.replace(/^"|"$/g, '') : undefined,
+        collectionId: rawCollectionId ? dbIdSchema('Collection').parse(rawCollectionId) : undefined,
+      });
+
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            ...dataSource,
+            createdAt: toISOString(dataSource.createdAt),
+            updatedAt: toISOString(dataSource.updatedAt),
+          },
+        },
+      };
     });
   }
 
@@ -120,25 +99,18 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.get)
   async get() {
     return tsRestHandler(dataSourcesContract.get, async ({ params }) => {
-      try {
-        const dataSource = await this.dataSourcesService.findById(params.orgId, params.id);
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              ...dataSource,
-              createdAt: toISOString(dataSource.createdAt),
-              updatedAt: toISOString(dataSource.updatedAt),
-            },
+      const dataSource = await this.dataSourcesService.findById(params.orgId, params.id);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            ...dataSource,
+            createdAt: toISOString(dataSource.createdAt),
+            updatedAt: toISOString(dataSource.updatedAt),
           },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Data source not found' },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -146,18 +118,11 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.delete)
   async delete() {
     return tsRestHandler(dataSourcesContract.delete, async ({ params }) => {
-      try {
-        await this.dataSourcesService.delete(params.orgId, params.id);
-        return {
-          status: 200 as const,
-          body: { success: true as const },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Data source not found' },
-        };
-      }
+      await this.dataSourcesService.delete(params.orgId, params.id);
+      return {
+        status: 200 as const,
+        body: { success: true as const },
+      };
     });
   }
 
@@ -165,25 +130,18 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.reprocess)
   async reprocess() {
     return tsRestHandler(dataSourcesContract.reprocess, async ({ params }) => {
-      try {
-        const dataSource = await this.dataSourcesService.reprocess(params.orgId, params.id);
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              ...dataSource,
-              createdAt: toISOString(dataSource.createdAt),
-              updatedAt: toISOString(dataSource.updatedAt),
-            },
+      const dataSource = await this.dataSourcesService.reprocess(params.orgId, params.id);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            ...dataSource,
+            createdAt: toISOString(dataSource.createdAt),
+            updatedAt: toISOString(dataSource.updatedAt),
           },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Data source not found' },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -191,29 +149,18 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.rename)
   async rename() {
     return tsRestHandler(dataSourcesContract.rename, async ({ params, body }) => {
-      try {
-        const dataSource = await this.dataSourcesService.rename(
-          params.orgId,
-          params.id,
-          body.title
-        );
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              ...dataSource,
-              createdAt: toISOString(dataSource.createdAt),
-              updatedAt: toISOString(dataSource.updatedAt),
-            },
+      const dataSource = await this.dataSourcesService.rename(params.orgId, params.id, body.title);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            ...dataSource,
+            createdAt: toISOString(dataSource.createdAt),
+            updatedAt: toISOString(dataSource.updatedAt),
           },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Data source not found' },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -221,18 +168,11 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.previewUrl)
   async previewUrl() {
     return tsRestHandler(dataSourcesContract.previewUrl, async ({ params }) => {
-      try {
-        const data = await this.dataSourcesService.getPreviewUrl(params.orgId, params.id);
-        return {
-          status: 200 as const,
-          body: { success: true as const, data },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Data source not found' },
-        };
-      }
+      const data = await this.dataSourcesService.getPreviewUrl(params.orgId, params.id);
+      return {
+        status: 200 as const,
+        body: { success: true as const, data },
+      };
     });
   }
 

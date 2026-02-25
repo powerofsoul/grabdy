@@ -35,101 +35,51 @@ export class AuthController {
 
     return tsRestHandler(authContract, {
       signup: async ({ body }) => {
-        try {
-          const data = await this.authService.register(
-            body.email,
-            body.password,
-            body.firstName,
-            body.lastName
-          );
-          return {
-            status: 200 as const,
-            body: { success: true as const, data },
-          };
-        } catch (error) {
-          return {
-            status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Signup failed',
-            },
-          };
-        }
+        const data = await this.authService.register(
+          body.email,
+          body.password,
+          body.firstName,
+          body.lastName
+        );
+        return {
+          status: 200 as const,
+          body: { success: true as const, data },
+        };
       },
       verifyEmail: async ({ body }) => {
-        try {
-          const { user, token } = await this.authService.verifyEmail(body.email, body.otp);
-          res.cookie('auth_token', token, this.cookieOptions);
-          return {
-            status: 200 as const,
-            body: { success: true as const, data: user },
-          };
-        } catch (error) {
-          return {
-            status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Verification failed',
-            },
-          };
-        }
+        const { user, token } = await this.authService.verifyEmail(body.email, body.otp);
+        res.cookie('auth_token', token, this.cookieOptions);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data: user },
+        };
       },
       resendVerification: async ({ body }) => {
-        try {
-          await this.authService.resendVerificationOTP(body.email);
-          return {
-            status: 200 as const,
-            body: {
-              success: true as const,
-              message: 'If an account exists, a new verification code has been sent.',
-            },
-          };
-        } catch (error) {
-          return {
-            status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Failed to resend code',
-            },
-          };
-        }
+        await this.authService.resendVerificationOTP(body.email);
+        return {
+          status: 200 as const,
+          body: {
+            success: true as const,
+            message: 'If an account exists, a new verification code has been sent.',
+          },
+        };
       },
       googleAuth: async ({ body }) => {
-        try {
-          const { user, token } = await this.authService.googleAuth(body.credential);
-          res.cookie('auth_token', token, this.cookieOptions);
-          return {
-            status: 200 as const,
-            body: { success: true as const, data: user },
-          };
-        } catch (error) {
-          return {
-            status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Google authentication failed',
-            },
-          };
-        }
+        const { user, token } = await this.authService.googleAuth(body.credential);
+        res.cookie('auth_token', token, this.cookieOptions);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data: user },
+        };
       },
       login: async ({ body }) => {
-        try {
-          const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-          const { user, token } = await this.authService.login(body.email, body.password, clientIp);
-          res.cookie('auth_token', token, this.cookieOptions);
-          return {
-            status: 200 as const,
-            body: { success: true as const, data: user },
-          };
-        } catch (error) {
-          return {
-            status: 401 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Login failed',
-            },
-          };
-        }
+        const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+        const { user, token } = await this.authService.login(body.email, body.password, clientIp);
+        res.cookie('auth_token', token, this.cookieOptions);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data: user },
+        };
       },
       logout: async () => {
         res.clearCookie('auth_token', { path: '/' });
@@ -147,99 +97,67 @@ export class AuthController {
         };
       },
       resetPassword: async ({ body }) => {
-        try {
-          await this.authService.resetPassword(body.email, body.otp, body.newPassword);
-          return {
-            status: 200 as const,
-            body: { success: true as const, message: 'Password has been reset successfully.' },
-          };
-        } catch (error) {
-          return {
-            status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Failed to reset password',
-            },
-          };
-        }
+        await this.authService.resetPassword(body.email, body.otp, body.newPassword);
+        return {
+          status: 200 as const,
+          body: { success: true as const, message: 'Password has been reset successfully.' },
+        };
       },
       verifySetupToken: async ({ body }) => {
-        try {
-          const data = await this.authService.verifySetupToken(body.token);
-          return {
-            status: 200 as const,
-            body: { success: true as const, data },
-          };
-        } catch (error) {
-          return {
-            status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Invalid token',
-            },
-          };
-        }
+        const data = await this.authService.verifySetupToken(body.token);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data },
+        };
       },
       completeAccount: async ({ body }) => {
-        try {
-          const { user, token } = await this.authService.completeAccount(
-            body.token,
-            body.password,
-            body.firstName,
-            body.lastName
-          );
-          res.cookie('auth_token', token, this.cookieOptions);
-          return {
-            status: 200 as const,
-            body: { success: true as const, data: user },
-          };
-        } catch (error) {
-          return {
-            status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Failed to complete account setup',
-            },
-          };
-        }
+        const { user, token } = await this.authService.completeAccount(
+          body.token,
+          body.password,
+          body.firstName,
+          body.lastName
+        );
+        res.cookie('auth_token', token, this.cookieOptions);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data: user },
+        };
       },
       updateProfile: async ({ body }) => {
-        const token = req.cookies?.['auth_token'];
-        if (!token) {
+        const authToken = req.cookies?.['auth_token'];
+        if (!authToken) {
           return {
             status: 400 as const,
             body: { success: false as const, error: 'Not authenticated' },
           };
         }
 
+        let decoded;
         try {
-          const decoded = jwt.verify(token, this.jwtSecret);
-          const payload = parseJwtPayload(decoded);
-          if (!payload) {
-            return {
-              status: 400 as const,
-              body: { success: false as const, error: 'Invalid token payload' },
-            };
-          }
-          const result = await this.authService.updateProfile(payload.sub, body);
-          res.cookie('auth_token', result.token, this.cookieOptions);
-          return {
-            status: 200 as const,
-            body: { success: true as const, data: result.user },
-          };
-        } catch (error) {
+          decoded = jwt.verify(authToken, this.jwtSecret);
+        } catch {
           return {
             status: 400 as const,
-            body: {
-              success: false as const,
-              error: error instanceof Error ? error.message : 'Failed to update profile',
-            },
+            body: { success: false as const, error: 'Invalid or expired token' },
           };
         }
+        const payload = parseJwtPayload(decoded);
+        if (!payload) {
+          return {
+            status: 400 as const,
+            body: { success: false as const, error: 'Invalid token payload' },
+          };
+        }
+        const result = await this.authService.updateProfile(payload.sub, body);
+        res.cookie('auth_token', result.token, this.cookieOptions);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data: result.user },
+        };
       },
       me: async () => {
-        const token = req.cookies?.['auth_token'];
-        if (!token) {
+        const authToken = req.cookies?.['auth_token'];
+        if (!authToken) {
           return {
             status: 401 as const,
             body: { success: false as const, error: 'Not authenticated' },
@@ -247,7 +165,7 @@ export class AuthController {
         }
 
         try {
-          const decoded = jwt.verify(token, this.jwtSecret);
+          const decoded = jwt.verify(authToken, this.jwtSecret);
           const payload = parseJwtPayload(decoded);
           if (!payload) {
             return {

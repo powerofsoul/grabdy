@@ -19,29 +19,19 @@ export class OrgsController {
   @TsRestHandler(orgsContract.create)
   async create(@CurrentUser() user: JwtPayload) {
     return tsRestHandler(orgsContract.create, async ({ body }) => {
-      try {
-        const org = await this.orgsService.create(body, user.sub);
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              id: org.id,
-              name: org.name,
-              createdAt: toISOString(org.createdAt),
-              updatedAt: toISOString(org.updatedAt),
-            },
+      const org = await this.orgsService.create(body, user.sub);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            id: org.id,
+            name: org.name,
+            createdAt: toISOString(org.createdAt),
+            updatedAt: toISOString(org.updatedAt),
           },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to create organization',
-          },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -49,26 +39,19 @@ export class OrgsController {
   @TsRestHandler(orgsContract.get)
   async get() {
     return tsRestHandler(orgsContract.get, async ({ params }) => {
-      try {
-        const org = await this.orgsService.findById(params.orgId);
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              id: org.id,
-              name: org.name,
-              createdAt: toISOString(org.createdAt),
-              updatedAt: toISOString(org.updatedAt),
-            },
+      const org = await this.orgsService.findById(params.orgId);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            id: org.id,
+            name: org.name,
+            createdAt: toISOString(org.createdAt),
+            updatedAt: toISOString(org.updatedAt),
           },
-        };
-      } catch {
-        return {
-          status: 404 as const,
-          body: { success: false as const, error: 'Organization not found' },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -76,29 +59,19 @@ export class OrgsController {
   @TsRestHandler(orgsContract.update)
   async update() {
     return tsRestHandler(orgsContract.update, async ({ params, body }) => {
-      try {
-        const org = await this.orgsService.update(params.orgId, body);
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              id: org.id,
-              name: org.name,
-              createdAt: toISOString(org.createdAt),
-              updatedAt: toISOString(org.updatedAt),
-            },
+      const org = await this.orgsService.update(params.orgId, body);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            id: org.id,
+            name: org.name,
+            createdAt: toISOString(org.createdAt),
+            updatedAt: toISOString(org.updatedAt),
           },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to update organization',
-          },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -106,31 +79,21 @@ export class OrgsController {
   @TsRestHandler(orgsContract.invite)
   async invite() {
     return tsRestHandler(orgsContract.invite, async ({ params, body }) => {
-      try {
-        const result = await this.orgsService.inviteMember(params.orgId, body);
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              id: result.id,
-              email: result.email,
-              roles: result.roles,
-              inviteLink: result.inviteLink,
-              expiresAt: result.expiresAt ? toISOString(result.expiresAt) : null,
-              createdAt: toISOString(result.createdAt),
-            },
+      const result = await this.orgsService.inviteMember(params.orgId, body);
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            id: result.id,
+            email: result.email,
+            roles: result.roles,
+            inviteLink: result.inviteLink,
+            expiresAt: result.expiresAt ? toISOString(result.expiresAt) : null,
+            createdAt: toISOString(result.createdAt),
           },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to invite member',
-          },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -162,38 +125,28 @@ export class OrgsController {
   @TsRestHandler(orgsContract.updateMemberRole)
   async updateMemberRole(@CurrentUser() user: JwtPayload) {
     return tsRestHandler(orgsContract.updateMemberRole, async ({ params, body }) => {
-      try {
-        const member = await this.orgsService.updateMemberRole(
-          params.orgId,
-          params.memberId,
-          body.roles,
-          user.sub
-        );
-        return {
-          status: 200 as const,
-          body: {
-            success: true as const,
-            data: {
-              id: member.id,
-              userId: member.userId,
-              orgId: member.orgId,
-              roles: member.roles,
-              email: member.email,
-              firstName: member.firstName,
-              lastName: member.lastName,
-              createdAt: toISOString(member.createdAt),
-            },
+      const member = await this.orgsService.updateMemberRole(
+        params.orgId,
+        params.memberId,
+        body.roles,
+        user.sub
+      );
+      return {
+        status: 200 as const,
+        body: {
+          success: true as const,
+          data: {
+            id: member.id,
+            userId: member.userId,
+            orgId: member.orgId,
+            roles: member.roles,
+            email: member.email,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            createdAt: toISOString(member.createdAt),
           },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to update member role',
-          },
-        };
-      }
+        },
+      };
     });
   }
 
@@ -201,21 +154,11 @@ export class OrgsController {
   @TsRestHandler(orgsContract.removeMember)
   async removeMember(@CurrentUser() user: JwtPayload) {
     return tsRestHandler(orgsContract.removeMember, async ({ params }) => {
-      try {
-        await this.orgsService.removeMember(params.orgId, params.memberId, user.sub);
-        return {
-          status: 200 as const,
-          body: { success: true as const },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to remove member',
-          },
-        };
-      }
+      await this.orgsService.removeMember(params.orgId, params.memberId, user.sub);
+      return {
+        status: 200 as const,
+        body: { success: true as const },
+      };
     });
   }
 
@@ -245,21 +188,11 @@ export class OrgsController {
   @TsRestHandler(orgsContract.revokeInvitation)
   async revokeInvitation() {
     return tsRestHandler(orgsContract.revokeInvitation, async ({ params }) => {
-      try {
-        await this.orgsService.revokeInvitation(params.orgId, params.invitationId);
-        return {
-          status: 200 as const,
-          body: { success: true as const },
-        };
-      } catch (error) {
-        return {
-          status: 400 as const,
-          body: {
-            success: false as const,
-            error: error instanceof Error ? error.message : 'Failed to revoke invitation',
-          },
-        };
-      }
+      await this.orgsService.revokeInvitation(params.orgId, params.invitationId);
+      return {
+        status: 200 as const,
+        body: { success: true as const },
+      };
     });
   }
 }
