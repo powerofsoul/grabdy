@@ -1,11 +1,11 @@
 meta {
-  name: Invite Member
+  name: Add User to Org
   type: http
-  seq: 2
+  seq: 5
 }
 
 post {
-  url: {{baseUrl}}/admin/orgs/:orgId/invite
+  url: {{baseUrl}}/admin/orgs/:orgId/members
   body: json
   auth: none
 }
@@ -21,8 +21,7 @@ headers {
 
 body:json {
   {
-    "email": "member@example.com",
-    "name": "New Member",
+    "userId": "<paste-user-id>",
     "roles": ["MEMBER"]
   }
 }

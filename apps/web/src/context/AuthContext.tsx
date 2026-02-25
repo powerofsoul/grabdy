@@ -3,6 +3,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import { type DbId, dbIdSchema } from '@grabdy/common';
 
 import { api } from '../lib/api';
+import { queryClient } from '../lib/query-client';
 import { STORAGE_KEYS } from '../lib/storage-keys';
 
 interface OrgMembership {
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const selectOrg = useCallback((orgId: DbId<'Org'>) => {
     setSelectedOrgId(orgId);
     localStorage.setItem(STORAGE_KEYS.SELECTED_ORG_ID, orgId);
+    queryClient.removeQueries();
   }, []);
 
   const login = async (email: string, password: string) => {

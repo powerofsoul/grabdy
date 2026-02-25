@@ -1,9 +1,24 @@
-import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import { useState } from 'react';
+
+import {
+  alpha,
+  Avatar,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import {
   BookOpenIcon,
+  BuildingsIcon,
   CaretDoubleLeftIcon,
+  CaretUpDownIcon,
   ChartBarIcon,
   ChatCircleIcon,
+  CheckIcon,
   EyeIcon,
   FolderIcon,
   GearIcon,
@@ -17,7 +32,7 @@ import {
   SunIcon,
   UsersIcon,
 } from '@phosphor-icons/react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 
 import { CountBadge } from './CountBadge';
 import { NavItem } from './NavItem';
@@ -30,11 +45,13 @@ import { useThemeMode } from '@/context/ThemeContext';
 
 export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, selectedOrgId, selectOrg } = useAuth();
   const { preference, setPreference } = useThemeMode();
   const { collections, connections } = useSidebarSources();
+  const navigate = useNavigate();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
+  const [orgMenuAnchor, setOrgMenuAnchor] = useState<HTMLElement | null>(null);
 
   const initials = user?.firstName
     ? `${user.firstName[0]}${user.lastName?.[0] ?? ''}`.toUpperCase()
@@ -87,8 +104,96 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           )}
         </Box>
 
-        <Box sx={{ height: '1px', bgcolor: 'divider', mb: '16px' }} />
+        <Box sx={{ height: '1px', bgcolor: 'divider' }} />
       </Box>
+
+      {/* Org switcher */}
+      {user && user.memberships.length > 0 && (
+        <>
+          {user.memberships.length >= 2 ? (
+            <Box
+              onClick={(e) => setOrgMenuAnchor(e.currentTarget)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                height: 34,
+                px: 2,
+                mx: '8px',
+                mt: '12px',
+                mb: '4px',
+                cursor: 'pointer',
+                borderRadius: 1,
+                transition: 'all 120ms ease',
+                '&:hover': { bgcolor: alpha(ct, 0.04) },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', color: alpha(ct, 0.5) }}>
+                <BuildingsIcon size={16} weight="light" color="currentColor" />
+              </Box>
+              <Typography
+                sx={{ fontSize: 13, fontWeight: 500, color: 'text.primary', flex: 1 }}
+                noWrap
+              >
+                {user.memberships.find((m) => m.orgId === selectedOrgId)?.orgName ?? 'Select org'}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', color: alpha(ct, 0.3) }}>
+                <CaretUpDownIcon size={14} weight="light" color="currentColor" />
+              </Box>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                height: 34,
+                px: 2,
+                mx: '8px',
+                mt: '12px',
+                mb: '4px',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', color: alpha(ct, 0.5) }}>
+                <BuildingsIcon size={16} weight="light" color="currentColor" />
+              </Box>
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'text.primary' }} noWrap>
+                {user.memberships[0].orgName}
+              </Typography>
+            </Box>
+          )}
+          <Menu
+            anchorEl={orgMenuAnchor}
+            open={!!orgMenuAnchor}
+            onClose={() => setOrgMenuAnchor(null)}
+            slotProps={{
+              paper: {
+                sx: { minWidth: 200, mt: 0.5 },
+              },
+            }}
+          >
+            {user.memberships.map((m) => (
+              <MenuItem
+                key={m.id}
+                selected={m.orgId === selectedOrgId}
+                onClick={() => {
+                  if (m.orgId !== selectedOrgId) {
+                    selectOrg(m.orgId);
+                    navigate({ to: '/dashboard' });
+                  }
+                  setOrgMenuAnchor(null);
+                }}
+                sx={{ fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 2 }}
+              >
+                {m.orgName}
+                {m.orgId === selectedOrgId && (
+                  <CheckIcon size={14} weight="bold" color="currentColor" />
+                )}
+              </MenuItem>
+            ))}
+          </Menu>
+        </>
+      )}
 
       {/* Nav */}
       <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2.5 }}>

@@ -1,11 +1,23 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 
-import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import {
+  alpha,
+  Avatar,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import {
   BookOpenIcon,
+  BuildingsIcon,
   CaretDoubleRightIcon,
   ChartBarIcon,
   ChatCircleIcon,
+  CheckIcon,
   EyeIcon,
   FolderIcon,
   GearIcon,
@@ -18,7 +30,7 @@ import {
   SunIcon,
   UsersIcon,
 } from '@phosphor-icons/react';
-import { Link, useLocation } from '@tanstack/react-router';
+import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
@@ -75,10 +87,13 @@ function StripIcon({
 
 export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
   const theme = useTheme();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, selectedOrgId, selectOrg } = useAuth();
   const { preference, setPreference } = useThemeMode();
+  const navigate = useNavigate();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
+  const [orgMenuAnchor, setOrgMenuAnchor] = useState<HTMLElement | null>(null);
+  const currentOrgName = user?.memberships.find((m) => m.orgId === selectedOrgId)?.orgName;
 
   const initials = user?.firstName
     ? `${user.firstName[0]}${user.lastName?.[0] ?? ''}`.toUpperCase()
@@ -131,6 +146,66 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
             <CaretDoubleRightIcon size={14} weight="light" color="currentColor" />
           </IconButton>
         </Tooltip>
+      )}
+
+      {/* Org switcher */}
+      {user && user.memberships.length >= 2 && (
+        <>
+          <Tooltip title={currentOrgName ?? 'Switch organization'} placement="right">
+            <Box
+              onClick={(e) => setOrgMenuAnchor(e.currentTarget)}
+              sx={{
+                width: 36,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: alpha(ct, 0.4),
+                transition: 'all 120ms ease',
+                '&:hover': {
+                  bgcolor: alpha(ct, 0.03),
+                  color: 'text.primary',
+                },
+              }}
+            >
+              <BuildingsIcon size={18} weight="light" color="currentColor" />
+            </Box>
+          </Tooltip>
+          <Menu
+            anchorEl={orgMenuAnchor}
+            open={!!orgMenuAnchor}
+            onClose={() => setOrgMenuAnchor(null)}
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            slotProps={{
+              paper: {
+                sx: { minWidth: 200, ml: 1 },
+              },
+            }}
+          >
+            {user.memberships.map((m) => (
+              <MenuItem
+                key={m.id}
+                selected={m.orgId === selectedOrgId}
+                onClick={() => {
+                  if (m.orgId !== selectedOrgId) {
+                    selectOrg(m.orgId);
+                    navigate({ to: '/dashboard' });
+                  }
+                  setOrgMenuAnchor(null);
+                }}
+                sx={{ fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 2 }}
+              >
+                {m.orgName}
+                {m.orgId === selectedOrgId && (
+                  <CheckIcon size={14} weight="bold" color="currentColor" />
+                )}
+              </MenuItem>
+            ))}
+          </Menu>
+          <Box sx={{ width: 28, height: '1px', bgcolor: 'grey.900', my: 0.5 }} />
+        </>
       )}
 
       {/* Nav icons */}
