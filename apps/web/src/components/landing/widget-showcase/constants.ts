@@ -19,4 +19,4 @@ export const SECTION_COPY = {
   cta: 'Get Started',
 } satisfies Record<string, string>;
 
-export const MOCK_URL = 'yourstore.com/products';
+export const MOCK_URL = 'yourcompany.com';

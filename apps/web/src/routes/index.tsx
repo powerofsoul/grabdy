@@ -15,6 +15,7 @@ import { LandingNav } from '@/components/landing/LandingNav';
 import { McpSection } from '@/components/landing/McpSection';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { WhatYouCanAskSection } from '@/components/landing/WhatYouCanAskSection';
+import { WidgetShowcaseSection } from '@/components/landing/widget-showcase';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -56,6 +57,7 @@ function LandingPage() {
       <PricingSection />
       <DevTeaserSection />
       <McpSection />
+      <WidgetShowcaseSection />
       <CTASection />
       <Footer />
     </Box>
