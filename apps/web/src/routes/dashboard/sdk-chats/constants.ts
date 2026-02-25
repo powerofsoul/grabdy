@@ -55,7 +55,11 @@ app.get("/api/grabdy/token", (req, res) => {
       chatId: "${chatId}",
     },
     privateKey,
-    { algorithm: "RS256", expiresIn: "1h" }
+    {
+      algorithm: "RS256",
+      expiresIn: "1h",
+      keyid: "YOUR_KEY_FINGERPRINT", // From the Signing Keys tab
+    }
   );
   res.json({ jwt: token });
 });
@@ -130,10 +134,14 @@ public class GrabdyTokenService
         _rsa.ImportFromPem(privateKeyPem);
     }
 
-    public string GenerateJwt(string userId)
+    public string GenerateJwt(string userId, string keyFingerprint)
     {
+        var key = new RsaSecurityKey(_rsa)
+        {
+            KeyId = keyFingerprint // From the Signing Keys tab
+        };
         var credentials = new SigningCredentials(
-            new RsaSecurityKey(_rsa),
+            key,
             SecurityAlgorithms.RsaSha256
         );
 
@@ -220,12 +228,14 @@ function grabdy_chat_jwt(): string {
     $private_key = file_get_contents(ABSPATH . "private_key.pem");
     $user = wp_get_current_user();
 
+    $key_fingerprint = "YOUR_KEY_FINGERPRINT"; // From the Signing Keys tab
+
     return JWT::encode([
         "sub" => (string) $user->ID,
         "chatId" => "${chatId}",
         "iat" => time(),
         "exp" => time() + 3600,
-    ], $private_key, "RS256");
+    ], $private_key, "RS256", $key_fingerprint);
 }
 
 // Register a REST endpoint for the SDK to call:

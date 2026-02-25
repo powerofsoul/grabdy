@@ -37,6 +37,9 @@ GRABDY_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
 PASTE_YOUR_KEY_HERE
 -----END PRIVATE KEY-----"
 
+# Your key fingerprint (shown in the Signing Keys tab after generating a key)
+GRABDY_KEY_FINGERPRINT="PASTE_YOUR_FINGERPRINT_HERE"
+
 # Your SDK Chat ID
 GRABDY_CHAT_ID="${chatId}"
 
@@ -58,6 +61,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({ origin: "http://localhost:5173" }));
 
 const privateKey = process.env.GRABDY_PRIVATE_KEY;
+const keyFingerprint = process.env.GRABDY_KEY_FINGERPRINT;
 const chatId = process.env.GRABDY_CHAT_ID;
 
 if (!privateKey || privateKey.includes("PASTE_YOUR_KEY_HERE")) {
@@ -68,6 +72,12 @@ if (!privateKey || privateKey.includes("PASTE_YOUR_KEY_HERE")) {
 
 if (!chatId) {
   console.error("\\n  Missing GRABDY_CHAT_ID in .env\\n");
+  process.exit(1);
+}
+
+if (!keyFingerprint || keyFingerprint.includes("PASTE_YOUR_FINGERPRINT_HERE")) {
+  console.error("\\n  Missing GRABDY_KEY_FINGERPRINT in .env");
+  console.error("  Copy the fingerprint from the Signing Keys tab in the Grabdy dashboard.\\n");
   process.exit(1);
 }
 
@@ -82,7 +92,7 @@ app.get("/api/grabdy/token", (req, res) => {
       chatId: chatId,
     },
     privateKey,
-    { algorithm: "RS256", expiresIn: "1h" }
+    { algorithm: "RS256", expiresIn: "1h", keyid: keyFingerprint }
   );
 
   res.json({ jwt: token });
@@ -411,7 +421,7 @@ A minimal Express + React demo showing how to integrate the Grabdy Chat widget.
    npm install
    \`\`\`
 
-2. Open \`.env\` and paste your private key (from the Grabdy dashboard > SDK Chats > Signing Keys).
+2. Open \`.env\` and paste your private key and key fingerprint (from the Grabdy dashboard > SDK Chats > Signing Keys).
 
 3. Start the dev servers:
 
@@ -436,6 +446,7 @@ A minimal Express + React demo showing how to integrate the Grabdy Chat widget.
 | Variable | Description |
 |---|---|
 | \`GRABDY_PRIVATE_KEY\` | Your RS256 private key PEM |
+| \`GRABDY_KEY_FINGERPRINT\` | Your signing key fingerprint (from Signing Keys tab) |
 | \`GRABDY_CHAT_ID\` | Your SDK Chat ID |
 | \`VITE_SDK_SCRIPT_URL\` | SDK script URL (default: \`https://sdk.grabdy.com/sdk.js\`) |
 | \`VITE_SDK_APP_URL\` | Grabdy app URL for the embed iframe (default: \`https://grabdy.com\`) |

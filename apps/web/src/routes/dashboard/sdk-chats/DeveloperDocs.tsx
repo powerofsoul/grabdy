@@ -99,8 +99,8 @@ export function DeveloperDocs({ chatId }: { chatId?: string }) {
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Your backend signs RS256 JWTs with a private key. The JWT must include a <code>sub</code>{' '}
-        claim (your user's ID) and the <code>chatId</code>. Generate a signing key in the Signing
-        Keys tab.
+        claim (your user's ID), the <code>chatId</code>, and the <code>keyid</code> header (your key
+        fingerprint from the Signing Keys tab).
       </Typography>
       <CodeBlock
         code={guide.backendInstall.code}
@@ -137,6 +137,9 @@ export function DeveloperDocs({ chatId }: { chatId?: string }) {
             </li>
             <li>
               <code>chatId</code> (required): The SDK Chat ID
+            </li>
+            <li>
+              <code>kid</code> header (required): Your signing key fingerprint
             </li>
             <li>
               <code>exp</code> (recommended): Expiration timestamp (e.g. 1 hour)
