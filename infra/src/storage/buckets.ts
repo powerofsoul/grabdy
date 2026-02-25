@@ -45,9 +45,10 @@ new aws.s3.BucketCorsConfigurationV2('grabdy-uploads-cors', {
   bucket: uploadsBucket.id,
   corsRules: [
     {
-      allowedOrigins: [`https://${Env.domain}`],
+      allowedOrigins: ['*'],
       allowedMethods: ['GET', 'HEAD'],
       allowedHeaders: ['*'],
+      exposeHeaders: ['Accept-Ranges', 'Content-Range', 'Content-Length', 'Content-Type'],
       maxAgeSeconds: 3600,
     },
   ],

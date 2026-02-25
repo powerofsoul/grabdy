@@ -31,7 +31,11 @@ export function PdfCanvas({ url, pageNumber, onDocumentLoaded }: PdfCanvasProps)
         }
 
         if (!pdfDocRef.current) {
-          pdfDocRef.current = await getDocument(url).promise;
+          pdfDocRef.current = await getDocument({
+            url,
+            disableAutoFetch: true,
+            rangeChunkSize: 65536,
+          }).promise;
           currentUrlRef.current = url;
           onDocumentLoaded?.(pdfDocRef.current.numPages);
         }

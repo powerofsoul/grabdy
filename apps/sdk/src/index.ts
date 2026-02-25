@@ -210,7 +210,7 @@ class GrabdyChat {
         this.close();
         break;
       case 'OPEN_SOURCE':
-        if ('source' in data && data.source && typeof data.source === 'object') {
+        if (chatWindow && e.source === chatWindow && 'source' in data && data.source && typeof data.source === 'object') {
           const raw = data.source;
           if (
             'type' in raw && typeof raw.type === 'string' &&
