@@ -7,7 +7,6 @@ import { dataSourceTypeEnum } from '../enums/data-source.js';
 const pdfChunkMetaSchema = z.object({
   type: z.literal('PDF'),
   pages: z.array(z.number()),
-  imageStorageKey: z.string().optional(),
 });
 
 const docxChunkMetaSchema = z.object({

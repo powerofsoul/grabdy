@@ -11,6 +11,8 @@ const chatMessageSnapshotSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z.string(),
   sources: z.array(chatSourceSchema).nullable(),
+  thinkingTexts: z.array(z.string()).nullable(),
+  durationMs: z.number().nullable(),
   createdAt: z.string(),
 });
 

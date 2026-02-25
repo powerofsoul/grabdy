@@ -6,17 +6,16 @@ import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 
-import { parseBlocks } from '../parse-blocks';
 import { markdownStyles } from '../styles';
 import type { ChatMessage } from '../types';
 
 import { MessageAttachments } from './MessageAttachments';
 import { SourceChips } from './source-chips';
+import { ThinkingBlock } from './ThinkingBlock';
 
 import { useIsEmbed } from '@/components/embed-chat/context';
 import { useAuth } from '@/context/AuthContext';
 import { getChatAttachmentUrl, getSdkChatAttachmentUrl } from '@/lib/api';
-import { FONT_MONO } from '@/theme';
 
 interface MessageRowProps {
   message: ChatMessage;
@@ -30,14 +29,9 @@ export const MessageRow = memo(
     const isEmbed = useIsEmbed();
     const { selectedOrgId } = useAuth();
 
-    // Parse blocks from content for display (handles both streamed and persisted messages)
-    const parsed = !isUser ? parseBlocks(message.content) : null;
-    const displayContent = parsed ? parsed.text : message.content;
-
-    // Merge: explicit thinkingTexts (from done callback) take priority, else use parsed
-    const thinkingTexts =
-      message.thinkingTexts ?? (parsed?.thinkingTexts.length ? parsed.thinkingTexts : undefined);
-    const sources = message.sources ?? (parsed?.sources.length ? parsed.sources : undefined);
+    const displayContent = message.content;
+    const thinkingTexts = message.thinkingTexts;
+    const sources = message.sources;
 
     const hasThinking = thinkingTexts && thinkingTexts.length > 0;
     // Show the thinking indicator during streaming (even without texts yet) or when there are texts
@@ -118,27 +112,11 @@ export const MessageRow = memo(
                   }}
                 >
                   {thinkingTexts.map((text, i) => (
-                    <Box
+                    <ThinkingBlock
                       key={i}
-                      sx={{
-                        fontSize: '0.75rem',
-                        color: 'text.secondary',
-                        lineHeight: 1.5,
-                        '& + &': { mt: 0.5 },
-                        '& p': { m: 0, fontSize: 'inherit', lineHeight: 'inherit' },
-                        '& p + p': { mt: 0.5 },
-                        '& code': {
-                          fontFamily: FONT_MONO,
-                          bgcolor: 'grey.100',
-                          px: 0.5,
-                          py: 0.25,
-                          borderRadius: 0.5,
-                          fontSize: 'inherit',
-                        },
-                      }}
-                    >
-                      <ReactMarkdown>{text}</ReactMarkdown>
-                    </Box>
+                      text={text}
+                      animate={message.isStreaming === true && i === thinkingTexts.length - 1}
+                    />
                   ))}
                 </Box>
               </Collapse>

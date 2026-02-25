@@ -8,13 +8,16 @@ import {
 } from 'react';
 
 import type { ChatAttachment } from '@grabdy/contracts';
+import { chatSourceSchema } from '@grabdy/contracts';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 import { postToParent } from '../types';
 
-import { parseBlocks } from '@/components/chat/parse-blocks';
 import type { ChatMessage } from '@/components/chat/types';
 import { fetchSdkHistory, SdkApiError, streamSdkChat, uploadSdkChatAttachment } from '@/lib/api';
+
+const sourcesArraySchema = z.array(chatSourceSchema);
 
 interface UseEmbedStreamParams {
   jwt: string;
@@ -43,22 +46,14 @@ export function useEmbedStream({ jwt, setMessages }: UseEmbedStreamParams) {
         }
         if (res.data.messages.length > 0) {
           setMessages(
-            res.data.messages.map((m) => {
-              if (m.role === 'assistant') {
-                const blocks = parseBlocks(m.content);
-                return {
-                  role: 'assistant',
-                  content: blocks.text,
-                  thinkingTexts: blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
-                  sources: blocks.sources.length > 0 ? blocks.sources : undefined,
-                };
-              }
-              return {
-                role: 'user',
-                content: m.content,
-                attachments: m.attachments ?? undefined,
-              };
-            })
+            res.data.messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+              attachments: m.attachments ?? undefined,
+              thinkingTexts: m.thinkingTexts ?? undefined,
+              sources: m.sources ?? undefined,
+              durationMs: m.durationMs ?? undefined,
+            }))
           );
         }
         setStatus('ready');
@@ -97,6 +92,17 @@ export function useEmbedStream({ jwt, setMessages }: UseEmbedStreamParams) {
 
       let receivedFirstChunk = false;
 
+      const updateLastAssistant = (updater: (msg: ChatMessage) => ChatMessage) => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last.role === 'assistant') {
+            updated[updated.length - 1] = updater(last);
+          }
+          return updated;
+        });
+      };
+
       try {
         await streamSdkChat(
           jwt,
@@ -114,65 +120,50 @@ export function useEmbedStream({ jwt, setMessages }: UseEmbedStreamParams) {
                   { role: 'assistant', content: text, isStreaming: true },
                 ]);
               } else {
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  const last = updated[updated.length - 1];
-                  if (last.role === 'assistant') {
-                    updated[updated.length - 1] = {
-                      ...last,
-                      content: last.content + text,
-                    };
-                  }
-                  return updated;
-                });
+                updateLastAssistant((msg) => ({
+                  ...msg,
+                  content: msg.content + text,
+                }));
               }
             },
+            onThinking: (text) => {
+              if (!receivedFirstChunk) {
+                receivedFirstChunk = true;
+                setMessages((prev) => [
+                  ...prev,
+                  { role: 'assistant', content: '', thinkingTexts: [text], isStreaming: true },
+                ]);
+              } else {
+                updateLastAssistant((msg) => ({
+                  ...msg,
+                  thinkingTexts: [...(msg.thinkingTexts ?? []), text],
+                }));
+              }
+            },
+            onSources: (rawSources) => {
+              const result = sourcesArraySchema.safeParse(rawSources);
+              if (!result.success) return;
+              updateLastAssistant((msg) => ({
+                ...msg,
+                sources: [...(msg.sources ?? []), ...result.data],
+              }));
+            },
             onTextDone: () => {
-              setMessages((prev) => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last.role === 'assistant') {
-                  const blocks = parseBlocks(last.content);
-                  updated[updated.length - 1] = {
-                    ...last,
-                    content: blocks.text,
-                    thinkingTexts:
-                      blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
-                    sources: blocks.sources.length > 0 ? blocks.sources : undefined,
-                    isStreaming: false,
-                  };
-                }
-                return updated;
-              });
+              updateLastAssistant((msg) => ({
+                ...msg,
+                isStreaming: false,
+              }));
             },
             onDone: (metadata) => {
               if (metadata.threadId) {
                 threadIdRef.current = metadata.threadId;
               }
 
-              setMessages((prev) => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last.role === 'assistant') {
-                  const alreadyParsed = Boolean(last.sources ?? last.thinkingTexts);
-                  const blocks = alreadyParsed ? null : parseBlocks(last.content);
-                  updated[updated.length - 1] = {
-                    ...last,
-                    content: blocks ? blocks.text : last.content,
-                    thinkingTexts:
-                      last.thinkingTexts ??
-                      (blocks && blocks.thinkingTexts.length > 0
-                        ? blocks.thinkingTexts
-                        : undefined),
-                    sources:
-                      last.sources ??
-                      (blocks && blocks.sources.length > 0 ? blocks.sources : undefined),
-                    isStreaming: false,
-                    durationMs: metadata.durationMs,
-                  };
-                }
-                return updated;
-              });
+              updateLastAssistant((msg) => ({
+                ...msg,
+                isStreaming: false,
+                durationMs: metadata.durationMs,
+              }));
             },
             onError: (error) => {
               console.error('[embed-stream]', error);

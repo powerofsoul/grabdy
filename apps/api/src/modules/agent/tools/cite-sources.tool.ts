@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { tool } from 'ai';
 import { z } from 'zod';
 
-import type { Tool } from '../base-tool';
+import type { StreamChunk, Tool } from '../base-tool';
 
 const sourceSchema = z.object({
   type: z
@@ -23,22 +23,42 @@ const sourceSchema = z.object({
 
 /**
  * A "cite-sources" tool that lets the model report which sources it used.
- * GPT models output either text or tool calls per turn, so emitting a fenced
- * sources block inline doesn't work reliably. This tool captures the sources
- * as structured data and the stream processor emits the fenced block.
+ * Captures sources as structured data and emits a typed StreamChunk
+ * for the UI to render as clickable chips.
  */
 @Injectable()
 export class CiteSourcesTool implements Tool {
+  systemPrompt = `## Citing sources (MANDATORY)
+
+If you used ANY information from \`rag-search\` results in your answer, you MUST call \`cite-sources\`. No exceptions. Every fact you state came from a source, so cite it. Skipping citations is only acceptable for greetings or social messages where no search was performed.
+
+Call \`cite-sources\` ONCE after writing your answer. Include every source whose content contributed to your answer. The UI renders these as clickable chips so the user can verify your claims.
+
+**How to cite:** Refer to sources by name in your answer text (e.g. "According to the Employee Handbook, ..."). Then pass the structured data to \`cite-sources\`. Deduplicate by \`dataSourceId\` (merge pages, take highest score).
+
+### CRITICAL: source data NEVER goes in text output
+
+Your text output is rendered directly to the user as your answer. Source attribution is handled by a separate UI component that reads from the \`cite-sources\` tool call.
+
+If you write source data in your text output, it will appear as ugly raw JSON to the user. This is a bug. The ONLY correct way to cite sources is via the \`cite-sources\` tool call.
+
+Forbidden in text output:
+- JSON objects or arrays containing source data
+- \`{ "sources": [...] }\` blocks
+- \`dataSourceId\`, \`dataSourceName\`, \`score\`, \`sourceUrl\` fields
+- "Sources:", "References:", "Citations:" headers followed by source listings
+- Raw URLs from search results
+- Any mention of scores, IDs, or internal metadata
+
+Your text = the answer in plain language. Source data = \`cite-sources\` tool call. No overlap.`;
+
   create() {
     return tool({
       description:
-        'MANDATORY: Call this tool ONCE after writing your answer to cite your sources. ' +
-        'Pass all sources you used from rag-search results. ' +
-        'The UI renders these as clickable source chips. ' +
-        'Deduplicate by dataSourceId (merge pages, take highest score). ' +
-        'Do NOT write a ```sources block in your text. Use this tool instead. ' +
-        'Do NOT embed source JSON in your answer text. ' +
-        'Skip this tool only for greetings/social messages where no sources were used.',
+        'MANDATORY after every answer that used rag-search results. ' +
+        'If you searched and found information, you MUST call this tool. ' +
+        'Pass all sources you referenced. Deduplicate by dataSourceId (merge pages, take highest score). ' +
+        'The UI renders these as clickable source chips so users can verify your answer.',
       inputSchema: z.object({
         sources: z
           .array(sourceSchema)
@@ -50,11 +70,11 @@ export class CiteSourcesTool implements Tool {
     });
   }
 
-  onToolCall(input: unknown): string | null {
+  onToolCall(input: unknown): StreamChunk | null {
     if (input && typeof input === 'object' && 'sources' in input) {
       const sources = input.sources;
       if (Array.isArray(sources) && sources.length > 0) {
-        return `\n\`\`\`sources\n${JSON.stringify(sources)}\n\`\`\`\n`;
+        return { type: 'sources', sources };
       }
     }
     return null;

@@ -1,14 +1,17 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import type { ChatAttachment } from '@grabdy/contracts';
+import { type ChatAttachment, chatSourceSchema } from '@grabdy/contracts';
 import { sql } from 'kysely';
+import { z } from 'zod';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { DataAgent } from '../agent/agents/data-agent';
 import type { AttachmentContext } from '../agent/base-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
+
+const sourcesArraySchema = z.array(chatSourceSchema);
 
 @Injectable()
 export class ChatService {
@@ -185,7 +188,13 @@ export class ChatService {
         id: m.id,
         role: m.role,
         content: m.content,
-        sources: null,
+        sources: (() => {
+          if (!m.sources) return null;
+          const parsed = sourcesArraySchema.safeParse(m.sources);
+          return parsed.success ? parsed.data : null;
+        })(),
+        thinkingTexts: m.thinkingTexts ?? null,
+        durationMs: m.durationMs ?? null,
         attachments: m.attachments ?? null,
         createdAt: m.createdAt ? m.createdAt.toISOString() : new Date().toISOString(),
       })),

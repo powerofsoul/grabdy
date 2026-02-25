@@ -2,18 +2,31 @@ import { Logger } from '@nestjs/common';
 
 import type { TextStreamPart, ToolSet } from 'ai';
 
-import type { Tool } from './base-tool';
+import type { StreamChunk, Tool } from './base-tool';
 
 export interface AgentStreamResult {
-  textStream: AsyncIterable<string>;
+  chunks: AsyncIterable<StreamChunk>;
   getFullText: () => string;
+  getThinkingTexts: () => string[];
+  getSources: () => unknown[];
 }
 
 const logger = new Logger('AgentStream');
 
 /**
- * Process a raw AI SDK fullStream into a text stream.
- * Converts tool calls with hooks (think, cite-sources) into text chunks.
+ * Regex that matches XML-style tags some models emit in text output
+ * (e.g. <thinking>, </thinking>, <function_calls>, <invoke>, <parameter>).
+ */
+const XML_TAG_RE = /<\/?(?:thinking|function_calls|invoke|parameter|antml:\w+)[^>]*>/g;
+
+function stripXmlTags(text: string): string | null {
+  const cleaned = text.replace(XML_TAG_RE, '');
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+/**
+ * Process a raw AI SDK fullStream into typed chunks.
+ * Text deltas become { type: 'text' }, tool hooks emit thinking/sources chunks.
  */
 export function processStream(
   fullStream: AsyncIterable<TextStreamPart<ToolSet>>,
@@ -21,28 +34,38 @@ export function processStream(
   logPrefix = '[stream]'
 ): AgentStreamResult {
   let fullText = '';
+  const thinkingTexts: string[] = [];
+  const sources: unknown[] = [];
   const streamStart = Date.now();
   let textChunks = 0;
   let stepCount = 0;
 
-  async function* generate(): AsyncIterable<string> {
+  async function* generate(): AsyncIterable<StreamChunk> {
     for await (const part of fullStream) {
       const elapsed = Date.now() - streamStart;
 
       if (part.type === 'text-delta') {
+        const cleaned = stripXmlTags(part.text);
+        if (!cleaned) continue;
         if (textChunks === 0) {
           logger.log(`${logPrefix} First text chunk at +${elapsed}ms`);
         }
         textChunks++;
-        fullText += part.text;
-        yield part.text;
+        fullText += cleaned;
+        yield { type: 'text', text: cleaned };
       } else if (part.type === 'tool-call') {
         const hook = hooks[part.toolName];
         if (hook?.onToolCall) {
-          const text = hook.onToolCall(part.input);
-          if (text) {
-            fullText += text;
-            yield text;
+          const chunk = hook.onToolCall(part.input);
+          if (chunk) {
+            if (chunk.type === 'text') {
+              fullText += chunk.text;
+            } else if (chunk.type === 'thinking') {
+              thinkingTexts.push(chunk.text);
+            } else if (chunk.type === 'sources') {
+              sources.push(...chunk.sources);
+            }
+            yield chunk;
           }
         }
         logger.log(
@@ -51,10 +74,16 @@ export function processStream(
       } else if (part.type === 'tool-result') {
         const hook = hooks[part.toolName];
         if (hook?.onToolResult) {
-          const text = hook.onToolResult(part.input, part.output);
-          if (text) {
-            fullText += text;
-            yield text;
+          const chunk = hook.onToolResult(part.input, part.output);
+          if (chunk) {
+            if (chunk.type === 'text') {
+              fullText += chunk.text;
+            } else if (chunk.type === 'thinking') {
+              thinkingTexts.push(chunk.text);
+            } else if (chunk.type === 'sources') {
+              sources.push(...chunk.sources);
+            }
+            yield chunk;
           }
         }
         const resultStr = JSON.stringify(part.output).slice(0, 500);
@@ -81,7 +110,9 @@ export function processStream(
   }
 
   return {
-    textStream: generate(),
+    chunks: generate(),
     getFullText: () => fullText,
+    getThinkingTexts: () => thinkingTexts,
+    getSources: () => sources,
   };
 }

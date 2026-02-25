@@ -1,7 +1,6 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 
-import { chunkMetaSchema } from '@grabdy/contracts';
 import type { Job } from 'bullmq';
 
 import { DbService } from '../../../db/db.module';
@@ -21,31 +20,11 @@ export class DataSourceCleanupProcessor extends WorkerHost {
   async process(job: Job): Promise<void> {
     const { orgId, dataSourceId, storagePath } = job.data;
 
-    // Collect image storage keys before deleting chunks
-    const chunks = await this.db.kysely
-      .selectFrom('data.chunks')
-      .select('metadata')
-      .where('data_source_id', '=', dataSourceId)
-      .where('org_id', '=', orgId)
-      .execute();
-
-    const imageKeys: string[] = [];
-    for (const chunk of chunks) {
-      const parsed = chunkMetaSchema.safeParse(chunk.metadata);
-      if (parsed.success && parsed.data.type === 'PDF' && parsed.data.imageStorageKey) {
-        imageKeys.push(parsed.data.imageStorageKey);
-      }
-    }
-
     await this.db.kysely
       .deleteFrom('data.chunks')
       .where('data_source_id', '=', dataSourceId)
       .where('org_id', '=', orgId)
       .execute();
-
-    if (imageKeys.length > 0) {
-      await Promise.all(imageKeys.map((key) => this.storage.delete(key).catch(() => {})));
-    }
 
     if (storagePath) {
       await this.storage.delete(storagePath);

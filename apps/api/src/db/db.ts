@@ -297,6 +297,12 @@ export interface DB {
       string | null,
       string | null
     >;
+    metadata: ColumnType<
+      { thinkingTexts?: string[]; sources?: unknown[] } | null,
+      string | null,
+      string | null
+    >;
+    duration_ms: number | null;
     created_at: Generated<Timestamp>;
   };
 }

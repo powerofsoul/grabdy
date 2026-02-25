@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import { toast } from 'sonner';
 
-import { parseBlocks } from '../parse-blocks';
 import type { ChatMessage } from '../types';
 
 import { useAuth } from '@/context/AuthContext';
@@ -87,27 +86,15 @@ export function useThreadManager({
         });
         if (res.status === 200) {
           onLoadMessages(
-            res.body.data.messages.map((m) => {
-              if (m.role === 'user') {
-                return {
-                  id: m.id,
-                  role: m.role,
-                  content: m.content,
-                  attachments: m.attachments ?? undefined,
-                };
-              }
-              // Assistant messages: parse blocks from raw content
-              const blocks = parseBlocks(m.content);
-              // Merge: API-level sources take priority, then parsed
-              const apiSources = m.sources && m.sources.length > 0 ? m.sources : undefined;
-              return {
-                id: m.id,
-                role: m.role,
-                content: blocks.text,
-                thinkingTexts: blocks.thinkingTexts.length > 0 ? blocks.thinkingTexts : undefined,
-                sources: apiSources ?? (blocks.sources.length > 0 ? blocks.sources : undefined),
-              };
-            })
+            res.body.data.messages.map((m) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              attachments: m.attachments ?? undefined,
+              thinkingTexts: m.thinkingTexts ?? undefined,
+              sources: m.sources ?? undefined,
+              durationMs: m.durationMs ?? undefined,
+            }))
           );
         }
       } catch {

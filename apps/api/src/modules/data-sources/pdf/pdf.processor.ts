@@ -16,9 +16,8 @@ import { DbService } from '../../../db/db.module';
 import { InjectTypedQueue } from '../../../queue/queue.decorators';
 import { S3FileStorage } from '../../storage/s3-file-storage';
 import { chunkPages } from '../chunking/chunk-content';
-import type { ChunkWithMeta, DataSourceJobData } from '../data-source.types';
+import type { DataSourceJobData } from '../data-source.types';
 import { buildSource } from '../data-source.types';
-import { ImageExtractor } from '../image/image.extractor';
 import { EmbeddingService } from '../pipeline/embedding.service';
 
 import { PdfExtractor } from './pdf.extractor';
@@ -33,7 +32,6 @@ export class DsPdfProcessor extends WorkerHost {
     private db: DbService,
     private storage: S3FileStorage,
     private pdfExtractor: PdfExtractor,
-    private imageExtractor: ImageExtractor,
     private embeddingService: EmbeddingService,
     @InjectTypedQueue('notification') private notificationQueue: Queue
   ) {
@@ -117,35 +115,12 @@ export class DsPdfProcessor extends WorkerHost {
           const textChunks = pages.length > 0 ? chunkPages(pages, 'PDF', source) : [];
 
           // Keep only chunks anchored to this range's owned pages
-          const ownedTextChunks = textChunks.filter((c) => {
+          const rangeChunks = textChunks.filter((c) => {
             const meta = c.metadata;
             if (meta.type !== 'PDF') return true;
             const minPage = Math.min(...meta.pages);
             return minPage >= range.start && minPage <= range.end;
           });
-
-          // Extract, upload, and analyze images
-          const { images, cleanup: cleanupImages } =
-            await this.pdfExtractor.extractImagesToDiskFromFile(
-              tempPdf.path,
-              range.start,
-              range.end
-            );
-
-          let imageChunks: ChunkWithMeta[] = [];
-          try {
-            imageChunks = await this.imageExtractor.analyzeImages(
-              images,
-              orgId,
-              collectionId,
-              dataSourceId,
-              source
-            );
-          } finally {
-            await cleanupImages();
-          }
-
-          const rangeChunks = [...ownedTextChunks, ...imageChunks];
 
           if (rangeChunks.length > 0) {
             const rangeOffset = chunkIndexOffset + totalChunksStored;

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
-import { chunkMetaSchema, isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
+import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
 
 import { getMaxFileSizeForMime } from '../../config/constants';
 import { DbService } from '../../db/db.module';
@@ -124,28 +124,19 @@ export class DataSourcesService {
       throw new NotFoundException('Data source not found');
     }
 
-    // Collect extracted image keys before deleting chunks
-    const imageKeys = await this.collectImageKeys(orgId, id);
-
-    // Delete chunks first
     await this.db.kysely
       .deleteFrom('data.chunks')
       .where('data_source_id', '=', id)
       .where('org_id', '=', orgId)
       .execute();
 
-    // Delete the data source record
     await this.db.kysely
       .deleteFrom('data.data_sources')
       .where('id', '=', id)
       .where('org_id', '=', orgId)
       .execute();
 
-    // Delete file and extracted images from storage
     await this.storage.delete(dataSource.storage_path);
-    if (imageKeys.length > 0) {
-      await Promise.all(imageKeys.map((key) => this.storage.delete(key).catch(() => {})));
-    }
   }
 
   async rename(orgId: DbId<'Org'>, id: DbId<'DataSource'>, title: string) {
@@ -197,12 +188,6 @@ export class DataSourcesService {
       throw new NotFoundException('Data source not found');
     }
 
-    // Collect and delete extracted images before deleting chunks
-    const imageKeys = await this.collectImageKeys(orgId, id);
-    if (imageKeys.length > 0) {
-      await Promise.all(imageKeys.map((key) => this.storage.delete(key).catch(() => {})));
-    }
-
     // Delete existing chunks
     await this.db.kysely
       .deleteFrom('data.chunks')
@@ -233,27 +218,6 @@ export class DataSourcesService {
     await this.dispatch.dispatch(jobData);
 
     return this.toResponse({ ...dataSource, status: 'UPLOADED' });
-  }
-
-  private async collectImageKeys(
-    orgId: DbId<'Org'>,
-    dataSourceId: DbId<'DataSource'>
-  ): Promise<string[]> {
-    const chunks = await this.db.kysely
-      .selectFrom('data.chunks')
-      .select('metadata')
-      .where('data_source_id', '=', dataSourceId)
-      .where('org_id', '=', orgId)
-      .execute();
-
-    const keys: string[] = [];
-    for (const chunk of chunks) {
-      const parsed = chunkMetaSchema.safeParse(chunk.metadata);
-      if (parsed.success && parsed.data.type === 'PDF' && parsed.data.imageStorageKey) {
-        keys.push(parsed.data.imageStorageKey);
-      }
-    }
-    return keys;
   }
 
   private toResponse(ds: {

@@ -123,13 +123,21 @@ export abstract class BaseAgent {
     protected readonly agentMemory: AgentMemoryService
   ) {}
 
-  protected buildAgent(opts: AgentCallOptions): ToolLoopAgent {
+  protected buildAgent(opts: AgentCallOptions, hooks?: Record<string, Tool>): ToolLoopAgent {
     const modelKey: ModelKey = CHAT_MODEL;
+
+    // Collect systemPrompt sections from tool hooks and append to instructions
+    const toolPrompts = Object.values(hooks ?? {})
+      .map((hook) => hook.systemPrompt)
+      .filter(Boolean)
+      .join('\n\n');
+
+    const instructions = toolPrompts ? `${opts.instructions}\n\n${toolPrompts}` : opts.instructions;
 
     return new ToolLoopAgent({
       id: this.agentId,
       model: CHAT_LANGUAGE_MODEL,
-      instructions: opts.instructions,
+      instructions,
       tools: opts.tools,
       stopWhen: stepCountIs(opts.maxSteps ?? this.defaultMaxSteps),
       prepareStep: opts.prepareStep,
@@ -169,7 +177,7 @@ export abstract class BaseAgent {
   }
 
   async stream(ctx: AgentContext, input: StreamInput): Promise<AsyncIterable<string>> {
-    const agent = this.buildAgent(ctx.callOptions);
+    const agent = this.buildAgent(ctx.callOptions, ctx.hooks);
     const { orgId } = ctx.callOptions;
 
     const history: CoreMessage[] = input.threadId
@@ -195,15 +203,33 @@ export abstract class BaseAgent {
     async function* generateSSE(): AsyncIterable<string> {
       const streamStart = Date.now();
 
-      for await (const text of processed.textStream) {
-        yield sseText(text);
+      for await (const chunk of processed.chunks) {
+        if (chunk.type === 'text') {
+          yield sseText(chunk.text);
+        } else if (chunk.type === 'thinking') {
+          yield sseMeta({ type: 'thinking', text: chunk.text });
+        } else if (chunk.type === 'sources') {
+          yield sseMeta({ type: 'sources', sources: chunk.sources });
+        }
       }
 
       yield sseMeta({ type: 'text_done' });
 
       const fullText = processed.getFullText();
+      const thinkingTexts = processed.getThinkingTexts();
+      const sources = processed.getSources();
+      const durationMs = Date.now() - streamStart;
+
       if (threadId && fullText.trim()) {
-        await agentMemory.saveMessages(threadId, orgId, [{ role: 'assistant', content: fullText }]);
+        await agentMemory.saveMessages(threadId, orgId, [
+          {
+            role: 'assistant',
+            content: fullText,
+            thinkingTexts: thinkingTexts.length > 0 ? thinkingTexts : undefined,
+            sources: sources.length > 0 ? sources : undefined,
+            durationMs,
+          },
+        ]);
       }
 
       yield sseMeta({
@@ -217,7 +243,7 @@ export abstract class BaseAgent {
   }
 
   async generate(ctx: AgentContext, input: StreamInput) {
-    const agent = this.buildAgent(ctx.callOptions);
+    const agent = this.buildAgent(ctx.callOptions, ctx.hooks);
     const { orgId } = ctx.callOptions;
 
     const history: CoreMessage[] = input.threadId

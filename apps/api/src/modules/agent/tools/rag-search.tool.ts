@@ -4,18 +4,41 @@ import type { DbId } from '@grabdy/common';
 import {
   AiCallerType,
   CHUNK_META_DESCRIPTIONS,
-  type ChunkMeta,
   chunkMetaTypeEnum,
   type MetadataFilter,
 } from '@grabdy/contracts';
 import { tool } from 'ai';
 import { z } from 'zod';
 
-import { env } from '../../../config/env.config';
 import { SearchService } from '../../retrieval/search.service';
+import type { Tool } from '../base-tool';
 
 @Injectable()
-export class RagSearchTool {
+export class RagSearchTool implements Tool {
+  systemPrompt = `## Search strategy
+
+You are a researcher. Search aggressively. One search is almost never enough.
+
+**Query formulation:**
+- Use short, keyword-focused queries (3-6 words). Not full sentences.
+- Try synonyms, related terms, and different phrasings. Example: "draw star" vs "star shape" vs "polygon" vs "five point" vs "plot star" vs "star coordinates".
+- Decompose complex questions into 2-3 sub-queries and search each separately.
+- If results mention terms or concepts you had not considered, search for those too.
+
+**When to keep searching:**
+- Results are partially relevant but do not fully answer the question. Search with different terms.
+- Results mention related concepts, commands, or techniques. Follow up on those.
+- \`searchMeta.suggestion\` is set. Reformulate and try again.
+- You found general info but not the specific detail the user needs. Narrow down.
+- You only did one search. Do at least one more with different terms.
+
+**When to stop:**
+- You have found specific, directly relevant information that answers the question.
+- You have done 3+ searches with varied terms and nothing relevant came back.
+- Additional searches keep returning the same results.
+
+**Rules:**
+- Never mention scores, metadata field names, internal IDs, or storage keys in your answer text.`;
   private readonly logger = new Logger(RagSearchTool.name);
 
   constructor(private searchService: SearchService) {}
@@ -39,7 +62,6 @@ export class RagSearchTool {
 - contextBefore/contextAfter: surrounding text from adjacent chunks for richer context
 - dataSourceName: human-readable source name
 - sourceUrl: direct link to the source (use this to create clickable links when citing)
-- imageUrl: if this result is an image, a URL to display it. Use markdown ![description](imageUrl) to show it.
 - metadata: depends on type. ${metadataDesc}
 Use metadata to give context (page numbers, sheet names, Slack authors, etc.) when citing sources.
 Never mention internal field names, IDs, scores, or storage keys in your response.
@@ -92,34 +114,16 @@ searchMeta.suggestion will tell you if results have low relevance and you should
             ? 'No results found. Consider searching with different terms or breaking the query into sub-queries.'
             : null;
 
-        // Build stable image URLs and strip internal metadata
-        const cleanResults = results.map((r) => {
-          let imageUrl: string | undefined;
-          const meta: ChunkMeta | null = r.metadata;
-          if (meta && meta.type === 'PDF' && meta.imageStorageKey) {
-            const encodedKey = Buffer.from(meta.imageStorageKey).toString('base64url');
-            imageUrl = `${env.apiUrl}/orgs/${orgId}/storage/${encodedKey}`;
-          }
-
-          // Strip internal fields from metadata before passing to the AI
-          let cleanMeta = r.metadata;
-          if (cleanMeta && cleanMeta.type === 'PDF') {
-            const { imageStorageKey: _, ...rest } = cleanMeta;
-            cleanMeta = rest;
-          }
-
-          return {
-            content: r.content,
-            dataSourceId: r.dataSourceId,
-            dataSourceName: r.dataSourceName,
-            sourceUrl: r.sourceUrl,
-            score: r.score,
-            metadata: cleanMeta,
-            ...(imageUrl ? { imageUrl } : {}),
-            ...(r.contextBefore ? { contextBefore: r.contextBefore } : {}),
-            ...(r.contextAfter ? { contextAfter: r.contextAfter } : {}),
-          };
-        });
+        const cleanResults = results.map((r) => ({
+          content: r.content,
+          dataSourceId: r.dataSourceId,
+          dataSourceName: r.dataSourceName,
+          sourceUrl: r.sourceUrl,
+          score: r.score,
+          metadata: r.metadata,
+          ...(r.contextBefore ? { contextBefore: r.contextBefore } : {}),
+          ...(r.contextAfter ? { contextAfter: r.contextAfter } : {}),
+        }));
 
         return {
           results: cleanResults,

@@ -76,6 +76,8 @@ const chatMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z.string(),
   sources: z.array(chatSourceSchema).nullable(),
+  thinkingTexts: z.array(z.string()).nullable(),
+  durationMs: z.number().nullable(),
   attachments: z.array(chatAttachmentSchema).nullable(),
   createdAt: z.string(),
 });

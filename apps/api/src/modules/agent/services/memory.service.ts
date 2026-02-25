@@ -15,6 +15,9 @@ export interface UIMessage {
   role: 'user' | 'assistant';
   content: string;
   attachments: ChatAttachment[] | null;
+  thinkingTexts: string[] | null;
+  sources: unknown[] | null;
+  durationMs: number | null;
   createdAt: Date | null;
 }
 
@@ -77,6 +80,9 @@ export class AgentMemoryService {
       role: 'user' | 'assistant' | 'system' | 'tool';
       content: string;
       attachments?: ChatAttachment[];
+      thinkingTexts?: string[];
+      sources?: unknown[];
+      durationMs?: number;
     }>
   ): Promise<void> {
     if (messages.length === 0) return;
@@ -84,15 +90,27 @@ export class AgentMemoryService {
     const now = Date.now();
     const baseTime = Math.max(now, this.lastTimestamp + 1);
 
-    const rows = messages.map((msg, index) => ({
-      id: packId('ChatMessage', orgId),
-      thread_id: threadId,
-      org_id: orgId,
-      role: msg.role,
-      content: msg.content,
-      attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
-      created_at: new Date(baseTime + index),
-    }));
+    const rows = messages.map((msg, index) => {
+      const hasMetadata = msg.thinkingTexts || msg.sources;
+      const metadata = hasMetadata
+        ? JSON.stringify({
+            ...(msg.thinkingTexts ? { thinkingTexts: msg.thinkingTexts } : {}),
+            ...(msg.sources ? { sources: msg.sources } : {}),
+          })
+        : null;
+
+      return {
+        id: packId('ChatMessage', orgId),
+        thread_id: threadId,
+        org_id: orgId,
+        role: msg.role,
+        content: msg.content,
+        attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
+        metadata,
+        duration_ms: msg.durationMs ?? null,
+        created_at: new Date(baseTime + index),
+      };
+    });
 
     this.lastTimestamp = baseTime + messages.length - 1;
 
@@ -110,25 +128,38 @@ export class AgentMemoryService {
 
     const rows = await this.db.kysely
       .selectFrom('agent.chat_messages')
-      .select(['id', 'role', 'content', 'attachments', 'created_at'])
+      .select(['id', 'role', 'content', 'attachments', 'metadata', 'duration_ms', 'created_at'])
       .where('thread_id', '=', threadId)
       .orderBy('created_at', 'asc')
       .limit(limit)
       .execute();
 
     const attachmentsArraySchema = z.array(chatAttachmentSchema);
+    const metadataSchema = z
+      .object({
+        thinkingTexts: z.array(z.string()).optional(),
+        sources: z.array(z.unknown()).optional(),
+      })
+      .nullable();
 
     return rows
       .filter((r) => r.role === 'user' || r.role === 'assistant')
       .filter((r) => r.content.length > 0)
       .map((r) => {
-        const parsed = r.attachments ? attachmentsArraySchema.safeParse(r.attachments) : null;
+        const parsedAttachments = r.attachments
+          ? attachmentsArraySchema.safeParse(r.attachments)
+          : null;
+        const parsedMeta = r.metadata ? metadataSchema.safeParse(r.metadata) : null;
+        const meta = parsedMeta?.success ? parsedMeta.data : null;
 
         return {
           id: r.id,
           role: r.role === 'user' ? ('user' as const) : ('assistant' as const),
           content: r.content,
-          attachments: parsed?.success ? parsed.data : null,
+          attachments: parsedAttachments?.success ? parsedAttachments.data : null,
+          thinkingTexts: meta?.thinkingTexts ?? null,
+          sources: meta?.sources ?? null,
+          durationMs: r.duration_ms,
           createdAt: r.created_at,
         };
       });

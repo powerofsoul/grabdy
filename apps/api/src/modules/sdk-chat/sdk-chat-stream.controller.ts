@@ -18,11 +18,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import {
+  chatSourceSchema,
   type SdkChatSourceConfig,
   type SdkStreamBody,
   sdkStreamBodySchema,
 } from '@grabdy/contracts';
 import { Request, Response } from 'express';
+import { z } from 'zod';
 
 import { Public } from '../../common/decorators/public.decorator';
 import { SdkJwtGuard } from '../../common/guards/sdk-jwt.guard';
@@ -66,16 +68,24 @@ export class SdkChatStreamController {
 
     const messages = await this.agentMemory.getHistory(thread);
 
+    const sourcesArraySchema = z.array(chatSourceSchema);
+
     return {
       success: true,
       data: {
-        messages: messages.map((m) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          attachments: m.attachments ?? null,
-          createdAt: m.createdAt?.toISOString() ?? null,
-        })),
+        messages: messages.map((m) => {
+          const parsedSources = m.sources ? sourcesArraySchema.safeParse(m.sources) : null;
+          return {
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            sources: parsedSources?.success ? parsedSources.data : null,
+            thinkingTexts: m.thinkingTexts ?? null,
+            durationMs: m.durationMs ?? null,
+            attachments: m.attachments ?? null,
+            createdAt: m.createdAt?.toISOString() ?? null,
+          };
+        }),
         threadId: thread,
       },
     };

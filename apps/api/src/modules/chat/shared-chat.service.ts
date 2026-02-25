@@ -39,7 +39,9 @@ export class SharedChatService {
       id: m.id,
       role: m.role,
       content: m.content,
-      sources: null,
+      sources: m.sources ?? null,
+      thinkingTexts: m.thinkingTexts ?? null,
+      durationMs: m.durationMs ?? null,
       createdAt: m.createdAt ? m.createdAt.toISOString() : new Date().toISOString(),
     }));
 

@@ -16,7 +16,7 @@ const bedrockAiSdk = createAmazonBedrock({
   },
 });
 
-/** Default chat model for agents (text-only, GPT-OSS 120B). */
+/** Default chat model for agents. */
 export const CHAT_LANGUAGE_MODEL = bedrockAiSdk(CHAT_MODEL.replace('amazon-bedrock/', ''));
 
 /** Vision-capable model for image analysis tool delegation. */

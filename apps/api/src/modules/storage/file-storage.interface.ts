@@ -21,7 +21,6 @@ export interface FileStorage {
  *
  * Layout:
  *   {orgId}/{collectionId|uncategorized}/{dataSourceId}.{ext}
- *   {orgId}/{collectionId|uncategorized}/{dataSourceId}/images/{page}-{index}.png
  */
 export const StorageKeys = {
   /** Primary file: orgId/collectionId/dataSourceId.ext */
@@ -33,17 +32,5 @@ export const StorageKeys = {
   ): string {
     const collection = collectionId ?? 'uncategorized';
     return `${orgId}/${collection}/${dataSourceId}.${ext}`;
-  },
-
-  /** Extracted image from a data source: orgId/collectionId/dataSourceId/images/{page}-{index}.png */
-  extractedImage(
-    orgId: DbId<'Org'>,
-    collectionId: DbId<'Collection'> | null,
-    dataSourceId: DbId<'DataSource'>,
-    page: number,
-    index: number
-  ): string {
-    const collection = collectionId ?? 'uncategorized';
-    return `${orgId}/${collection}/${dataSourceId}/images/${page}-${index}.png`;
   },
 };

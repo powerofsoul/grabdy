@@ -1,4 +1,9 @@
-import { type ChatAttachment, chatAttachmentSchema, contract } from '@grabdy/contracts';
+import {
+  type ChatAttachment,
+  chatAttachmentSchema,
+  chatSourceSchema,
+  contract,
+} from '@grabdy/contracts';
 import { ApiFetcherArgs, initClient } from '@ts-rest/core';
 import { z } from 'zod';
 
@@ -162,8 +167,10 @@ export const api = initClient(contract, {
   api: customFetcher,
 });
 
-interface StreamCallbacks {
+export interface StreamCallbacks {
   onText: (text: string) => void;
+  onThinking?: (text: string) => void;
+  onSources?: (sources: unknown[]) => void;
   onTextDone?: () => void;
   onDone: (metadata: { threadId?: string; durationMs?: number }) => void;
   onError?: (error: Error) => void;
@@ -172,6 +179,8 @@ interface StreamCallbacks {
 const textDeltaSchema = z.string();
 const metadataEventSchema = z.object({
   type: z.string(),
+  text: z.string().optional(),
+  sources: z.array(z.unknown()).optional(),
   threadId: z.string().optional(),
   durationMs: z.number().optional(),
 });
@@ -200,6 +209,10 @@ function parseStreamLine(line: string, callbacks: StreamCallbacks): void {
         });
       } else if (metadata.type === 'text_done') {
         callbacks.onTextDone?.();
+      } else if (metadata.type === 'thinking' && metadata.text) {
+        callbacks.onThinking?.(metadata.text);
+      } else if (metadata.type === 'sources' && metadata.sources) {
+        callbacks.onSources?.(metadata.sources);
       }
     }
   } catch (e) {
@@ -272,6 +285,9 @@ const sdkHistoryResponseSchema = z.object({
         role: z.enum(['user', 'assistant']),
         content: z.string(),
         createdAt: z.string().nullable(),
+        sources: z.array(chatSourceSchema).nullable().optional(),
+        thinkingTexts: z.array(z.string()).nullable().optional(),
+        durationMs: z.number().nullable().optional(),
         attachments: z.array(chatAttachmentSchema).nullable().optional(),
       })
     ),
