@@ -1,11 +1,13 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
+import type { ChatAttachment } from '@grabdy/contracts';
 import { sql } from 'kysely';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { DataAgent } from '../agent/agents/data/data-agent';
+import type { AttachmentContext } from '../agent/agents/data/data-agent-session';
 import { AgentMemoryService } from '../agent/services/memory.service';
 
 @Injectable()
@@ -93,6 +95,8 @@ export class ChatService {
     options: {
       threadId?: DbId<'ChatThread'>;
       collectionId?: DbId<'Collection'>;
+      attachments?: ChatAttachment[];
+      attachmentContext?: AttachmentContext;
     }
   ) {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
@@ -104,7 +108,12 @@ export class ChatService {
       collectionIds: options.collectionId ? [options.collectionId] : undefined,
     });
 
-    const { streamResult, saveAssistant } = await session.stream({ threadId, message });
+    const { streamResult, saveAssistant } = await session.stream({
+      threadId,
+      message,
+      attachments: options.attachments,
+      attachmentContext: options.attachmentContext,
+    });
 
     return { threadId, streamResult, orgId, saveAssistant };
   }
@@ -179,6 +188,7 @@ export class ChatService {
         role: m.role,
         content: m.content,
         sources: null,
+        attachments: m.attachments ?? null,
         createdAt: m.createdAt ? m.createdAt.toISOString() : new Date().toISOString(),
       })),
     };

@@ -1,4 +1,4 @@
-import { contract } from '@grabdy/contracts';
+import { type ChatAttachment, chatAttachmentSchema, contract } from '@grabdy/contracts';
 import { ApiFetcherArgs, initClient } from '@ts-rest/core';
 import { z } from 'zod';
 
@@ -86,6 +86,75 @@ export function uploadDataSource(
   });
 }
 
+export async function uploadChatAttachment(orgId: string, file: File): Promise<ChatAttachment> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${baseUrl}/orgs/${orgId}/chat/attachments`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new ApiError(response.status, data || {});
+  }
+  const json: unknown = await response.json();
+  const parsed = z.object({ success: z.literal(true), data: chatAttachmentSchema }).parse(json);
+  return parsed.data;
+}
+
+export async function uploadSdkChatAttachment(jwt: string, file: File): Promise<ChatAttachment> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${baseUrl}/sdk/chat/attachments`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${jwt}` },
+    body: formData,
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new SdkApiError(
+      data?.error ?? `Upload failed with status ${response.status}`,
+      response.status
+    );
+  }
+  const json: unknown = await response.json();
+  const parsed = z.object({ success: z.literal(true), data: chatAttachmentSchema }).parse(json);
+  return parsed.data;
+}
+
+export async function getChatAttachmentUrl(orgId: string, storageKey: string): Promise<string> {
+  const response = await fetch(
+    `${baseUrl}/orgs/${orgId}/chat/attachments/url?storageKey=${encodeURIComponent(storageKey)}`,
+    { credentials: 'include' }
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new ApiError(response.status, data || {});
+  }
+  const json: unknown = await response.json();
+  const parsed = z
+    .object({ success: z.literal(true), data: z.object({ url: z.string() }) })
+    .parse(json);
+  return parsed.data.url;
+}
+
+export async function getSdkChatAttachmentUrl(jwt: string, storageKey: string): Promise<string> {
+  const response = await fetch(
+    `${baseUrl}/sdk/chat/attachments/url?storageKey=${encodeURIComponent(storageKey)}`,
+    { headers: { Authorization: `Bearer ${jwt}` } }
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new SdkApiError(data?.error ?? `Failed to get URL: ${response.status}`, response.status);
+  }
+  const json: unknown = await response.json();
+  const parsed = z
+    .object({ success: z.literal(true), data: z.object({ url: z.string() }) })
+    .parse(json);
+  return parsed.data.url;
+}
+
 export const api = initClient(contract, {
   baseUrl,
   baseHeaders: {},
@@ -169,7 +238,12 @@ async function readStream(response: Response, callbacks: StreamCallbacks): Promi
 
 export async function streamChat(
   orgId: string,
-  body: { message: string; threadId?: string; collectionId?: string },
+  body: {
+    message: string;
+    threadId?: string;
+    collectionId?: string;
+    attachments?: ChatAttachment[];
+  },
   callbacks: StreamCallbacks
 ): Promise<void> {
   const response = await fetch(`${baseUrl}/orgs/${orgId}/chat/stream`, {
@@ -198,6 +272,7 @@ const sdkHistoryResponseSchema = z.object({
         role: z.enum(['user', 'assistant']),
         content: z.string(),
         createdAt: z.string().nullable(),
+        attachments: z.array(chatAttachmentSchema).nullable().optional(),
       })
     ),
     threadId: z.string().nullable(),
@@ -232,7 +307,7 @@ export async function fetchSdkHistory(jwt: string): Promise<SdkHistoryResponse> 
 // Note: uses raw fetch because SDK endpoints use Bearer JWT auth, not cookie-based ts-rest client
 export async function streamSdkChat(
   jwt: string,
-  body: { message: string; threadId?: string },
+  body: { message: string; threadId?: string; attachments?: ChatAttachment[] },
   callbacks: StreamCallbacks
 ): Promise<void> {
   const response = await fetch(`${baseUrl}/sdk/chat/stream`, {

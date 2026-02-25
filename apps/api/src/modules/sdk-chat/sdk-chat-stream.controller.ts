@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,11 +7,15 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import {
@@ -25,6 +30,7 @@ import { SdkJwtGuard } from '../../common/guards/sdk-jwt.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { DbService } from '../../db/db.module';
 import { AgentMemoryService } from '../agent/services/memory.service';
+import { ChatAttachmentService } from '../chat/chat-attachment.service';
 import { DataSourcesService } from '../data-sources/data-sources.service';
 
 import { SdkChatStreamService } from './sdk-chat-stream.service';
@@ -37,6 +43,7 @@ export class SdkChatStreamController {
     private sdkChatStreamService: SdkChatStreamService,
     private agentMemory: AgentMemoryService,
     private dataSourcesService: DataSourcesService,
+    private chatAttachmentService: ChatAttachmentService,
     private db: DbService
   ) {}
 
@@ -69,11 +76,43 @@ export class SdkChatStreamController {
           id: m.id,
           role: m.role,
           content: m.content,
+          attachments: m.attachments ?? null,
           createdAt: m.createdAt?.toISOString() ?? null,
         })),
         threadId: thread,
       },
     };
+  }
+
+  @Public()
+  @UseGuards(SdkJwtGuard)
+  @Post('/sdk/chat/attachments')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async uploadAttachment(@Req() req: Request, @UploadedFile() file: Express.Multer.File) {
+    const sdkAuth = req.sdkAuth;
+    if (!sdkAuth) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    const attachment = await this.chatAttachmentService.upload(sdkAuth.orgId, file);
+    return { success: true, data: attachment };
+  }
+
+  @Public()
+  @UseGuards(SdkJwtGuard)
+  @Get('/sdk/chat/attachments/url')
+  async getAttachmentUrl(@Req() req: Request, @Query('storageKey') storageKey: string) {
+    const sdkAuth = req.sdkAuth;
+    if (!sdkAuth) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    if (!storageKey || !storageKey.startsWith(`chat-attachments/${sdkAuth.orgId}/`)) {
+      throw new BadRequestException('Invalid storage key');
+    }
+    const url = await this.chatAttachmentService.getSignedUrl(storageKey);
+    return { success: true, data: { url } };
   }
 
   @Public()
@@ -91,11 +130,24 @@ export class SdkChatStreamController {
     }
 
     try {
-      const result = await this.sdkChatStreamService.streamChat(
-        sdkAuth,
-        body.message,
-        body.threadId
-      );
+      // Validate attachment storage keys belong to this org
+      const prefix = `chat-attachments/${sdkAuth.orgId}/`;
+      if (body.attachments?.some((a) => !a.storageKey.startsWith(prefix))) {
+        res.status(400).json({ success: false, error: 'Invalid attachment storage key' });
+        return;
+      }
+
+      // Build attachment context if attachments provided
+      const attachmentContext =
+        body.attachments && body.attachments.length > 0
+          ? await this.chatAttachmentService.buildAttachmentContext(body.attachments)
+          : undefined;
+
+      const result = await this.sdkChatStreamService.streamChat(sdkAuth, body.message, {
+        threadId: body.threadId,
+        attachments: body.attachments,
+        attachmentContext,
+      });
 
       // AI SDK v6 data stream protocol
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');

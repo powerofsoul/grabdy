@@ -45,6 +45,14 @@ import { DataSourcesService } from './data-sources.service';
     DsMessagesProcessor,
     DataSourceCleanupProcessor,
   ],
-  exports: [DataSourcesService, DataSourceDispatchService],
+  exports: [
+    DataSourcesService,
+    DataSourceDispatchService,
+    PdfExtractor,
+    DocxExtractor,
+    CsvExtractor,
+    XlsxExtractor,
+    TextExtractor,
+  ],
 })
 export class DataSourcesModule {}

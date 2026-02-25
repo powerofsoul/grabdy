@@ -110,7 +110,12 @@ export function EmbedChatPage() {
 
           {/* Chat content */}
           {hasMessages ? (
-            <ChatMessages messages={messages} isLoading={false} isStreaming={isStreaming} />
+            <ChatMessages
+              messages={messages}
+              isLoading={false}
+              isStreaming={isStreaming}
+              embedJwt={jwt ?? undefined}
+            />
           ) : (
             <EmbedWelcome message={style?.welcomeMessage} />
           )}

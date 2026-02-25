@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
+import { type ChatAttachment, chatAttachmentSchema } from '@grabdy/contracts';
+import { z } from 'zod';
 
 import { DbService } from '../../../db/db.module';
 
@@ -12,12 +14,14 @@ export interface UIMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  attachments: ChatAttachment[] | null;
   createdAt: Date | null;
 }
 
 export interface CoreMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  attachments?: ChatAttachment[];
 }
 
 // ---------------------------------------------------------------------------
@@ -37,7 +41,7 @@ export class AgentMemoryService {
   async getMessagesForContext(threadId: DbId<'ChatThread'>, limit = 20): Promise<CoreMessage[]> {
     const rows = await this.db.kysely
       .selectFrom('agent.chat_messages')
-      .select(['role', 'content'])
+      .select(['role', 'content', 'attachments'])
       .where('thread_id', '=', threadId)
       .orderBy('created_at', 'desc')
       .limit(limit)
@@ -46,12 +50,21 @@ export class AgentMemoryService {
     // Reverse to chronological order
     rows.reverse();
 
+    const attachmentsArraySchema = z.array(chatAttachmentSchema);
+
     return rows
       .filter(
         (r): r is typeof r & { role: 'user' | 'assistant' | 'system' } =>
           r.role === 'user' || r.role === 'assistant' || r.role === 'system'
       )
-      .map((r) => ({ role: r.role, content: r.content }));
+      .map((r) => {
+        const parsed = r.attachments ? attachmentsArraySchema.safeParse(r.attachments) : null;
+        const attachments = parsed?.success && parsed.data.length > 0 ? parsed.data : undefined;
+
+        return attachments
+          ? { role: r.role, content: r.content, attachments }
+          : { role: r.role, content: r.content };
+      });
   }
 
   /**
@@ -60,7 +73,11 @@ export class AgentMemoryService {
   async saveMessages(
     threadId: DbId<'ChatThread'>,
     orgId: DbId<'Org'>,
-    messages: Array<{ role: 'user' | 'assistant' | 'system' | 'tool'; content: string }>
+    messages: Array<{
+      role: 'user' | 'assistant' | 'system' | 'tool';
+      content: string;
+      attachments?: ChatAttachment[];
+    }>
   ): Promise<void> {
     if (messages.length === 0) return;
 
@@ -73,6 +90,7 @@ export class AgentMemoryService {
       org_id: orgId,
       role: msg.role,
       content: msg.content,
+      attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
       created_at: new Date(baseTime + index),
     }));
 
@@ -92,20 +110,27 @@ export class AgentMemoryService {
 
     const rows = await this.db.kysely
       .selectFrom('agent.chat_messages')
-      .select(['id', 'role', 'content', 'created_at'])
+      .select(['id', 'role', 'content', 'attachments', 'created_at'])
       .where('thread_id', '=', threadId)
       .orderBy('created_at', 'asc')
       .limit(limit)
       .execute();
 
+    const attachmentsArraySchema = z.array(chatAttachmentSchema);
+
     return rows
       .filter((r) => r.role === 'user' || r.role === 'assistant')
       .filter((r) => r.content.length > 0)
-      .map((r) => ({
-        id: r.id,
-        role: r.role === 'user' ? ('user' as const) : ('assistant' as const),
-        content: r.content,
-        createdAt: r.created_at,
-      }));
+      .map((r) => {
+        const parsed = r.attachments ? attachmentsArraySchema.safeParse(r.attachments) : null;
+
+        return {
+          id: r.id,
+          role: r.role === 'user' ? ('user' as const) : ('assistant' as const),
+          content: r.content,
+          attachments: parsed?.success ? parsed.data : null,
+          createdAt: r.created_at,
+        };
+      });
   }
 }

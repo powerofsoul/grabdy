@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 import { alpha, Box, Collapse, Typography } from '@mui/material';
@@ -10,18 +10,25 @@ import { parseBlocks } from '../parse-blocks';
 import { markdownStyles } from '../styles';
 import type { ChatMessage } from '../types';
 
+import { MessageAttachments } from './MessageAttachments';
 import { SourceChips } from './source-chips';
 
+import { useIsEmbed } from '@/components/embed-chat/context';
+import { useAuth } from '@/context/AuthContext';
+import { getChatAttachmentUrl, getSdkChatAttachmentUrl } from '@/lib/api';
 import { FONT_MONO } from '@/theme';
 
 interface MessageRowProps {
   message: ChatMessage;
+  embedJwt?: string;
 }
 
 export const MessageRow = memo(
-  function MessageRow({ message }: MessageRowProps) {
+  function MessageRow({ message, embedJwt }: MessageRowProps) {
     const isUser = message.role === 'user';
     const [thinkingExpanded, setThinkingExpanded] = useState(false);
+    const isEmbed = useIsEmbed();
+    const { selectedOrgId } = useAuth();
 
     // Parse blocks from content for display (handles both streamed and persisted messages)
     const parsed = !isUser ? parseBlocks(message.content) : null;
@@ -37,6 +44,19 @@ export const MessageRow = memo(
     const showThinkingSection = !isUser && (message.isStreaming || hasThinking);
     // During streaming: always expanded. After: collapsed by default.
     const showThinkingContent = message.isStreaming || thinkingExpanded;
+
+    const getUrl = useCallback(
+      (storageKey: string) => {
+        if (isEmbed && embedJwt) {
+          return getSdkChatAttachmentUrl(embedJwt, storageKey);
+        }
+        if (selectedOrgId) {
+          return getChatAttachmentUrl(selectedOrgId, storageKey);
+        }
+        return Promise.reject(new Error('No org context'));
+      },
+      [isEmbed, embedJwt, selectedOrgId]
+    );
 
     return (
       <Box>
@@ -126,6 +146,13 @@ export const MessageRow = memo(
           </Box>
         )}
 
+        {/* Attachments above user message */}
+        {isUser && message.attachments && message.attachments.length > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.5 }}>
+            <MessageAttachments attachments={message.attachments} getUrl={getUrl} />
+          </Box>
+        )}
+
         {/* Message bubble — hidden when there's no content yet (e.g. only thinking blocks so far) */}
         {(isUser || displayContent) && (
           <Box
@@ -197,6 +224,8 @@ export const MessageRow = memo(
     if (prev.message.thinkingTexts !== next.message.thinkingTexts) return false;
     if (prev.message.isStreaming !== next.message.isStreaming) return false;
     if (prev.message.durationMs !== next.message.durationMs) return false;
+    if (prev.message.attachments !== next.message.attachments) return false;
+    if (prev.embedJwt !== next.embedJwt) return false;
     return true;
   }
 );

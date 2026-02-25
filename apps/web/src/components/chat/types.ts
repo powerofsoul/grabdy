@@ -1,4 +1,4 @@
-import type { ChatSource } from '@grabdy/contracts';
+import type { ChatAttachment, ChatSource } from '@grabdy/contracts';
 
 export interface ChatMessage {
   id?: string;
@@ -8,4 +8,5 @@ export interface ChatMessage {
   thinkingTexts?: string[];
   isStreaming?: boolean;
   durationMs?: number;
+  attachments?: ChatAttachment[];
 }

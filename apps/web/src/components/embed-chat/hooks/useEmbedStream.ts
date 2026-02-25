@@ -7,11 +7,14 @@ import {
   useState,
 } from 'react';
 
+import type { ChatAttachment } from '@grabdy/contracts';
+import { toast } from 'sonner';
+
 import { postToParent } from '../types';
 
 import { parseBlocks } from '@/components/chat/parse-blocks';
 import type { ChatMessage } from '@/components/chat/types';
-import { fetchSdkHistory, SdkApiError, streamSdkChat } from '@/lib/api';
+import { fetchSdkHistory, SdkApiError, streamSdkChat, uploadSdkChatAttachment } from '@/lib/api';
 
 interface UseEmbedStreamParams {
   jwt: string;
@@ -50,7 +53,11 @@ export function useEmbedStream({ jwt, setMessages }: UseEmbedStreamParams) {
                   sources: blocks.sources.length > 0 ? blocks.sources : undefined,
                 };
               }
-              return { role: 'user', content: m.content };
+              return {
+                role: 'user',
+                content: m.content,
+                attachments: m.attachments ?? undefined,
+              };
             })
           );
         }
@@ -68,11 +75,24 @@ export function useEmbedStream({ jwt, setMessages }: UseEmbedStreamParams) {
   }, [jwt, setMessages]);
 
   const handleSend = useCallback(
-    async (userMessage: string) => {
+    async (userMessage: string, files?: File[]) => {
       if (isStreamingRef.current) return;
       isStreamingRef.current = true;
 
-      setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+      let attachments: ChatAttachment[] | undefined;
+
+      // Upload files first if any
+      if (files && files.length > 0) {
+        try {
+          attachments = await Promise.all(files.map((file) => uploadSdkChatAttachment(jwt, file)));
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Failed to upload files');
+          isStreamingRef.current = false;
+          return;
+        }
+      }
+
+      setMessages((prev) => [...prev, { role: 'user', content: userMessage, attachments }]);
       setIsStreaming(true);
 
       let receivedFirstChunk = false;
@@ -83,6 +103,7 @@ export function useEmbedStream({ jwt, setMessages }: UseEmbedStreamParams) {
           {
             message: userMessage,
             threadId: threadIdRef.current,
+            attachments,
           },
           {
             onText: (text) => {

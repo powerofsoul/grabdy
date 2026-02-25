@@ -1,13 +1,14 @@
 import { type Dispatch, type SetStateAction, useCallback, useState } from 'react';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
+import type { ChatAttachment } from '@grabdy/contracts';
 import { toast } from 'sonner';
 
 import { parseBlocks } from '../parse-blocks';
 import type { ChatMessage } from '../types';
 
 import { useAuth } from '@/context/AuthContext';
-import { streamChat } from '@/lib/api';
+import { streamChat, uploadChatAttachment } from '@/lib/api';
 
 interface UseChatStreamParams {
   ensureThread: () => Promise<DbId<'ChatThread'>>;
@@ -27,10 +28,24 @@ export function useChatStream({
   const [isStreaming, setIsStreaming] = useState(false);
 
   const handleSend = useCallback(
-    async (userMessage: string) => {
+    async (userMessage: string, files?: File[]) => {
       if (!selectedOrgId || isStreaming) return;
 
-      setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+      let attachments: ChatAttachment[] | undefined;
+
+      // Upload files first if any
+      if (files && files.length > 0) {
+        try {
+          attachments = await Promise.all(
+            files.map((file) => uploadChatAttachment(selectedOrgId, file))
+          );
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Failed to upload files');
+          return;
+        }
+      }
+
+      setMessages((prev) => [...prev, { role: 'user', content: userMessage, attachments }]);
       setIsStreaming(true);
 
       try {
@@ -42,6 +57,7 @@ export function useChatStream({
           {
             message: userMessage,
             threadId,
+            attachments,
           },
           {
             onText: (text) => {

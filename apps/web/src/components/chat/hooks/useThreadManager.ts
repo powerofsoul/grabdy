@@ -93,6 +93,7 @@ export function useThreadManager({
                   id: m.id,
                   role: m.role,
                   content: m.content,
+                  attachments: m.attachments ?? undefined,
                 };
               }
               // Assistant messages: parse blocks from raw content

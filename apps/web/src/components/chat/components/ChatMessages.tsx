@@ -13,9 +13,10 @@ interface ChatMessagesProps {
   messages: ChatMessage[];
   isLoading: boolean;
   isStreaming: boolean;
+  embedJwt?: string;
 }
 
-export function ChatMessages({ messages, isLoading, isStreaming }: ChatMessagesProps) {
+export function ChatMessages({ messages, isLoading, isStreaming, embedJwt }: ChatMessagesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
 
@@ -90,7 +91,7 @@ export function ChatMessages({ messages, isLoading, isStreaming }: ChatMessagesP
       <Box sx={{ maxWidth: 768, mx: 'auto', width: '100%' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {messages.map((message, index) => (
-            <MessageRow key={message.id ?? index} message={message} />
+            <MessageRow key={message.id ?? index} message={message} embedJwt={embedJwt} />
           ))}
           {isStreaming &&
             (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') && (

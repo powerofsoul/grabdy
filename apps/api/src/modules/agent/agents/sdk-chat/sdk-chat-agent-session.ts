@@ -2,6 +2,8 @@ import type { DbId } from '@grabdy/common';
 import type { ToolLoopAgent } from 'ai';
 
 import type { AgentMemoryService, CoreMessage } from '../../services/memory.service';
+import type { StreamInput } from '../data/data-agent-session';
+import { buildUserContent } from '../data/data-agent-session';
 
 export class SdkChatAgentSession {
   constructor(
@@ -10,19 +12,21 @@ export class SdkChatAgentSession {
     private orgId: DbId<'Org'>
   ) {}
 
-  async stream(input: { threadId?: DbId<'ChatThread'>; message: string }) {
+  async stream(input: StreamInput) {
     const history: CoreMessage[] = input.threadId
       ? await this.agentMemory.getMessagesForContext(input.threadId)
       : [];
 
+    const userContent = buildUserContent(input.message, input.attachmentContext);
+
     const streamResult = await this.agent.stream({
-      messages: [...history, { role: 'user' as const, content: input.message }],
+      messages: [...history, { role: 'user' as const, content: userContent }],
     });
 
     // Save user message immediately
     if (input.threadId) {
       await this.agentMemory.saveMessages(input.threadId, this.orgId, [
-        { role: 'user', content: input.message },
+        { role: 'user', content: input.message, attachments: input.attachments },
       ]);
     }
 

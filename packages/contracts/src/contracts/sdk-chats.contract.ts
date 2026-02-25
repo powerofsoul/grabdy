@@ -2,6 +2,8 @@ import { dbIdSchema } from '@grabdy/common';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
+import { chatAttachmentSchema, MAX_CHAT_ATTACHMENTS } from '../schemas/chat-attachment.js';
+
 const c = initContract();
 
 // ── Source config ────────────────────────────────────────────────────────
@@ -204,6 +206,7 @@ export const sdkChatsContract = c.router(
 export const sdkStreamBodySchema = z.object({
   message: z.string().min(1, 'Message is required'),
   threadId: dbIdSchema('ChatThread').optional(),
+  attachments: z.array(chatAttachmentSchema).max(MAX_CHAT_ATTACHMENTS).optional(),
 });
 
 export type SdkStreamBody = z.infer<typeof sdkStreamBodySchema>;
@@ -212,6 +215,7 @@ export const sdkHistoryMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant']),
   content: z.string(),
+  attachments: z.array(chatAttachmentSchema).nullable().optional(),
   createdAt: z.string().nullable(),
 });
 

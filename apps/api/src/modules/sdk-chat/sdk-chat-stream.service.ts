@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import type { SdkChatSourceConfig } from '@grabdy/contracts';
+import type { ChatAttachment, SdkChatSourceConfig } from '@grabdy/contracts';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
+import type { AttachmentContext } from '../agent/agents/data/data-agent-session';
 
 function hasErrorCode(err: unknown): err is Error & { code: string } {
   if (!(err instanceof Error) || !('code' in err)) return false;
@@ -124,14 +125,18 @@ export class SdkChatStreamService {
       systemPrompt: string | null;
     },
     message: string,
-    threadId?: DbId<'ChatThread'>
+    options?: {
+      threadId?: DbId<'ChatThread'>;
+      attachments?: ChatAttachment[];
+      attachmentContext?: AttachmentContext;
+    }
   ) {
     const resolvedThreadId = await this.findOrCreateThread(
       sdkAuth.sdkChatId,
       sdkAuth.externalUser,
       sdkAuth.orgId,
       message,
-      threadId
+      options?.threadId
     );
 
     // Extract collection IDs and data source IDs from config
@@ -162,6 +167,8 @@ export class SdkChatStreamService {
     const { streamResult, saveAssistant } = await session.stream({
       threadId: resolvedThreadId,
       message,
+      attachments: options?.attachments,
+      attachmentContext: options?.attachmentContext,
     });
 
     return { threadId: resolvedThreadId, streamResult, saveAssistant };

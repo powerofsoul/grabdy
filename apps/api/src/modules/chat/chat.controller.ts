@@ -1,4 +1,17 @@
-import { Body, Controller, Logger, Param, Post, Res } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import { chatContract, streamChatBodySchema } from '@grabdy/contracts';
@@ -17,12 +30,16 @@ import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
 import { ChatService } from './chat.service';
+import { ChatAttachmentService } from './chat-attachment.service';
 
 @Controller()
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
 
-  constructor(private chatService: ChatService) {}
+  constructor(
+    private chatService: ChatService,
+    private chatAttachmentService: ChatAttachmentService
+  ) {}
 
   @OrgAccess(chatContract.chat, { params: ['orgId'] })
   @TsRestHandler(chatContract.chat)
@@ -175,6 +192,35 @@ export class ChatController {
   }
 
   @OrgAccess({ params: ['orgId'] })
+  @Post('/orgs/:orgId/chat/attachments')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async uploadAttachment(
+    @Param('orgId', new ZodValidationPipe(dbIdSchema('Org')))
+    orgId: DbId<'Org'>,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    const attachment = await this.chatAttachmentService.upload(orgId, file);
+    return { success: true, data: attachment };
+  }
+
+  @OrgAccess({ params: ['orgId'] })
+  @Get('/orgs/:orgId/chat/attachments/url')
+  async getAttachmentUrl(
+    @Param('orgId', new ZodValidationPipe(dbIdSchema('Org')))
+    orgId: DbId<'Org'>,
+    @Query('storageKey') storageKey: string
+  ) {
+    if (!storageKey || !storageKey.startsWith(`chat-attachments/${orgId}/`)) {
+      throw new BadRequestException('Invalid storage key');
+    }
+    const url = await this.chatAttachmentService.getSignedUrl(storageKey);
+    return { success: true, data: { url } };
+  }
+
+  @OrgAccess({ params: ['orgId'] })
   @Post('/orgs/:orgId/chat/stream')
   async streamChat(
     @Param('orgId', new ZodValidationPipe(dbIdSchema('Org')))
@@ -185,9 +231,23 @@ export class ChatController {
     @Res() res: Response
   ) {
     try {
+      // Validate attachment storage keys belong to this org
+      const prefix = `chat-attachments/${orgId}/`;
+      if (body.attachments?.some((a) => !a.storageKey.startsWith(prefix))) {
+        throw new BadRequestException('Invalid attachment storage key');
+      }
+
+      // Build attachment context if attachments provided
+      const attachmentContext =
+        body.attachments && body.attachments.length > 0
+          ? await this.chatAttachmentService.buildAttachmentContext(body.attachments)
+          : undefined;
+
       const result = await this.chatService.streamChat(orgId, membership.id, userId, body.message, {
         threadId: body.threadId,
         collectionId: body.collectionId,
+        attachments: body.attachments,
+        attachmentContext,
       });
 
       // AI SDK v6 data stream protocol

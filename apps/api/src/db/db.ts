@@ -292,6 +292,11 @@ export interface DB {
     org_id: DbId<'Org'>;
     role: 'user' | 'assistant' | 'system' | 'tool';
     content: string;
+    attachments: ColumnType<
+      Array<{ fileName: string; mimeType: string; fileSize: number; storageKey: string }> | null,
+      string | null,
+      string | null
+    >;
     created_at: Generated<Timestamp>;
   };
 }

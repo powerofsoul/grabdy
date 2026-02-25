@@ -1,7 +1,14 @@
 import * as aws from '@pulumi/aws';
+import * as pulumi from '@pulumi/pulumi';
 
 import { apiSg } from '../compute/services/api.sg';
 import { vpc } from '../network/vpc';
+
+const dbPasswordParam = aws.ssm.getParameterOutput({
+  name: '/grabdy/prod/DB_PASSWORD',
+  withDecryption: true,
+});
+const dbPassword = pulumi.secret(dbPasswordParam.value);
 
 // Database security group — Fargate API -> RDS on 5432
 const dbSg = new aws.ec2.SecurityGroup('grabdy-db-sg', {
@@ -29,6 +36,7 @@ export const db = new aws.rds.Instance('grabdy-db', {
 
   dbName: 'grabdy',
   username: 'grabdy',
+  password: dbPassword,
 
   dbSubnetGroupName: subnetGroup.name,
   vpcSecurityGroupIds: [dbSg.id],

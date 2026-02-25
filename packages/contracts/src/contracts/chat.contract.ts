@@ -3,6 +3,7 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
 import type { DataSourceType } from '../enums/data-source.js';
+import { chatAttachmentSchema, MAX_CHAT_ATTACHMENTS } from '../schemas/chat-attachment.js';
 import { chunkMetaSchema } from '../schemas/chunk-meta.js';
 
 const c = initContract();
@@ -75,6 +76,7 @@ const chatMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z.string(),
   sources: z.array(chatSourceSchema).nullable(),
+  attachments: z.array(chatAttachmentSchema).nullable(),
   createdAt: z.string(),
 });
 
@@ -185,4 +187,5 @@ export const streamChatBodySchema = z.object({
   message: z.string().min(1),
   threadId: dbIdSchema('ChatThread').optional(),
   collectionId: dbIdSchema('Collection').optional(),
+  attachments: z.array(chatAttachmentSchema).max(MAX_CHAT_ATTACHMENTS).optional(),
 });
