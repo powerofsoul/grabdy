@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
-import type { SdkChatSourceConfig } from '@grabdy/contracts';
+import type { BotSourceConfig } from '@grabdy/contracts';
 import {
   Box,
   Checkbox,
@@ -21,8 +21,8 @@ interface CollectionRowProps {
   id: DbId<'Collection'>;
   name: string;
   orgId: DbId<'Org'>;
-  value: SdkChatSourceConfig;
-  onChange: (config: SdkChatSourceConfig) => void;
+  value: BotSourceConfig;
+  onChange: (config: BotSourceConfig) => void;
 }
 
 export function CollectionRow({ id, name, orgId, value, onChange }: CollectionRowProps) {

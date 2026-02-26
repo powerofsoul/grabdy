@@ -54,6 +54,7 @@ export class DataAgent extends BaseAgent {
     callerType?: AiCallerType;
     userId?: DbId<'User'>;
     collectionIds?: DbId<'Collection'>[];
+    dataSourceIds?: DbId<'DataSource'>[];
     defaultTopK?: number;
     tools?: ToolSet[];
     instructions?: string;
@@ -77,7 +78,7 @@ export class DataAgent extends BaseAgent {
           'rag-search': this.ragSearchTool.create(
             opts.orgId,
             opts.collectionIds,
-            undefined,
+            opts.dataSourceIds,
             opts.defaultTopK,
             opts.userId
           ),

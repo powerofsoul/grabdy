@@ -1,13 +1,3 @@
-export interface GrabdyChatStyle {
-  primaryColor?: string;
-  accentColor?: string;
-  logoUrl?: string;
-  bubbleImageUrl?: string;
-  title?: string;
-  placeholder?: string;
-  welcomeMessage?: string;
-}
-
 export interface GrabdyChatSource {
   type: string;
   dataSourceId: string;
@@ -25,12 +15,19 @@ export interface GrabdyChatConfig {
   bubble?: boolean;
   zIndex?: number;
   sdkUrl?: string;
-  style?: GrabdyChatStyle;
 }
 
 export interface PostMessageJwt {
   type: 'JWT';
   jwt: string;
   chatId: string;
-  style?: GrabdyChatStyle;
+}
+
+export interface SdkAppearance {
+  title: string | null;
+  subtitle: string | null;
+  placeholder: string | null;
+  logoUrl: string | null;
+  primaryColor: string | null;
+  accentColor: string | null;
 }

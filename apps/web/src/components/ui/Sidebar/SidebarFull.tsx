@@ -27,6 +27,7 @@ import {
   MoonIcon,
   PlugIcon,
   PlusIcon,
+  RobotIcon,
   SignOutIcon,
   SquaresFourIcon,
   SunIcon,
@@ -47,7 +48,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
   const { user, logout, isAdmin, selectedOrgId, selectOrg } = useAuth();
   const { preference, setPreference } = useThemeMode();
-  const { collections, connections } = useSidebarSources();
+  const { collections, connections, bots } = useSidebarSources();
   const navigate = useNavigate();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
@@ -244,6 +245,44 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               label={c.name}
               icon={<FolderIcon size={15} weight="light" color="currentColor" />}
               trailing={<CountBadge count={c.sourceCount} />}
+              indent
+            />
+          ))}
+        </Box>
+
+        {/* Bots */}
+        <Box>
+          <SectionHeader label="Bots" />
+          <NavItem
+            to="/dashboard/bots"
+            label="All bots"
+            exact
+            icon={<RobotIcon size={15} weight="light" color="currentColor" />}
+            trailing={
+              <Tooltip title="New bot">
+                <Box
+                  component={Link}
+                  to="/dashboard/bots"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: alpha(ct, 0.25),
+                    '&:hover': { color: 'text.primary' },
+                  }}
+                >
+                  <PlusIcon size={14} weight="light" color="currentColor" />
+                </Box>
+              </Tooltip>
+            }
+          />
+          {bots.map((bot) => (
+            <NavItem
+              key={bot.id}
+              to={`/dashboard/bots/${bot.id}`}
+              label={bot.name}
+              icon={<RobotIcon size={15} weight="light" color="currentColor" />}
+              indent
             />
           ))}
         </Box>
@@ -280,29 +319,19 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               to={`/dashboard/integrations/${conn.provider.toLowerCase()}`}
               label={getProviderLabel(conn.provider)}
               icon={<ProviderIcon provider={conn.provider} size={15} />}
+              indent
             />
           ))}
-        </Box>
-
-        {/* SDK */}
-        <Box>
-          <SectionHeader label="SDK" />
-          <NavItem
-            to="/dashboard/sdk-chats"
-            label="Chats"
-            icon={<ChatCircleIcon size={16} weight="light" color="currentColor" />}
-            activePrefix="/dashboard/sdk-chats"
-          />
-          <NavItem
-            to="/dashboard/sdk-developer"
-            label="Developer"
-            icon={<BookOpenIcon size={16} weight="light" color="currentColor" />}
-          />
         </Box>
 
         {/* Developer */}
         <Box>
           <SectionHeader label="Developer" />
+          <NavItem
+            to="/dashboard/sdk-developer"
+            label="SDK"
+            icon={<BookOpenIcon size={16} weight="light" color="currentColor" />}
+          />
           <NavItem
             to="/dashboard/api/keys"
             label="Keys"

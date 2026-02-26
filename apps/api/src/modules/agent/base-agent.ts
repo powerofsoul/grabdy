@@ -49,7 +49,7 @@ export interface AgentCallOptions {
   callerType?: AiCallerType;
   requestType?: AiRequestType;
   userId?: DbId<'User'>;
-  sdkChatId?: DbId<'SdkChat'>;
+  botId?: DbId<'Bot'>;
   externalUser?: string;
   tools: ToolSet;
   instructions: string;
@@ -158,7 +158,7 @@ export abstract class BaseAgent {
               orgId: opts.orgId,
               userId: opts.userId,
               source: opts.source,
-              sdkChatId: opts.sdkChatId,
+              botId: opts.botId,
               externalUser: opts.externalUser,
             }
           )

@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useState } from 'react';
 
+import type { DbId } from '@grabdy/common';
 import {
   alpha,
   Box,
@@ -36,20 +37,36 @@ import { useMobileSidebar } from '@/components/ui/Sidebar';
 
 interface ChatPanelProps {
   headerSlot?: ReactNode;
+  tabsSlot?: ReactNode;
   trailingSlot?: ReactNode;
   headerHeight?: number;
   initialThreadId?: string;
+  botId?: DbId<'Bot'>;
   onThreadChange?: (threadId: string | undefined) => void;
   showMobileSidebar?: boolean;
+  botTitle?: string;
+  botSubtitle?: string;
+  botPlaceholder?: string;
+  botImageUrl?: string;
+  botAccentColor?: string;
+  botPrimaryColor?: string;
 }
 
 export function ChatPanel({
   headerSlot,
+  tabsSlot,
   trailingSlot,
   headerHeight = 48,
   initialThreadId,
+  botId,
   onThreadChange,
   showMobileSidebar = true,
+  botTitle,
+  botSubtitle,
+  botPlaceholder,
+  botImageUrl,
+  botAccentColor,
+  botPrimaryColor,
 }: ChatPanelProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
@@ -60,6 +77,7 @@ export function ChatPanel({
 
   const threadManager = useThreadManager({
     initialThreadId,
+    botId,
     onThreadChange,
     onLoadMessages: setMessages,
     onClearState: useCallback(() => {
@@ -73,6 +91,7 @@ export function ChatPanel({
     setActiveThreadId: threadManager.setActiveThreadId,
     setMessages,
     fetchThreads: threadManager.fetchThreads,
+    botId,
   });
 
   const isEmpty = messages.length === 0 && !chatStream.isStreaming;
@@ -90,9 +109,20 @@ export function ChatPanel({
           pb: 8,
         }}
       >
-        <ChatEmptyState />
+        <ChatEmptyState
+          title={botTitle}
+          subtitle={botSubtitle}
+          imageUrl={botImageUrl}
+          primaryColor={botPrimaryColor}
+        />
         <Box sx={{ width: '100%', maxWidth: 680 }}>
-          <ChatInput onSend={chatStream.handleSend} isStreaming={chatStream.isStreaming} elevated />
+          <ChatInput
+            onSend={chatStream.handleSend}
+            isStreaming={chatStream.isStreaming}
+            elevated
+            placeholder={botPlaceholder}
+            accentColor={botAccentColor}
+          />
         </Box>
       </Stack>
     ) : (
@@ -101,8 +131,14 @@ export function ChatPanel({
           messages={messages}
           isLoading={threadManager.isLoadingMessages}
           isStreaming={chatStream.isStreaming}
+          accentColor={botAccentColor}
         />
-        <ChatInput onSend={chatStream.handleSend} isStreaming={chatStream.isStreaming} />
+        <ChatInput
+          onSend={chatStream.handleSend}
+          isStreaming={chatStream.isStreaming}
+          placeholder={botPlaceholder}
+          accentColor={botAccentColor}
+        />
       </Stack>
     );
 
@@ -329,7 +365,7 @@ export function ChatPanel({
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-            {headerSlot}
+            {!activeThread && headerSlot}
             {activeThread && (
               <>
                 {headerSlot && (
@@ -367,6 +403,8 @@ export function ChatPanel({
           </Box>
         </Box>
       )}
+
+      {tabsSlot}
 
       {threadDrawer}
 

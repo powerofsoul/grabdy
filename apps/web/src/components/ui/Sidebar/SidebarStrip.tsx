@@ -25,6 +25,7 @@ import {
   KeyIcon,
   MoonIcon,
   PlugIcon,
+  RobotIcon,
   SignOutIcon,
   SquaresFourIcon,
   SunIcon,
@@ -219,6 +220,12 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
         to="/dashboard/chat"
         label="Chat"
         icon={<ChatCircleIcon size={18} weight="light" color="currentColor" />}
+      />
+      <StripIcon
+        to="/dashboard/bots"
+        label="Bots"
+        icon={<RobotIcon size={18} weight="light" color="currentColor" />}
+        activePrefix="/dashboard/chat/bot"
       />
       <StripIcon
         to="/dashboard/sources"

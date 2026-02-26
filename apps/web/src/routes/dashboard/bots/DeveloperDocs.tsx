@@ -16,19 +16,19 @@ import { CodeBlock } from '@/components/ui/code-block';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { FONT_MONO } from '@/theme';
 
-export function DeveloperDocs({ chatId }: { chatId?: string }) {
+export function DeveloperDocs({ botId }: { botId?: string }) {
   const [lang, setLang] = useState<IntegrationLanguage>('JavaScript / TypeScript');
   const [isDownloading, setIsDownloading] = useState(false);
-  const id = chatId ?? 'YOUR_CHAT_ID';
+  const id = botId ?? 'YOUR_CHAT_ID';
 
   const guide = getIntegrationGuide(lang, id);
   const config = getConfigReference();
 
   const handleDownload = async () => {
-    if (!chatId) return;
+    if (!botId) return;
     setIsDownloading(true);
     try {
-      await downloadDemoProject(chatId);
+      await downloadDemoProject(botId);
     } finally {
       setIsDownloading(false);
     }
@@ -37,7 +37,7 @@ export function DeveloperDocs({ chatId }: { chatId?: string }) {
   return (
     <Box>
       {/* Chat ID */}
-      {chatId && (
+      {botId && (
         <Box
           sx={{
             display: 'flex',
@@ -55,9 +55,9 @@ export function DeveloperDocs({ chatId }: { chatId?: string }) {
             Chat ID:
           </Typography>
           <Typography variant="body2" sx={{ fontFamily: FONT_MONO, fontWeight: 500 }}>
-            {chatId}
+            {botId}
           </Typography>
-          <CopyButton text={chatId} />
+          <CopyButton text={botId} />
         </Box>
       )}
 
@@ -80,7 +80,7 @@ export function DeveloperDocs({ chatId }: { chatId?: string }) {
           ))}
         </TextField>
 
-        {chatId && lang === 'JavaScript / TypeScript' && (
+        {botId && lang === 'JavaScript / TypeScript' && (
           <Button
             variant="outlined"
             startIcon={<DownloadIcon size={16} weight="light" color="currentColor" />}

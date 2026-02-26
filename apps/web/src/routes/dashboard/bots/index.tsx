@@ -1,13 +1,13 @@
 import { useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
-import { Box, Button, Chip, CircularProgress, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Typography } from '@mui/material';
 import { ChatCircleIcon, PlusIcon } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 
-import { CreateSdkChatDrawer } from './CreateSdkChatDrawer';
+import { CreateBotDrawer } from './CreateBotDrawer';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
@@ -18,30 +18,29 @@ import { useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
 import { relativeDate } from '@/lib/date';
 
-interface SdkChat {
-  id: DbId<'SdkChat'>;
+interface Bot {
+  id: DbId<'Bot'>;
   name: string;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export const Route = createFileRoute('/dashboard/sdk-chats/')({
-  component: SdkChatsPage,
+export const Route = createFileRoute('/dashboard/bots/')({
+  component: BotsPage,
 });
 
-function SdkChatsPage() {
+function BotsPage() {
   const { selectedOrgId } = useAuth();
   const { pushDrawer } = useDrawer();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [deleteTarget, setDeleteTarget] = useState<SdkChat | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Bot | null>(null);
 
-  const { data: chats, isLoading } = useQuery({
-    queryKey: ['sdk-chats', selectedOrgId],
+  const { data: bots, isLoading } = useQuery({
+    queryKey: ['bots', selectedOrgId],
     queryFn: async () => {
       if (!selectedOrgId) return [];
-      const res = await api.sdkChats.list({ params: { orgId: selectedOrgId } });
+      const res = await api.bots.list({ params: { orgId: selectedOrgId } });
       if (res.status === 200) return res.body.data;
       return [];
     },
@@ -49,42 +48,42 @@ function SdkChatsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (target: SdkChat) => {
+    mutationFn: async (target: Bot) => {
       if (!selectedOrgId) return;
-      const res = await api.sdkChats.delete({
-        params: { orgId: selectedOrgId, sdkChatId: target.id },
+      const res = await api.bots.delete({
+        params: { orgId: selectedOrgId, botId: target.id },
         body: {},
       });
-      if (res.status !== 200) throw new Error('Failed to delete SDK Chat');
+      if (res.status !== 200) throw new Error('Failed to delete Bot');
     },
     onSuccess: () => {
-      toast.success('SDK Chat deleted');
-      queryClient.invalidateQueries({ queryKey: ['sdk-chats', selectedOrgId] });
+      toast.success('Bot deleted');
+      queryClient.invalidateQueries({ queryKey: ['bots', selectedOrgId] });
       setDeleteTarget(null);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete SDK Chat');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete Bot');
       setDeleteTarget(null);
     },
   });
 
   const invalidateList = () => {
-    queryClient.invalidateQueries({ queryKey: ['sdk-chats', selectedOrgId] });
+    queryClient.invalidateQueries({ queryKey: ['bots', selectedOrgId] });
   };
 
   const openCreateDrawer = () => {
-    pushDrawer((onClose) => <CreateSdkChatDrawer onClose={onClose} onCreated={invalidateList} />, {
-      title: 'Create SDK Chat',
+    pushDrawer((onClose) => <CreateBotDrawer onClose={onClose} onCreated={invalidateList} />, {
+      title: 'Create Bot',
       mode: 'dialog',
       maxWidth: 'sm',
     });
   };
 
-  const items = chats ?? [];
+  const items = bots ?? [];
 
   if (isLoading) {
     return (
-      <DashboardPage title="SDK Chats">
+      <DashboardPage title="Bots">
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
           <CircularProgress />
         </Box>
@@ -94,7 +93,7 @@ function SdkChatsPage() {
 
   return (
     <DashboardPage
-      title={`SDK Chats (${items.length})`}
+      title="Bots"
       actions={
         <Button
           variant="contained"
@@ -109,29 +108,20 @@ function SdkChatsPage() {
         data={items}
         headerNames={{
           name: 'Name',
-          status: 'Status',
           created: 'Created',
           actions: '',
         }}
-        columnWidths={{ status: 100, actions: 80 }}
+        columnWidths={{ actions: 80 }}
         rowTitle={(c) => c.name}
         keyExtractor={(c) => c.id}
         onRowClick={(c) => {
-          navigate({ to: '/dashboard/sdk-chats/$sdkChatId', params: { sdkChatId: c.id } });
+          navigate({ to: '/dashboard/bots/$botId', params: { botId: c.id } });
         }}
         renderItems={{
           name: (c) => (
             <Typography variant="body2" fontWeight={500}>
               {c.name}
             </Typography>
-          ),
-          status: (c) => (
-            <Chip
-              label={c.isActive ? 'Active' : 'Inactive'}
-              size="small"
-              color={c.isActive ? 'success' : 'default'}
-              variant="outlined"
-            />
           ),
           created: (c) => (
             <Typography variant="body2" color="text.secondary">
@@ -159,9 +149,9 @@ function SdkChatsPage() {
         emptyState={
           <EmptyState
             icon={<ChatCircleIcon size={48} weight="light" color="currentColor" />}
-            message="No SDK Chats"
-            description="Create an SDK Chat to embed a chatbot on your website."
-            actionLabel="Create SDK Chat"
+            message="No Bots"
+            description="Create a bot to embed a chatbot on your website."
+            actionLabel="Create Bot"
             onAction={openCreateDrawer}
           />
         }
@@ -169,7 +159,7 @@ function SdkChatsPage() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Delete SDK Chat"
+        title="Delete Bot"
         message={`Are you sure you want to delete "${deleteTarget?.name}"? This cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={() => {

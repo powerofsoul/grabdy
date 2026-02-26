@@ -8,6 +8,7 @@ export function NavItem({
   icon,
   trailing,
   activePrefix,
+  indent,
 }: {
   to: string;
   label: string;
@@ -15,6 +16,7 @@ export function NavItem({
   icon?: React.ReactNode;
   trailing?: React.ReactNode;
   activePrefix?: string;
+  indent?: boolean;
 }) {
   const location = useLocation();
   const theme = useTheme();
@@ -32,7 +34,8 @@ export function NavItem({
           alignItems: 'center',
           gap: 1,
           height: 34,
-          px: 2,
+          pl: indent ? 4.5 : 2,
+          pr: 2,
           mx: '8px',
 
           cursor: 'pointer',

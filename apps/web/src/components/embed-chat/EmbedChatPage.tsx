@@ -17,7 +17,7 @@ import { ChatMessages } from '@/components/chat/components/ChatMessages';
 import type { ChatMessage } from '@/components/chat/types';
 
 export function EmbedChatPage() {
-  const { jwt, style } = useEmbedAuth();
+  const { jwt, config } = useEmbedAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const isInline = new URLSearchParams(window.location.search).get('mode') === 'inline';
@@ -48,7 +48,7 @@ export function EmbedChatPage() {
 
   if (status === 'unauthorized' || status === 'error') {
     return (
-      <EmbedThemeProvider style={style}>
+      <EmbedThemeProvider style={config}>
         <EmbedError variant={status} />
       </EmbedThemeProvider>
     );
@@ -58,7 +58,7 @@ export function EmbedChatPage() {
 
   return (
     <EmbedProvider value={true}>
-      <EmbedThemeProvider style={style}>
+      <EmbedThemeProvider style={config}>
         <Box
           ref={containerRef}
           sx={{
@@ -69,7 +69,7 @@ export function EmbedChatPage() {
           }}
         >
           {/* Header: always shown in popup mode, only if logo/title in inline mode */}
-          {(!isInline || style?.logoUrl || style?.title) && (
+          {(!isInline || config?.logoUrl || config?.title) && (
             <Box
               sx={{
                 flexShrink: 0,
@@ -82,17 +82,17 @@ export function EmbedChatPage() {
                 minHeight: 44,
               }}
             >
-              {style?.logoUrl && (
+              {config?.logoUrl && (
                 <Box
                   component="img"
-                  src={style.logoUrl}
+                  src={config.logoUrl}
                   alt=""
                   sx={{ height: 22, width: 'auto', objectFit: 'contain', mr: 1 }}
                 />
               )}
-              {style?.title && (
+              {config?.title && (
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  {style.title}
+                  {config.title}
                 </Typography>
               )}
               <Box sx={{ flex: 1 }} />
@@ -115,9 +115,10 @@ export function EmbedChatPage() {
               isLoading={false}
               isStreaming={isStreaming}
               embedJwt={jwt ?? undefined}
+              accentColor={config?.accentColor ?? undefined}
             />
           ) : (
-            <EmbedWelcome message={style?.welcomeMessage} />
+            <EmbedWelcome message={config?.subtitle ?? undefined} />
           )}
 
           {/* Input */}
@@ -125,7 +126,8 @@ export function EmbedChatPage() {
             onSend={handleSend}
             isStreaming={isStreaming}
             disabled={!jwt}
-            placeholder={style?.placeholder ?? 'Ask a question...'}
+            placeholder={config?.placeholder ?? 'Ask a question...'}
+            accentColor={config?.accentColor ?? undefined}
           />
         </Box>
       </EmbedThemeProvider>

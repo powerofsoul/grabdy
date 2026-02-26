@@ -255,6 +255,7 @@ export async function streamChat(
     message: string;
     threadId?: string;
     collectionId?: string;
+    botId?: string;
     attachments?: ChatAttachment[];
   },
   callbacks: StreamCallbacks
@@ -306,6 +307,38 @@ export class SdkApiError extends Error {
     this.name = 'SdkApiError';
     Object.setPrototypeOf(this, new.target.prototype);
   }
+}
+
+export interface SdkChatConfig {
+  title: string | null;
+  subtitle: string | null;
+  placeholder: string | null;
+  primaryColor: string | null;
+  accentColor: string | null;
+  logoUrl: string | null;
+}
+
+const sdkConfigResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.object({
+    title: z.string().nullable(),
+    subtitle: z.string().nullable(),
+    placeholder: z.string().nullable(),
+    primaryColor: z.string().nullable(),
+    accentColor: z.string().nullable(),
+    logoUrl: z.string().nullable(),
+  }),
+});
+
+// Note: uses raw fetch because this is a public endpoint called from the SDK iframe context without cookies or ts-rest client
+export async function fetchSdkConfig(chatId: string): Promise<SdkChatConfig> {
+  const response = await fetch(`${baseUrl}/sdk/chat/${encodeURIComponent(chatId)}/config`);
+  if (!response.ok) {
+    throw new SdkApiError(`Failed to fetch config: ${response.status}`, response.status);
+  }
+  const json: unknown = await response.json();
+  const parsed = sdkConfigResponseSchema.parse(json);
+  return parsed.data;
 }
 
 // Note: uses raw fetch because SDK endpoints use Bearer JWT auth, not cookie-based ts-rest client

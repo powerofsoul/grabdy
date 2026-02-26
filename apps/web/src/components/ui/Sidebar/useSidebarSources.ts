@@ -1,3 +1,4 @@
+import type { DbId } from '@grabdy/common';
 import type { IntegrationProvider } from '@grabdy/contracts';
 import { useQuery } from '@tanstack/react-query';
 
@@ -13,6 +14,11 @@ interface SidebarCollection {
 interface SidebarConnection {
   id: string;
   provider: IntegrationProvider;
+  name: string;
+}
+
+interface SidebarBot {
+  id: DbId<'Bot'>;
   name: string;
 }
 
@@ -55,5 +61,18 @@ export function useSidebarSources() {
         })),
   });
 
-  return { collections, connections };
+  const { data: bots = [] } = useQuery<SidebarBot[]>({
+    queryKey: ['bots', selectedOrgId, 'sidebar'],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
+      const res = await api.bots.list({ params: { orgId: selectedOrgId } });
+      if (res.status === 200) {
+        return res.body.data.map((c) => ({ id: c.id, name: c.name }));
+      }
+      return [];
+    },
+    enabled: !!selectedOrgId,
+  });
+
+  return { collections, connections, bots };
 }

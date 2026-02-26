@@ -14,7 +14,7 @@ import { SdkJwtGuard } from './sdk-jwt.guard';
  * (e.g. the storage proxy for AI-generated image URLs).
  */
 @Injectable()
-export class StorageAuthGuard implements CanActivate {
+export class DualAuthGuard implements CanActivate {
   constructor(
     @InjectEnv('jwtSecret') private jwtSecret: string,
     private sdkJwtGuard: SdkJwtGuard

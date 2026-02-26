@@ -47,6 +47,7 @@ interface ChatInputProps {
   disabled?: boolean;
   placeholder?: string;
   elevated?: boolean;
+  accentColor?: string;
 }
 
 export function ChatInput({
@@ -55,6 +56,7 @@ export function ChatInput({
   disabled = false,
   placeholder = 'Ask anything about your documents...',
   elevated = false,
+  accentColor,
 }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [focused, setFocused] = useState(false);
@@ -210,7 +212,9 @@ export function ChatInput({
             flexDirection: 'column',
             px: 2.5,
             py: 1.5,
-            borderBottom: focused ? `2px solid ${ct}` : `1px solid ${ct}`,
+            borderBottom: focused
+              ? `2px solid ${accentColor ?? ct}`
+              : `1px solid ${accentColor ? alpha(accentColor, 0.4) : ct}`,
             transition: 'border-color 150ms ease',
           }}
         >
@@ -367,11 +371,15 @@ export function ChatInput({
               sx={{
                 width: 28,
                 height: 28,
-                bgcolor: hasInput ? 'text.primary' : alpha(ct, 0.06),
+                bgcolor: hasInput ? (accentColor ?? 'text.primary') : alpha(ct, 0.06),
                 color: hasInput ? 'background.default' : alpha(ct, 0.2),
                 transition: 'all 150ms ease',
                 '&:hover': {
-                  bgcolor: hasInput ? alpha(ct, 0.85) : alpha(ct, 0.1),
+                  bgcolor: hasInput
+                    ? accentColor
+                      ? alpha(accentColor, 0.85)
+                      : alpha(ct, 0.85)
+                    : alpha(ct, 0.1),
                 },
                 '&.Mui-disabled': {
                   bgcolor: alpha(ct, 0.06),

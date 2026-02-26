@@ -17,7 +17,7 @@ export interface UsageContext {
   orgId: DbId<'Org'>;
   userId?: DbId<'User'> | null;
   source: AiRequestSource;
-  sdkChatId?: DbId<'SdkChat'> | null;
+  botId?: DbId<'Bot'> | null;
   externalUser?: string | null;
 }
 
@@ -61,7 +61,7 @@ export class AiUsageService {
         durationMs: extras?.durationMs ?? null,
         finishReason: extras?.finishReason ?? null,
         streaming: extras?.streaming ?? false,
-        sdkChatId: context.sdkChatId ?? null,
+        botId: context.botId ?? null,
         externalUser: context.externalUser ?? null,
       });
     } catch (error) {

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
-import { Box, Button, Typography } from '@mui/material';
-import { KeyIcon, PlusIcon } from '@phosphor-icons/react';
+import { Box, Button, IconButton, Tooltip, Typography } from '@mui/material';
+import { CopyIcon, KeyIcon, PlusIcon } from '@phosphor-icons/react';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { GenerateKeyDrawer } from './GenerateKeyDrawer';
-import type { SdkChatDetail, SigningKey } from './types';
+import type { BotDetail, SigningKey } from './types';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -16,19 +17,12 @@ import { api } from '@/lib/api';
 import { relativeDate } from '@/lib/date';
 import { FONT_MONO } from '@/theme';
 
-export function SigningKeysTab({
-  chat,
-  onUpdated,
-}: {
-  chat: SdkChatDetail;
-  onUpdated: () => void;
-}) {
+export function SigningKeysTab({ bot, onUpdated }: { bot: BotDetail; onUpdated: () => void }) {
   const { selectedOrgId } = useAuth();
   const { pushDrawer } = useDrawer();
   const [revokeTarget, setRevokeTarget] = useState<SigningKey | null>(null);
-  const [isRevoking, setIsRevoking] = useState(false);
 
-  const activeKeys = chat.signingKeys.filter((k) => !k.revokedAt);
+  const activeKeys = bot.signingKeys.filter((k) => !k.revokedAt);
 
   const openGenerateDrawer = () => {
     if (!selectedOrgId) return;
@@ -38,32 +32,32 @@ export function SigningKeysTab({
           onClose={onClose}
           onCreated={onUpdated}
           orgId={selectedOrgId}
-          sdkChatId={chat.id}
+          botId={bot.id}
         />
       ),
       { title: 'Generate Signing Key', mode: 'dialog', maxWidth: 'sm' }
     );
   };
 
-  const handleRevoke = async () => {
-    if (!selectedOrgId || !revokeTarget) return;
-    setIsRevoking(true);
-    try {
-      const res = await api.sdkChats.revokeSigningKey({
-        params: { orgId: selectedOrgId, sdkChatId: chat.id, keyId: revokeTarget.id },
+  const revokeMutation = useMutation({
+    mutationFn: async (target: SigningKey) => {
+      if (!selectedOrgId) return;
+      const res = await api.bots.revokeSigningKey({
+        params: { orgId: selectedOrgId, botId: bot.id, keyId: target.id },
         body: {},
       });
-      if (res.status === 200) {
-        toast.success('Signing key revoked');
-        onUpdated();
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to revoke key');
-    } finally {
-      setIsRevoking(false);
+      if (res.status !== 200) throw new Error('Failed to revoke key');
+    },
+    onSuccess: () => {
+      toast.success('Signing key revoked');
+      onUpdated();
       setRevokeTarget(null);
-    }
-  };
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to revoke key');
+      setRevokeTarget(null);
+    },
+  });
 
   return (
     <Box>
@@ -85,7 +79,7 @@ export function SigningKeysTab({
           created: 'Created',
           actions: '',
         }}
-        columnWidths={{ actions: 80 }}
+        columnWidths={{ name: 100, actions: 80, created: 120 }}
         rowTitle={(k) => k.name}
         keyExtractor={(k) => k.id}
         renderItems={{
@@ -95,9 +89,31 @@ export function SigningKeysTab({
             </Typography>
           ),
           fingerprint: (k) => (
-            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: FONT_MONO }}>
-              {k.fingerprint}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  fontFamily: FONT_MONO,
+                  wordBreak: 'break-all',
+                }}
+              >
+                {k.fingerprint}
+              </Typography>
+              <Tooltip title="Copy fingerprint">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(k.fingerprint);
+                    toast.success('Fingerprint copied');
+                  }}
+                  sx={{ flexShrink: 0 }}
+                >
+                  <CopyIcon size={16} weight="light" />
+                </IconButton>
+              </Tooltip>
+            </Box>
           ),
           created: (k) => (
             <Typography variant="body2" color="text.secondary">
@@ -138,9 +154,11 @@ export function SigningKeysTab({
         title="Revoke Signing Key"
         message={`Are you sure you want to revoke "${revokeTarget?.name}"? JWTs signed with this key will stop working.`}
         confirmLabel="Revoke"
-        onConfirm={handleRevoke}
+        onConfirm={() => {
+          if (revokeTarget) revokeMutation.mutate(revokeTarget);
+        }}
         onCancel={() => setRevokeTarget(null)}
-        isLoading={isRevoking}
+        isLoading={revokeMutation.isPending}
       />
     </Box>
   );

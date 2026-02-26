@@ -14,9 +14,16 @@ interface ChatMessagesProps {
   isLoading: boolean;
   isStreaming: boolean;
   embedJwt?: string;
+  accentColor?: string;
 }
 
-export function ChatMessages({ messages, isLoading, isStreaming, embedJwt }: ChatMessagesProps) {
+export function ChatMessages({
+  messages,
+  isLoading,
+  isStreaming,
+  embedJwt,
+  accentColor,
+}: ChatMessagesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
 
@@ -91,7 +98,12 @@ export function ChatMessages({ messages, isLoading, isStreaming, embedJwt }: Cha
       <Box sx={{ maxWidth: 768, mx: 'auto', width: '100%' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {messages.map((message, index) => (
-            <MessageRow key={message.id ?? index} message={message} embedJwt={embedJwt} />
+            <MessageRow
+              key={message.id ?? index}
+              message={message}
+              embedJwt={embedJwt}
+              accentColor={accentColor}
+            />
           ))}
           {isStreaming &&
             (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') && (

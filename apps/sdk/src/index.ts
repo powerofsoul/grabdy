@@ -1,6 +1,7 @@
 import type {
   GrabdyChatConfig,
   PostMessageJwt,
+  SdkAppearance,
 } from './types';
 
 declare const __SDK_URL__: string | undefined;
@@ -21,6 +22,7 @@ let instance: GrabdyChat | null = null;
 
 class GrabdyChat {
   private config: GrabdyChatConfig;
+  private appearance: SdkAppearance | null = null;
   private iframe: HTMLIFrameElement | null = null;
   private previewIframe: HTMLIFrameElement | null = null;
   private button: HTMLElement | null = null;
@@ -57,10 +59,29 @@ class GrabdyChat {
     this.messageHandler = this.handleMessage.bind(this);
     window.addEventListener('message', this.messageHandler);
 
-    if (config.container) {
-      this.mountInline(config.container);
-    } else if (config.bubble !== false) {
-      this.createButton();
+    // Fetch appearance from API, then create UI
+    this.fetchAppearance().then(() => {
+      if (config.container) {
+        this.mountInline(config.container);
+      } else if (config.bubble !== false) {
+        this.createButton();
+      }
+    });
+  }
+
+  private async fetchAppearance(): Promise<void> {
+    try {
+      const res = await fetch(
+        `${this.sdkUrl}/api/sdk/chat/${encodeURIComponent(this.config.chatId)}/config`
+      );
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          this.appearance = json.data;
+        }
+      }
+    } catch (err) {
+      console.error('GrabdyChat: failed to fetch appearance', err);
     }
   }
 
@@ -244,7 +265,6 @@ class GrabdyChat {
         type: 'JWT',
         jwt,
         chatId: this.config.chatId,
-        style: this.config.style,
       };
       target.postMessage(msg, this.sdkOrigin);
     } catch (err) {
@@ -256,7 +276,7 @@ class GrabdyChat {
 
   private createButton(): void {
     const isLeft = this.config.position === 'bottom-left';
-    const customBubble = this.config.style?.bubbleImageUrl;
+    const logoUrl = this.appearance?.logoUrl;
     const btn = document.createElement('div');
 
     Object.assign(btn.style, {
@@ -266,21 +286,21 @@ class GrabdyChat {
       width: `${BUTTON_SIZE}px`,
       height: `${BUTTON_SIZE}px`,
       borderRadius: '50%',
-      backgroundColor: customBubble ? 'transparent' : (this.config.style?.primaryColor ?? '#33302B'),
+      backgroundColor: logoUrl ? 'transparent' : (this.appearance?.primaryColor ?? '#33302B'),
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       cursor: 'pointer',
       zIndex: `${this.zIndex}`,
-      boxShadow: customBubble ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.15)',
+      boxShadow: logoUrl ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.15)',
       transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       userSelect: 'none',
       overflow: 'hidden',
     });
 
-    if (customBubble) {
+    if (logoUrl) {
       const logo = document.createElement('img');
-      logo.src = customBubble;
+      logo.src = logoUrl;
       logo.alt = '';
       Object.assign(logo.style, {
         width: `${BUTTON_SIZE}px`,
@@ -323,13 +343,13 @@ class GrabdyChat {
     document.body.appendChild(btn);
     this.button = btn;
 
-    // Show welcome message tooltip if configured and not previously dismissed
-    const welcomeMsg = this.config.style?.welcomeMessage;
-    if (welcomeMsg) {
+    // Show subtitle as welcome tooltip if configured and not previously dismissed
+    const subtitle = this.appearance?.subtitle;
+    if (subtitle) {
       let dismissed = false;
       try { dismissed = localStorage.getItem(`grabdy_welcome_${this.config.chatId}`) !== null; } catch { /* localStorage may be unavailable */ }
       if (!dismissed) {
-        this.createTooltip(welcomeMsg, isLeft);
+        this.createTooltip(subtitle, isLeft);
       }
     }
   }

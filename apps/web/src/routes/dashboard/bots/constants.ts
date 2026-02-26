@@ -1,3 +1,6 @@
+/** Fallback value for native color picker inputs when no color is set */
+export const COLOR_PICKER_FALLBACK = '#000000';
+
 export interface CodeSnippet {
   code: string;
   language: string;
@@ -9,7 +12,8 @@ export type IntegrationLanguage = (typeof INTEGRATION_LANGUAGES)[number];
 export { INTEGRATION_LANGUAGES };
 
 export function isIntegrationLanguage(value: string): value is IntegrationLanguage {
-  return (INTEGRATION_LANGUAGES as readonly string[]).includes(value);
+  const langs: readonly string[] = INTEGRATION_LANGUAGES;
+  return langs.includes(value);
 }
 
 interface IntegrationGuide {
@@ -83,10 +87,6 @@ app.listen(3001);`,
       return data.jwt;
     },
     // position: "bottom-left",   // default: "bottom-right"
-    // style: {
-    //   primaryColor: "#6366f1",
-    //   welcomeMessage: "Hi! How can I help?",
-    // },
   });
 </script>`,
       language: 'html',
@@ -327,16 +327,10 @@ export function getConfigReference(): CodeSnippet {
                         // Set to false to open programmatically via chat.open()
   position: string,     // "bottom-right" (default) or "bottom-left"
   zIndex: number,       // z-index for the widget (default: 999999)
-  style: {
-    primaryColor: string,            // Primary brand color (hex)
-    accentColor: string,             // Accent color (hex)
-    logoUrl: string,                 // Logo in chat header
-    bubbleImageUrl: string,          // Replaces the default bubble button
-    title: string,                   // Chat header title
-    placeholder: string,             // Input placeholder text
-    welcomeMessage: string,          // Welcome tooltip next to the button
-  },
 });
+
+// Appearance (title, colors, logo, placeholder) is configured
+// in the Settings tab and applied automatically.
 
 // Methods:
 chat.open();            // Open the chat widget

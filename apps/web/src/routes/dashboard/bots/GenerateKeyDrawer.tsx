@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { DbId } from '@grabdy/common';
-import { sdkChatsContract } from '@grabdy/contracts';
+import { botsContract } from '@grabdy/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, TextField } from '@mui/material';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ import type { DrawerProps } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
 import { FONT_MONO } from '@/theme';
 
-const generateKeySchema = sdkChatsContract.generateSigningKey.body.required();
+const generateKeySchema = botsContract.generateSigningKey.body.required();
 
 type GenerateKeyForm = z.infer<typeof generateKeySchema>;
 
@@ -21,11 +21,11 @@ export function GenerateKeyDrawer({
   onClose,
   onCreated,
   orgId,
-  sdkChatId,
+  botId,
 }: DrawerProps & {
   onCreated: () => void;
   orgId: DbId<'Org'>;
-  sdkChatId: DbId<'SdkChat'>;
+  botId: DbId<'Bot'>;
 }) {
   const [privateKey, setPrivateKey] = useState<string | null>(null);
 
@@ -42,8 +42,8 @@ export function GenerateKeyDrawer({
 
   const onSubmit = async (data: GenerateKeyForm) => {
     try {
-      const res = await api.sdkChats.generateSigningKey({
-        params: { orgId, sdkChatId },
+      const res = await api.bots.generateSigningKey({
+        params: { orgId, botId },
         body: { name: data.name?.trim() || 'default' },
       });
       if (res.status === 200) {

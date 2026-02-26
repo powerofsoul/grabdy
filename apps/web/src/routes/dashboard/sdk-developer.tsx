@@ -5,7 +5,7 @@ import { ChatCircleDotsIcon } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
-import { DeveloperDocs } from './sdk-chats/DeveloperDocs';
+import { DeveloperDocs } from './bots/DeveloperDocs';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -22,10 +22,10 @@ function SdkDeveloperPage() {
   const [selectedChatId, setSelectedChatId] = useState<string>('');
 
   const { data: chats, isLoading } = useQuery({
-    queryKey: ['sdk-chats', selectedOrgId],
+    queryKey: ['bots', selectedOrgId],
     queryFn: async () => {
       if (!selectedOrgId) return [];
-      const res = await api.sdkChats.list({ params: { orgId: selectedOrgId } });
+      const res = await api.bots.list({ params: { orgId: selectedOrgId } });
       if (res.status === 200) return res.body.data;
       return [];
     },
@@ -51,11 +51,11 @@ function SdkDeveloperPage() {
       <DashboardPage title="SDK Developer Docs" maxWidth={800}>
         <EmptyState
           icon={<ChatCircleDotsIcon size={48} weight="light" color="currentColor" />}
-          message="No SDK Chats"
-          description="Create an SDK Chat first to see integration docs with your Chat ID."
-          actionLabel="Go to SDK Chats"
+          message="No Bots"
+          description="Create a Bot first to see integration docs with your Chat ID."
+          actionLabel="Go to Bots"
           onAction={() => {
-            void navigate({ to: '/dashboard/sdk-chats' });
+            void navigate({ to: '/dashboard/bots' });
           }}
         />
       </DashboardPage>
@@ -67,7 +67,7 @@ function SdkDeveloperPage() {
       {items.length > 1 && (
         <TextField
           select
-          label="SDK Chat"
+          label="Bot"
           value={resolvedChatId}
           onChange={(e) => setSelectedChatId(e.target.value)}
           size="small"
@@ -81,7 +81,7 @@ function SdkDeveloperPage() {
         </TextField>
       )}
 
-      <DeveloperDocs chatId={resolvedChatId} />
+      <DeveloperDocs botId={resolvedChatId} />
     </DashboardPage>
   );
 }

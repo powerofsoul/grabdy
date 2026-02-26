@@ -20,10 +20,11 @@ import { getChatAttachmentUrl, getSdkChatAttachmentUrl } from '@/lib/api';
 interface MessageRowProps {
   message: ChatMessage;
   embedJwt?: string;
+  accentColor?: string;
 }
 
 export const MessageRow = memo(
-  function MessageRow({ message, embedJwt }: MessageRowProps) {
+  function MessageRow({ message, embedJwt, accentColor }: MessageRowProps) {
     const isUser = message.role === 'user';
     const [thinkingExpanded, setThinkingExpanded] = useState(false);
     const isEmbed = useIsEmbed();
@@ -151,7 +152,7 @@ export const MessageRow = memo(
                     }
                   : {
                       borderLeft: '2px solid',
-                      borderColor: 'primary.main',
+                      borderColor: accentColor ?? 'primary.main',
                       width: '100%',
                       maxWidth: '100%',
                     }),
@@ -204,6 +205,7 @@ export const MessageRow = memo(
     if (prev.message.durationMs !== next.message.durationMs) return false;
     if (prev.message.attachments !== next.message.attachments) return false;
     if (prev.embedJwt !== next.embedJwt) return false;
+    if (prev.accentColor !== next.accentColor) return false;
     return true;
   }
 );

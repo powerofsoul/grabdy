@@ -52,7 +52,7 @@ export class SdkChatAgent extends BaseAgent {
     collectionIds?: DbId<'Collection'>[];
     dataSourceIds?: DbId<'DataSource'>[];
     systemPrompt?: string | null;
-    sdkChatId: DbId<'SdkChat'>;
+    botId: DbId<'Bot'>;
     externalUser: string;
   }): AgentContext {
     const imageStore = {
@@ -68,7 +68,7 @@ export class SdkChatAgent extends BaseAgent {
         orgId: opts.orgId,
         source: 'SDK' as const,
         callerType: 'SDK_JWT' as const,
-        sdkChatId: opts.sdkChatId,
+        botId: opts.botId,
         externalUser: opts.externalUser,
         tools: {
           think: this.thinkTool.create(),

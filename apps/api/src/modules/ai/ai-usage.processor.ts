@@ -33,7 +33,7 @@ export class AiUsageProcessor extends WorkerHost {
       streaming: data.streaming,
       org_id: data.orgId,
       user_id: data.userId,
-      sdk_chat_id: data.sdkChatId,
+      bot_id: data.botId,
       external_user_id: data.externalUser,
     };
 

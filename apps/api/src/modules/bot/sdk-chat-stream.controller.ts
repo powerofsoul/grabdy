@@ -18,8 +18,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import {
+  type BotSourceConfig,
   chatSourceSchema,
-  type SdkChatSourceConfig,
   type SdkStreamBody,
   sdkStreamBodySchema,
 } from '@grabdy/contracts';
@@ -34,12 +34,14 @@ import { AgentMemoryService } from '../agent/services/memory.service';
 import { ChatAttachmentService } from '../chat/chat-attachment.service';
 import { DataSourcesService } from '../data-sources/data-sources.service';
 
+import { BotService } from './bot.service';
 import { SdkChatStreamService } from './sdk-chat-stream.service';
 
 @Controller()
 export class SdkChatStreamController {
   constructor(
     private sdkChatStreamService: SdkChatStreamService,
+    private botService: BotService,
     private agentMemory: AgentMemoryService,
     private dataSourcesService: DataSourcesService,
     private chatAttachmentService: ChatAttachmentService,
@@ -57,7 +59,7 @@ export class SdkChatStreamController {
 
     // Find existing thread for this SDK chat + external user
     const thread = await this.sdkChatStreamService.findThread(
-      sdkAuth.sdkChatId,
+      sdkAuth.botId,
       sdkAuth.externalUser,
       sdkAuth.orgId
     );
@@ -89,6 +91,19 @@ export class SdkChatStreamController {
         threadId: thread,
       },
     };
+  }
+
+  @Public()
+  @Get('/sdk/chat/:chatId/config')
+  async getConfig(
+    @Param('chatId', new ZodValidationPipe(dbIdSchema('Bot')))
+    chatId: DbId<'Bot'>
+  ) {
+    const appearance = await this.botService.getAppearance(chatId);
+    if (!appearance) {
+      throw new NotFoundException('Bot not found');
+    }
+    return { success: true, data: appearance };
   }
 
   @Public()
@@ -209,7 +224,7 @@ export class SdkChatStreamController {
   }
 
   private async verifyDataSourceAccess(
-    config: SdkChatSourceConfig,
+    config: BotSourceConfig,
     dataSourceId: DbId<'DataSource'>,
     orgId: DbId<'Org'>
   ): Promise<boolean> {

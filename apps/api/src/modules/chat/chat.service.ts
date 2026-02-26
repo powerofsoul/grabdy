@@ -1,7 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import { type ChatAttachment, chatSourceSchema } from '@grabdy/contracts';
+import {
+  type BotSourceConfig,
+  botSourceConfigSchema,
+  type ChatAttachment,
+  chatSourceSchema,
+} from '@grabdy/contracts';
 import { sql } from 'kysely';
 import { z } from 'zod';
 
@@ -23,11 +28,49 @@ export class ChatService {
     private agentMemory: AgentMemoryService
   ) {}
 
+  private async getBotConfig(
+    orgId: DbId<'Org'>,
+    botId: DbId<'Bot'>
+  ): Promise<{
+    systemPrompt: string | null;
+    collectionIds: DbId<'Collection'>[];
+    dataSourceIds: DbId<'DataSource'>[];
+  }> {
+    const row = await this.db.kysely
+      .selectFrom('sdk.bots')
+      .select(['data_source_config', 'system_prompt'])
+      .where('id', '=', botId)
+      .where('org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (!row) {
+      throw new NotFoundException('Bot not found');
+    }
+
+    const config = botSourceConfigSchema.parse(row.data_source_config);
+    const collectionIds: DbId<'Collection'>[] = [];
+    const dataSourceIds: DbId<'DataSource'>[] = [];
+
+    for (const entry of config) {
+      if (entry.type === 'COLLECTION') {
+        collectionIds.push(entry.collectionId);
+      } else {
+        dataSourceIds.push(entry.dataSourceId);
+      }
+    }
+
+    return { systemPrompt: row.system_prompt, collectionIds, dataSourceIds };
+  }
+
   private async ensureThread(
     orgId: DbId<'Org'>,
     membershipId: DbId<'OrgMembership'>,
     message: string,
-    options: { threadId?: DbId<'ChatThread'>; collectionId?: DbId<'Collection'> }
+    options: {
+      threadId?: DbId<'ChatThread'>;
+      collectionId?: DbId<'Collection'>;
+      botId?: DbId<'Bot'>;
+    }
   ): Promise<DbId<'ChatThread'>> {
     if (options.threadId) {
       await this.db.kysely
@@ -48,6 +91,7 @@ export class ChatService {
         id: packId('ChatThread', orgId),
         title: message.slice(0, THREAD_TITLE_MAX_LENGTH),
         collection_id: options.collectionId ?? null,
+        bot_id: options.botId ?? null,
         org_id: orgId,
         membership_id: membershipId,
         updated_at: new Date(),
@@ -98,17 +142,33 @@ export class ChatService {
     options: {
       threadId?: DbId<'ChatThread'>;
       collectionId?: DbId<'Collection'>;
+      botId?: DbId<'Bot'>;
       attachments?: ChatAttachment[];
       attachmentContext?: AttachmentContext;
     }
   ) {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
 
+    let collectionIds: DbId<'Collection'>[] | undefined;
+    let dataSourceIds: DbId<'DataSource'>[] | undefined;
+    let instructions: string | undefined;
+
+    if (options.botId) {
+      const botConfig = await this.getBotConfig(orgId, options.botId);
+      if (botConfig.collectionIds.length > 0) collectionIds = botConfig.collectionIds;
+      if (botConfig.dataSourceIds.length > 0) dataSourceIds = botConfig.dataSourceIds;
+      if (botConfig.systemPrompt) instructions = botConfig.systemPrompt;
+    } else if (options.collectionId) {
+      collectionIds = [options.collectionId];
+    }
+
     const ctx = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
-      collectionIds: options.collectionId ? [options.collectionId] : undefined,
+      collectionIds,
+      dataSourceIds,
+      instructions,
     });
 
     return this.dataAgent.stream(ctx, {
@@ -122,7 +182,11 @@ export class ChatService {
   async createThread(
     orgId: DbId<'Org'>,
     membershipId: DbId<'OrgMembership'>,
-    options: { title?: string; collectionId?: DbId<'Collection'> }
+    options: {
+      title?: string;
+      collectionId?: DbId<'Collection'>;
+      botId?: DbId<'Bot'>;
+    }
   ) {
     const thread = await this.db.kysely
       .insertInto('data.chat_threads')
@@ -130,6 +194,7 @@ export class ChatService {
         id: packId('ChatThread', orgId),
         title: options.title ?? null,
         collection_id: options.collectionId ?? null,
+        bot_id: options.botId ?? null,
         org_id: orgId,
         membership_id: membershipId,
         updated_at: new Date(),
@@ -141,24 +206,36 @@ export class ChatService {
       id: thread.id,
       title: thread.title,
       collectionId: thread.collection_id,
+      botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
     };
   }
 
-  async listThreads(orgId: DbId<'Org'>, membershipId: DbId<'OrgMembership'>) {
-    const threads = await this.db.kysely
+  async listThreads(
+    orgId: DbId<'Org'>,
+    membershipId: DbId<'OrgMembership'>,
+    options?: { botId?: DbId<'Bot'> }
+  ) {
+    let query = this.db.kysely
       .selectFrom('data.chat_threads')
-      .select(['id', 'title', 'collection_id', 'created_at', 'updated_at'])
+      .select(['id', 'title', 'collection_id', 'bot_id', 'created_at', 'updated_at'])
       .where('org_id', '=', orgId)
-      .where('membership_id', '=', membershipId)
-      .orderBy('updated_at', 'desc')
-      .execute();
+      .where('membership_id', '=', membershipId);
+
+    if (options?.botId) {
+      query = query.where('bot_id', '=', options.botId);
+    } else {
+      query = query.where('bot_id', 'is', null);
+    }
+
+    const threads = await query.orderBy('updated_at', 'desc').execute();
 
     return threads.map((t) => ({
       id: t.id,
       title: t.title,
       collectionId: t.collection_id,
+      botId: t.bot_id,
       createdAt: new Date(t.created_at).toISOString(),
       updatedAt: new Date(t.updated_at).toISOString(),
     }));
@@ -182,6 +259,7 @@ export class ChatService {
       id: thread.id,
       title: thread.title,
       collectionId: thread.collection_id,
+      botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
       messages: messages.map((m) => ({
@@ -230,6 +308,7 @@ export class ChatService {
       id: thread.id,
       title: thread.title,
       collectionId: thread.collection_id,
+      botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
     };

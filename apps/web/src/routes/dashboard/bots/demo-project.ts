@@ -168,12 +168,6 @@ function FloatingBubbleExample() {
       getToken,
       sdkUrl: SDK_APP_URL,
       position: "bottom-right",
-      style: {
-        primaryColor: "#6366f1",
-        title: "Support Chat",
-        welcomeMessage: "Hi! How can I help?",
-        placeholder: "Type your question...",
-      },
     });
 
     return () => {
@@ -199,11 +193,6 @@ function InlineContainerExample() {
       getToken,
       sdkUrl: SDK_APP_URL,
       container: "#grabdy-inline",
-      style: {
-        primaryColor: "#059669",
-        title: "Knowledge Base",
-        placeholder: "Search our docs...",
-      },
     });
 
     return () => {
@@ -239,11 +228,6 @@ function ClickToOpenExample() {
       getToken,
       sdkUrl: SDK_APP_URL,
       bubble: false,
-      style: {
-        primaryColor: "#dc2626",
-        title: "Ask AI",
-        placeholder: "What do you need help with?",
-      },
     });
 
     return () => {
@@ -337,14 +321,7 @@ export default function App() {
               <pre style={{ backgroundColor: "#f5f5f5", padding: 16, borderRadius: 8, overflow: "auto", fontSize: 13 }}>{\`new GrabdyChat({
   chatId: "your-chat-id",
   getToken,
-  style: {
-    primaryColor: "#6366f1",
-    title: "Support Chat",
-    welcomeMessage: "Hi! How can I help?",
-    placeholder: "Type your question...",
-    // logoUrl: "https://example.com/logo.svg",
-    // bubbleImageUrl: "https://example.com/avatar.png",
-  },
+  // Appearance is configured in the Settings tab
 });\`}</pre>
             </div>
             <FloatingBubbleExample />
@@ -364,11 +341,6 @@ export default function App() {
   chatId: "your-chat-id",
   getToken,
   container: "#my-chat",
-  style: {
-    primaryColor: "#059669",
-    title: "Knowledge Base",
-    placeholder: "Search our docs...",
-  },
 });\`}</pre>
               </div>
             </div>
@@ -391,11 +363,6 @@ export default function App() {
   chatId: "your-chat-id",
   getToken,
   bubble: false,
-  style: {
-    primaryColor: "#dc2626",
-    title: "Ask AI",
-    placeholder: "What do you need help with?",
-  },
 });
 
 // Open from your own button, link, etc:
@@ -421,7 +388,7 @@ A minimal Express + React demo showing how to integrate the Grabdy Chat widget.
    npm install
    \`\`\`
 
-2. Open \`.env\` and paste your private key and key fingerprint (from the Grabdy dashboard > SDK Chats > Signing Keys).
+2. Open \`.env\` and paste your private key and key fingerprint (from the Grabdy dashboard > Bots > Signing Keys).
 
 3. Start the dev servers:
 

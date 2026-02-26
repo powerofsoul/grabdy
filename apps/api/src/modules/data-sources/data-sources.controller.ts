@@ -18,7 +18,7 @@ import type { Request, Response } from 'express';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
-import { StorageAuthGuard } from '../../common/guards/storage-auth.guard';
+import { DualAuthGuard } from '../../common/guards/dual-auth.guard';
 import { MAX_FILE_SIZE_BYTES } from '../../config/constants';
 import { S3FileStorage } from '../storage/s3-file-storage';
 
@@ -184,7 +184,7 @@ export class DataSourcesController {
    * Accepts both dashboard cookie auth and SDK Bearer auth.
    */
   @Public()
-  @UseGuards(StorageAuthGuard)
+  @UseGuards(DualAuthGuard)
   @Get('orgs/:orgId/storage/:encodedKey')
   async storageProxy(
     @Param('orgId') orgIdRaw: string,

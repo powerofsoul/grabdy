@@ -1,18 +1,17 @@
-import type { SdkChatStyle } from '@grabdy/contracts';
-import { sdkChatStyleSchema } from '@grabdy/contracts';
 import { z } from 'zod';
+
+import type { SdkChatConfig } from '@/lib/api';
 
 export interface EmbedAuthState {
   jwt: string | null;
   chatId: string | null;
-  style: SdkChatStyle | undefined;
+  config: SdkChatConfig | null;
 }
 
 const jwtMessageSchema = z.object({
   type: z.literal('JWT'),
   jwt: z.string(),
   chatId: z.string(),
-  style: sdkChatStyleSchema.optional(),
 });
 
 const updateJwtMessageSchema = z.object({

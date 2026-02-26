@@ -181,7 +181,7 @@ export interface DB {
     collection_id: DbId<'Collection'> | null;
     membership_id: DbId<'OrgMembership'> | null;
     source: Generated<'dashboard' | 'sdk' | 'api'>;
-    sdk_chat_id: DbId<'SdkChat'> | null;
+    bot_id: DbId<'Bot'> | null;
     external_user_id: string | null;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
@@ -243,7 +243,7 @@ export interface DB {
     finish_reason: string | null;
     streaming: Generated<boolean>;
     user_id: DbId<'User'> | null;
-    sdk_chat_id: DbId<'SdkChat'> | null;
+    bot_id: DbId<'Bot'> | null;
     external_user_id: string | null;
     created_at: Generated<Timestamp>;
   };
@@ -261,22 +261,26 @@ export interface DB {
     created_at: Generated<Timestamp>;
   };
 
-  'sdk.sdk_chats': {
-    id: Generated<DbId<'SdkChat'>>;
+  'sdk.bots': {
+    id: Generated<DbId<'Bot'>>;
     org_id: DbId<'Org'>;
     name: string;
     data_source_config: ColumnType<unknown, unknown, unknown>;
     system_prompt: string | null;
-    settings: ColumnType<unknown, unknown, unknown>;
-    is_active: Generated<boolean>;
+    title: string | null;
+    subtitle: string | null;
+    placeholder: string | null;
+    image_key: string | null;
+    accent_color: string | null;
+    primary_color: string | null;
     created_by_id: DbId<'User'>;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
   };
 
-  'sdk.sdk_signing_keys': {
-    id: Generated<DbId<'SdkSigningKey'>>;
-    sdk_chat_id: DbId<'SdkChat'>;
+  'sdk.bot_signing_keys': {
+    id: Generated<DbId<'BotSigningKey'>>;
+    bot_id: DbId<'Bot'>;
     org_id: DbId<'Org'>;
     name: string;
     public_key: string;

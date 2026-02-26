@@ -17,6 +17,7 @@ export interface Thread {
 
 interface UseThreadManagerParams {
   initialThreadId?: string;
+  botId?: DbId<'Bot'>;
   onThreadChange?: (threadId: string | undefined) => void;
   onLoadMessages: (messages: ChatMessage[]) => void;
   onClearState: () => void;
@@ -24,6 +25,7 @@ interface UseThreadManagerParams {
 
 export function useThreadManager({
   initialThreadId,
+  botId,
   onThreadChange,
   onLoadMessages,
   onClearState,
@@ -55,7 +57,10 @@ export function useThreadManager({
   const fetchThreads = useCallback(async () => {
     if (!selectedOrgId) return;
     try {
-      const res = await api.chat.listThreads({ params: { orgId: selectedOrgId } });
+      const res = await api.chat.listThreads({
+        params: { orgId: selectedOrgId },
+        query: { botId },
+      });
       if (res.status === 200) {
         setThreads(res.body.data);
       }
@@ -64,7 +69,7 @@ export function useThreadManager({
     } finally {
       setIsLoadingThreads(false);
     }
-  }, [selectedOrgId]);
+  }, [selectedOrgId, botId]);
 
   useEffect(() => {
     fetchThreads();
@@ -137,7 +142,7 @@ export function useThreadManager({
     const promise = api.chat
       .createThread({
         params: { orgId: selectedOrgId },
-        body: {},
+        body: botId ? { botId } : {},
       })
       .then((res) => {
         if (res.status === 200) {
@@ -155,7 +160,7 @@ export function useThreadManager({
 
     pendingCreateRef.current = promise;
     return promise;
-  }, [selectedOrgId, fetchThreads]);
+  }, [selectedOrgId, fetchThreads, botId]);
 
   const handleNewThread = useCallback(() => {
     onClearState();

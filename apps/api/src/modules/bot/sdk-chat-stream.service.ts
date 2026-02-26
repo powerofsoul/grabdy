@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import type { ChatAttachment, SdkChatSourceConfig } from '@grabdy/contracts';
+import type { BotSourceConfig, ChatAttachment } from '@grabdy/contracts';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
+import { DbService } from '../../db/db.module';
+import { SdkChatAgent } from '../agent/agents/sdk-chat-agent';
 import type { AttachmentContext } from '../agent/base-agent';
 
 function hasErrorCode(err: unknown): err is Error & { code: string } {
@@ -11,8 +13,6 @@ function hasErrorCode(err: unknown): err is Error & { code: string } {
   const candidate: { code: unknown } = err;
   return typeof candidate.code === 'string';
 }
-import { DbService } from '../../db/db.module';
-import { SdkChatAgent } from '../agent/agents/sdk-chat-agent';
 
 @Injectable()
 export class SdkChatStreamService {
@@ -22,14 +22,14 @@ export class SdkChatStreamService {
   ) {}
 
   async findThread(
-    sdkChatId: DbId<'SdkChat'>,
+    botId: DbId<'Bot'>,
     externalUser: string,
     orgId: DbId<'Org'>
   ): Promise<DbId<'ChatThread'> | null> {
     const existing = await this.db.kysely
       .selectFrom('data.chat_threads')
       .select('id')
-      .where('sdk_chat_id', '=', sdkChatId)
+      .where('bot_id', '=', botId)
       .where('external_user_id', '=', externalUser)
       .where('org_id', '=', orgId)
       .orderBy('updated_at', 'desc')
@@ -39,7 +39,7 @@ export class SdkChatStreamService {
   }
 
   async findOrCreateThread(
-    sdkChatId: DbId<'SdkChat'>,
+    botId: DbId<'Bot'>,
     externalUser: string,
     orgId: DbId<'Org'>,
     message: string,
@@ -52,7 +52,7 @@ export class SdkChatStreamService {
         .set({ updated_at: new Date() })
         .where('id', '=', threadId)
         .where('org_id', '=', orgId)
-        .where('sdk_chat_id', '=', sdkChatId)
+        .where('bot_id', '=', botId)
         .where('external_user_id', '=', externalUser)
         .executeTakeFirst();
 
@@ -66,7 +66,7 @@ export class SdkChatStreamService {
     const existing = await this.db.kysely
       .selectFrom('data.chat_threads')
       .select('id')
-      .where('sdk_chat_id', '=', sdkChatId)
+      .where('bot_id', '=', botId)
       .where('external_user_id', '=', externalUser)
       .where('org_id', '=', orgId)
       .orderBy('updated_at', 'desc')
@@ -92,7 +92,7 @@ export class SdkChatStreamService {
           org_id: orgId,
           membership_id: null,
           source: 'sdk',
-          sdk_chat_id: sdkChatId,
+          bot_id: botId,
           external_user_id: externalUser,
           updated_at: new Date(),
         })
@@ -106,7 +106,7 @@ export class SdkChatStreamService {
         const retry = await this.db.kysely
           .selectFrom('data.chat_threads')
           .select('id')
-          .where('sdk_chat_id', '=', sdkChatId)
+          .where('bot_id', '=', botId)
           .where('external_user_id', '=', externalUser)
           .where('org_id', '=', orgId)
           .executeTakeFirstOrThrow();
@@ -119,9 +119,9 @@ export class SdkChatStreamService {
   async streamChat(
     sdkAuth: {
       orgId: DbId<'Org'>;
-      sdkChatId: DbId<'SdkChat'>;
+      botId: DbId<'Bot'>;
       externalUser: string;
-      dataSourceConfig: SdkChatSourceConfig;
+      dataSourceConfig: BotSourceConfig;
       systemPrompt: string | null;
     },
     message: string,
@@ -132,7 +132,7 @@ export class SdkChatStreamService {
     }
   ) {
     const resolvedThreadId = await this.findOrCreateThread(
-      sdkAuth.sdkChatId,
+      sdkAuth.botId,
       sdkAuth.externalUser,
       sdkAuth.orgId,
       message,
@@ -160,7 +160,7 @@ export class SdkChatStreamService {
       collectionIds,
       dataSourceIds,
       systemPrompt: sdkAuth.systemPrompt,
-      sdkChatId: sdkAuth.sdkChatId,
+      botId: sdkAuth.botId,
       externalUser: sdkAuth.externalUser,
     });
 

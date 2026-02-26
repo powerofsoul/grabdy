@@ -1,5 +1,5 @@
 import type { DbId } from '@grabdy/common';
-import type { SdkChatSourceConfig } from '@grabdy/contracts';
+import type { BotSourceConfig } from '@grabdy/contracts';
 import { Box, CircularProgress, List, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 
@@ -8,8 +8,8 @@ import { CollectionRow } from './components/CollectionRow';
 import { api } from '@/lib/api';
 
 interface DataSourcePickerProps {
-  value: SdkChatSourceConfig;
-  onChange: (config: SdkChatSourceConfig) => void;
+  value: BotSourceConfig;
+  onChange: (config: BotSourceConfig) => void;
   orgId: DbId<'Org'>;
 }
 

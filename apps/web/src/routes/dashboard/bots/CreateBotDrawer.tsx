@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 
-import { sdkChatsContract } from '@grabdy/contracts';
+import { botsContract } from '@grabdy/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, TextField } from '@mui/material';
 import { toast } from 'sonner';
@@ -10,14 +10,11 @@ import { useAuth } from '@/context/AuthContext';
 import type { DrawerProps } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
 
-const createSchema = sdkChatsContract.create.body.pick({ name: true });
+const createSchema = botsContract.create.body.pick({ name: true });
 
 type CreateForm = z.infer<typeof createSchema>;
 
-export function CreateSdkChatDrawer({
-  onClose,
-  onCreated,
-}: DrawerProps & { onCreated: () => void }) {
+export function CreateBotDrawer({ onClose, onCreated }: DrawerProps & { onCreated: () => void }) {
   const { selectedOrgId } = useAuth();
 
   const {
@@ -34,20 +31,20 @@ export function CreateSdkChatDrawer({
   const onSubmit = async (data: CreateForm) => {
     if (!selectedOrgId) return;
     try {
-      const res = await api.sdkChats.create({
+      const res = await api.bots.create({
         params: { orgId: selectedOrgId },
         body: { name: data.name.trim() },
       });
       if (res.status === 200) {
-        toast.success('SDK Chat created');
+        toast.success('Bot created');
         onCreated();
         onClose();
       }
     } catch (err) {
       setError('root', {
-        message: err instanceof Error ? err.message : 'Failed to create SDK Chat',
+        message: err instanceof Error ? err.message : 'Failed to create Bot',
       });
-      toast.error(err instanceof Error ? err.message : 'Failed to create SDK Chat');
+      toast.error(err instanceof Error ? err.message : 'Failed to create Bot');
     }
   };
 

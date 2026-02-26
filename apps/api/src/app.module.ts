@@ -27,6 +27,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BotModule } from './modules/bot/bot.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
@@ -38,7 +39,6 @@ import { McpModule } from './modules/mcp/mcp.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { OrgsModule } from './modules/orgs/orgs.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
-import { SdkChatModule } from './modules/sdk-chat/sdk-chat.module';
 import { UsersModule } from './modules/users/users.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
@@ -94,7 +94,7 @@ import { RedisModule } from './redis/redis.module';
     IntegrationsModule,
     PublicApiModule,
     McpModule,
-    SdkChatModule,
+    BotModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

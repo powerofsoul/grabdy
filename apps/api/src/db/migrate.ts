@@ -66,6 +66,7 @@ async function fresh() {
     DROP SCHEMA IF EXISTS integration CASCADE;
     DROP SCHEMA IF EXISTS api CASCADE;
     DROP SCHEMA IF EXISTS analytics CASCADE;
+    DROP SCHEMA IF EXISTS sdk CASCADE;
     DROP SCHEMA public CASCADE;
     CREATE SCHEMA public
   `.execute(db);

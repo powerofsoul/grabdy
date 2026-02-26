@@ -8,57 +8,48 @@ const c = initContract();
 
 // ── Source config ────────────────────────────────────────────────────────
 
-const sdkChatSourceSchema = z.discriminatedUnion('type', [
+const botSourceSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('COLLECTION'), collectionId: dbIdSchema('Collection') }),
   z.object({ type: z.literal('DATA_SOURCE'), dataSourceId: dbIdSchema('DataSource') }),
 ]);
 
-export type SdkChatSource = z.infer<typeof sdkChatSourceSchema>;
+export type BotSource = z.infer<typeof botSourceSchema>;
 
-export const sdkChatSourceConfigSchema = z.array(sdkChatSourceSchema);
+export const botSourceConfigSchema = z.array(botSourceSchema);
 
-export type SdkChatSourceConfig = z.infer<typeof sdkChatSourceConfigSchema>;
-
-// ── Style (SDK-level only, not stored in DB) ────────────────────────────
-
-export const sdkChatStyleSchema = z.object({
-  primaryColor: z.string().optional(),
-  accentColor: z.string().optional(),
-  logoUrl: z.string().optional(),
-  bubbleImageUrl: z.string().optional(),
-  title: z.string().optional(),
-  placeholder: z.string().optional(),
-  welcomeMessage: z.string().optional(),
-});
-
-export type SdkChatStyle = z.infer<typeof sdkChatStyleSchema>;
+export type BotSourceConfig = z.infer<typeof botSourceConfigSchema>;
 
 // ── Response schemas ─────────────────────────────────────────────────────
 
 const signingKeySchema = z.object({
-  id: dbIdSchema('SdkSigningKey'),
+  id: dbIdSchema('BotSigningKey'),
   name: z.string(),
   fingerprint: z.string(),
   revokedAt: z.string().nullable(),
   createdAt: z.string(),
 });
 
-const sdkChatSchema = z.object({
-  id: dbIdSchema('SdkChat'),
+const botSchema = z.object({
+  id: dbIdSchema('Bot'),
   name: z.string(),
-  dataSourceConfig: sdkChatSourceConfigSchema,
+  dataSourceConfig: botSourceConfigSchema,
   systemPrompt: z.string().nullable(),
-  isActive: z.boolean(),
+  title: z.string().nullable(),
+  subtitle: z.string().nullable(),
+  placeholder: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+  accentColor: z.string().nullable(),
+  primaryColor: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
 
-const sdkChatDetailSchema = sdkChatSchema.extend({
+const botDetailSchema = botSchema.extend({
   signingKeys: z.array(signingKeySchema),
 });
 
 const signingKeyWithSecretSchema = z.object({
-  id: dbIdSchema('SdkSigningKey'),
+  id: dbIdSchema('BotSigningKey'),
   name: z.string(),
   fingerprint: z.string(),
   privateKey: z.string(),
@@ -67,70 +58,109 @@ const signingKeyWithSecretSchema = z.object({
 
 // ── Contract ─────────────────────────────────────────────────────────────
 
-export const sdkChatsContract = c.router(
+export const botsContract = c.router(
   {
     create: {
       method: 'POST',
-      path: '/orgs/:orgId/sdk-chats',
+      path: '/orgs/:orgId/bots',
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
       body: z.object({
         name: z.string().min(1, 'Name is required'),
-        dataSourceConfig: sdkChatSourceConfigSchema.optional().default([]),
+        dataSourceConfig: botSourceConfigSchema.optional().default([]),
         systemPrompt: z.string().nullable().optional(),
+        title: z.string().nullable().optional(),
+        subtitle: z.string().nullable().optional(),
+        placeholder: z.string().nullable().optional(),
+        accentColor: z.string().nullable().optional(),
+        primaryColor: z.string().nullable().optional(),
       }),
       responses: {
-        200: z.object({ success: z.literal(true), data: sdkChatSchema }),
+        200: z.object({ success: z.literal(true), data: botSchema }),
         400: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
 
     list: {
       method: 'GET',
-      path: '/orgs/:orgId/sdk-chats',
+      path: '/orgs/:orgId/bots',
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
       responses: {
-        200: z.object({ success: z.literal(true), data: z.array(sdkChatSchema) }),
+        200: z.object({ success: z.literal(true), data: z.array(botSchema) }),
       },
     },
 
     get: {
       method: 'GET',
-      path: '/orgs/:orgId/sdk-chats/:sdkChatId',
+      path: '/orgs/:orgId/bots/:botId',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
-        sdkChatId: dbIdSchema('SdkChat'),
+        botId: dbIdSchema('Bot'),
       }),
       responses: {
-        200: z.object({ success: z.literal(true), data: sdkChatDetailSchema }),
+        200: z.object({ success: z.literal(true), data: botDetailSchema }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
 
     update: {
       method: 'PATCH',
-      path: '/orgs/:orgId/sdk-chats/:sdkChatId',
+      path: '/orgs/:orgId/bots/:botId',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
-        sdkChatId: dbIdSchema('SdkChat'),
+        botId: dbIdSchema('Bot'),
       }),
       body: z.object({
         name: z.string().min(1, 'Name is required').optional(),
-        dataSourceConfig: sdkChatSourceConfigSchema.optional(),
+        dataSourceConfig: botSourceConfigSchema.optional(),
         systemPrompt: z.string().nullable().optional(),
-        isActive: z.boolean().optional(),
+        title: z.string().nullable().optional(),
+        subtitle: z.string().nullable().optional(),
+        placeholder: z.string().nullable().optional(),
+        accentColor: z.string().nullable().optional(),
+        primaryColor: z.string().nullable().optional(),
       }),
       responses: {
-        200: z.object({ success: z.literal(true), data: sdkChatSchema }),
+        200: z.object({ success: z.literal(true), data: botSchema }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
 
     delete: {
       method: 'DELETE',
-      path: '/orgs/:orgId/sdk-chats/:sdkChatId',
+      path: '/orgs/:orgId/bots/:botId',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
-        sdkChatId: dbIdSchema('SdkChat'),
+        botId: dbIdSchema('Bot'),
+      }),
+      body: z.object({}),
+      responses: {
+        200: z.object({ success: z.literal(true) }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+
+    uploadImage: {
+      method: 'POST',
+      path: '/orgs/:orgId/bots/:botId/image',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        botId: dbIdSchema('Bot'),
+      }),
+      contentType: 'multipart/form-data',
+      body: c.type<{ file: File }>(),
+      responses: {
+        200: z.object({ success: z.literal(true), data: z.object({ imageUrl: z.string() }) }),
+        400: z.object({ success: z.literal(false), error: z.string() }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
+
+    deleteImage: {
+      method: 'DELETE',
+      path: '/orgs/:orgId/bots/:botId/image',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        botId: dbIdSchema('Bot'),
       }),
       body: z.object({}),
       responses: {
@@ -141,10 +171,10 @@ export const sdkChatsContract = c.router(
 
     generateSigningKey: {
       method: 'POST',
-      path: '/orgs/:orgId/sdk-chats/:sdkChatId/signing-keys',
+      path: '/orgs/:orgId/bots/:botId/signing-keys',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
-        sdkChatId: dbIdSchema('SdkChat'),
+        botId: dbIdSchema('Bot'),
       }),
       body: z.object({
         name: z.string().min(1, 'Key name is required').optional().default('default'),
@@ -158,10 +188,10 @@ export const sdkChatsContract = c.router(
 
     listSigningKeys: {
       method: 'GET',
-      path: '/orgs/:orgId/sdk-chats/:sdkChatId/signing-keys',
+      path: '/orgs/:orgId/bots/:botId/signing-keys',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
-        sdkChatId: dbIdSchema('SdkChat'),
+        botId: dbIdSchema('Bot'),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: z.array(signingKeySchema) }),
@@ -170,11 +200,11 @@ export const sdkChatsContract = c.router(
 
     revokeSigningKey: {
       method: 'DELETE',
-      path: '/orgs/:orgId/sdk-chats/:sdkChatId/signing-keys/:keyId',
+      path: '/orgs/:orgId/bots/:botId/signing-keys/:keyId',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
-        sdkChatId: dbIdSchema('SdkChat'),
-        keyId: dbIdSchema('SdkSigningKey'),
+        botId: dbIdSchema('Bot'),
+        keyId: dbIdSchema('BotSigningKey'),
       }),
       body: z.object({}),
       responses: {
@@ -185,10 +215,10 @@ export const sdkChatsContract = c.router(
 
     generatePreviewJwt: {
       method: 'POST',
-      path: '/orgs/:orgId/sdk-chats/:sdkChatId/preview-jwt',
+      path: '/orgs/:orgId/bots/:botId/preview-jwt',
       pathParams: z.object({
         orgId: dbIdSchema('Org'),
-        sdkChatId: dbIdSchema('SdkChat'),
+        botId: dbIdSchema('Bot'),
       }),
       body: z.object({}),
       responses: {

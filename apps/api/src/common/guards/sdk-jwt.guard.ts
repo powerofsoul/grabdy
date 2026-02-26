@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { dbIdSchema } from '@grabdy/common';
-import { sdkChatSourceConfigSchema } from '@grabdy/contracts';
+import { botSourceConfigSchema } from '@grabdy/contracts';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { z } from 'zod';
@@ -12,7 +12,7 @@ import { EncryptionService } from '../encryption/encryption.service';
 
 const jwtPayloadSchema = z.object({
   sub: z.string().min(1).max(256),
-  chatId: dbIdSchema('SdkChat'),
+  chatId: dbIdSchema('Bot'),
   iat: z.number().optional(),
   exp: z.number().optional(),
 });
@@ -73,21 +73,20 @@ export class SdkJwtGuard implements CanActivate {
     }
 
     const sdkChat = await this.db.kysely
-      .selectFrom('sdk.sdk_chats')
+      .selectFrom('sdk.bots')
       .selectAll()
       .where('id', '=', payload.chatId)
-      .where('is_active', '=', true)
       .executeTakeFirst();
 
     if (!sdkChat) {
-      throw new UnauthorizedException('SDK Chat not found or inactive');
+      throw new UnauthorizedException('Bot not found');
     }
 
-    const dataSourceConfig = sdkChatSourceConfigSchema.parse(sdkChat.data_source_config);
+    const dataSourceConfig = botSourceConfigSchema.parse(sdkChat.data_source_config);
 
     request.sdkAuth = {
       orgId: sdkChat.org_id,
-      sdkChatId: sdkChat.id,
+      botId: sdkChat.id,
       externalUser: payload.sub,
       dataSourceConfig,
       systemPrompt: sdkChat.system_prompt,
@@ -104,14 +103,13 @@ export class SdkJwtGuard implements CanActivate {
   ): Promise<boolean> {
     // Look up SDK chat
     const sdkChat = await this.db.kysely
-      .selectFrom('sdk.sdk_chats')
+      .selectFrom('sdk.bots')
       .selectAll()
       .where('id', '=', payload.chatId)
-      .where('is_active', '=', true)
       .executeTakeFirst();
 
     if (!sdkChat) {
-      throw new UnauthorizedException('SDK Chat not found or inactive');
+      throw new UnauthorizedException('Bot not found');
     }
 
     // Look up non-revoked signing key by kid (required for RS256)
@@ -121,9 +119,9 @@ export class SdkJwtGuard implements CanActivate {
     }
 
     const key = await this.db.kysely
-      .selectFrom('sdk.sdk_signing_keys')
+      .selectFrom('sdk.bot_signing_keys')
       .selectAll()
-      .where('sdk_chat_id', '=', payload.chatId)
+      .where('bot_id', '=', payload.chatId)
       .where('key_fingerprint', '=', kid)
       .where('revoked_at', 'is', null)
       .executeTakeFirst();
@@ -140,12 +138,12 @@ export class SdkJwtGuard implements CanActivate {
     }
 
     // Parse JSONB columns at trust boundary
-    const dataSourceConfig = sdkChatSourceConfigSchema.parse(sdkChat.data_source_config);
+    const dataSourceConfig = botSourceConfigSchema.parse(sdkChat.data_source_config);
 
     // Attach SDK auth context
     request.sdkAuth = {
       orgId: sdkChat.org_id,
-      sdkChatId: sdkChat.id,
+      botId: sdkChat.id,
       externalUser: payload.sub,
       dataSourceConfig,
       systemPrompt: sdkChat.system_prompt,

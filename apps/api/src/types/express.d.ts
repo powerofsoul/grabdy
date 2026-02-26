@@ -1,5 +1,5 @@
 import type { DbId } from '@grabdy/common';
-import type { SdkChatSourceConfig } from '@grabdy/contracts';
+import type { BotSourceConfig } from '@grabdy/contracts';
 
 import type { JwtMembership, JwtPayload } from '../common/guards/auth.guard';
 
@@ -9,9 +9,9 @@ interface ApiKeyContext {
 
 interface SdkAuthContext {
   orgId: DbId<'Org'>;
-  sdkChatId: DbId<'SdkChat'>;
+  botId: DbId<'Bot'>;
   externalUser: string;
-  dataSourceConfig: SdkChatSourceConfig;
+  dataSourceConfig: BotSourceConfig;
   systemPrompt: string | null;
 }
 

@@ -25,8 +25,8 @@ export type TableIdName =
   | 'Connection'
   | 'SyncLog'
   | 'ChatMessage'
-  | 'SdkChat'
-  | 'SdkSigningKey';
+  | 'Bot'
+  | 'BotSigningKey';
 
 // ── Entity Type Maps ─────────────────────────────────────────────────────
 
@@ -62,9 +62,9 @@ export const ENTITY_TYPE_MAP = {
   // Integrations
   Connection: 0x50,
   SyncLog: 0x51,
-  // SDK
-  SdkChat: 0x60,
-  SdkSigningKey: 0x61,
+  // Bots
+  Bot: 0x60,
+  BotSigningKey: 0x61,
 } as const satisfies Record<EntityIdName, number>;
 
 const ENTITY_TYPE_REVERSE: Record<number, EntityIdName> = Object.fromEntries(

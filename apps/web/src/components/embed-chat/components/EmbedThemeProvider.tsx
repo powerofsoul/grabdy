@@ -1,12 +1,12 @@
 import { type ReactNode, useMemo } from 'react';
 
-import type { SdkChatStyle } from '@grabdy/contracts';
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
 
+import type { SdkChatConfig } from '@/lib/api';
 import { createAppTheme } from '@/theme';
 
 interface EmbedThemeProviderProps {
-  style: SdkChatStyle | undefined;
+  style: SdkChatConfig | null;
   children: ReactNode;
 }
 

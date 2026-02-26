@@ -18,6 +18,7 @@ interface UseChatStreamParams {
   setActiveThreadId: (id: DbId<'ChatThread'> | undefined) => void;
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   fetchThreads: () => Promise<void>;
+  botId?: DbId<'Bot'>;
 }
 
 export function useChatStream({
@@ -25,6 +26,7 @@ export function useChatStream({
   setActiveThreadId,
   setMessages,
   fetchThreads,
+  botId,
 }: UseChatStreamParams) {
   const { selectedOrgId } = useAuth();
 
@@ -72,6 +74,7 @@ export function useChatStream({
             message: userMessage,
             threadId,
             attachments,
+            botId,
           },
           {
             onText: (text) => {
@@ -140,7 +143,7 @@ export function useChatStream({
         setIsStreaming(false);
       }
     },
-    [selectedOrgId, isStreaming, fetchThreads, setActiveThreadId, setMessages, ensureThread]
+    [selectedOrgId, isStreaming, fetchThreads, setActiveThreadId, setMessages, ensureThread, botId]
   );
 
   return {

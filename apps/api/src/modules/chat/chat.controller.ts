@@ -73,6 +73,7 @@ export class ChatController {
       const thread = await this.chatService.createThread(params.orgId, membership.id, {
         title: body.title,
         collectionId: body.collectionId,
+        botId: body.botId,
       });
 
       return {
@@ -85,8 +86,10 @@ export class ChatController {
   @OrgAccess(chatContract.listThreads, { params: ['orgId'] })
   @TsRestHandler(chatContract.listThreads)
   async listThreads(@CurrentMembership() membership: JwtMembership) {
-    return tsRestHandler(chatContract.listThreads, async ({ params }) => {
-      const threads = await this.chatService.listThreads(params.orgId, membership.id);
+    return tsRestHandler(chatContract.listThreads, async ({ params, query }) => {
+      const threads = await this.chatService.listThreads(params.orgId, membership.id, {
+        botId: query.botId,
+      });
 
       return {
         status: 200 as const,
@@ -194,6 +197,7 @@ export class ChatController {
         {
           threadId: body.threadId,
           collectionId: body.collectionId,
+          botId: body.botId,
           attachments: body.attachments,
           attachmentContext,
         }
