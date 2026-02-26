@@ -4,19 +4,8 @@ import { z } from 'zod';
 
 import type { DataSourceType } from '../enums/data-source.js';
 import { chatAttachmentSchema, MAX_CHAT_ATTACHMENTS } from '../schemas/chat-attachment.js';
-import { chunkMetaSchema } from '../schemas/chunk-meta.js';
 
 const c = initContract();
-
-const searchResultSchema = z.object({
-  chunkId: dbIdSchema('Chunk'),
-  content: z.string(),
-  score: z.number(),
-  metadata: chunkMetaSchema.nullable(),
-  dataSourceName: z.string(),
-  dataSourceId: dbIdSchema('DataSource'),
-  sourceUrl: z.string().nullable(),
-});
 
 const chatSourceBase = {
   dataSourceId: dbIdSchema('DataSource'),
@@ -75,21 +64,21 @@ void _chatSourceCheck;
 // SSE stream event schemas (shared between API and frontend)
 // ---------------------------------------------------------------------------
 
-export const sseThinkingEventSchema = z.object({
+const sseThinkingEventSchema = z.object({
   type: z.literal('thinking'),
   text: z.string(),
 });
 
-export const sseSourcesEventSchema = z.object({
+const sseSourcesEventSchema = z.object({
   type: z.literal('sources'),
   sources: z.array(chatSourceSchema),
 });
 
-export const sseTextDoneEventSchema = z.object({
+const sseTextDoneEventSchema = z.object({
   type: z.literal('text_done'),
 });
 
-export const sseDoneEventSchema = z.object({
+const sseDoneEventSchema = z.object({
   type: z.literal('done'),
   threadId: z.string().nullable(),
   durationMs: z.number(),
@@ -102,10 +91,6 @@ export const sseMetaEventSchema = z.discriminatedUnion('type', [
   sseDoneEventSchema,
 ]);
 
-export type SseThinkingEvent = z.infer<typeof sseThinkingEventSchema>;
-export type SseSourcesEvent = z.infer<typeof sseSourcesEventSchema>;
-export type SseTextDoneEvent = z.infer<typeof sseTextDoneEventSchema>;
-export type SseDoneEvent = z.infer<typeof sseDoneEventSchema>;
 export type SseMetaEvent = z.infer<typeof sseMetaEventSchema>;
 
 // ---------------------------------------------------------------------------
@@ -146,27 +131,6 @@ const threadWithMessagesSchema = threadSchema.extend({
 
 export const chatContract = c.router(
   {
-    chat: {
-      method: 'POST',
-      path: '/orgs/:orgId/chat',
-      pathParams: z.object({ orgId: dbIdSchema('Org') }),
-      body: z.object({
-        message: z.string().min(1),
-        threadId: dbIdSchema('ChatThread').optional(),
-        collectionId: dbIdSchema('Collection').optional(),
-      }),
-      responses: {
-        200: z.object({
-          success: z.literal(true),
-          data: z.object({
-            answer: z.string(),
-            threadId: dbIdSchema('ChatThread'),
-            sources: z.array(searchResultSchema),
-          }),
-        }),
-        400: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
     createThread: {
       method: 'POST',
       path: '/orgs/:orgId/chat/threads',

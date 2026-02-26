@@ -1,10 +1,9 @@
 import { createTheme, type PaletteMode } from '@mui/material';
 
-const FONT_SERIF = '"Inter", "SF Pro", system-ui, sans-serif';
 const FONT_SANS = '"Inter", "SF Pro", system-ui, sans-serif';
 const FONT_MONO = '"Geist Mono", "JetBrains Mono", monospace';
 
-export { FONT_MONO, FONT_SERIF };
+export { FONT_MONO };
 
 const light = {
   bg: '#FAFAF8',
@@ -41,12 +40,7 @@ const light = {
     800: '#33302B',
     900: '#241F1B',
   },
-  kindle: {
-    cream: '#FAFAF8',
-    parchment: '#F0F0ED',
-    sepia: '#E5E4E1',
-    inkBrown: '#33302B',
-  },
+  kindle: {},
 };
 
 const dark = {
@@ -84,12 +78,7 @@ const dark = {
     800: '#D9D9D9',
     900: '#F4F1EC',
   },
-  kindle: {
-    cream: '#141414',
-    parchment: '#1C1C1C',
-    sepia: '#272727',
-    inkBrown: 'rgba(212,212,212,0.88)',
-  },
+  kindle: {},
 };
 
 export function createAppTheme(mode: PaletteMode) {
@@ -125,31 +114,43 @@ export function createAppTheme(mode: PaletteMode) {
     },
     typography: {
       fontFamily: FONT_SANS,
-      h1: { fontFamily: FONT_SERIF, fontSize: '3rem', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1.1 },
+      h1: {
+        fontFamily: FONT_SANS,
+        fontSize: '3rem',
+        fontWeight: 700,
+        letterSpacing: '-0.04em',
+        lineHeight: 1.1,
+      },
       h2: {
-        fontFamily: FONT_SERIF,
+        fontFamily: FONT_SANS,
         fontSize: '2.25rem',
         fontWeight: 700,
         letterSpacing: '-0.03em',
         lineHeight: 1.15,
       },
       h3: {
-        fontFamily: FONT_SERIF,
+        fontFamily: FONT_SANS,
         fontSize: '1.875rem',
         fontWeight: 600,
         letterSpacing: '-0.02em',
         lineHeight: 1.2,
       },
-      h4: { fontFamily: FONT_SERIF, fontSize: '1.5rem', fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.25 },
+      h4: {
+        fontFamily: FONT_SANS,
+        fontSize: '1.5rem',
+        fontWeight: 600,
+        letterSpacing: '-0.02em',
+        lineHeight: 1.25,
+      },
       h5: {
-        fontFamily: FONT_SERIF,
+        fontFamily: FONT_SANS,
         fontSize: '1.25rem',
         fontWeight: 600,
         lineHeight: 1.3,
         letterSpacing: '-0.01em',
       },
       h6: {
-        fontFamily: FONT_SERIF,
+        fontFamily: FONT_SANS,
         fontSize: '1.125rem',
         fontWeight: 600,
         lineHeight: 1.3,
@@ -273,7 +274,7 @@ export function createAppTheme(mode: PaletteMode) {
       },
       MuiDialogTitle: {
         styleOverrides: {
-          root: { fontSize: '1.375rem', fontWeight: 400, fontFamily: FONT_SERIF },
+          root: { fontSize: '1.375rem', fontWeight: 400, fontFamily: FONT_SANS },
         },
       },
       MuiTooltip: {
@@ -296,7 +297,7 @@ export function createAppTheme(mode: PaletteMode) {
         styleOverrides: {
           root: {
             '& .MuiTableCell-head': {
-              fontFamily: FONT_SERIF,
+              fontFamily: FONT_SANS,
               fontWeight: 400,
               fontSize: '0.75rem',
               textTransform: 'uppercase',

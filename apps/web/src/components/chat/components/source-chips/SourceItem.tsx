@@ -2,13 +2,13 @@ import { alpha, Box, Typography } from '@mui/material';
 import { ArrowSquareOutIcon } from '@phosphor-icons/react';
 
 import { FileIcon } from './FileIcon';
-import { formatLocation, isExternalSource, isIntegrationProvider } from './helpers';
+import { formatLocation, isIntegrationProvider } from './helpers';
 import type { SourceItemProps } from './types';
 
 import { ProviderIcon } from '@/components/integrations/ProviderIcon';
 
 export function SourceItem({ source, onOpen, compact }: SourceItemProps) {
-  const isExternal = isExternalSource(source.type);
+  const isExternal = isIntegrationProvider(source.type);
   const hasUrl = Boolean(source.sourceUrl);
   const clickable = hasUrl || !isExternal;
 

@@ -65,10 +65,10 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 
 #### Entity Type Codes
 
-- Org=0x01, User=0x02, OrgMembership=0x03, AuthToken=0x04
+- Org=0x01, User=0x02, OrgMembership=0x03, AuthToken=0x04, OrgInvitation=0x05
 - Collection=0x10, DataSource=0x11, Chunk=0x12, ExtractedImage=0x13
-- ApiKey=0x20, ChatThread=0x30, CanvasCard=0x31, CanvasEdge=0x32, CanvasComponent=0x33, SharedChat=0x34, ChatMessage=0x38
-- AiUsageLog=0x40, Connection=0x50, SyncLog=0x51
+- ApiKey=0x20, ChatThread=0x30, SharedChat=0x34, ChatMessage=0x38
+- AiUsageLog=0x40, Connection=0x50, Bot=0x60, BotSigningKey=0x61
 
 ### Database
 

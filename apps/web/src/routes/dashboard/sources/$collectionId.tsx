@@ -1,21 +1,12 @@
-import type { ComponentType } from 'react';
 import { useState } from 'react';
 
 import { dbIdSchema } from '@grabdy/common';
-import type { UploadsExt } from '@grabdy/contracts';
 import { Box, Button, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
-import type { IconProps } from '@phosphor-icons/react';
 import {
   ArrowsClockwiseIcon,
   DatabaseIcon,
   DownloadSimpleIcon,
   EyeIcon,
-  FileCsvIcon,
-  FileDocIcon,
-  FileImageIcon,
-  FilePdfIcon,
-  FileTextIcon,
-  FileXlsIcon,
   PencilSimpleIcon,
   TrashIcon,
 } from '@phosphor-icons/react';
@@ -26,6 +17,7 @@ import { toast } from 'sonner';
 import { type RenameDataSource, RenameDrawer } from './RenameDrawer';
 
 import { canPreview, DocumentPreviewDrawer } from '@/components/chat/components/document-preview';
+import { getFileIcon } from '@/components/chat/components/source-chips/helpers';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -47,30 +39,6 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-const ICON_BY_EXT: Record<UploadsExt, ComponentType<IconProps>> = {
-  pdf: FilePdfIcon,
-  csv: FileCsvIcon,
-  docx: FileDocIcon,
-  doc: FileDocIcon,
-  xlsx: FileXlsIcon,
-  xls: FileXlsIcon,
-  txt: FileTextIcon,
-  json: FileTextIcon,
-  png: FileImageIcon,
-  jpg: FileImageIcon,
-  webp: FileImageIcon,
-  gif: FileImageIcon,
-};
-
-function isFileExt(ext: string): ext is UploadsExt {
-  return ext in ICON_BY_EXT;
-}
-
-function getFileIcon(filename: string): ComponentType<IconProps> {
-  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
-  return isFileExt(ext) ? ICON_BY_EXT[ext] : FileTextIcon;
 }
 
 const headerNames = {

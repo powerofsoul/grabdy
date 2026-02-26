@@ -225,13 +225,3 @@ export const sdkStreamBodySchema = z.object({
 });
 
 export type SdkStreamBody = z.infer<typeof sdkStreamBodySchema>;
-
-export const sdkHistoryMessageSchema = z.object({
-  id: z.string(),
-  role: z.enum(['user', 'assistant']),
-  content: z.string(),
-  attachments: z.array(chatAttachmentSchema).nullable().optional(),
-  createdAt: z.string().nullable(),
-});
-
-export type SdkHistoryMessage = z.infer<typeof sdkHistoryMessageSchema>;

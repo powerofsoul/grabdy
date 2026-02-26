@@ -1,18 +1,12 @@
 import type { ChatSource, IntegrationProvider, UploadsExt } from '@grabdy/contracts';
 import { FileTextIcon } from '@phosphor-icons/react';
 
-import {
-  EXTERNAL_SOURCE_TYPES,
-  FILE_EXTS,
-  ICON_BY_EXT,
-  INTEGRATION_SOURCE_TYPES,
-  SOURCE_NOUN,
-} from './constants';
+import { FILE_EXTS, ICON_BY_EXT, INTEGRATION_SOURCE_TYPES, SOURCE_NOUN } from './constants';
 import type { IconComponent, SourceGroup, SourceGroupType } from './types';
 
 import { getProviderLabel, ProviderIcon } from '@/components/integrations/ProviderIcon';
 
-export function pluralize(count: number, noun: string): string {
+function pluralize(count: number, noun: string): string {
   return count === 1 ? `${count} ${noun}` : `${count} ${noun}s`;
 }
 
@@ -27,11 +21,6 @@ export function formatLocation(source: ChatSource): string {
 
 export function isIntegrationProvider(type: string): type is IntegrationProvider {
   return INTEGRATION_SOURCE_TYPES.has(type);
-}
-
-/** Returns true for integration providers */
-export function isExternalSource(type: string): boolean {
-  return EXTERNAL_SOURCE_TYPES.has(type);
 }
 
 export function isFileExt(ext: string): ext is UploadsExt {
@@ -68,7 +57,7 @@ export function groupSources(
   const groups = new Map<SourceGroupType, ChatSource[]>();
 
   for (const source of sources) {
-    const type = isExternalSource(source.type) ? source.type : 'UPLOAD';
+    const type = isIntegrationProvider(source.type) ? source.type : 'UPLOAD';
     const existing = groups.get(type);
     if (existing) {
       existing.push(source);

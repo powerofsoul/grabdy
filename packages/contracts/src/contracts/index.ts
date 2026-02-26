@@ -56,30 +56,14 @@ export {
   sdkStreamBodySchema,
 } from './bots.contract.js';
 export { type ChatSource, chatSourceSchema } from './chat.contract.js';
-export {
-  type SseDoneEvent,
-  type SseMetaEvent,
-  sseMetaEventSchema,
-  type SseSourcesEvent,
-  type SseTextDoneEvent,
-  type SseThinkingEvent,
-  type StreamChunk,
-} from './chat.contract.js';
+export { type SseMetaEvent, sseMetaEventSchema, type StreamChunk } from './chat.contract.js';
 export { demoRequestBodySchema } from './demo-request.contract.js';
 export {
   listCollectionsResponseSchema,
   publicApiErrorSchema,
-  publicCollectionSchema,
-  publicSourceSchema,
   queryBodySchema,
   queryResponseSchema,
   searchBodySchema,
   searchResponseSchema,
 } from './public-api.contract.js';
-export {
-  chatMessageSnapshotSchema,
-  sharedChatSchema,
-  sharedChatSnapshotSchema,
-} from './shared-chats.contract.js';
-
-export type Contract = typeof contract;
+export { sharedChatSchema, sharedChatSnapshotSchema } from './shared-chats.contract.js';

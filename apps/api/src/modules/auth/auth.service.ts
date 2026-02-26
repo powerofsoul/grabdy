@@ -57,7 +57,7 @@ function parseRoles(roles: OrgRole[] | string): OrgRole[] {
 }
 
 export const AUTH_TOKEN_EXPIRY = JWT_EXPIRY;
-export const AUTH_TOKEN_MAX_AGE_MS = JWT_MAX_AGE_MS;
+const AUTH_TOKEN_MAX_AGE_MS = JWT_MAX_AGE_MS;
 
 export function authCookieOptions(nodeEnv: string): CookieOptions {
   return {
@@ -69,14 +69,14 @@ export function authCookieOptions(nodeEnv: string): CookieOptions {
   };
 }
 
-export interface OrgMembershipData {
+interface OrgMembershipData {
   id: DbId<'OrgMembership'>;
   orgId: DbId<'Org'>;
   orgName: string;
   roles: OrgRole[];
 }
 
-export interface UserData {
+interface UserData {
   id: string;
   email: string;
   firstName: string;

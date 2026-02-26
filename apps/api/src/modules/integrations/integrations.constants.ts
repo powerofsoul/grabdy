@@ -1,5 +1,5 @@
 /** How far back to look on initial sync (no existing cursor). 30 days. */
-export const INITIAL_SYNC_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
+const INITIAL_SYNC_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** Returns an ISO string N ms in the past, for use as initial sync cursor. */
 export function getInitialSyncSince(): string {

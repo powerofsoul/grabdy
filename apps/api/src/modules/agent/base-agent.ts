@@ -28,7 +28,7 @@ export type AttachmentContext = Array<
   { type: 'text'; text: string } | { type: 'image'; image: Buffer; mimeType: string }
 >;
 
-export interface StreamInput {
+interface StreamInput {
   threadId?: DbId<'ChatThread'>;
   message: string;
   attachments?: ChatAttachment[];

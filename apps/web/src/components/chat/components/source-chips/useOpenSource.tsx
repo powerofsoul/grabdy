@@ -6,7 +6,7 @@ import type { ChatSource } from '@grabdy/contracts';
 import { DocumentPreviewDrawer } from '../document-preview';
 import { PdfPageViewer } from '../pdf-page-viewer';
 
-import { isExternalSource } from './helpers';
+import { isIntegrationProvider } from './helpers';
 
 import { useIsEmbed } from '@/components/embed-chat/context';
 import type { EmbedSource } from '@/components/embed-chat/types';
@@ -36,7 +36,7 @@ export function useOpenSource() {
       }
 
       // External sources (integrations) open their URL in a new tab
-      if (isExternalSource(source.type) && source.sourceUrl) {
+      if (isIntegrationProvider(source.type) && source.sourceUrl) {
         window.open(source.sourceUrl, '_blank', 'noopener,noreferrer');
         return;
       }

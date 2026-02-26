@@ -20,7 +20,7 @@ function accumulateChunk(
   }
 }
 
-export interface AgentStreamResult {
+interface AgentStreamResult {
   chunks: AsyncIterable<StreamChunk>;
   getFullText: () => string;
   getThinkingTexts: () => string[];

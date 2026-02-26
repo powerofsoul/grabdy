@@ -169,7 +169,7 @@ export const api = initClient(contract, {
   api: customFetcher,
 });
 
-export interface StreamCallbacks {
+interface StreamCallbacks {
   onText: (text: string) => void;
   onThinking?: (text: string) => void;
   onSources?: (sources: ChatSource[]) => void;
@@ -291,8 +291,6 @@ const sdkHistoryResponseSchema = z.object({
   }),
 });
 
-export type SdkHistoryResponse = z.infer<typeof sdkHistoryResponseSchema>;
-
 export class SdkApiError extends Error {
   constructor(
     message: string,
@@ -337,7 +335,9 @@ export async function fetchSdkConfig(chatId: string): Promise<SdkChatConfig> {
 }
 
 // Note: uses raw fetch because SDK endpoints use Bearer JWT auth, not cookie-based ts-rest client
-export async function fetchSdkHistory(jwt: string): Promise<SdkHistoryResponse> {
+export async function fetchSdkHistory(
+  jwt: string
+): Promise<z.infer<typeof sdkHistoryResponseSchema>> {
   const response = await fetch(`${baseUrl}/sdk/chat/history`, {
     headers: { Authorization: `Bearer ${jwt}` },
   });

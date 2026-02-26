@@ -217,16 +217,6 @@ export interface DB {
     created_at: Generated<Timestamp>;
   };
 
-  'api.usage_logs': {
-    id: Generated<DbId<'UsageLog'>>;
-    org_id: DbId<'Org'>;
-    api_key_id: DbId<'ApiKey'>;
-    endpoint: string;
-    input_tokens: Generated<number>;
-    output_tokens: Generated<number>;
-    created_at: Generated<Timestamp>;
-  };
-
   'analytics.ai_usage_logs': {
     id: Generated<DbId<'AiUsageLog'>>;
     org_id: DbId<'Org'>;
