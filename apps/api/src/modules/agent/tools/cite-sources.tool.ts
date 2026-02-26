@@ -1,82 +1,66 @@
 import { Injectable } from '@nestjs/common';
 
+import type { StreamChunk } from '@grabdy/contracts';
+import { chatSourceSchema } from '@grabdy/contracts';
 import { tool } from 'ai';
 import { z } from 'zod';
 
-import type { StreamChunk, Tool } from '../base-tool';
+import type { Tool, ToolCallContext } from '../base-tool';
 
-const sourceSchema = z.object({
-  type: z
-    .string()
-    .describe(
-      'File type from metadata.type: PDF, DOCX, XLSX, CSV, TXT, JSON, IMAGE, SLACK, LINEAR, GITHUB, NOTION'
-    ),
-  dataSourceId: z.string().describe('The dataSourceId from the search result'),
-  dataSourceName: z.string().describe('The dataSourceName from the search result'),
-  score: z.number().describe('The relevance score from the search result'),
-  sourceUrl: z.string().describe('The sourceUrl from the search result'),
-  pages: z.array(z.number()).optional().describe('Page numbers for PDF/DOCX sources'),
-  sheet: z.string().optional().describe('Sheet name for XLSX sources'),
-  rows: z.array(z.number()).optional().describe('Row numbers for XLSX/CSV sources'),
-  columns: z.array(z.string()).optional().describe('Column names for XLSX/CSV sources'),
+import { RagSearchTool } from './rag-search.tool';
+
+const inputSchema = z.object({
+  sources: z
+    .array(chatSourceSchema)
+    .describe('Array of source objects from search results that you used in your answer'),
 });
 
-/**
- * A "cite-sources" tool that lets the model report which sources it used.
- * Captures sources as structured data and emits a typed StreamChunk
- * for the UI to render as clickable chips.
- */
+type Input = z.infer<typeof inputSchema>;
+type Output = { ok: boolean };
+
 @Injectable()
-export class CiteSourcesTool implements Tool {
+export class CiteSourcesTool implements Tool<Input, Output> {
+  readonly toolName = 'cite-sources' as const;
+
   systemPrompt = `## Citing sources (MANDATORY)
 
-If you used ANY information from \`rag-search\` results in your answer, you MUST call \`cite-sources\`. No exceptions. Every fact you state came from a source, so cite it. Skipping citations is only acceptable for greetings or social messages where no search was performed.
+If you used ANY information from \`rag-search\` results, you MUST call \`cite-sources\` ONCE after your answer. Only include sources you actually used, not all search results. Deduplicate by \`dataSourceId\` (merge pages, take highest score). Skip only for greetings or social messages where no search was performed.
 
-Call \`cite-sources\` ONCE after writing your answer. Include every source whose content contributed to your answer. The UI renders these as clickable chips so the user can verify your claims.
+### CRITICAL: NO source references in text output
 
-**How to cite:** Refer to sources by name in your answer text (e.g. "According to the Employee Handbook, ..."). Then pass the structured data to \`cite-sources\`. Deduplicate by \`dataSourceId\` (merge pages, take highest score).
-
-### CRITICAL: source data NEVER goes in text output
-
-Your text output is rendered directly to the user as your answer. Source attribution is handled by a separate UI component that reads from the \`cite-sources\` tool call.
-
-If you write source data in your text output, it will appear as ugly raw JSON to the user. This is a bug. The ONLY correct way to cite sources is via the \`cite-sources\` tool call.
+The UI renders source attribution automatically from the \`cite-sources\` tool call as clickable chips. Your text output must contain ZERO source references of any kind.
 
 Forbidden in text output:
-- JSON objects or arrays containing source data
-- \`{ "sources": [...] }\` blocks
+- File names in brackets: \`[Document.pdf]\`, \`[file-name.docx]\`
+- Inline citations: \`(Source: ...)\`, \`[1]\`, \`[Source]\`
+- "According to [document name]" or "Based on [source]"
+- "Sources:", "References:", "Citations:" headers
 - \`dataSourceId\`, \`dataSourceName\`, \`score\`, \`sourceUrl\` fields
-- "Sources:", "References:", "Citations:" headers followed by source listings
-- Raw URLs from search results
-- Any mention of scores, IDs, or internal metadata
+- JSON objects, arrays, or raw URLs from search results
 
-Your text = the answer in plain language. Source data = \`cite-sources\` tool call. No overlap.`;
+Your text = the answer in plain language with no attribution. Source data = \`cite-sources\` tool call only.`;
 
   create() {
     return tool({
       description:
         'MANDATORY after every answer that used rag-search results. ' +
         'If you searched and found information, you MUST call this tool. ' +
-        'Pass all sources you referenced. Deduplicate by dataSourceId (merge pages, take highest score). ' +
+        'Only include sources whose content you actually referenced in your answer, not every result from rag-search. ' +
+        'Deduplicate by dataSourceId (merge pages, take highest score). ' +
         'The UI renders these as clickable source chips so users can verify your answer.',
-      inputSchema: z.object({
-        sources: z
-          .array(sourceSchema)
-          .describe('Array of source objects from search results that you used in your answer'),
-      }),
+      inputSchema,
       execute: async () => {
         return { ok: true };
       },
     });
   }
 
-  onToolCall(input: unknown): StreamChunk | null {
-    if (input && typeof input === 'object' && 'sources' in input) {
-      const sources = input.sources;
-      if (Array.isArray(sources) && sources.length > 0) {
-        return { type: 'sources', sources };
-      }
-    }
-    return null;
+  onToolCall(ctx: ToolCallContext<Input>): StreamChunk | null {
+    if (ctx.input.sources.length === 0) return null;
+    return { type: 'sources', sources: ctx.input.sources };
+  }
+
+  mustBeCalled(calledToolNames: Set<string>): boolean {
+    return calledToolNames.has(RagSearchTool.TOOL_NAME);
   }
 }

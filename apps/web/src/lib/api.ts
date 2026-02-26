@@ -1,8 +1,10 @@
 import {
   type ChatAttachment,
   chatAttachmentSchema,
+  type ChatSource,
   chatSourceSchema,
   contract,
+  sseMetaEventSchema,
 } from '@grabdy/contracts';
 import { ApiFetcherArgs, initClient } from '@ts-rest/core';
 import { z } from 'zod';
@@ -170,20 +172,13 @@ export const api = initClient(contract, {
 export interface StreamCallbacks {
   onText: (text: string) => void;
   onThinking?: (text: string) => void;
-  onSources?: (sources: unknown[]) => void;
+  onSources?: (sources: ChatSource[]) => void;
   onTextDone?: () => void;
   onDone: (metadata: { threadId?: string; durationMs?: number }) => void;
   onError?: (error: Error) => void;
 }
 
 const textDeltaSchema = z.string();
-const metadataEventSchema = z.object({
-  type: z.string(),
-  text: z.string().optional(),
-  sources: z.array(z.unknown()).optional(),
-  threadId: z.string().optional(),
-  durationMs: z.number().optional(),
-});
 
 function parseStreamLine(line: string, callbacks: StreamCallbacks): void {
   if (!line.trim()) return;
@@ -199,20 +194,20 @@ function parseStreamLine(line: string, callbacks: StreamCallbacks): void {
       const parsed = textDeltaSchema.safeParse(JSON.parse(jsonStr));
       if (parsed.success) callbacks.onText(parsed.data);
     } else if (typeCode === '8') {
-      const parsed = metadataEventSchema.safeParse(JSON.parse(jsonStr));
+      const parsed = sseMetaEventSchema.safeParse(JSON.parse(jsonStr));
       if (!parsed.success) return;
-      const metadata = parsed.data;
-      if (metadata.type === 'done') {
+      const event = parsed.data;
+      if (event.type === 'done') {
         callbacks.onDone({
-          threadId: metadata.threadId,
-          durationMs: metadata.durationMs,
+          threadId: event.threadId ?? undefined,
+          durationMs: event.durationMs,
         });
-      } else if (metadata.type === 'text_done') {
+      } else if (event.type === 'text_done') {
         callbacks.onTextDone?.();
-      } else if (metadata.type === 'thinking' && metadata.text) {
-        callbacks.onThinking?.(metadata.text);
-      } else if (metadata.type === 'sources' && metadata.sources) {
-        callbacks.onSources?.(metadata.sources);
+      } else if (event.type === 'thinking') {
+        callbacks.onThinking?.(event.text);
+      } else if (event.type === 'sources') {
+        callbacks.onSources?.(event.sources);
       }
     }
   } catch (e) {

@@ -6,11 +6,14 @@ import type { PrepareStepFunction, ToolSet } from 'ai';
 
 import { AiUsageService } from '../../ai/ai-usage.service';
 import { type AgentContext, BaseAgent } from '../base-agent';
+import type { Tool } from '../base-tool';
 import { AgentMemoryService } from '../services/memory.service';
 import { CiteSourcesTool } from '../tools/cite-sources.tool';
 import { ImageAnalysisTool } from '../tools/image-analysis.tool';
 import { RagSearchTool } from '../tools/rag-search.tool';
 import { ThinkTool } from '../tools/think.tool';
+
+import type { SearchScope } from './search-scope';
 
 const DATA_AGENT_PROMPT = `You are a research assistant. Your ONLY capability is searching a knowledge base and reporting what you find. You have no other abilities, opinions, or knowledge.
 
@@ -53,8 +56,7 @@ export class DataAgent extends BaseAgent {
     source: AiRequestSource;
     callerType?: AiCallerType;
     userId?: DbId<'User'>;
-    collectionIds?: DbId<'Collection'>[];
-    dataSourceIds?: DbId<'DataSource'>[];
+    searchScope: SearchScope;
     defaultTopK?: number;
     tools?: ToolSet[];
     instructions?: string;
@@ -69,34 +71,41 @@ export class DataAgent extends BaseAgent {
       ? `${DATA_AGENT_PROMPT}\n\n${opts.instructions}`
       : DATA_AGENT_PROMPT;
 
+    const tools: ToolSet = {
+      [this.thinkTool.toolName]: this.thinkTool.create(),
+      [this.imageAnalysisTool.toolName]: this.imageAnalysisTool.create(imageStore, {
+        orgId: opts.orgId,
+        userId: opts.userId,
+        source: opts.source,
+        callerType: opts.callerType,
+      }),
+      ...Object.assign({}, ...(opts.tools ?? [])),
+    };
+
+    const hooks: Record<string, Tool> = {
+      [this.thinkTool.toolName]: this.thinkTool,
+      [this.imageAnalysisTool.toolName]: this.imageAnalysisTool,
+    };
+
+    if (opts.searchScope.type !== 'none') {
+      tools[this.ragSearchTool.toolName] = this.ragSearchTool.create(
+        opts.orgId,
+        opts.searchScope,
+        opts.defaultTopK,
+        opts.userId
+      );
+      tools[this.citeSourcesTool.toolName] = this.citeSourcesTool.create();
+      hooks[this.ragSearchTool.toolName] = this.ragSearchTool;
+      hooks[this.citeSourcesTool.toolName] = this.citeSourcesTool;
+    }
+
     return {
       callOptions: {
         ...opts,
-        tools: {
-          think: this.thinkTool.create(),
-          'cite-sources': this.citeSourcesTool.create(),
-          'rag-search': this.ragSearchTool.create(
-            opts.orgId,
-            opts.collectionIds,
-            opts.dataSourceIds,
-            opts.defaultTopK,
-            opts.userId
-          ),
-          'analyze-image': this.imageAnalysisTool.create(imageStore, {
-            orgId: opts.orgId,
-            userId: opts.userId,
-            source: opts.source,
-            callerType: opts.callerType,
-          }),
-          ...Object.assign({}, ...(opts.tools ?? [])),
-        },
+        tools,
         instructions,
       },
-      hooks: {
-        think: this.thinkTool,
-        'cite-sources': this.citeSourcesTool,
-        'rag-search': this.ragSearchTool,
-      },
+      hooks,
       imageStore,
       logPrefix: '[stream]',
     };

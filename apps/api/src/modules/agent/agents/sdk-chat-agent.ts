@@ -5,11 +5,14 @@ import type { ToolSet } from 'ai';
 
 import { AiUsageService } from '../../ai/ai-usage.service';
 import { type AgentContext, BaseAgent } from '../base-agent';
+import type { Tool } from '../base-tool';
 import { AgentMemoryService } from '../services/memory.service';
 import { CiteSourcesTool } from '../tools/cite-sources.tool';
 import { ImageAnalysisTool } from '../tools/image-analysis.tool';
 import { RagSearchTool } from '../tools/rag-search.tool';
 import { ThinkTool } from '../tools/think.tool';
+
+import type { SearchScope } from './search-scope';
 
 const SDK_CHAT_PROMPT = `You are a research assistant. Your ONLY capability is searching a knowledge base and reporting what you find. You have no other abilities, opinions, or knowledge.
 
@@ -49,8 +52,7 @@ export class SdkChatAgent extends BaseAgent {
 
   create(opts: {
     orgId: DbId<'Org'>;
-    collectionIds?: DbId<'Collection'>[];
-    dataSourceIds?: DbId<'DataSource'>[];
+    searchScope: SearchScope;
     systemPrompt?: string | null;
     botId: DbId<'Bot'>;
     externalUser: string;
@@ -63,6 +65,27 @@ export class SdkChatAgent extends BaseAgent {
       ? `${SDK_CHAT_PROMPT}\n\n## Additional instructions\n\n${opts.systemPrompt}`
       : SDK_CHAT_PROMPT;
 
+    const tools: ToolSet = {
+      [this.thinkTool.toolName]: this.thinkTool.create(),
+      [this.imageAnalysisTool.toolName]: this.imageAnalysisTool.create(imageStore, {
+        orgId: opts.orgId,
+        source: 'SDK',
+        callerType: 'SDK_JWT',
+      }),
+    };
+
+    const hooks: Record<string, Tool> = {
+      [this.thinkTool.toolName]: this.thinkTool,
+      [this.imageAnalysisTool.toolName]: this.imageAnalysisTool,
+    };
+
+    if (opts.searchScope.type === 'scoped') {
+      tools[this.ragSearchTool.toolName] = this.ragSearchTool.create(opts.orgId, opts.searchScope);
+      tools[this.citeSourcesTool.toolName] = this.citeSourcesTool.create();
+      hooks[this.ragSearchTool.toolName] = this.ragSearchTool;
+      hooks[this.citeSourcesTool.toolName] = this.citeSourcesTool;
+    }
+
     return {
       callOptions: {
         orgId: opts.orgId,
@@ -70,27 +93,10 @@ export class SdkChatAgent extends BaseAgent {
         callerType: 'SDK_JWT' as const,
         botId: opts.botId,
         externalUser: opts.externalUser,
-        tools: {
-          think: this.thinkTool.create(),
-          'cite-sources': this.citeSourcesTool.create(),
-          'rag-search': this.ragSearchTool.create(
-            opts.orgId,
-            opts.collectionIds,
-            opts.dataSourceIds
-          ),
-          'analyze-image': this.imageAnalysisTool.create(imageStore, {
-            orgId: opts.orgId,
-            source: 'SDK',
-            callerType: 'SDK_JWT',
-          }),
-        },
+        tools,
         instructions,
       },
-      hooks: {
-        think: this.thinkTool,
-        'cite-sources': this.citeSourcesTool,
-        'rag-search': this.ragSearchTool,
-      },
+      hooks,
       imageStore,
       logPrefix: '[sdk-stream]',
     };

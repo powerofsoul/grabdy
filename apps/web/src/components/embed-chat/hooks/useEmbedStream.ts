@@ -8,16 +8,12 @@ import {
 } from 'react';
 
 import type { ChatAttachment } from '@grabdy/contracts';
-import { chatSourceSchema } from '@grabdy/contracts';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 import { postToParent } from '../types';
 
 import type { ChatMessage } from '@/components/chat/types';
 import { fetchSdkHistory, SdkApiError, streamSdkChat, uploadSdkChatAttachment } from '@/lib/api';
-
-const sourcesArraySchema = z.array(chatSourceSchema);
 
 interface UseEmbedStreamParams {
   jwt: string;
@@ -140,12 +136,10 @@ export function useEmbedStream({ jwt, setMessages }: UseEmbedStreamParams) {
                 }));
               }
             },
-            onSources: (rawSources) => {
-              const result = sourcesArraySchema.safeParse(rawSources);
-              if (!result.success) return;
+            onSources: (sources) => {
               updateLastAssistant((msg) => ({
                 ...msg,
-                sources: [...(msg.sources ?? []), ...result.data],
+                sources: [...(msg.sources ?? []), ...sources],
               }));
             },
             onTextDone: () => {

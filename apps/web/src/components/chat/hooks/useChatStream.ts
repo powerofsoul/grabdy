@@ -2,16 +2,12 @@ import { type Dispatch, type SetStateAction, useCallback, useState } from 'react
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import type { ChatAttachment } from '@grabdy/contracts';
-import { chatSourceSchema } from '@grabdy/contracts';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 import type { ChatMessage } from '../types';
 
 import { useAuth } from '@/context/AuthContext';
 import { streamChat, uploadChatAttachment } from '@/lib/api';
-
-const sourcesArraySchema = z.array(chatSourceSchema);
 
 interface UseChatStreamParams {
   ensureThread: () => Promise<DbId<'ChatThread'>>;
@@ -105,12 +101,10 @@ export function useChatStream({
                 }));
               }
             },
-            onSources: (rawSources) => {
-              const result = sourcesArraySchema.safeParse(rawSources);
-              if (!result.success) return;
+            onSources: (sources) => {
               updateLastAssistant((msg) => ({
                 ...msg,
-                sources: [...(msg.sources ?? []), ...result.data],
+                sources: [...(msg.sources ?? []), ...sources],
               }));
             },
             onDone: (metadata) => {

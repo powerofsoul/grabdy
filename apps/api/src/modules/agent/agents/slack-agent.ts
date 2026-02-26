@@ -118,7 +118,8 @@ export class SlackAgent extends BaseAgent {
       opts.slackBotUserId
     );
 
-    const ragTool = this.ragSearchTool.create(opts.orgId);
+    // Slack always searches everything in the org
+    const ragTool = this.ragSearchTool.create(opts.orgId, { type: 'all' });
 
     const slackReply = this.slackReplyTool.create({
       accessToken: opts.accessToken,
@@ -127,7 +128,7 @@ export class SlackAgent extends BaseAgent {
     });
 
     const tools: ToolSet = {
-      'rag-search': ragTool,
+      [this.ragSearchTool.toolName]: ragTool,
       slack_reply: slackReply.tool,
     };
 

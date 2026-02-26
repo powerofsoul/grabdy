@@ -1,23 +1,39 @@
 import { Logger } from '@nestjs/common';
 
+import type { ChatSource, StreamChunk } from '@grabdy/contracts';
 import type { TextStreamPart, ToolSet } from 'ai';
 
-import type { StreamChunk, Tool } from './base-tool';
+import type { PreviousToolCall, Tool } from './base-tool';
+
+function accumulateChunk(
+  chunk: StreamChunk,
+  fullText: { value: string },
+  thinkingTexts: string[],
+  sources: ChatSource[]
+): void {
+  if (chunk.type === 'text') {
+    fullText.value += chunk.text;
+  } else if (chunk.type === 'thinking') {
+    thinkingTexts.push(chunk.text);
+  } else if (chunk.type === 'sources') {
+    sources.push(...chunk.sources);
+  }
+}
 
 export interface AgentStreamResult {
   chunks: AsyncIterable<StreamChunk>;
   getFullText: () => string;
   getThinkingTexts: () => string[];
-  getSources: () => unknown[];
+  getSources: () => ChatSource[];
 }
 
 const logger = new Logger('AgentStream');
 
 /**
  * Regex that matches XML-style tags some models emit in text output
- * (e.g. <thinking>, </thinking>, <function_calls>, <invoke>, <parameter>).
+ * (e.g. <function_calls>, <invoke>, <parameter>).
  */
-const XML_TAG_RE = /<\/?(?:thinking|function_calls|invoke|parameter|antml:\w+)[^>]*>/g;
+const XML_TAG_RE = /<\/?(?:function_calls|invoke|parameter|antml:\w+)[^>]*>/g;
 
 function stripXmlTags(text: string): string | null {
   const cleaned = text.replace(XML_TAG_RE, '');
@@ -33,12 +49,13 @@ export function processStream(
   hooks: Record<string, Tool>,
   logPrefix = '[stream]'
 ): AgentStreamResult {
-  let fullText = '';
+  const fullText = { value: '' };
   const thinkingTexts: string[] = [];
-  const sources: unknown[] = [];
+  const sources: ChatSource[] = [];
   const streamStart = Date.now();
   let textChunks = 0;
   let stepCount = 0;
+  const previousCalls: PreviousToolCall[] = [];
 
   async function* generate(): AsyncIterable<StreamChunk> {
     for await (const part of fullStream) {
@@ -51,38 +68,36 @@ export function processStream(
           logger.log(`${logPrefix} First text chunk at +${elapsed}ms`);
         }
         textChunks++;
-        fullText += cleaned;
+        fullText.value += cleaned;
         yield { type: 'text', text: cleaned };
       } else if (part.type === 'tool-call') {
         const hook = hooks[part.toolName];
         if (hook?.onToolCall) {
-          const chunk = hook.onToolCall(part.input);
+          const chunk = hook.onToolCall({
+            toolCallKey: part.toolCallId,
+            input: part.input,
+            previousCalls: [...previousCalls],
+          });
           if (chunk) {
-            if (chunk.type === 'text') {
-              fullText += chunk.text;
-            } else if (chunk.type === 'thinking') {
-              thinkingTexts.push(chunk.text);
-            } else if (chunk.type === 'sources') {
-              sources.push(...chunk.sources);
-            }
+            accumulateChunk(chunk, fullText, thinkingTexts, sources);
             yield chunk;
           }
         }
+        previousCalls.push({ toolName: part.toolName, toolCallKey: part.toolCallId });
         logger.log(
           `${logPrefix} Tool call: ${part.toolName} at +${elapsed}ms args=${JSON.stringify(part.input).slice(0, 1000)}`
         );
       } else if (part.type === 'tool-result') {
         const hook = hooks[part.toolName];
         if (hook?.onToolResult) {
-          const chunk = hook.onToolResult(part.input, part.output);
+          const chunk = hook.onToolResult({
+            toolCallKey: part.toolCallId,
+            input: part.input,
+            output: part.output,
+            previousCalls: [...previousCalls],
+          });
           if (chunk) {
-            if (chunk.type === 'text') {
-              fullText += chunk.text;
-            } else if (chunk.type === 'thinking') {
-              thinkingTexts.push(chunk.text);
-            } else if (chunk.type === 'sources') {
-              sources.push(...chunk.sources);
-            }
+            accumulateChunk(chunk, fullText, thinkingTexts, sources);
             yield chunk;
           }
         }
@@ -111,7 +126,7 @@ export function processStream(
 
   return {
     chunks: generate(),
-    getFullText: () => fullText,
+    getFullText: () => fullText.value,
     getThinkingTexts: () => thinkingTexts,
     getSources: () => sources,
   };

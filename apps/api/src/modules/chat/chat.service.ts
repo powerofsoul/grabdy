@@ -1,18 +1,14 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import {
-  type BotSourceConfig,
-  botSourceConfigSchema,
-  type ChatAttachment,
-  chatSourceSchema,
-} from '@grabdy/contracts';
+import { botSourceConfigSchema, type ChatAttachment, chatSourceSchema } from '@grabdy/contracts';
 import { sql } from 'kysely';
 import { z } from 'zod';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { DataAgent } from '../agent/agents/data-agent';
+import type { SearchScope } from '../agent/agents/search-scope';
 import type { AttachmentContext } from '../agent/base-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
 
@@ -118,11 +114,15 @@ export class ChatService {
   }> {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
 
+    const searchScope: SearchScope = options.collectionId
+      ? { type: 'scoped', collectionIds: [options.collectionId], dataSourceIds: [] }
+      : { type: 'all' };
+
     const ctx = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
-      collectionIds: options.collectionId ? [options.collectionId] : undefined,
+      searchScope,
     });
 
     const result = await this.dataAgent.generate(ctx, { threadId, message });
@@ -149,25 +149,30 @@ export class ChatService {
   ) {
     const threadId = await this.ensureThread(orgId, membershipId, message, options);
 
-    let collectionIds: DbId<'Collection'>[] | undefined;
-    let dataSourceIds: DbId<'DataSource'>[] | undefined;
+    let searchScope: SearchScope = { type: 'all' };
     let instructions: string | undefined;
 
     if (options.botId) {
       const botConfig = await this.getBotConfig(orgId, options.botId);
-      if (botConfig.collectionIds.length > 0) collectionIds = botConfig.collectionIds;
-      if (botConfig.dataSourceIds.length > 0) dataSourceIds = botConfig.dataSourceIds;
+      if (botConfig.collectionIds.length > 0 || botConfig.dataSourceIds.length > 0) {
+        searchScope = {
+          type: 'scoped',
+          collectionIds: botConfig.collectionIds,
+          dataSourceIds: botConfig.dataSourceIds,
+        };
+      } else {
+        searchScope = { type: 'none' };
+      }
       if (botConfig.systemPrompt) instructions = botConfig.systemPrompt;
     } else if (options.collectionId) {
-      collectionIds = [options.collectionId];
+      searchScope = { type: 'scoped', collectionIds: [options.collectionId], dataSourceIds: [] };
     }
 
     const ctx = this.dataAgent.create({
       orgId,
       userId,
       source: 'WEB',
-      collectionIds,
-      dataSourceIds,
+      searchScope,
       instructions,
     });
 

@@ -56,6 +56,15 @@ export {
   sdkStreamBodySchema,
 } from './bots.contract.js';
 export { type ChatSource, chatSourceSchema } from './chat.contract.js';
+export {
+  type SseDoneEvent,
+  type SseMetaEvent,
+  sseMetaEventSchema,
+  type SseSourcesEvent,
+  type SseTextDoneEvent,
+  type SseThinkingEvent,
+  type StreamChunk,
+} from './chat.contract.js';
 export { demoRequestBodySchema } from './demo-request.contract.js';
 export {
   listCollectionsResponseSchema,

@@ -1,13 +1,14 @@
 import { Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
-import type { ChatAttachment } from '@grabdy/contracts';
 import {
   type AiCallerType,
   type AiRequestSource,
   type AiRequestType,
   CHAT_MODEL,
+  type ChatAttachment,
   type ModelKey,
+  type SseMetaEvent,
 } from '@grabdy/contracts';
 import { type PrepareStepFunction, stepCountIs, ToolLoopAgent, type ToolSet } from 'ai';
 
@@ -105,7 +106,7 @@ function sseText(text: string): string {
   return `0:${JSON.stringify(text)}\n`;
 }
 
-function sseMeta(data: Record<string, unknown>): string {
+function sseMeta(data: SseMetaEvent): string {
   return `8:${JSON.stringify(data)}\n`;
 }
 
@@ -134,13 +135,43 @@ export abstract class BaseAgent {
 
     const instructions = toolPrompts ? `${opts.instructions}\n\n${toolPrompts}` : opts.instructions;
 
+    const outerPrepareStep = opts.prepareStep;
+    const enforceableHooks = Object.values(hooks ?? {}).filter(
+      (hook): hook is Tool & Required<Pick<Tool, 'mustBeCalled'>> => hook.mustBeCalled != null
+    );
+
+    const prepareStep: PrepareStepFunction | undefined =
+      enforceableHooks.length > 0
+        ? (stepOpts) => {
+            const { steps } = stepOpts;
+
+            const calledToolNames = new Set(
+              steps.flatMap((step) => step.toolCalls.map((tc) => tc.toolName))
+            );
+
+            const needsEnforcement = enforceableHooks.some(
+              (hook) => !calledToolNames.has(hook.toolName) && hook.mustBeCalled(calledToolNames)
+            );
+
+            if (needsEnforcement) {
+              return { toolChoice: 'required' };
+            }
+
+            if (outerPrepareStep) {
+              return outerPrepareStep(stepOpts);
+            }
+
+            return {};
+          }
+        : outerPrepareStep;
+
     return new ToolLoopAgent({
       id: this.agentId,
       model: CHAT_LANGUAGE_MODEL,
       instructions,
       tools: opts.tools,
       stopWhen: stepCountIs(opts.maxSteps ?? this.defaultMaxSteps),
-      prepareStep: opts.prepareStep,
+      prepareStep,
       experimental_telemetry: {
         isEnabled: true,
         functionId: this.agentId,
@@ -204,13 +235,7 @@ export abstract class BaseAgent {
       const streamStart = Date.now();
 
       for await (const chunk of processed.chunks) {
-        if (chunk.type === 'text') {
-          yield sseText(chunk.text);
-        } else if (chunk.type === 'thinking') {
-          yield sseMeta({ type: 'thinking', text: chunk.text });
-        } else if (chunk.type === 'sources') {
-          yield sseMeta({ type: 'sources', sources: chunk.sources });
-        }
+        yield chunk.type === 'text' ? sseText(chunk.text) : sseMeta(chunk);
       }
 
       yield sseMeta({ type: 'text_done' });

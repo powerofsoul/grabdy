@@ -133,13 +133,6 @@ export class SearchService {
   ): Promise<{ results: SearchResult[]; queryTimeMs: number }> {
     const start = Date.now();
 
-    // Both scopes explicitly empty = no data sources configured, return no results
-    const hasCollections = options.collectionIds && options.collectionIds.length > 0;
-    const hasDataSources = options.dataSourceIds && options.dataSourceIds.length > 0;
-    if (options.collectionIds && !hasCollections && !hasDataSources) {
-      return { results: [], queryTimeMs: 0 };
-    }
-
     const limit = options.limit ?? DEFAULT_SEARCH_LIMIT;
 
     // HyDE: generate hypothetical answer and blend with original query for better vector search

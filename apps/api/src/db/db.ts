@@ -302,7 +302,21 @@ export interface DB {
       string | null
     >;
     metadata: ColumnType<
-      { thinkingTexts?: string[]; sources?: unknown[] } | null,
+      {
+        thinkingTexts?: string[];
+        sources?: Array<{
+          type: string;
+          dataSourceId: DbId<'DataSource'>;
+          dataSourceName: string;
+          score: number;
+          sourceUrl?: string | null;
+          pages?: number[];
+          content?: string;
+          sheet?: string;
+          rows?: number[];
+          columns?: string[];
+        }>;
+      } | null,
       string | null,
       string | null
     >;

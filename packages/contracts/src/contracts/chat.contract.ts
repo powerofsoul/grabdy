@@ -71,6 +71,55 @@ type _AssertChatSourceExhaustive = [DataSourceType] extends [ChatSource['type']]
 const _chatSourceCheck: _AssertChatSourceExhaustive = true;
 void _chatSourceCheck;
 
+// ---------------------------------------------------------------------------
+// SSE stream event schemas (shared between API and frontend)
+// ---------------------------------------------------------------------------
+
+export const sseThinkingEventSchema = z.object({
+  type: z.literal('thinking'),
+  text: z.string(),
+});
+
+export const sseSourcesEventSchema = z.object({
+  type: z.literal('sources'),
+  sources: z.array(chatSourceSchema),
+});
+
+export const sseTextDoneEventSchema = z.object({
+  type: z.literal('text_done'),
+});
+
+export const sseDoneEventSchema = z.object({
+  type: z.literal('done'),
+  threadId: z.string().nullable(),
+  durationMs: z.number(),
+});
+
+export const sseMetaEventSchema = z.discriminatedUnion('type', [
+  sseThinkingEventSchema,
+  sseSourcesEventSchema,
+  sseTextDoneEventSchema,
+  sseDoneEventSchema,
+]);
+
+export type SseThinkingEvent = z.infer<typeof sseThinkingEventSchema>;
+export type SseSourcesEvent = z.infer<typeof sseSourcesEventSchema>;
+export type SseTextDoneEvent = z.infer<typeof sseTextDoneEventSchema>;
+export type SseDoneEvent = z.infer<typeof sseDoneEventSchema>;
+export type SseMetaEvent = z.infer<typeof sseMetaEventSchema>;
+
+// ---------------------------------------------------------------------------
+// Stream chunks emitted by tool hooks (text delta, thinking, sources)
+// ---------------------------------------------------------------------------
+
+export const streamChunkSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('text'), text: z.string() }),
+  sseThinkingEventSchema,
+  sseSourcesEventSchema,
+]);
+
+export type StreamChunk = z.infer<typeof streamChunkSchema>;
+
 const chatMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant']),

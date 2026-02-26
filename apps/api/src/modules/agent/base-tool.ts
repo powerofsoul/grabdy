@@ -1,14 +1,25 @@
-export type StreamChunk =
-  | { type: 'text'; text: string }
-  | { type: 'thinking'; text: string }
-  | { type: 'sources'; sources: unknown[] };
+import type { StreamChunk } from '@grabdy/contracts';
 
-/** A tool that can emit structured chunks into the stream on tool-call and/or tool-result. */
-export interface Tool {
-  /** Markdown section injected into agent instructions automatically. */
+export interface PreviousToolCall {
+  toolName: string;
+  toolCallKey: string;
+}
+
+export interface ToolCallContext<TInput> {
+  toolCallKey: string;
+  input: TInput;
+  previousCalls: PreviousToolCall[];
+}
+
+export interface ToolResultContext<TInput, TOutput> extends ToolCallContext<TInput> {
+  output: TOutput;
+}
+
+export interface Tool<TInput = object, TOutput = object> {
+  readonly toolName: string;
   systemPrompt?: string;
-  /** Called when the model invokes this tool. Return a chunk to emit, or null. */
-  onToolCall?(input: unknown): StreamChunk | null;
-  /** Called when the tool execution completes. Return a chunk to emit, or null. */
-  onToolResult?(input: unknown, output: unknown): StreamChunk | null;
+  onToolCall?(ctx: ToolCallContext<TInput>): StreamChunk | null;
+  onToolResult?(ctx: ToolResultContext<TInput, TOutput>): StreamChunk | null;
+  /** Return true if this tool must be called before the agent can finish. */
+  mustBeCalled?(calledToolNames: Set<string>): boolean;
 }

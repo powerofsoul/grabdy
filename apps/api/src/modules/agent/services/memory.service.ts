@@ -1,10 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import { type ChatAttachment, chatAttachmentSchema } from '@grabdy/contracts';
+import {
+  type ChatAttachment,
+  chatAttachmentSchema,
+  type ChatSource,
+  chatSourceSchema,
+} from '@grabdy/contracts';
 import { z } from 'zod';
 
 import { DbService } from '../../../db/db.module';
+
+const attachmentsArraySchema = z.array(chatAttachmentSchema);
+
+const metadataSchema = z
+  .object({
+    thinkingTexts: z.array(z.string()).optional(),
+    sources: z.array(chatSourceSchema).optional(),
+  })
+  .nullable();
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -16,7 +30,7 @@ export interface UIMessage {
   content: string;
   attachments: ChatAttachment[] | null;
   thinkingTexts: string[] | null;
-  sources: unknown[] | null;
+  sources: ChatSource[] | null;
   durationMs: number | null;
   createdAt: Date | null;
 }
@@ -53,8 +67,6 @@ export class AgentMemoryService {
     // Reverse to chronological order
     rows.reverse();
 
-    const attachmentsArraySchema = z.array(chatAttachmentSchema);
-
     return rows
       .filter(
         (r): r is typeof r & { role: 'user' | 'assistant' | 'system' } =>
@@ -81,7 +93,7 @@ export class AgentMemoryService {
       content: string;
       attachments?: ChatAttachment[];
       thinkingTexts?: string[];
-      sources?: unknown[];
+      sources?: ChatSource[];
       durationMs?: number;
     }>
   ): Promise<void> {
@@ -133,14 +145,6 @@ export class AgentMemoryService {
       .orderBy('created_at', 'asc')
       .limit(limit)
       .execute();
-
-    const attachmentsArraySchema = z.array(chatAttachmentSchema);
-    const metadataSchema = z
-      .object({
-        thinkingTexts: z.array(z.string()).optional(),
-        sources: z.array(z.unknown()).optional(),
-      })
-      .nullable();
 
     return rows
       .filter((r) => r.role === 'user' || r.role === 'assistant')

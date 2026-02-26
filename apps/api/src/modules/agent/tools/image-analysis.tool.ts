@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import type { DbId } from '@grabdy/common';
+import type { StreamChunk } from '@grabdy/contracts';
 import { AiRequestType, CHAT_MODEL_VISION } from '@grabdy/contracts';
 import { tool } from 'ai';
 import { z } from 'zod';
@@ -8,13 +8,33 @@ import { z } from 'zod';
 import type { AiCallContext } from '../../ai/ai.service';
 import { AiService } from '../../ai/ai.service';
 import { CHAT_VISION_LANGUAGE_MODEL } from '../../ai/bedrock.provider';
+import type { Tool, ToolCallContext } from '../base-tool';
+
+const imageAnalysisInputSchema = z.object({
+  reasoning: z.string().describe("Explain what you're looking for in this image and why."),
+  fileName: z.string().describe('The file name of the attached image to analyze'),
+  question: z
+    .string()
+    .describe(
+      'What you want to know about the image, e.g. "Describe what is in this image" or "What text is visible?"'
+    ),
+});
+
+const imageAnalysisOutputSchema = z.union([
+  z.object({ description: z.string() }),
+  z.object({ error: z.string() }),
+]);
+
+type ImageAnalysisInput = z.infer<typeof imageAnalysisInputSchema>;
+type ImageAnalysisOutput = z.infer<typeof imageAnalysisOutputSchema>;
 
 export interface ImageStore {
   images: Array<{ fileName: string; image: Buffer; mimeType: string }>;
 }
 
 @Injectable()
-export class ImageAnalysisTool {
+export class ImageAnalysisTool implements Tool<ImageAnalysisInput, ImageAnalysisOutput> {
+  readonly toolName = 'analyze-image' as const;
   private readonly logger = new Logger(ImageAnalysisTool.name);
 
   constructor(private aiService: AiService) {}
@@ -25,15 +45,9 @@ export class ImageAnalysisTool {
 
     return tool({
       description: `Analyze an attached image using a vision model. Call this tool when the user uploads an image and you need to see what's in it. Pass the image file name and a question about what you want to know. Available images: ${imageStore.images.map((img) => img.fileName).join(', ') || 'none'}`,
-      inputSchema: z.object({
-        fileName: z.string().describe('The file name of the attached image to analyze'),
-        question: z
-          .string()
-          .describe(
-            'What you want to know about the image, e.g. "Describe what is in this image" or "What text is visible?"'
-          ),
-      }),
-      execute: async ({ fileName, question }) => {
+      inputSchema: imageAnalysisInputSchema,
+      outputSchema: imageAnalysisOutputSchema,
+      execute: async ({ fileName, question, reasoning: _reasoning }) => {
         const img = imageStore.images.find((i) => i.fileName === fileName);
         if (!img) {
           return {
@@ -54,7 +68,6 @@ export class ImageAnalysisTool {
                   ],
                 },
               ],
-              maxOutputTokens: 2048,
             },
             CHAT_MODEL_VISION,
             AiRequestType.CHAT,
@@ -70,5 +83,12 @@ export class ImageAnalysisTool {
         }
       },
     });
+  }
+
+  onToolCall(ctx: ToolCallContext<ImageAnalysisInput>): StreamChunk | null {
+    if (ctx.input.reasoning) {
+      return { type: 'thinking', text: ctx.input.reasoning };
+    }
+    return null;
   }
 }

@@ -69,10 +69,18 @@ export class RetrievalService {
     model: string;
     usage: { promptTokens: number; completionTokens: number; totalTokens: number };
   }> {
+    const searchScope = options.collectionIds
+      ? {
+          type: 'scoped' as const,
+          collectionIds: options.collectionIds,
+          dataSourceIds: [] satisfies DbId<'DataSource'>[],
+        }
+      : { type: 'all' as const };
+
     const ctx = this.dataAgent.create({
       orgId,
       source: 'API',
-      collectionIds: options.collectionIds,
+      searchScope,
       callerType: AiCallerType.API_KEY,
       defaultTopK: options.topK,
     });
