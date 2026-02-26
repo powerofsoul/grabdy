@@ -25,9 +25,15 @@ export class SharedChatService {
   ) {
     const thread = await this.db.kysely
       .selectFrom('data.chat_threads')
-      .select(['id', 'title'])
-      .where('id', '=', threadId)
-      .where('org_id', '=', orgId)
+      .leftJoin('sdk.bots', 'sdk.bots.id', 'data.chat_threads.bot_id')
+      .select([
+        'data.chat_threads.id',
+        'data.chat_threads.title',
+        'sdk.bots.accent_color',
+        'sdk.bots.primary_color',
+      ])
+      .where('data.chat_threads.id', '=', threadId)
+      .where('data.chat_threads.org_id', '=', orgId)
       .executeTakeFirst();
 
     if (!thread) {
@@ -64,6 +70,8 @@ export class SharedChatService {
             title: thread.title,
             messages_snapshot: snapshotJson,
             share_token: shareToken,
+            accent_color: thread.accent_color,
+            primary_color: thread.primary_color,
             is_public: isPublicVal,
           })
           .returningAll()
@@ -95,7 +103,16 @@ export class SharedChatService {
     // org-safe: public share lookup by token, org unknown until token is resolved
     const row = await this.db.kysely
       .selectFrom('data.shared_chats')
-      .select(['title', 'messages_snapshot', 'is_public', 'org_id', 'revoked', 'created_at'])
+      .select([
+        'title',
+        'messages_snapshot',
+        'accent_color',
+        'primary_color',
+        'is_public',
+        'org_id',
+        'revoked',
+        'created_at',
+      ])
       .where('share_token', '=', shareToken)
       .where('revoked', '=', false)
       .executeTakeFirst();
@@ -122,6 +139,8 @@ export class SharedChatService {
 
     return sharedChatSnapshotSchema.parse({
       title: row.title,
+      accentColor: row.accent_color,
+      primaryColor: row.primary_color,
       messages: messagesSnapshot,
       createdAt: new Date(row.created_at).toISOString(),
     });

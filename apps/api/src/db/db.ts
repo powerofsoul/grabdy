@@ -246,6 +246,8 @@ export interface DB {
     title: string | null;
     messages_snapshot: unknown;
     share_token: string;
+    accent_color: string | null;
+    primary_color: string | null;
     is_public: Generated<boolean>;
     revoked: Generated<boolean>;
     created_at: Generated<Timestamp>;

@@ -14,6 +14,8 @@ export const Route = createFileRoute('/share/$token')({
 
 interface SnapshotData {
   title: string | null;
+  accentColor: string | null;
+  primaryColor: string | null;
   messages: ChatMessage[];
 }
 
@@ -33,6 +35,8 @@ function SharedChatPage() {
         if (res.status === 200) {
           setData({
             title: res.body.data.title,
+            accentColor: res.body.data.accentColor,
+            primaryColor: res.body.data.primaryColor,
             messages: res.body.data.messages.map((m) => ({
               id: m.id,
               role: m.role,
@@ -73,7 +77,14 @@ function SharedChatPage() {
     return <SharedChatNotFound />;
   }
 
-  return <SharedChatView title={data.title} messages={data.messages} />;
+  return (
+    <SharedChatView
+      title={data.title}
+      accentColor={data.accentColor}
+      primaryColor={data.primaryColor}
+      messages={data.messages}
+    />
+  );
 }
 
 function SharedChatUnauthorized() {

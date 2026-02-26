@@ -1,18 +1,34 @@
-import { alpha, Box, Stack, Typography, useTheme } from '@mui/material';
+import { useMemo } from 'react';
+
+import { alpha, Box, createTheme, Stack, ThemeProvider, Typography, useTheme } from '@mui/material';
 
 import { ChatMessages } from '@/components/chat/components/ChatMessages';
 import type { ChatMessage } from '@/components/chat/types';
 
 interface SharedChatViewProps {
   title: string | null;
+  accentColor: string | null;
+  primaryColor: string | null;
   messages: ChatMessage[];
 }
 
-export function SharedChatView({ title, messages }: SharedChatViewProps) {
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
+export function SharedChatView({
+  title,
+  accentColor,
+  primaryColor,
+  messages,
+}: SharedChatViewProps) {
+  const baseTheme = useTheme();
+  const ct = baseTheme.palette.text.primary;
 
-  return (
+  const theme = useMemo(() => {
+    if (!primaryColor) return baseTheme;
+    return createTheme(baseTheme, {
+      palette: { primary: { main: primaryColor } },
+    });
+  }, [baseTheme, primaryColor]);
+
+  const content = (
     <Box
       sx={{
         display: 'flex',
@@ -62,8 +78,16 @@ export function SharedChatView({ title, messages }: SharedChatViewProps) {
 
       {/* Content */}
       <Stack sx={{ flex: 1, minHeight: 0 }}>
-        <ChatMessages messages={messages} isLoading={false} isStreaming={false} />
+        <ChatMessages
+          messages={messages}
+          isLoading={false}
+          isStreaming={false}
+          accentColor={accentColor ?? undefined}
+        />
       </Stack>
     </Box>
   );
+
+  if (!primaryColor) return content;
+  return <ThemeProvider theme={theme}>{content}</ThemeProvider>;
 }

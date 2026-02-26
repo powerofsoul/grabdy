@@ -28,6 +28,8 @@ const sharedChatSchema = z.object({
 
 const sharedChatSnapshotSchema = z.object({
   title: z.string().nullable(),
+  accentColor: z.string().nullable(),
+  primaryColor: z.string().nullable(),
   messages: z.array(chatMessageSnapshotSchema),
   createdAt: z.string(),
 });
