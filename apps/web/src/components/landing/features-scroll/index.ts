@@ -1,0 +1,1 @@
+export { FeaturesScrollSection } from './FeaturesScrollSection';

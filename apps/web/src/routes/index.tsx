@@ -7,15 +7,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 
 import { CTASection } from '@/components/landing/CTASection';
-import { DevTeaserSection } from '@/components/landing/DevTeaserSection';
-import { FeaturesSection } from '@/components/landing/FeaturesSection';
+import { FeaturesScrollSection } from '@/components/landing/features-scroll';
 import { Footer } from '@/components/landing/Footer';
 import { HeroSection } from '@/components/landing/hero';
 import { LandingNav } from '@/components/landing/LandingNav';
-import { McpSection } from '@/components/landing/McpSection';
 import { PricingSection } from '@/components/landing/PricingSection';
-import { WhatYouCanAskSection } from '@/components/landing/WhatYouCanAskSection';
-import { WidgetShowcaseSection } from '@/components/landing/widget-showcase';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -52,12 +48,8 @@ function LandingPage() {
     <Box sx={{ position: 'relative', zIndex: 1 }}>
       <LandingNav />
       <HeroSection />
-      <WhatYouCanAskSection />
-      <FeaturesSection />
+      <FeaturesScrollSection />
       <PricingSection />
-      <DevTeaserSection />
-      <McpSection />
-      <WidgetShowcaseSection />
       <CTASection />
       <Footer />
     </Box>

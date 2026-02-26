@@ -7,13 +7,6 @@ import gsap from 'gsap';
 import { Logo } from '../ui/Logo';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
-const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Integrations', href: '#integrations' },
-  { label: 'Developers', href: '#developers' },
-  { label: 'Pricing', href: '#pricing' },
-] as const;
-
 export function LandingNav() {
   const theme = useTheme();
   const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 30 });
@@ -78,38 +71,8 @@ export function LandingNav() {
       >
         <Logo size="sm" />
 
-        {/* Center nav links — desktop only */}
-        <Box
-          sx={{
-            display: { xs: 'none', md: 'flex' },
-            alignItems: 'center',
-            gap: 2.5,
-            flex: 1,
-            justifyContent: 'center',
-          }}
-        >
-          {NAV_LINKS.map((link) => (
-            <Box
-              key={link.href}
-              component="a"
-              href={link.href}
-              sx={{
-                fontSize: '0.8rem',
-                fontWeight: 500,
-                color: 'text.secondary',
-                textDecoration: 'none',
-                transition: 'color 0.15s',
-                whiteSpace: 'nowrap',
-                '&:hover': { color: 'text.primary' },
-              }}
-            >
-              {link.label}
-            </Box>
-          ))}
-        </Box>
-
-        {/* Spacer on mobile */}
-        <Box sx={{ flex: 1, display: { md: 'none' } }} />
+        {/* Spacer */}
+        <Box sx={{ flex: 1 }} />
 
         {/* Right actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

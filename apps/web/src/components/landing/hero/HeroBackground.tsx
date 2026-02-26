@@ -16,9 +16,9 @@ export function HeroBackground() {
         overflow: 'hidden',
         pointerEvents: 'none',
         zIndex: 0,
+        filter: isDark ? 'invert(1)' : 'none',
       }}
     >
-      {/* Cloud/wave organic background */}
       <Box
         component="img"
         src={heroClouds}
@@ -30,7 +30,6 @@ export function HeroBackground() {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          filter: isDark ? 'invert(1)' : 'none',
         }}
       />
 
@@ -43,6 +42,7 @@ export function HeroBackground() {
           backgroundRepeat: 'repeat',
           backgroundSize: 256,
           opacity: isDark ? 0.05 : 0.04,
+          zIndex: 1,
         }}
       />
     </Box>
