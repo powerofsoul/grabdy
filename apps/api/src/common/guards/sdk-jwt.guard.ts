@@ -6,7 +6,6 @@ import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { z } from 'zod';
 
-import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { EncryptionService } from '../encryption/encryption.service';
 
@@ -17,16 +16,11 @@ const jwtPayloadSchema = z.object({
   exp: z.number().optional(),
 });
 
-const previewPayloadSchema = jwtPayloadSchema.extend({
-  preview: z.literal(true),
-});
-
 @Injectable()
 export class SdkJwtGuard implements CanActivate {
   constructor(
     private db: DbService,
-    private encryptionService: EncryptionService,
-    @InjectEnv('jwtSecret') private jwtSecret: string
+    private encryptionService: EncryptionService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -39,60 +33,17 @@ export class SdkJwtGuard implements CanActivate {
     }
     const token = authHeader.slice(7);
 
-    // Decode without verification to check if it's a preview token
     const decoded = jwt.decode(token, { complete: true });
     if (!decoded || typeof decoded.payload !== 'object') {
       throw new UnauthorizedException('Invalid JWT');
     }
 
-    // Check if this is a preview token (HS256, signed with app secret)
-    const previewResult = previewPayloadSchema.safeParse(decoded.payload);
-    if (previewResult.success && decoded.header.alg === 'HS256') {
-      return this.verifyPreviewToken(token, previewResult.data, request);
-    }
-
-    // Standard RS256 flow
     const payloadResult = jwtPayloadSchema.safeParse(decoded.payload);
     if (!payloadResult.success) {
       throw new UnauthorizedException('Invalid JWT claims');
     }
-    const payload = payloadResult.data;
 
-    return this.verifyRsaToken(token, payload, decoded, request);
-  }
-
-  private async verifyPreviewToken(
-    token: string,
-    payload: z.infer<typeof previewPayloadSchema>,
-    request: Request
-  ): Promise<boolean> {
-    try {
-      jwt.verify(token, this.jwtSecret, { algorithms: ['HS256'], maxAge: '24h' });
-    } catch {
-      throw new UnauthorizedException('Invalid preview token');
-    }
-
-    const sdkChat = await this.db.kysely
-      .selectFrom('sdk.bots')
-      .selectAll()
-      .where('id', '=', payload.chatId)
-      .executeTakeFirst();
-
-    if (!sdkChat) {
-      throw new UnauthorizedException('Bot not found');
-    }
-
-    const dataSourceConfig = botSourceConfigSchema.parse(sdkChat.data_source_config);
-
-    request.sdkAuth = {
-      orgId: sdkChat.org_id,
-      botId: sdkChat.id,
-      externalUser: payload.sub,
-      dataSourceConfig,
-      systemPrompt: sdkChat.system_prompt,
-    };
-
-    return true;
+    return this.verifyRsaToken(token, payloadResult.data, decoded, request);
   }
 
   private async verifyRsaToken(

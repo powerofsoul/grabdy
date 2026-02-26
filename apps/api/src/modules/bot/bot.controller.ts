@@ -194,16 +194,4 @@ export class BotController {
       };
     });
   }
-
-  @OrgAccess(botsContract.generatePreviewJwt, { params: ['orgId', 'botId'] })
-  @TsRestHandler(botsContract.generatePreviewJwt)
-  async generatePreviewJwt(@CurrentUser('sub') userId: DbId<'User'>) {
-    return tsRestHandler(botsContract.generatePreviewJwt, async ({ params }) => {
-      const jwt = await this.botService.generatePreviewJwt(params.orgId, params.botId, userId);
-      return {
-        status: 200 as const,
-        body: { success: true as const, data: { jwt } },
-      };
-    });
-  }
 }

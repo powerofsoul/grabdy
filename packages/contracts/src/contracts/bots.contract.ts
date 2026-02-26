@@ -212,21 +212,6 @@ export const botsContract = c.router(
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
-
-    generatePreviewJwt: {
-      method: 'POST',
-      path: '/orgs/:orgId/bots/:botId/preview-jwt',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        botId: dbIdSchema('Bot'),
-      }),
-      body: z.object({}),
-      responses: {
-        200: z.object({ success: z.literal(true), data: z.object({ jwt: z.string() }) }),
-        400: z.object({ success: z.literal(false), error: z.string() }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
   },
   { pathPrefix: '' }
 );

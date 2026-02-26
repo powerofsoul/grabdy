@@ -3,11 +3,9 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { type DbId, packId } from '@grabdy/common';
 import { type BotSourceConfig, botSourceConfigSchema } from '@grabdy/contracts';
 import * as crypto from 'crypto';
-import * as jwt from 'jsonwebtoken';
 import { extname } from 'path';
 
 import { EncryptionService } from '../../common/encryption/encryption.service';
-import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { S3FileStorage } from '../storage/s3-file-storage';
 
@@ -16,8 +14,7 @@ export class BotService {
   constructor(
     private db: DbService,
     private encryptionService: EncryptionService,
-    private storage: S3FileStorage,
-    @InjectEnv('jwtSecret') private jwtSecret: string
+    private storage: S3FileStorage
   ) {}
 
   async create(
@@ -236,33 +233,6 @@ export class BotService {
     if (result.numUpdatedRows === 0n) {
       throw new NotFoundException('Signing key not found or already revoked');
     }
-  }
-
-  async generatePreviewJwt(
-    orgId: DbId<'Org'>,
-    botId: DbId<'Bot'>,
-    userId: DbId<'User'>
-  ): Promise<string> {
-    const bot = await this.db.kysely
-      .selectFrom('sdk.bots')
-      .select('id')
-      .where('id', '=', botId)
-      .where('org_id', '=', orgId)
-      .executeTakeFirst();
-
-    if (!bot) {
-      throw new NotFoundException('Bot not found');
-    }
-
-    return jwt.sign(
-      {
-        sub: `preview-${userId}`,
-        chatId: botId,
-        preview: true,
-      },
-      this.jwtSecret,
-      { algorithm: 'HS256', expiresIn: '2m' }
-    );
   }
 
   async uploadImage(
