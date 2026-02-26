@@ -225,7 +225,7 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
         to="/dashboard/bots"
         label="Bots"
         icon={<RobotIcon size={18} weight="light" color="currentColor" />}
-        activePrefix="/dashboard/chat/bot"
+        activePrefix="/dashboard/bots"
       />
       <StripIcon
         to="/dashboard/sources"

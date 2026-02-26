@@ -38,34 +38,6 @@ export class ChatController {
     private chatAttachmentService: ChatAttachmentService
   ) {}
 
-  @OrgAccess(chatContract.chat, { params: ['orgId'] })
-  @TsRestHandler(chatContract.chat)
-  async chat(
-    @CurrentMembership() membership: JwtMembership,
-    @CurrentUser('sub') userId: DbId<'User'>
-  ) {
-    return tsRestHandler(chatContract.chat, async ({ params, body }) => {
-      const result = await this.chatService.chat(
-        params.orgId,
-        membership.id,
-        userId,
-        body.message,
-        {
-          threadId: body.threadId,
-          collectionId: body.collectionId,
-        }
-      );
-
-      return {
-        status: 200 as const,
-        body: {
-          success: true as const,
-          data: result,
-        },
-      };
-    });
-  }
-
   @OrgAccess(chatContract.createThread, { params: ['orgId'] })
   @TsRestHandler(chatContract.createThread)
   async createThread(@CurrentMembership() membership: JwtMembership) {

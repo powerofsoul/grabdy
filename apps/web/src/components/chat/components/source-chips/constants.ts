@@ -27,11 +27,6 @@ export const INTEGRATION_SOURCE_TYPES: ReadonlySet<string> = new Set(
   Object.values(IntegrationProviderEnum)
 );
 
-/** External source types: integration providers */
-export const EXTERNAL_SOURCE_TYPES: ReadonlySet<string> = new Set(
-  Object.values(IntegrationProviderEnum)
-);
-
 export const FILE_EXTS: ReadonlySet<string> = new Set(UPLOADS_FILE_TYPES.map((f) => f.ext));
 
 export const ICON_BY_EXT: Record<UploadsExt, IconComponent> = {

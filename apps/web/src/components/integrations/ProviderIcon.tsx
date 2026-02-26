@@ -207,10 +207,6 @@ export function getProviderLabel(provider: ProviderKey): string {
   return PROVIDER_CONFIG[provider].label;
 }
 
-export function getProviderColor(provider: ProviderKey): string {
-  return PROVIDER_CONFIG[provider].color;
-}
-
 export function getProviderDescription(provider: ProviderKey): string {
   return PROVIDER_CONFIG[provider].description;
 }

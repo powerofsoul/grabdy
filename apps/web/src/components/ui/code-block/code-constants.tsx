@@ -1,48 +1,5 @@
 import type { ReactNode } from 'react';
 
-export const LANGUAGES = [
-  '',
-  'bash',
-  'c',
-  'cpp',
-  'csharp',
-  'css',
-  'dart',
-  'diff',
-  'dockerfile',
-  'elixir',
-  'erlang',
-  'go',
-  'graphql',
-  'haskell',
-  'html',
-  'java',
-  'javascript',
-  'json',
-  'kotlin',
-  'lua',
-  'makefile',
-  'markdown',
-  'nginx',
-  'perl',
-  'php',
-  'python',
-  'r',
-  'ruby',
-  'rust',
-  'scala',
-  'scss',
-  'shell',
-  'sql',
-  'swift',
-  'terraform',
-  'toml',
-  'typescript',
-  'xml',
-  'yaml',
-  'zig',
-] as const;
-
 export interface HastNode {
   type: string;
   tagName?: string;

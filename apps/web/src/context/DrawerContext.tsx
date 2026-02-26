@@ -37,8 +37,6 @@ export interface DrawerOptions {
 interface DrawerContextValue {
   pushDrawer: (render: (onClose: () => void) => ReactNode, options?: DrawerOptions) => void;
   popDrawer: () => void;
-  closeAllDrawers: () => void;
-  drawerCount: number;
 }
 
 const DrawerContext = createContext<DrawerContextValue | null>(null);
@@ -85,17 +83,11 @@ export function DrawerProvider({ children }: DrawerProviderProps) {
     setDrawerStack((prev) => prev.slice(0, -1));
   }, []);
 
-  const closeAllDrawers = useCallback(() => {
-    setDrawerStack([]);
-  }, []);
-
   return (
     <DrawerContext.Provider
       value={{
         pushDrawer,
         popDrawer,
-        closeAllDrawers,
-        drawerCount: drawerStack.length,
       }}
     >
       {children}

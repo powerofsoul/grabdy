@@ -1,12 +1,5 @@
 import { alpha, Box, Divider, Skeleton, Typography, useTheme } from '@mui/material';
-import {
-  ArrowRightIcon,
-  ChatCircleIcon,
-  CheckCircleIcon,
-  KeyIcon,
-  LinkIcon,
-  PlusIcon,
-} from '@phosphor-icons/react';
+import { ArrowRightIcon, CheckCircleIcon } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 
@@ -25,15 +18,7 @@ export const Route = createFileRoute('/dashboard/')({
   component: DashboardIndex,
 });
 
-function QuickAction({
-  label,
-  to,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  description: string;
-  to: string;
-}) {
+function QuickAction({ label, to }: { label: string; to: string }) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
 
@@ -376,30 +361,10 @@ function Overview({ stats, isLoading }: { stats: Stats; isLoading: boolean }) {
         Quick actions
       </Typography>
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-        <QuickAction
-          icon={<PlusIcon size={14} weight="light" color="currentColor" />}
-          label="Create a source"
-          description=""
-          to="/dashboard/sources"
-        />
-        <QuickAction
-          icon={<LinkIcon size={14} weight="light" color="currentColor" />}
-          label="Connect integration"
-          description=""
-          to="/dashboard/integrations"
-        />
-        <QuickAction
-          icon={<KeyIcon size={14} weight="light" color="currentColor" />}
-          label="Generate an API key"
-          description=""
-          to="/dashboard/api/keys"
-        />
-        <QuickAction
-          icon={<ChatCircleIcon size={14} weight="light" color="currentColor" />}
-          label="Ask a question"
-          description=""
-          to="/dashboard/chat"
-        />
+        <QuickAction label="Create a source" to="/dashboard/sources" />
+        <QuickAction label="Connect integration" to="/dashboard/integrations" />
+        <QuickAction label="Generate an API key" to="/dashboard/api/keys" />
+        <QuickAction label="Ask a question" to="/dashboard/chat" />
       </Box>
     </>
   );

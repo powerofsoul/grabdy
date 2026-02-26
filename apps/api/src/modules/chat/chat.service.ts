@@ -98,42 +98,6 @@ export class ChatService {
     return thread.id;
   }
 
-  async chat(
-    orgId: DbId<'Org'>,
-    membershipId: DbId<'OrgMembership'>,
-    userId: DbId<'User'>,
-    message: string,
-    options: {
-      threadId?: DbId<'ChatThread'>;
-      collectionId?: DbId<'Collection'>;
-    }
-  ): Promise<{
-    answer: string;
-    threadId: DbId<'ChatThread'>;
-    sources: never[];
-  }> {
-    const threadId = await this.ensureThread(orgId, membershipId, message, options);
-
-    const searchScope: SearchScope = options.collectionId
-      ? { type: 'scoped', collectionIds: [options.collectionId], dataSourceIds: [] }
-      : { type: 'all' };
-
-    const ctx = this.dataAgent.create({
-      orgId,
-      userId,
-      source: 'WEB',
-      searchScope,
-    });
-
-    const result = await this.dataAgent.generate(ctx, { threadId, message });
-
-    return {
-      answer: result.text,
-      threadId,
-      sources: [],
-    };
-  }
-
   async streamChat(
     orgId: DbId<'Org'>,
     membershipId: DbId<'OrgMembership'>,

@@ -24,7 +24,6 @@ export const PDF_PAGE_RANGE_SIZE = 5;
 export const PDF_PAGE_OVERLAP = 5;
 export const DS_CONCURRENCY_GLOBAL = 4;
 export const DS_LOCK_DURATION_MS = 15 * 60 * 1000; // 15 min before BullMQ considers a job stalled
-export const DS_CONCURRENCY_PER_ORG = 5;
 export const CHUNK_SIZE_TOKENS = 400;
 export const CHUNK_OVERLAP_TOKENS = 80;
 export const MIN_CHUNK_SIZE_TOKENS = 40;

@@ -23,15 +23,11 @@ export type TableIdName =
   | 'AiUsageLog'
   | 'SharedChat'
   | 'Connection'
-  | 'SyncLog'
   | 'ChatMessage'
   | 'Bot'
   | 'BotSigningKey';
 
 // ── Entity Type Maps ─────────────────────────────────────────────────────
-
-/** All entity names. */
-export type EntityIdName = TableIdName;
 
 /**
  * Maps each entity type to a unique byte value embedded in packed UUIDs.
@@ -61,15 +57,10 @@ export const ENTITY_TYPE_MAP = {
   AiUsageLog: 0x40,
   // Integrations
   Connection: 0x50,
-  SyncLog: 0x51,
   // Bots
   Bot: 0x60,
   BotSigningKey: 0x61,
-} as const satisfies Record<EntityIdName, number>;
-
-const ENTITY_TYPE_REVERSE: Record<number, EntityIdName> = Object.fromEntries(
-  Object.entries(ENTITY_TYPE_MAP).map(([k, v]) => [v, k])
-) as Record<number, EntityIdName>;
+} as const satisfies Record<TableIdName, number>;
 
 // ── DbId<T> ──────────────────────────────────────────────────────────────
 
@@ -108,7 +99,7 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 /**
  * Formats a 16-byte Uint8Array as a UUID string (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).
  */
-export function bytesToUuid(bytes: Uint8Array): string {
+function bytesToUuid(bytes: Uint8Array): string {
   let hex = '';
   for (let i = 0; i < 16; i++) {
     hex += bytes[i].toString(16).padStart(2, '0');
@@ -172,38 +163,9 @@ export function extractOrgNumericId(uuid: string): OrgNumericId {
   return parseInt(hex.slice(0, 8), 16) as OrgNumericId;
 }
 
-/** Extracts the entity type (byte 10) from a packed UUID. Returns null if unknown. */
-export function extractEntityType(uuid: string): EntityIdName | null {
-  const hex = stripHyphens(uuid);
-  const entityByte = parseInt(hex.slice(20, 22), 16);
-  return ENTITY_TYPE_REVERSE[entityByte] ?? null;
-}
-
-/** Extracts the timestamp (bytes 4-9) from a packed UUID as a Date. */
-export function extractTimestamp(uuid: string): Date {
-  const hex = stripHyphens(uuid);
-  const msHex = hex.slice(8, 20);
-  const ms = parseInt(msHex, 16);
-  return new Date(ms);
-}
-
-/** Returns true if two packed UUIDs share the same org (bytes 0-3). */
-export function idsShareOrg(a: string, b: string): boolean {
-  const hexA = stripHyphens(a);
-  const hexB = stripHyphens(b);
-  return hexA.slice(0, 8) === hexB.slice(0, 8);
-}
-
 /** Returns true if the packed UUID belongs to the given org. */
 export function idBelongsToOrg(id: string, orgNumericId: OrgNumericId): boolean {
   return extractOrgNumericId(id) === orgNumericId;
-}
-
-/** Returns true if the packed UUID has the expected entity type byte. */
-export function isEntityType<T extends EntityIdName>(id: string, expected: T): boolean {
-  const hex = stripHyphens(id);
-  const entityByte = parseInt(hex.slice(20, 22), 16);
-  return entityByte === ENTITY_TYPE_MAP[expected];
 }
 
 // ── Zod schemas ──────────────────────────────────────────────────────────

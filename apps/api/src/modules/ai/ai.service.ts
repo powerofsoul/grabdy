@@ -12,7 +12,7 @@ import {
   type ModelKey,
   RERANK_MODEL,
 } from '@grabdy/contracts';
-import { embed, embedMany, generateText, streamText } from 'ai';
+import { embed, generateText } from 'ai';
 import { z } from 'zod';
 
 import { RERANK_MAX_DOC_LENGTH } from '../../config/constants';
@@ -28,17 +28,15 @@ export interface AiCallContext {
 }
 
 type GenerateTextParams = Parameters<typeof generateText>[0];
-type StreamTextParams = Parameters<typeof streamText>[0];
 type EmbedParams = Parameters<typeof embed>[0];
-type EmbedManyParams = Parameters<typeof embedMany>[0];
 
-export interface RerankInput {
+interface RerankInput {
   id: string;
   content: string;
   vectorScore: number;
 }
 
-export interface RerankWeights {
+interface RerankWeights {
   semantic: number;
   vector: number;
   position: number;
@@ -99,48 +97,10 @@ export class AiService {
     return result;
   }
 
-  streamText(
-    params: StreamTextParams,
-    model: ModelKey,
-    requestType: AiRequestType,
-    ctx: AiCallContext
-  ): ReturnType<typeof streamText> {
-    return streamText({
-      ...params,
-      onFinish: (event) => {
-        this.logUsage(
-          model,
-          event.usage.inputTokens ?? 0,
-          event.usage.outputTokens ?? 0,
-          requestType,
-          ctx,
-          {
-            streaming: true,
-            finishReason: event.finishReason,
-          }
-        );
-        if (params.onFinish) {
-          (params.onFinish as (event: unknown) => void)(event);
-        }
-      },
-    });
-  }
-
   // ---- Embeddings -----------------------------------------------------
 
   async embed(params: EmbedParams, ctx: AiCallContext): Promise<Awaited<ReturnType<typeof embed>>> {
     const result = await embed(params);
-
-    this.logUsage(EMBEDDING_MODEL, result.usage.tokens, 0, AiRequestTypeEnum.EMBEDDING, ctx);
-
-    return result;
-  }
-
-  async embedMany(
-    params: EmbedManyParams,
-    ctx: AiCallContext
-  ): Promise<Awaited<ReturnType<typeof embedMany>>> {
-    const result = await embedMany(params);
 
     this.logUsage(EMBEDDING_MODEL, result.usage.tokens, 0, AiRequestTypeEnum.EMBEDDING, ctx);
 
@@ -156,13 +116,12 @@ export class AiService {
   async rerank(
     query: string,
     results: RerankInput[],
-    ctx: AiCallContext,
-    options?: { weights?: Partial<RerankWeights> }
+    ctx: AiCallContext
   ): Promise<Array<{ id: string; score: number }> | null> {
     if (results.length === 0) return [];
     if (results.length === 1) return [{ id: results[0].id, score: results[0].vectorScore }];
 
-    const weights: RerankWeights = { ...DEFAULT_RERANK_WEIGHTS, ...options?.weights };
+    const weights: RerankWeights = { ...DEFAULT_RERANK_WEIGHTS };
     const start = Date.now();
 
     try {
