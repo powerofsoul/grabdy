@@ -279,6 +279,15 @@ export class IntegrationsService {
   }
 
   async triggerSync(connectionId: DbId<'Connection'>, orgId: DbId<'Org'>, trigger: SyncTrigger) {
+    const jobId = `discover-${connectionId}`;
+
+    // Remove previously completed job so BullMQ doesn't silently drop the new one
+    const existing = await this.discoverQueue.getJob(jobId);
+    const state = await existing?.getState();
+    if (state === 'completed' || state === 'failed') {
+      await existing?.remove();
+    }
+
     await this.discoverQueue.add(
       'discover',
       {
@@ -286,7 +295,7 @@ export class IntegrationsService {
         orgId,
         trigger,
       },
-      { jobId: `discover-${connectionId}` }
+      { jobId }
     );
 
     this.logger.log(`Queued ${trigger} discovery for connection ${connectionId}`);

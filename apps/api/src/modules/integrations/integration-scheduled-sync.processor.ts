@@ -50,6 +50,16 @@ export class IntegrationScheduledSyncProcessor extends WorkerHost implements OnM
       return;
     }
 
+    // Remove completed/failed discover jobs so static jobIds can be re-enqueued
+    for (const conn of connections) {
+      const jobId = `discover-${conn.id}`;
+      const existing = await this.discoverQueue.getJob(jobId);
+      const state = await existing?.getState();
+      if (state === 'completed' || state === 'failed') {
+        await existing?.remove();
+      }
+    }
+
     await this.discoverQueue.addBulk(
       connections.map((conn) => ({
         name: 'discover',
