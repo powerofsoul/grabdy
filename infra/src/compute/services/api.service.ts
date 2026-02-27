@@ -26,6 +26,7 @@ const baseEnvironment = [
   { name: 'SSM_PREFIX', value: '/grabdy/prod' },
   { name: 'KMS_KEY_ARN', value: kmsKey.arn },
   { name: 'DB_ENDPOINT', value: db.endpoint },
+  { name: 'TEMPORAL_ADDRESS', value: 'temporal.grabdy.local:7233' },
 ] satisfies { name: string; value: pulumi.Input<string> }[];
 
 // Separate task definition so migrations can run before the service updates

@@ -3,6 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { type DbId, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
 import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
+import { TemporalService } from 'nestjs-temporal-core';
 
 import { UserFacingError } from '../../common/errors/user-facing.error';
 import { getMaxFileSizeForMime } from '../../config/constants';
@@ -10,16 +11,14 @@ import { DbService } from '../../db/db.module';
 import { StorageKeys } from '../storage/file-storage.interface';
 import { S3FileStorage } from '../storage/s3-file-storage';
 
-import type { DataSourceJobData } from './data-source.types';
 import { storageProxyUrl } from './data-source.types';
-import { DataSourceDispatchService } from './data-source-dispatch.service';
 
 @Injectable()
 export class DataSourcesService {
   constructor(
     private db: DbService,
     private storage: S3FileStorage,
-    private dispatch: DataSourceDispatchService
+    private temporalService: TemporalService
   ) {}
 
   async upload(
@@ -76,16 +75,22 @@ export class DataSourcesService {
       throw error;
     }
 
-    // Queue processing job
-    const jobData: DataSourceJobData = {
-      dataSourceId: dataSource.id,
-      orgId,
-      storagePath: storageKey,
-      mimeType,
-      collectionId,
-    };
-
-    await this.dispatch.dispatch(jobData);
+    // Start Temporal workflow for processing
+    await this.temporalService.startWorkflow(
+      'fileIngestionWorkflow',
+      [
+        {
+          orgId,
+          dataSourceId: dataSource.id,
+          storagePath: storageKey,
+          mimeType,
+          collectionId,
+        },
+      ],
+      {
+        workflowId: `file-ingest-${dataSource.id}`,
+      }
+    );
 
     return this.toResponse(dataSource);
   }
@@ -214,19 +219,26 @@ export class DataSourcesService {
       .where('org_id', '=', orgId)
       .execute();
 
-    // Re-queue
+    // Re-queue via Temporal
     if (!isUploadsMime(dataSource.mime_type)) {
       throw new UserFacingError(`Unsupported file type: ${dataSource.mime_type}`);
     }
-    const jobData: DataSourceJobData = {
-      dataSourceId: dataSource.id,
-      orgId,
-      storagePath: dataSource.storage_path,
-      mimeType: dataSource.mime_type,
-      collectionId: dataSource.collection_id,
-    };
 
-    await this.dispatch.dispatch(jobData);
+    await this.temporalService.startWorkflow(
+      'fileIngestionWorkflow',
+      [
+        {
+          orgId,
+          dataSourceId: dataSource.id,
+          storagePath: dataSource.storage_path,
+          mimeType: dataSource.mime_type,
+          collectionId: dataSource.collection_id,
+        },
+      ],
+      {
+        workflowId: `file-ingest-${dataSource.id}-${Date.now()}`,
+      }
+    );
 
     return this.toResponse({ ...dataSource, status: 'UPLOADED' });
   }

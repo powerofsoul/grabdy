@@ -8,11 +8,11 @@ import { unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 
-import { CsvExtractor } from '../data-sources/csv/csv.extractor';
-import { DocxExtractor } from '../data-sources/docx/docx.extractor';
-import { PdfExtractor } from '../data-sources/pdf/pdf.extractor';
-import { TextExtractor } from '../data-sources/text/text.extractor';
-import { XlsxExtractor } from '../data-sources/xlsx/xlsx.extractor';
+import { CsvExtractor } from '../data-sources/sources/file/extractors/csv.extractor';
+import { DocxExtractor } from '../data-sources/sources/file/extractors/docx.extractor';
+import { PdfExtractor } from '../data-sources/sources/file/extractors/pdf.extractor';
+import { TextExtractor } from '../data-sources/sources/file/extractors/text.extractor';
+import { XlsxExtractor } from '../data-sources/sources/file/extractors/xlsx.extractor';
 import { S3FileStorage } from '../storage/s3-file-storage';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB

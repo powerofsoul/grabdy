@@ -8,6 +8,7 @@ export const Env = {
   apiDomain: config.require('apiDomain'),
 
   sdkDomain: config.require('sdkDomain'),
+  temporalDomain: config.require('temporalDomain'),
 
   // Google OAuth — also used for frontend build (VITE_GOOGLE_CLIENT_ID)
   googleClientId: config.require('googleClientId'),

@@ -1,55 +1,19 @@
 import { Module } from '@nestjs/common';
 
 import { DataSourcesModule } from '../data-sources/data-sources.module';
+import { GitHubModule } from '../data-sources/sources/github/github.module';
+import { LinearModule } from '../data-sources/sources/linear/linear.module';
+import { NotionModule } from '../data-sources/sources/notion/notion.module';
+import { SlackModule } from '../data-sources/sources/slack/slack.module';
 
-import { GitHubConnector } from './providers/github/github.connector';
-import { GitHubDiscussionWebhook } from './providers/github/webhooks/discussion.webhook';
-import { GitHubIssueWebhook } from './providers/github/webhooks/issue.webhook';
-import { GitHubPrWebhook } from './providers/github/webhooks/pr.webhook';
-import { LinearConnector } from './providers/linear/linear.connector';
-import { LinearIssueWebhook } from './providers/linear/webhooks/issue.webhook';
-import { NotionConnector } from './providers/notion/notion.connector';
-import { NotionPageWebhook } from './providers/notion/webhooks/page.webhook';
-import { ProviderRegistry } from './providers/provider-registry';
-import { SlackConnector } from './providers/slack/slack.connector';
-import { SlackBotProcessor } from './providers/slack/slack-bot.processor';
-import { SlackBotService } from './providers/slack/slack-bot.service';
-import { SlackProcessChannelProcessor } from './providers/slack/slack-process-channel.processor';
-import { SlackChannelWebhook } from './providers/slack/webhooks/channel.webhook';
-import { IntegrationCleanupProcessor } from './integration-cleanup.processor';
-import { IntegrationDiscoverProcessor } from './integration-discover.processor';
-import { IntegrationProcessItemProcessor } from './integration-process-item.processor';
-import { IntegrationScheduledSyncProcessor } from './integration-scheduled-sync.processor';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
+import { ProviderRegistry } from './provider-registry';
 
 @Module({
-  imports: [DataSourcesModule],
+  imports: [DataSourcesModule, SlackModule, GitHubModule, LinearModule, NotionModule],
   controllers: [IntegrationsController],
-  providers: [
-    IntegrationsService,
-    ProviderRegistry,
-    // Webhook services
-    GitHubIssueWebhook,
-    GitHubPrWebhook,
-    GitHubDiscussionWebhook,
-    LinearIssueWebhook,
-    NotionPageWebhook,
-    SlackChannelWebhook,
-    // Connectors
-    SlackBotService,
-    SlackConnector,
-    LinearConnector,
-    GitHubConnector,
-    NotionConnector,
-    // Processors
-    IntegrationDiscoverProcessor,
-    IntegrationProcessItemProcessor,
-    IntegrationCleanupProcessor,
-    IntegrationScheduledSyncProcessor,
-    SlackBotProcessor,
-    SlackProcessChannelProcessor,
-  ],
-  exports: [IntegrationsService],
+  providers: [IntegrationsService, ProviderRegistry],
+  exports: [IntegrationsService, ProviderRegistry],
 })
 export class IntegrationsModule {}

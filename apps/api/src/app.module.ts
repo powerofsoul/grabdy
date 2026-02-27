@@ -31,6 +31,7 @@ import { BotModule } from './modules/bot/bot.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
+import { IngestionModule } from './modules/data-sources/ingestion.module';
 import { DemoRequestModule } from './modules/demo-request/demo-request.module';
 import { EmailModule } from './modules/email/email.module';
 import { HealthModule } from './modules/health/health.module';
@@ -76,6 +77,7 @@ import { RedisModule } from './redis/redis.module';
       },
     ]),
     QueueModule,
+    IngestionModule,
     AdminModule,
     AgentModule,
     AiModule,

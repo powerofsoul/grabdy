@@ -14,15 +14,17 @@ import { InjectEnv } from '../../config/env.config';
 import { RedisService } from '../../redis/redis.module';
 import { redisKeys } from '../../redis/redis-keys';
 
-import { ProviderRegistry } from './providers/provider-registry';
 import { parseProviderData, parsePublicProviderData } from './connector.interface';
 import { IntegrationsService } from './integrations.service';
+import { ProviderRegistry } from './provider-registry';
 
-interface OAuthState {
-  org: string;
-  user: string;
-  provider: string;
-}
+const oauthStateSchema = z.object({
+  org: z.string(),
+  user: z.string(),
+  provider: z.string(),
+});
+
+type OAuthState = z.infer<typeof oauthStateSchema>;
 
 const OAUTH_STATE_TTL_SECONDS = 600; // 10 minutes
 
@@ -67,11 +69,11 @@ export class IntegrationsController {
         body: {
           success: true as const,
           data: connections.map((c) => {
-            const connector = this.providerRegistry.hasConnector(c.provider)
-              ? this.providerRegistry.getConnector(c.provider)
+            const entry = this.providerRegistry.has(c.provider)
+              ? this.providerRegistry.get(c.provider)
               : null;
-            const syncScheduleLabel = connector?.syncSchedule
-              ? formatSyncScheduleLabel(connector.syncSchedule.every)
+            const syncScheduleLabel = entry?.syncSchedule
+              ? formatSyncScheduleLabel(entry.syncSchedule.every)
               : null;
             return {
               ...c,
@@ -93,14 +95,14 @@ export class IntegrationsController {
     return tsRestHandler(integrationsContract.connect, async ({ params }) => {
       const provider = params.provider;
 
-      if (!this.providerRegistry.hasConnector(provider)) {
+      if (!this.providerRegistry.has(provider)) {
         return {
           status: 400 as const,
           body: { success: false as const, error: `Provider ${provider} is not yet supported` },
         };
       }
 
-      const connector = this.providerRegistry.getConnector(provider);
+      const entry = this.providerRegistry.get(provider);
 
       // Generate OAuth state token and store in Redis with TTL
       const state = randomBytes(32).toString('hex');
@@ -117,7 +119,7 @@ export class IntegrationsController {
       );
 
       const redirectUri = `${this.apiUrl}/integrations/callback`;
-      const redirectUrl = connector.getAuthUrl(params.orgId, state, redirectUri);
+      const redirectUrl = entry.oauth.getAuthUrl(params.orgId, state, redirectUri);
 
       return {
         status: 200 as const,
@@ -176,11 +178,11 @@ export class IntegrationsController {
   @TsRestHandler(integrationsContract.listResources)
   async listResources() {
     return tsRestHandler(integrationsContract.listResources, async ({ params }) => {
-      const connector = this.providerRegistry.hasConnector(params.provider)
-        ? this.providerRegistry.getConnector(params.provider)
+      const entry = this.providerRegistry.has(params.provider)
+        ? this.providerRegistry.get(params.provider)
         : null;
 
-      if (!connector?.listResources) {
+      if (!entry?.oauth.listResources) {
         return {
           status: 404 as const,
           body: { success: false as const, error: 'Provider does not support resource listing' },
@@ -199,7 +201,7 @@ export class IntegrationsController {
       }
 
       const providerData = parseProviderData(connection.provider_data);
-      const resources = await connector.listResources(connection.access_token, providerData);
+      const resources = await entry.oauth.listResources(connection.access_token, providerData);
 
       return {
         status: 200 as const,
@@ -232,7 +234,12 @@ export class IntegrationsController {
         });
 
         // Trigger a sync so the connector can join newly selected channels
-        await this.integrationsService.triggerSync(connection.id, params.orgId, 'MANUAL');
+        await this.integrationsService.startSyncWorkflow(
+          connection.id,
+          params.orgId,
+          params.provider,
+          'MANUAL'
+        );
       }
 
       const updated = await this.integrationsService.getConnectionMeta(
@@ -246,11 +253,11 @@ export class IntegrationsController {
         };
       }
 
-      const connector = this.providerRegistry.hasConnector(updated.provider)
-        ? this.providerRegistry.getConnector(updated.provider)
+      const entry = this.providerRegistry.has(updated.provider)
+        ? this.providerRegistry.get(updated.provider)
         : null;
-      const syncScheduleLabel = connector?.syncSchedule
-        ? formatSyncScheduleLabel(connector.syncSchedule.every)
+      const syncScheduleLabel = entry?.syncSchedule
+        ? formatSyncScheduleLabel(entry.syncSchedule.every)
         : null;
 
       return {
@@ -293,7 +300,7 @@ export class IntegrationsController {
       }
       // Delete immediately to prevent replay
       await this.redis.del(stateKey);
-      const stateData: OAuthState = JSON.parse(stateJson);
+      const stateData = oauthStateSchema.parse(JSON.parse(stateJson));
 
       const { org: orgIdStr, user: userIdStr, provider } = stateData;
 
@@ -302,7 +309,7 @@ export class IntegrationsController {
       const userId = dbIdSchema('User').parse(userIdStr);
       const validatedProvider = integrationProviderEnum.parse(provider);
 
-      const connector = this.providerRegistry.getConnector(validatedProvider);
+      const entry = this.providerRegistry.get(validatedProvider);
       const redirectUri = `${this.apiUrl}/integrations/callback`;
 
       // GitHub App sends installation_id instead of code
@@ -311,10 +318,10 @@ export class IntegrationsController {
         res.redirect(`${this.frontendUrl}/dashboard/integrations?error=missing_code`);
         return;
       }
-      const tokens = await connector.exchangeCode(exchangeCode, redirectUri);
+      const tokens = await entry.oauth.exchangeCode(exchangeCode, redirectUri);
 
-      // Get external account info from the connector
-      const accountInfo = await connector.getAccountInfo(tokens.accessToken);
+      // Get external account info
+      const accountInfo = await entry.oauth.getAccountInfo(tokens.accessToken);
       const externalAccountRef = accountInfo.id;
       const externalAccountName = accountInfo.name;
 
@@ -322,7 +329,7 @@ export class IntegrationsController {
       await this.integrationsService.deleteConnection(orgId, validatedProvider);
 
       // Build provider data before creating the connection so the row is never in an invalid state
-      const providerData = connector.buildInitialProviderData(
+      const providerData = entry.oauth.buildInitialProviderData(
         tokens.metadata,
         accountInfo.metadata
       );
@@ -337,8 +344,16 @@ export class IntegrationsController {
         createdById: userId,
       });
 
+      // Create Temporal schedule for periodic syncs
+      await this.integrationsService.createSyncSchedule(newConnection.id, orgId, validatedProvider);
+
       // Trigger initial sync
-      await this.integrationsService.triggerSync(newConnection.id, orgId, 'INITIAL');
+      await this.integrationsService.startSyncWorkflow(
+        newConnection.id,
+        orgId,
+        validatedProvider,
+        'INITIAL'
+      );
 
       res.redirect(`${this.frontendUrl}/dashboard/integrations?connected=${validatedProvider}`);
     } catch (error) {
@@ -405,16 +420,16 @@ export class IntegrationsController {
           : Buffer.isBuffer(rawBody)
             ? rawBody.toString('utf8')
             : undefined;
-      const connector = this.providerRegistry.getConnector(validProvider);
+      const entry = this.providerRegistry.get(validProvider);
 
       // Verify webhook signature before processing
-      if (!connector.verifyWebhook(headers, req.body, rawBodyStr)) {
+      if (!entry.webhook.verify(headers, req.body, rawBodyStr)) {
         this.logger.warn(`Webhook signature verification failed for ${validProvider}`);
         res.status(200).json({ ok: true });
         return;
       }
 
-      const result = connector.handleWebhookRequest(headers, req.body, connections, rawBodyStr);
+      const result = entry.webhook.handleEvent(headers, req.body, connections, rawBodyStr);
 
       // Handle disconnection events (e.g. GitHub App uninstalled)
       if (result.disconnectConnections) {
@@ -426,9 +441,10 @@ export class IntegrationsController {
       // Queue webhook sync jobs for matched connections
       if (result.syncConnections) {
         for (const syncConn of result.syncConnections) {
-          await this.integrationsService.triggerWebhookSync(
+          await this.integrationsService.startWebhookWorkflow(
             syncConn.id,
             syncConn.orgId,
+            validProvider,
             syncConn.event
           );
         }

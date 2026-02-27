@@ -104,6 +104,27 @@ const frontendCertWaiter = new aws.acm.CertificateValidation(
   { provider: usEast1 }
 );
 
+// ACM cert for ALB (temporal.grabdy.com) — same region
+const temporalCert = new aws.acm.Certificate('grabdy-temporal-cert', {
+  domainName: Env.temporalDomain,
+  validationMethod: 'DNS',
+});
+
+const temporalCertValidation = new aws.route53.Record('grabdy-temporal-cert-validation', {
+  zoneId: zone.then((z) => z.zoneId),
+  name: temporalCert.domainValidationOptions[0].resourceRecordName,
+  type: temporalCert.domainValidationOptions[0].resourceRecordType,
+  records: [temporalCert.domainValidationOptions[0].resourceRecordValue],
+  ttl: 60,
+  allowOverwrite: true,
+});
+
+const temporalCertWaiter = new aws.acm.CertificateValidation('grabdy-temporal-cert-wait', {
+  certificateArn: temporalCert.arn,
+  validationRecordFqdns: [temporalCertValidation.fqdn],
+});
+
 export const apiCertArn = apiCertWaiter.certificateArn;
 export const frontendCertArn = frontendCertWaiter.certificateArn;
 export const sdkCertArn = sdkCertWaiter.certificateArn;
+export const temporalCertArn = temporalCertWaiter.certificateArn;

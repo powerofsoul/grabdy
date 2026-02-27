@@ -6,27 +6,22 @@ import {
   type GitHubProviderData,
   githubProviderDataSchema,
   githubPublicSchema,
-} from './providers/github/github.types';
+} from '../data-sources/sources/github/types';
 import {
   type LinearProviderData,
   linearProviderDataSchema,
   linearPublicSchema,
-} from './providers/linear/linear.types';
+} from '../data-sources/sources/linear/types';
 import {
   type NotionProviderData,
   notionProviderDataSchema,
   notionPublicSchema,
-} from './providers/notion/notion.types';
+} from '../data-sources/sources/notion/types';
 import {
   type SlackProviderData,
   slackProviderDataSchema,
   slackPublicSchema,
-} from './providers/slack/slack.types';
-
-export type { GitHubProviderData } from './providers/github/github.types';
-export type { LinearProviderData } from './providers/linear/linear.types';
-export type { NotionProviderData } from './providers/notion/notion.types';
-export type { SlackProviderData } from './providers/slack/slack.types';
+} from '../data-sources/sources/slack/types';
 
 // ---------------------------------------------------------------------------
 // Per-provider data (discriminated union)
@@ -78,30 +73,39 @@ export interface SyncedItem {
   messages?: Array<{ content: string; metadata: ChunkMeta; sourceUrl: string }>;
   /** URL for the data source (e.g., channel URL). Stored on data_sources, not chunks. */
   sourceUrl: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, string | number | boolean | string[] | null>;
   /** When true, new chunks are appended to existing data source without deleting old ones. */
   appendOnly?: boolean;
 }
 
-export interface SyncResult {
+export interface ItemSyncResult {
+  type: 'items';
   items: SyncedItem[];
   deletedExternalIds: string[];
   /** Updated provider data to persist (includes new sync cursors/timestamps). */
   updatedProviderData: ProviderData;
   hasMore: boolean;
-  /** Events to queue as individual webhook jobs instead of processing inline.
-   *  Used by providers (e.g. Notion) that discover pages in bulk but fetch content per-page. */
-  webhookEvents?: WebhookEvent[];
 }
+
+export interface EventSyncResult {
+  type: 'events';
+  events: WebhookEvent[];
+  deletedExternalIds: string[];
+  /** Updated provider data to persist (includes new sync cursors/timestamps). */
+  updatedProviderData: ProviderData;
+}
+
+export type SyncResult = ItemSyncResult | EventSyncResult;
 
 export interface WebhookEvent {
   action: 'created' | 'updated' | 'deleted';
   externalId: string;
+  eventType?: string;
   data?: SyncedItem;
 }
 
 export interface WebhookHandlerResult {
-  response: Record<string, unknown>;
+  response: { ok: boolean };
   syncConnections?: Array<{ id: DbId<'Connection'>; orgId: DbId<'Org'>; event: WebhookEvent }>;
   /** Connections to mark as disconnected (e.g. app uninstalled). */
   disconnectConnections?: Array<{ id: DbId<'Connection'>; orgId: DbId<'Org'> }>;
@@ -138,39 +142,28 @@ export function parsePublicProviderData(raw: unknown): PublicProviderData {
 }
 
 // ---------------------------------------------------------------------------
-// Abstract connector
+// Service interfaces
 // ---------------------------------------------------------------------------
 
-export abstract class IntegrationConnector<P extends IntegrationProvider = IntegrationProvider> {
-  abstract readonly provider: P;
-  abstract readonly rateLimits: RateLimitConfig;
+export interface IntegrationOAuth<P extends IntegrationProvider = IntegrationProvider> {
+  getAuthUrl(orgId: DbId<'Org'>, state: string, redirectUri: string): string;
+  exchangeCode(code: string, redirectUri: string): Promise<OAuthTokens<P>>;
+  refreshTokens(refreshToken: string): Promise<OAuthTokens<P>>;
+  getAccountInfo(accessToken: string): Promise<AccountInfo<P>>;
+  buildInitialProviderData(
+    tokenMetadata?: Partial<ProviderDataMap[P]>,
+    accountMetadata?: Partial<ProviderDataMap[P]>
+  ): ProviderDataMap[P];
+  revoke(accessToken: string, providerData: ProviderDataMap[P]): Promise<void>;
+  listResources?(
+    accessToken: string,
+    providerData: ProviderDataMap[P]
+  ): Promise<Array<{ id: string; name: string; selected: boolean }>>;
+}
 
-  /** If non-null, the provider needs periodic full syncs. Repeat interval in milliseconds. */
-  abstract readonly syncSchedule: { every: number } | null;
-
-  /** Custom system prompt prepended to the AI agent when responding via this integration. */
-  readonly botInstructions: string | undefined = undefined;
-
-  abstract getAuthUrl(orgId: DbId<'Org'>, state: string, redirectUri: string): string;
-  abstract exchangeCode(code: string, redirectUri: string): Promise<OAuthTokens<P>>;
-  abstract refreshTokens(refreshToken: string): Promise<OAuthTokens<P>>;
-
-  /** Fetch the connected account's ID and display name after OAuth. */
-  abstract getAccountInfo(accessToken: string): Promise<AccountInfo<P>>;
-
-  abstract parseWebhook(
-    headers: Record<string, string>,
-    body: unknown,
-    secret: string | null,
-    rawBody?: string
-  ): WebhookEvent | null;
-
-  /** Verify the webhook signature/HMAC. Called by the controller BEFORE handleWebhookRequest.
-   *  Must return true for the webhook to be processed. Implementations should use timing-safe
-   *  comparison. Return true for providers that handle verification inline (e.g. delegated services). */
-  abstract verifyWebhook(headers: Record<string, string>, body: unknown, rawBody?: string): boolean;
-
-  abstract handleWebhookRequest(
+export interface IntegrationWebhook<P extends IntegrationProvider = IntegrationProvider> {
+  verify(headers: Record<string, string>, body: unknown, rawBody?: string): boolean;
+  handleEvent(
     headers: Record<string, string>,
     body: unknown,
     connections: ReadonlyArray<{
@@ -180,33 +173,25 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
     }>,
     rawBody?: string
   ): WebhookHandlerResult;
-
-  abstract sync(
-    accessToken: string,
-    providerData: ProviderDataMap[P],
-    context: { connectionId: DbId<'Connection'>; orgId: DbId<'Org'> }
-  ): Promise<SyncResult>;
-
-  /** Process a single webhook event item (fetch + build SyncedItem). */
-  abstract processWebhookItem(
+  fetchItem(
     accessToken: string,
     providerData: ProviderDataMap[P],
     event: WebhookEvent
   ): Promise<{ item: SyncedItem | null; deletedExternalId: string | null }>;
+}
 
-  /** Build initial provider data from OAuth + account metadata after first connection. */
-  abstract buildInitialProviderData(
-    tokenMetadata?: Partial<ProviderDataMap[P]>,
-    accountMetadata?: Partial<ProviderDataMap[P]>
-  ): ProviderDataMap[P];
-
-  /** Revoke tokens / uninstall the app at the provider level. Called on disconnect.
-   *  Best-effort: failures are logged but do not block the disconnect. */
-  abstract revoke(accessToken: string, providerData: ProviderDataMap[P]): Promise<void>;
-
-  /** List selectable resources (e.g. channels) for the provider. Optional — not all providers support this. */
-  listResources?(
+export interface IntegrationSync<P extends IntegrationProvider = IntegrationProvider> {
+  sync(
     accessToken: string,
-    providerData: ProviderDataMap[P]
-  ): Promise<Array<{ id: string; name: string; selected: boolean }>>;
+    providerData: ProviderDataMap[P],
+    context: { connectionId: DbId<'Connection'>; orgId: DbId<'Org'> }
+  ): Promise<SyncResult>;
+}
+
+export interface ProviderConfig<P extends IntegrationProvider = IntegrationProvider> {
+  oauth: IntegrationOAuth<P>;
+  webhook: IntegrationWebhook<P>;
+  sync: IntegrationSync<P>;
+  syncSchedule: { every: number } | null;
+  rateLimits: RateLimitConfig;
 }
