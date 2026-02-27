@@ -1,30 +1,22 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 
-import { extractOrgNumericId, packId } from '@grabdy/common';
 import type { Job, Queue } from 'bullmq';
 import { z } from 'zod';
 
-import { DbService } from '../../../../db/db.module';
 import { InjectTypedQueue } from '../../../../queue/queue.decorators';
 import { SlackAgent } from '../../../agent/agents/slack-agent';
-import { DataSourceDispatchService } from '../../../data-sources/data-source-dispatch.service';
 import { parseProviderData } from '../../connector.interface';
 import { IntegrationsService } from '../../integrations.service';
 
-import { SlackChannelWebhook } from './webhooks/channel.webhook';
-import { SlackConnector } from './slack.connector';
 import type { SlackBotJobData } from './slack-bot.service';
+import type { SlackProcessChannelJobData } from './slack-process-channel.processor';
 
 const SLACK_API_URL = 'https://slack.com/api';
 
 const slackApiResponseSchema = z.object({
   ok: z.boolean(),
   error: z.string().optional(),
-});
-
-const slackChannelInfoResponseSchema = slackApiResponseSchema.extend({
-  channel: z.object({ id: z.string(), name: z.string() }).optional(),
 });
 
 @Processor('slack-bot', { concurrency: 5 })
@@ -34,11 +26,8 @@ export class SlackBotProcessor extends WorkerHost {
   constructor(
     private readonly slackAgent: SlackAgent,
     private readonly integrationsService: IntegrationsService,
-    private readonly slackConnector: SlackConnector,
-    private readonly channelWebhook: SlackChannelWebhook,
-    private readonly db: DbService,
-    private readonly dataSourceDispatch: DataSourceDispatchService,
-    @InjectTypedQueue('notification') private notificationQueue: Queue
+    @InjectTypedQueue('notification') private notificationQueue: Queue,
+    @InjectTypedQueue('slack-process-channel') private processChannelQueue: Queue
   ) {
     super();
   }
@@ -118,8 +107,11 @@ export class SlackBotProcessor extends WorkerHost {
   private async handleChannelJoined(data: SlackBotJobData) {
     const { connectionId, orgId, slackChannelId } = data;
 
-    this.logger.log(`Processing channel_joined for org ${orgId} in channel ${slackChannelId}`);
+    this.logger.log(
+      `Bot joined channel ${slackChannelId}, queuing channel sync for connection ${connectionId}`
+    );
 
+    // Fetch channel name and workspace domain for the job
     const conn = await this.integrationsService.getConnectionById(connectionId);
     if (!conn) {
       this.logger.warn(`Connection ${connectionId} not found`);
@@ -132,117 +124,17 @@ export class SlackBotProcessor extends WorkerHost {
       return;
     }
 
-    const { slackBotUserId, teamDomain } = providerData;
-
-    const channelName = await this.fetchChannelName(conn.access_token, slackChannelId);
-
-    const { messages } = await this.channelWebhook.fetchChannelMessages(
-      conn.access_token,
-      slackChannelId,
-      '0',
-      slackBotUserId
-    );
-
-    if (messages.length === 0) {
-      this.logger.log(`No messages in channel ${slackChannelId}, skipping ingestion`);
-      return;
-    }
-
-    const expandedMessages = await this.channelWebhook.expandThreads(
-      conn.access_token,
-      slackChannelId,
-      messages,
-      slackBotUserId
-    );
-
-    const syncedMessages = expandedMessages.map((msg) => {
-      const time = formatSlackTimestamp(msg.ts);
-      const user = msg.user ?? 'unknown';
-      const msgText = msg.text ?? '';
-      const ts = msg.ts ?? '';
-      return {
-        content: `[${time}] ${user}: ${msgText}`,
-        metadata: {
-          type: 'SLACK' as const,
-          slackChannelId,
-          slackMessageTs: ts,
-          slackAuthors: [user],
-        },
-        sourceUrl: buildMessageUrl(teamDomain, slackChannelId, ts),
-      };
-    });
-
-    const content = syncedMessages.map((m) => m.content).join('\n');
-
-    const sourceUrl = teamDomain
-      ? `https://${teamDomain}.slack.com/archives/${slackChannelId}`
-      : `https://slack.com/app_redirect?channel=${slackChannelId}`;
-
-    const title = `#${channelName}`;
-
-    const existing = await this.db.kysely
-      .selectFrom('data.data_sources')
-      .select(['id'])
-      .where('connection_id', '=', connectionId)
-      .where('external_id', '=', slackChannelId)
-      .where('org_id', '=', orgId)
-      .executeTakeFirst();
-
-    let dataSourceId;
-    if (existing) {
-      await this.db.kysely
-        .updateTable('data.data_sources')
-        .set({
-          title,
-          source_url: sourceUrl,
-          status: 'UPLOADED',
-          updated_at: new Date(),
-        })
-        .where('id', '=', existing.id)
-        .where('org_id', '=', orgId)
-        .execute();
-
-      await this.db.kysely
-        .deleteFrom('data.chunks')
-        .where('data_source_id', '=', existing.id)
-        .where('org_id', '=', orgId)
-        .execute();
-
-      dataSourceId = existing.id;
-    } else {
-      dataSourceId = packId('DataSource', extractOrgNumericId(orgId));
-
-      await this.db.kysely
-        .insertInto('data.data_sources')
-        .values({
-          id: dataSourceId,
-          title,
-          mime_type: 'text/plain',
-          file_size: Buffer.byteLength(content, 'utf-8'),
-          storage_path: '',
-          type: 'SLACK',
-          status: 'UPLOADED',
-          connection_id: connectionId,
-          external_id: slackChannelId,
-          source_url: sourceUrl,
-          org_id: orgId,
-          uploaded_by_id: null,
-          updated_at: new Date(),
-        })
-        .execute();
-    }
-
-    await this.dataSourceDispatch.dispatch({
-      dataSourceId,
+    const jobData: SlackProcessChannelJobData = {
+      connectionId,
       orgId,
-      storagePath: '',
-      mimeType: 'text/plain',
-      collectionId: null,
-      content,
-      messages: syncedMessages,
-    });
+      slackChannel: slackChannelId,
+      channelName: slackChannelId, // Will be resolved by the processor via fetchChannels
+      teamDomain: providerData.teamDomain,
+    };
 
-    this.logger.log(`Ingested ${messages.length} messages from channel ${slackChannelId}`);
+    await this.processChannelQueue.add('process', jobData, {
+      jobId: `channel-${connectionId}-${slackChannelId}`,
+    });
   }
 
   private async postSlackMessage(
@@ -270,36 +162,4 @@ export class SlackBotProcessor extends WorkerHost {
       throw new Error(`Slack chat.postMessage error: ${responseData.error ?? 'Unknown error'}`);
     }
   }
-
-  private async fetchChannelName(accessToken: string, slackChannelId: string): Promise<string> {
-    const response = await fetch(
-      `${SLACK_API_URL}/conversations.info?channel=${encodeURIComponent(slackChannelId)}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
-
-    const responseData = slackChannelInfoResponseSchema.parse(await response.json());
-
-    if (!responseData.ok || !responseData.channel) {
-      return slackChannelId;
-    }
-
-    return responseData.channel.name;
-  }
-}
-
-function formatSlackTimestamp(ts: string | undefined): string {
-  if (!ts) return '';
-  return new Date(parseFloat(ts) * 1000)
-    .toISOString()
-    .replace('T', ' ')
-    .replace(/\.\d+Z$/, ' UTC');
-}
-
-function buildMessageUrl(teamDomain: string | undefined, channel: string, ts: string): string {
-  if (teamDomain && ts) {
-    return `https://${teamDomain}.slack.com/archives/${channel}/p${ts.replace('.', '')}`;
-  }
-  return `https://slack.com/app_redirect?channel=${channel}`;
 }

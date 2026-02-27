@@ -4,7 +4,7 @@ export interface SlackProviderData {
   provider: 'SLACK';
   slackBotUserId?: string;
   teamDomain?: string;
-  /** Last message timestamp per channel — used for incremental fetch */
+  /** Last message timestamp per channel, used for incremental fetch */
   channelTimestamps: Record<string, string>;
   /** IDs of public channels the user selected for syncing */
   selectedChannels?: string[];
@@ -18,7 +18,7 @@ export const slackProviderDataSchema = z.object({
   selectedChannels: z.array(z.string()).optional(),
 });
 
-/** Public schema — same as full for Slack (no sensitive fields to strip). */
+/** Public schema, same as full for Slack (no sensitive fields to strip). */
 export const slackPublicSchema = z.object({
   provider: z.literal('SLACK'),
   slackBotUserId: z.string().optional(),

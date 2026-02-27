@@ -2,10 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
 import { IntegrationProvider } from '@grabdy/contracts';
+import type { Queue } from 'bullmq';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 
 import { InjectEnv } from '../../../../config/env.config';
+import { InjectTypedQueue } from '../../../../queue/queue.decorators';
 import {
   type AccountInfo,
   IntegrationConnector,
@@ -20,6 +22,7 @@ import {
 import { SlackChannelWebhook } from './webhooks/channel.webhook';
 import type { SlackProviderData } from './slack.types';
 import { SlackBotService } from './slack-bot.service';
+import type { SlackProcessChannelJobData } from './slack-process-channel.processor';
 
 const SLACK_AUTH_URL = 'https://slack.com/oauth/v2/authorize';
 const SLACK_TOKEN_URL = 'https://slack.com/api/oauth.v2.access';
@@ -85,7 +88,8 @@ export class SlackConnector extends IntegrationConnector<'SLACK'> {
     @InjectEnv('slackClientSecret') private readonly clientSecret: string,
     @InjectEnv('slackSigningSecret') private readonly signingSecret: string,
     private readonly slackBotService: SlackBotService,
-    private readonly channelWebhook: SlackChannelWebhook
+    private readonly channelWebhook: SlackChannelWebhook,
+    @InjectTypedQueue('slack-process-channel') private readonly processChannelQueue: Queue
   ) {
     super();
   }
@@ -223,22 +227,48 @@ export class SlackConnector extends IntegrationConnector<'SLACK'> {
 
   // ---- Sync ----------------------------------------------------------------
 
-  async sync(accessToken: string, providerData: SlackProviderData): Promise<SyncResult> {
-    // Auto-join selected channels before fetching messages
+  async sync(
+    accessToken: string,
+    providerData: SlackProviderData,
+    context: { connectionId: DbId<'Connection'>; orgId: DbId<'Org'> }
+  ): Promise<SyncResult> {
+    // Join selected channels so they appear in the member list
     const selectedIds = providerData.selectedChannels ?? [];
     for (const channelId of selectedIds) {
       await this.joinChannel(accessToken, channelId);
     }
 
-    const result = await this.channelWebhook.fetchUpdatedItems(accessToken, providerData);
+    // Discover all channels the bot is a member of
+    const allChannels = await this.channelWebhook.fetchChannels(accessToken);
 
+    if (allChannels.length > 0) {
+      // Fan out one job per channel to the slack-process-channel queue
+      await this.processChannelQueue.addBulk(
+        allChannels.map((ch) => {
+          const jobData: SlackProcessChannelJobData = {
+            connectionId: context.connectionId,
+            orgId: context.orgId,
+            slackChannel: ch.id,
+            channelName: ch.name,
+            teamDomain: providerData.teamDomain,
+          };
+          return {
+            name: 'process',
+            data: jobData,
+            opts: { jobId: `channel-${context.connectionId}-${ch.id}` },
+          };
+        })
+      );
+      this.logger.log(
+        `Queued ${allChannels.length} channels for processing [${providerData.teamDomain ?? 'unknown workspace'}]`
+      );
+    }
+
+    // Discover doesn't process items inline for Slack; the channel queue handles it
     return {
-      items: result.items,
+      items: [],
       deletedExternalIds: [],
-      updatedProviderData: {
-        ...providerData,
-        channelTimestamps: result.newTimestamps,
-      },
+      updatedProviderData: providerData,
       hasMore: false,
     };
   }

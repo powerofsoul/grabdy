@@ -14,6 +14,7 @@ import { ProviderRegistry } from './providers/provider-registry';
 import { SlackConnector } from './providers/slack/slack.connector';
 import { SlackBotProcessor } from './providers/slack/slack-bot.processor';
 import { SlackBotService } from './providers/slack/slack-bot.service';
+import { SlackProcessChannelProcessor } from './providers/slack/slack-process-channel.processor';
 import { SlackChannelWebhook } from './providers/slack/webhooks/channel.webhook';
 import { IntegrationCleanupProcessor } from './integration-cleanup.processor';
 import { IntegrationDiscoverProcessor } from './integration-discover.processor';
@@ -47,6 +48,7 @@ import { IntegrationsService } from './integrations.service';
     IntegrationCleanupProcessor,
     IntegrationScheduledSyncProcessor,
     SlackBotProcessor,
+    SlackProcessChannelProcessor,
   ],
   exports: [IntegrationsService],
 })

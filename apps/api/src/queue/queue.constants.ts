@@ -15,6 +15,7 @@ export const QUEUE_NAMES = [
   'integration-cleanup',
   'integration-scheduled-sync',
   'slack-bot',
+  'slack-process-channel',
 ] as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[number];
