@@ -181,7 +181,11 @@ export abstract class IntegrationConnector<P extends IntegrationProvider = Integ
     rawBody?: string
   ): WebhookHandlerResult;
 
-  abstract sync(accessToken: string, providerData: ProviderDataMap[P]): Promise<SyncResult>;
+  abstract sync(
+    accessToken: string,
+    providerData: ProviderDataMap[P],
+    context: { connectionId: DbId<'Connection'>; orgId: DbId<'Org'> }
+  ): Promise<SyncResult>;
 
   /** Process a single webhook event item (fetch + build SyncedItem). */
   abstract processWebhookItem(

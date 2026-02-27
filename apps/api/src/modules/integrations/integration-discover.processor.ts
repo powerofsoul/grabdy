@@ -45,7 +45,10 @@ export class IntegrationDiscoverProcessor extends WorkerHost {
 
     let hasMore = true;
     while (hasMore) {
-      const result = await connector.sync(accessToken, currentProviderData);
+      const result = await connector.sync(accessToken, currentProviderData, {
+        connectionId,
+        orgId,
+      });
       let synced = 0;
       let failed = 0;
 
@@ -87,10 +90,14 @@ export class IntegrationDiscoverProcessor extends WorkerHost {
 
       currentProviderData = result.updatedProviderData;
       hasMore = result.hasMore;
+
+      // Persist progress after each iteration so work is not lost if the job fails mid-sync
+      await this.integrationsService.updateConnection(connectionId, {
+        providerData: currentProviderData,
+      });
     }
 
     await this.integrationsService.updateConnection(connectionId, {
-      providerData: currentProviderData,
       lastSyncedAt: new Date(),
     });
 

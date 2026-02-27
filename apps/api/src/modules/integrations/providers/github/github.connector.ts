@@ -160,7 +160,11 @@ export class GitHubConnector extends IntegrationConnector<'GITHUB'> {
 
   // ---- Sync ----------------------------------------------------------------
 
-  async sync(accessToken: string, providerData: GitHubProviderData): Promise<SyncResult> {
+  async sync(
+    accessToken: string,
+    providerData: GitHubProviderData,
+    _context: { connectionId: DbId<'Connection'>; orgId: DbId<'Org'> }
+  ): Promise<SyncResult> {
     const octokit = new Octokit({ auth: accessToken });
     const since = providerData.lastSyncedAt ?? getInitialSyncSince();
 

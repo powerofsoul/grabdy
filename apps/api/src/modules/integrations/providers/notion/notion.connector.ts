@@ -166,7 +166,11 @@ export class NotionConnector extends IntegrationConnector<'NOTION'> {
 
   // ---- Sync ----------------------------------------------------------------
 
-  async sync(accessToken: string, providerData: NotionProviderData): Promise<SyncResult> {
+  async sync(
+    accessToken: string,
+    providerData: NotionProviderData,
+    _context: { connectionId: DbId<'Connection'>; orgId: DbId<'Org'> }
+  ): Promise<SyncResult> {
     const client = new Client({ auth: accessToken });
     const since = providerData.lastSyncedAt ?? getInitialSyncSince();
 

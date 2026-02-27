@@ -182,7 +182,11 @@ export class LinearConnector extends IntegrationConnector<'LINEAR'> {
 
   // ---- Sync ----------------------------------------------------------------
 
-  async sync(accessToken: string, providerData: LinearProviderData): Promise<SyncResult> {
+  async sync(
+    accessToken: string,
+    providerData: LinearProviderData,
+    _context: { connectionId: DbId<'Connection'>; orgId: DbId<'Org'> }
+  ): Promise<SyncResult> {
     const client = new LinearClient({ accessToken });
     const sinceCursor = providerData.lastIssueSyncedAt ?? getInitialSyncSince();
 
