@@ -1,14 +1,21 @@
+import { useState } from 'react';
+
+import { type DbId, dbIdSchema } from '@grabdy/common';
 import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { ArrowLeftIcon, MoonIcon, SignOutIcon, SunIcon } from '@phosphor-icons/react';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Navigate, useNavigate, useSearch } from '@tanstack/react-router';
 import { z } from 'zod';
 
 import { ChatPanel } from '@/components/chat';
+import { ChatBotTabs } from '@/components/chat/components/ChatBotTabs';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
+import { api } from '@/lib/api';
 
 const appSearchSchema = z.object({
   thread: z.string().optional(),
+  bot: z.string().optional(),
 });
 
 export const Route = createFileRoute('/app')({
@@ -19,11 +26,29 @@ export const Route = createFileRoute('/app')({
 function AppPage() {
   const { user, selectedOrgId, isAuthenticated, isAdmin, logout } = useAuth();
   const { preference, setPreference } = useThemeMode();
-  const { thread } = useSearch({ from: '/app' });
+  const { thread, bot: botParam } = useSearch({ from: '/app' });
   const navigate = useNavigate();
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const isDark = preference === 'dark';
+
+  const parsedBotId = botParam ? dbIdSchema('Bot').safeParse(botParam) : undefined;
+  const [activeBotId, setActiveBotId] = useState<DbId<'Bot'> | undefined>(
+    parsedBotId?.success ? parsedBotId.data : undefined
+  );
+
+  const { data: bot } = useQuery({
+    queryKey: ['bot', selectedOrgId, activeBotId],
+    queryFn: async () => {
+      if (!selectedOrgId || !activeBotId) return null;
+      const res = await api.bots.get({
+        params: { orgId: selectedOrgId, botId: activeBotId },
+      });
+      if (res.status === 200) return res.body.data;
+      return null;
+    },
+    enabled: !!selectedOrgId && !!activeBotId,
+  });
 
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" />;
@@ -37,6 +62,17 @@ function AppPage() {
     ? `${user.firstName[0]}${user.lastName?.[0] ?? ''}`.toUpperCase()
     : '?';
 
+  const handleBotChange = (botId: string | undefined) => {
+    const parsed = botId ? dbIdSchema('Bot').safeParse(botId) : undefined;
+    const newBotId = parsed?.success ? parsed.data : undefined;
+    setActiveBotId(newBotId);
+    navigate({
+      to: '/app',
+      search: newBotId ? { bot: newBotId } : {},
+      replace: true,
+    });
+  };
+
   return (
     <Box
       sx={{
@@ -47,11 +83,29 @@ function AppPage() {
       }}
     >
       <ChatPanel
+        key={activeBotId ?? '__general__'}
         initialThreadId={thread}
+        botId={activeBotId}
+        tabsSlot={
+          <ChatBotTabs
+            currentBotId={activeBotId}
+            accentColor={bot?.accentColor ?? undefined}
+            onBotChange={handleBotChange}
+          />
+        }
+        botTitle={bot?.title ?? undefined}
+        botSubtitle={bot?.subtitle ?? undefined}
+        botPlaceholder={bot?.placeholder ?? undefined}
+        botImageUrl={bot?.imageUrl ?? undefined}
+        botAccentColor={bot?.accentColor ?? undefined}
+        botPrimaryColor={bot?.primaryColor ?? undefined}
         onThreadChange={(threadId) => {
           navigate({
             to: '/app',
-            search: threadId ? { thread: threadId } : {},
+            search: {
+              ...(threadId ? { thread: threadId } : {}),
+              ...(activeBotId ? { bot: activeBotId } : {}),
+            },
             replace: true,
           });
         }}
@@ -73,6 +127,7 @@ function AppPage() {
             <Typography
               variant="h5"
               onClick={() => {
+                setActiveBotId(undefined);
                 navigate({ to: '/app', search: {}, replace: true });
               }}
               sx={{

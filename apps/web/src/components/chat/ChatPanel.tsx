@@ -328,83 +328,126 @@ export function ChatPanel({
           }}
         >
           <Typography sx={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, pl: 1 }}>Chat</Typography>
-          <IconButton
-            size="small"
-            onClick={threadManager.handleNewThread}
-            sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
-          >
-            <PlusIcon size={18} weight="light" color="currentColor" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={() => setThreadPanelOpen(true)}
-            sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
-          >
-            <ClockCounterClockwiseIcon size={18} weight="light" color="currentColor" />
-          </IconButton>
           {showMobileSidebar && (
-            <>
-              <Box sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.08) }} />
-              <IconButton size="small" onClick={toggleMobileSidebar} sx={{ color: 'text.primary' }}>
-                <ListIcon size={20} weight="regular" />
-              </IconButton>
-            </>
+            <IconButton size="small" onClick={toggleMobileSidebar} sx={{ color: 'text.primary' }}>
+              <ListIcon size={20} weight="regular" />
+            </IconButton>
           )}
         </Box>
       ) : (
+        (headerSlot || activeThread || trailingSlot) && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              height: headerHeight,
+              flexShrink: 0,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+              {!activeThread && headerSlot}
+              {activeThread && (
+                <>
+                  {headerSlot && (
+                    <Box
+                      sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.1), flexShrink: 0 }}
+                    />
+                  )}
+                  <Typography
+                    sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 500 }}
+                    noWrap
+                  >
+                    {activeThread.title ?? 'Untitled'}
+                  </Typography>
+                </>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {threadManager.activeThreadId && (
+                <ShareButton threadId={threadManager.activeThreadId} />
+              )}
+              {trailingSlot}
+            </Box>
+          </Box>
+        )
+      )}
+
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          borderBottom: '1px solid',
+          borderColor: alpha(ct, 0.08),
+          flexShrink: 0,
+          px: isMobile ? 1.5 : 0,
+          py: isMobile ? 0.75 : 0,
+          gap: isMobile ? 1 : 0,
+        }}
+      >
+        {tabsSlot && (
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              '& > *': { borderBottom: 'none !important', width: '100%' },
+            }}
+          >
+            {tabsSlot}
+          </Box>
+        )}
+        {!tabsSlot && <Box sx={{ flex: 1 }} />}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 2,
-            height: headerHeight,
+            gap: 0.75,
+            pr: isMobile ? 0 : 2,
             flexShrink: 0,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-            {!activeThread && headerSlot}
-            {activeThread && (
-              <>
-                {headerSlot && (
-                  <Box sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.1), flexShrink: 0 }} />
-                )}
-                <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 500 }} noWrap>
-                  {activeThread.title ?? 'Untitled'}
-                </Typography>
-              </>
-            )}
+          <Box
+            onClick={threadManager.handleNewThread}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1.25,
+              py: 0.75,
+              borderRadius: 1,
+              cursor: 'pointer',
+              color: alpha(ct, 0.5),
+              transition: 'all 120ms ease',
+              '&:hover': { color: 'text.primary', bgcolor: alpha(ct, 0.04) },
+            }}
+          >
+            <PlusIcon size={18} weight="light" color="currentColor" />
+            <Typography sx={{ fontSize: 14, fontWeight: 500 }}>New</Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Tooltip title="New chat">
-              <IconButton
-                size="small"
-                onClick={threadManager.handleNewThread}
-                sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
-              >
-                <PlusIcon size={18} weight="light" color="currentColor" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="History">
-              <IconButton
-                size="small"
-                onClick={() => setThreadPanelOpen(true)}
-                sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
-              >
-                <ClockCounterClockwiseIcon size={18} weight="light" color="currentColor" />
-              </IconButton>
-            </Tooltip>
-            {threadManager.activeThreadId && (
-              <ShareButton threadId={threadManager.activeThreadId} />
-            )}
-            {trailingSlot}
+          <Box
+            onClick={() => setThreadPanelOpen(true)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1.25,
+              py: 0.75,
+              borderRadius: 1,
+              cursor: 'pointer',
+              color: alpha(ct, 0.5),
+              transition: 'all 120ms ease',
+              '&:hover': { color: 'text.primary', bgcolor: alpha(ct, 0.04) },
+            }}
+          >
+            <ClockCounterClockwiseIcon size={18} weight="light" color="currentColor" />
+            <Typography sx={{ fontSize: 14, fontWeight: 500 }}>History</Typography>
           </Box>
         </Box>
-      )}
-
-      {tabsSlot}
+      </Box>
 
       {threadDrawer}
 
