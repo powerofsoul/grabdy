@@ -716,7 +716,7 @@ export class PdfAnnotationExtractor {
         // Get dimensions from PNG header (bytes 16-23)
         if (imgBuffer.length >= 24) {
           const width = imgBuffer.readUInt32BE(16);
-          const height = imgBuffer.readUInt32BE(18);
+          const height = imgBuffer.readUInt32BE(20);
 
           // Skip very small images (icons, bullets)
           if (width < 50 || height < 50) continue;
