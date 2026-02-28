@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, keyframes, Typography } from '@mui/material';
 import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router';
 
 import { BackgroundWatermark } from '@/components/ui/BackgroundWatermark';
@@ -10,7 +10,36 @@ export const Route = createFileRoute('/dashboard')({
 });
 
 function DashboardLayout() {
-  const { user, selectedOrgId, isAuthenticated } = useAuth();
+  const { user, selectedOrgId, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          bgcolor: 'background.default',
+          gap: 2,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: 28,
+            color: 'text.primary',
+            animation: `${keyframes`0%, 100% { opacity: 1 } 50% { opacity: 0.3 }`} 1.5s ease-in-out infinite`,
+          }}
+        >
+          grabdy.
+        </Typography>
+        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+          Waking up the hamsters...
+        </Typography>
+      </Box>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" />;

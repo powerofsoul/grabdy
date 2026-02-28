@@ -1,4 +1,12 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 
@@ -75,16 +83,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
   }, [fetchUserProfile]);
 
-  useEffect(() => {
-    if (!user) return;
+  // Derive a validated org ID synchronously so child components never see a stale value.
+  const validatedOrgId = useMemo(() => {
+    if (!user) return undefined;
     const memberships = user.memberships;
-    if (memberships.length === 0) return;
-    const isValid = selectedOrgId && memberships.some((m) => m.orgId === selectedOrgId);
-    if (!isValid) {
-      const firstOrgId = memberships[0].orgId;
-      queueMicrotask(() => setSelectedOrgId(firstOrgId));
+    if (memberships.length === 0) return undefined;
+    if (selectedOrgId && memberships.some((m) => m.orgId === selectedOrgId)) {
+      return selectedOrgId;
     }
+    return memberships[0].orgId;
   }, [user, selectedOrgId]);
+
+  // Persist the validated org to localStorage whenever it changes
+  useEffect(() => {
+    if (validatedOrgId) {
+      localStorage.setItem(STORAGE_KEYS.SELECTED_ORG_ID, validatedOrgId);
+    }
+  }, [validatedOrgId]);
 
   const selectOrg = useCallback((orgId: DbId<'Org'>) => {
     setSelectedOrgId(orgId);
@@ -198,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchUserProfile();
   };
 
-  const selectedMembership = user?.memberships.find((m) => m.orgId === selectedOrgId);
+  const selectedMembership = user?.memberships.find((m) => m.orgId === validatedOrgId);
   const isOwner = selectedMembership ? selectedMembership.roles.includes('OWNER') : false;
   const isAdmin = selectedMembership
     ? selectedMembership.roles.includes('OWNER') || selectedMembership.roles.includes('ADMIN')
@@ -210,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
-        selectedOrgId,
+        selectedOrgId: validatedOrgId,
         isAdmin,
         isOwner,
         selectOrg,

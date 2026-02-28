@@ -1,7 +1,16 @@
 import { useState } from 'react';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
-import { alpha, Avatar, Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import {
+  alpha,
+  Avatar,
+  Box,
+  IconButton,
+  keyframes,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import { ArrowLeftIcon, MoonIcon, SignOutIcon, SunIcon } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Navigate, useNavigate, useSearch } from '@tanstack/react-router';
@@ -24,7 +33,7 @@ export const Route = createFileRoute('/app')({
 });
 
 function AppPage() {
-  const { user, selectedOrgId, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, selectedOrgId, isAuthenticated, isLoading, isAdmin, logout } = useAuth();
   const { preference, setPreference } = useThemeMode();
   const { thread, bot: botParam } = useSearch({ from: '/app' });
   const navigate = useNavigate();
@@ -49,6 +58,35 @@ function AppPage() {
     },
     enabled: !!selectedOrgId && !!activeBotId,
   });
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          bgcolor: 'background.default',
+          gap: 2,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: 28,
+            color: 'text.primary',
+            animation: `${keyframes`0%, 100% { opacity: 1 } 50% { opacity: 0.3 }`} 1.5s ease-in-out infinite`,
+          }}
+        >
+          grabdy.
+        </Typography>
+        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+          Warming up the neurons...
+        </Typography>
+      </Box>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" />;
