@@ -48,6 +48,7 @@ import { RedisModule } from './redis/redis.module';
   imports: [
     LoggerModule.forRoot({
       pinoHttp: {
+        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
         transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
         redact: ['req.headers.authorization', 'req.headers.cookie'],
         autoLogging: false,
