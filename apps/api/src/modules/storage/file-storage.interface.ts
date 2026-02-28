@@ -12,6 +12,8 @@ export interface FileStorage {
   /** Get the file as a temp path on disk (avoids loading into memory). */
   getTempPath(key: string): Promise<TempFileHandle>;
   delete(key: string): Promise<void>;
+  /** Delete all objects under a key prefix. */
+  deletePrefix(prefix: string): Promise<void>;
   getUrl(key: string): Promise<string>;
   exists(key: string): Promise<boolean>;
 }
@@ -32,5 +34,10 @@ export const StorageKeys = {
   ): string {
     const collection = collectionId ?? 'uncategorized';
     return `${orgId}/${collection}/${dataSourceId}.${ext}`;
+  },
+
+  /** Extracted images prefix: orgId/extracted-images/dataSourceId */
+  extractedImages(orgId: DbId<'Org'>, dataSourceId: DbId<'DataSource'>): string {
+    return `${orgId}/extracted-images/${dataSourceId}`;
   },
 };

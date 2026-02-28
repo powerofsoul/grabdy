@@ -22,6 +22,8 @@ export const THROTTLE_LONG_LIMIT = 1000;
 // ── Data Source Processing (token-based) ────────────────────────────
 export const PDF_PAGE_RANGE_SIZE = 5;
 export const PDF_PAGE_OVERLAP = 5;
+export const PDF_BATCH_SIZE = 30;
+export const PDF_MAX_CONCURRENT_PER_ORG = 5;
 export const DS_CONCURRENCY_GLOBAL = 4;
 export const DS_LOCK_DURATION_MS = 15 * 60 * 1000; // 15 min before BullMQ considers a job stalled
 export const CHUNK_SIZE_TOKENS = 400;
@@ -38,7 +40,7 @@ export const HYDE_MAX_LENGTH = 500;
 export const THREAD_TITLE_MAX_LENGTH = 100;
 
 // ── File Upload ─────────────────────────────────────────────────────
-export const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB — multer ceiling
+export const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB — multer ceiling (PST archives)
 
 export const FILE_SIZE_LIMITS: Partial<Record<UploadsMime, number>> = {
   'application/pdf': 200 * 1024 * 1024,
@@ -53,6 +55,9 @@ export const FILE_SIZE_LIMITS: Partial<Record<UploadsMime, number>> = {
   'image/jpeg': 20 * 1024 * 1024,
   'image/webp': 20 * 1024 * 1024,
   'image/gif': 20 * 1024 * 1024,
+  'message/rfc822': 50 * 1024 * 1024,
+  'application/vnd.ms-outlook': 50 * 1024 * 1024,
+  'application/vnd.ms-outlook-pst': 500 * 1024 * 1024,
 };
 
 const DEFAULT_FILE_SIZE_LIMIT = 50 * 1024 * 1024; // 50 MB

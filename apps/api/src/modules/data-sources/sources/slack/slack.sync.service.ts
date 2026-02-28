@@ -13,7 +13,7 @@ export class SlackSyncService implements IntegrationSync<'SLACK'> {
     providerData: SlackProviderData,
     _context: { connectionId: DbId<'Connection'>; orgId: DbId<'Org'> }
   ): Promise<SyncResult> {
-    // Slack sync is handled by slackSyncWorkflow in Temporal
+    // Slack sync is handled by the integration-sync BullMQ processor
     return {
       type: 'items',
       items: [],

@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import type { DbId } from '@grabdy/common';
-import { TemporalService } from 'nestjs-temporal-core';
+import type { Queue } from 'bullmq';
 
+import { InjectTypedQueue } from '../../../../../queue/queue.decorators';
 import type { SlackProviderData } from '../types';
 
 interface SlackEventBody {
@@ -32,7 +33,10 @@ export type SlackWebhookResult = { handled: true; challenge?: string } | { handl
 export class SlackBotWebhookHandler {
   private readonly logger = new Logger(SlackBotWebhookHandler.name);
 
-  constructor(private readonly temporalService: TemporalService) {}
+  constructor(
+    @InjectTypedQueue('slack-bot') private readonly slackBotQueue: Queue,
+    @InjectTypedQueue('integration-sync') private readonly syncQueue: Queue
+  ) {}
 
   /**
    * Handle an incoming Slack Events API request.
@@ -108,26 +112,16 @@ export class SlackBotWebhookHandler {
     const threadTs = event.thread_ts ?? ts;
 
     for (const conn of connections) {
-      this.temporalService
-        .startWorkflow(
-          'slackBotWorkflow',
-          [
-            {
-              orgId: conn.orgId,
-              connectionId: conn.id,
-              channel: slackChannelId,
-              threadTs,
-              text,
-            },
-          ],
-          {
-            workflowId: `slack-bot-${conn.id}-${threadTs}`,
-          }
-        )
-        .catch((e) => this.logger.error('Failed to start slackBotWorkflow', e));
-      this.logger.log(
-        `Started slackBotWorkflow for org ${conn.orgId} in channel ${slackChannelId}`
-      );
+      this.slackBotQueue
+        .add('slack-bot', {
+          orgId: conn.orgId,
+          connectionId: conn.id,
+          channel: slackChannelId,
+          threadTs,
+          text,
+        })
+        .catch((e) => this.logger.error('Failed to enqueue slackBotJob', e));
+      this.logger.log(`Enqueued slackBotJob for org ${conn.orgId} in channel ${slackChannelId}`);
     }
   }
 
@@ -148,26 +142,16 @@ export class SlackBotWebhookHandler {
     const threadTs = event.thread_ts ?? ts;
 
     for (const conn of connections) {
-      this.temporalService
-        .startWorkflow(
-          'slackBotWorkflow',
-          [
-            {
-              orgId: conn.orgId,
-              connectionId: conn.id,
-              channel: slackChannelId,
-              threadTs,
-              text,
-            },
-          ],
-          {
-            workflowId: `slack-bot-${conn.id}-${threadTs}`,
-          }
-        )
-        .catch((e) => this.logger.error('Failed to start slackBotWorkflow', e));
-      this.logger.log(
-        `Started slackBotWorkflow for org ${conn.orgId} in channel ${slackChannelId}`
-      );
+      this.slackBotQueue
+        .add('slack-bot', {
+          orgId: conn.orgId,
+          connectionId: conn.id,
+          channel: slackChannelId,
+          threadTs,
+          text,
+        })
+        .catch((e) => this.logger.error('Failed to enqueue slackBotJob', e));
+      this.logger.log(`Enqueued slackBotJob for org ${conn.orgId} in channel ${slackChannelId}`);
     }
   }
 
@@ -187,24 +171,15 @@ export class SlackBotWebhookHandler {
     // Only trigger when the bot itself joins the channel
     for (const conn of connections) {
       if (conn.providerData.slackBotUserId && joinedUserId === conn.providerData.slackBotUserId) {
-        // Trigger a full sync for this connection (which will pick up the new channel)
-        this.temporalService
-          .startWorkflow(
-            'slackSyncWorkflow',
-            [
-              {
-                orgId: conn.orgId,
-                connectionId: conn.id,
-                trigger: 'WEBHOOK',
-              },
-            ],
-            {
-              workflowId: `slack-sync-${conn.id}-channel-join-${slackChannelId}`,
-            }
-          )
-          .catch((e) => this.logger.error('Failed to start slackSyncWorkflow', e));
+        this.syncQueue
+          .add('slack', {
+            connectionId: conn.id,
+            orgId: conn.orgId,
+            trigger: 'WEBHOOK',
+          })
+          .catch((e) => this.logger.error('Failed to enqueue slackSyncJob', e));
         this.logger.log(
-          `Started slackSyncWorkflow for org ${conn.orgId} after channel join ${slackChannelId}`
+          `Enqueued slackSyncJob for org ${conn.orgId} after channel join ${slackChannelId}`
         );
       }
     }

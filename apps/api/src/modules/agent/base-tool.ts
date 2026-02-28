@@ -20,6 +20,4 @@ export interface Tool<TInput = object, TOutput = object> {
   systemPrompt?: string;
   onToolCall?(ctx: ToolCallContext<TInput>): StreamChunk | null;
   onToolResult?(ctx: ToolResultContext<TInput, TOutput>): StreamChunk | null;
-  /** Return true if this tool must be called before the agent can finish. */
-  mustBeCalled?(calledToolNames: Set<string>): boolean;
 }

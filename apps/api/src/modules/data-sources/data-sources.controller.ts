@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-import { dbIdSchema, extractOrgNumericId } from '@grabdy/common';
+import { type DbId, dbIdSchema, extractOrgNumericId } from '@grabdy/common';
 import { dataSourcesContract } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import type { Request, Response } from 'express';
@@ -177,11 +177,45 @@ export class DataSourcesController {
   }
 
   /**
-   * Stable image proxy: redirects to a fresh presigned S3 URL.
+   * Short file proxy: redirects to a fresh presigned S3 URL.
    * The AI embeds these URLs in markdown so they must not expire.
-   * The key is base64url-encoded to avoid path issues with slashes.
+   * The file path is passed directly as URL path segments for short URLs.
    *
    * Accepts both dashboard cookie auth and SDK Bearer auth.
+   */
+  @Public()
+  @UseGuards(DualAuthGuard)
+  @Get('orgs/:orgId/f/*')
+  async fileProxy(@Param('orgId') orgIdRaw: string, @Req() req: Request, @Res() res: Response) {
+    const orgId = dbIdSchema('Org').parse(orgIdRaw);
+    this.verifyOrgAccess(orgId, req, res);
+    if (res.headersSent) return;
+
+    // Extract the wildcard path after /f/
+    const fullPath = req.path;
+    const marker = `/f/`;
+    const markerIdx = fullPath.indexOf(marker);
+    if (markerIdx === -1) {
+      res.status(400).json({ error: 'Invalid path' });
+      return;
+    }
+    const relativePath = decodeURIComponent(fullPath.slice(markerIdx + marker.length));
+    if (relativePath.includes('..')) {
+      res.status(400).json({ error: 'Invalid path' });
+      return;
+    }
+    const key = `${orgId}/${relativePath}`;
+
+    try {
+      const url = await this.storage.getUrl(key);
+      res.redirect(url);
+    } catch {
+      res.status(404).json({ error: 'Not found' });
+    }
+  }
+
+  /**
+   * Legacy storage proxy (base64url-encoded key). Kept for backward compatibility.
    */
   @Public()
   @UseGuards(DualAuthGuard)
@@ -193,8 +227,21 @@ export class DataSourcesController {
     @Res() res: Response
   ) {
     const orgId = dbIdSchema('Org').parse(orgIdRaw);
+    this.verifyOrgAccess(orgId, req, res);
+    if (res.headersSent) return;
 
-    // Verify the caller has access to this org
+    const decoded = Buffer.from(encodedKey, 'base64url').toString('utf-8');
+    const key = decoded.startsWith(`${orgId}/`) ? decoded : `${orgId}/${decoded}`;
+
+    try {
+      const url = await this.storage.getUrl(key);
+      res.redirect(url);
+    } catch {
+      res.status(404).json({ error: 'Not found' });
+    }
+  }
+
+  private verifyOrgAccess(orgId: DbId<'Org'>, req: Request, res: Response): void {
     if (req.user) {
       const orgNum = extractOrgNumericId(orgId);
       const hasMembership = req.user.memberships.some((m) => extractOrgNumericId(m.id) === orgNum);
@@ -209,22 +256,6 @@ export class DataSourcesController {
       }
     } else {
       res.status(401).json({ error: 'Not authenticated' });
-      return;
-    }
-
-    const key = Buffer.from(encodedKey, 'base64url').toString('utf-8');
-
-    // Verify the key belongs to this org (keys start with orgId/)
-    if (!key.startsWith(`${orgId}/`)) {
-      res.status(403).json({ error: 'Forbidden' });
-      return;
-    }
-
-    try {
-      const url = await this.storage.getUrl(key);
-      res.redirect(url);
-    } catch {
-      res.status(404).json({ error: 'Not found' });
     }
   }
 }

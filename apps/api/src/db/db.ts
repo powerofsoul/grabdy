@@ -56,6 +56,14 @@ type ChunkMeta =
   | { type: 'TXT' }
   | { type: 'JSON' }
   | { type: 'IMAGE' }
+  | {
+      type: 'EMAIL';
+      emailFrom: string;
+      emailTo: string[];
+      emailSubject: string;
+      emailDate: string;
+      emailRfcMessageRef: string | null;
+    }
   | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthors: string[] }
   | { type: 'LINEAR'; linearIssueId: string; linearCommentId: string | null }
   | {
@@ -143,20 +151,37 @@ export interface DB {
       | 'JSON'
       | 'XLSX'
       | 'IMAGE'
+      | 'EMAIL'
       | 'SLACK'
       | 'LINEAR'
       | 'GITHUB'
       | 'NOTION';
-    status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED'>;
+    status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED' | 'DELETING'>;
     page_count: number | null;
     collection_id: DbId<'Collection'> | null;
     connection_id: DbId<'Connection'> | null;
     external_id: string | null;
     processing_progress: Generated<number>;
     source_url: string;
+    parent_data_source_id: DbId<'DataSource'> | null;
+    classification: unknown | null;
     uploaded_by_id: DbId<'User'> | null;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
+  };
+
+  'data.extracted_images': {
+    id: Generated<DbId<'ExtractedImage'>>;
+    data_source_id: DbId<'DataSource'>;
+    storage_path: string;
+    mime_type: string;
+    page_number: number | null;
+    ai_description: string | null;
+    width: number | null;
+    height: number | null;
+    file_size: number | null;
+    org_id: DbId<'Org'>;
+    created_at: Generated<Timestamp>;
   };
 
   'data.chunks': {
@@ -167,7 +192,9 @@ export interface DB {
     metadata: ChunkMeta;
     source_url: string | null;
     source_key: string | null;
-    embedding: string;
+    embedding: string | null;
+    embedding_context: string | null;
+    extracted_image_id: DbId<'ExtractedImage'> | null;
     tsv: ColumnType<string, never, never>;
     data_source_id: DbId<'DataSource'>;
     collection_id: DbId<'Collection'> | null;
@@ -223,7 +250,16 @@ export interface DB {
     model: string;
     provider: string;
     caller_type: 'MEMBER' | 'SYSTEM' | 'API_KEY' | 'SDK_JWT';
-    request_type: 'CHAT' | 'EMBEDDING' | 'RERANK' | 'HYDE' | 'SUMMARY';
+    request_type:
+      | 'CHAT'
+      | 'EMBEDDING'
+      | 'RERANK'
+      | 'HYDE'
+      | 'SUMMARY'
+      | 'CLASSIFICATION'
+      | 'ENRICHMENT'
+      | 'IMAGE_ANALYSIS';
+    description: string | null;
     source: 'WEB' | 'SLACK' | 'API' | 'MCP' | 'SYSTEM' | 'SDK';
     input_tokens: Generated<number>;
     output_tokens: Generated<number>;

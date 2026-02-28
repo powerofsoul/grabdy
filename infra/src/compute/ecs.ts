@@ -2,7 +2,7 @@ import * as aws from '@pulumi/aws';
 import * as pulumi from '@pulumi/pulumi';
 
 import { Env } from '../env';
-import { apiCertArn, temporalCertArn } from '../network/certificates';
+import { apiCertArn } from '../network/certificates';
 import { albSg, vpc } from '../network/vpc';
 
 // ─── Cluster ───
@@ -125,72 +125,3 @@ new aws.lb.ListenerRule('grabdy-admin-queues-rule', {
   conditions: [{ pathPattern: { values: ['/admin/queues*'] } }],
 });
 
-// ─── Temporal UI (temporal.grabdy.com behind Cognito) ───
-
-// Attach temporal cert to the existing HTTPS listener
-new aws.lb.ListenerCertificate('grabdy-temporal-listener-cert', {
-  listenerArn: httpsListener.arn,
-  certificateArn: temporalCertArn,
-});
-
-// Update Cognito callback URLs to include temporal domain
-const temporalUserPoolClient = new aws.cognito.UserPoolClient('grabdy-temporal-auth-client', {
-  userPoolId: adminUserPool.id,
-  name: 'temporal-dashboard',
-  generateSecret: true,
-  allowedOauthFlows: ['code'],
-  allowedOauthFlowsUserPoolClient: true,
-  allowedOauthScopes: ['openid'],
-  callbackUrls: [pulumi.interpolate`https://${Env.temporalDomain}/oauth2/idpresponse`],
-  supportedIdentityProviders: ['COGNITO'],
-});
-
-export const temporalUiTargetGroup = new aws.lb.TargetGroup('grabdy-temporal-ui-tg', {
-  port: 8080,
-  protocol: 'HTTP',
-  targetType: 'ip',
-  vpcId: vpc.vpcId,
-  healthCheck: {
-    path: '/',
-    port: '8080',
-    protocol: 'HTTP',
-    healthyThreshold: 2,
-    unhealthyThreshold: 3,
-    interval: 30,
-    timeout: 10,
-  },
-});
-
-new aws.lb.ListenerRule('grabdy-temporal-ui-rule', {
-  listenerArn: httpsListener.arn,
-  priority: 10,
-  actions: [
-    {
-      type: 'authenticate-cognito',
-      authenticateCognito: {
-        userPoolArn: adminUserPool.arn,
-        userPoolClientId: temporalUserPoolClient.id,
-        userPoolDomain: adminUserPoolDomain.domain,
-      },
-      order: 1,
-    },
-    { type: 'forward', targetGroupArn: temporalUiTargetGroup.arn, order: 2 },
-  ],
-  conditions: [{ hostHeader: { values: [Env.temporalDomain] } }],
-});
-
-// DNS record for temporal.grabdy.com -> ALB
-const zone = aws.route53.getZone({ name: Env.domain });
-
-new aws.route53.Record('grabdy-temporal-dns', {
-  zoneId: zone.then((z) => z.zoneId),
-  name: Env.temporalDomain,
-  type: 'A',
-  aliases: [
-    {
-      name: alb.dnsName,
-      zoneId: alb.zoneId,
-      evaluateTargetHealth: true,
-    },
-  ],
-});

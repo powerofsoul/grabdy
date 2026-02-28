@@ -12,6 +12,9 @@ export const AiRequestType = {
   RERANK: 'RERANK',
   HYDE: 'HYDE',
   SUMMARY: 'SUMMARY',
+  CLASSIFICATION: 'CLASSIFICATION',
+  ENRICHMENT: 'ENRICHMENT',
+  IMAGE_ANALYSIS: 'IMAGE_ANALYSIS',
 } as const;
 export type AiRequestType = (typeof AiRequestType)[keyof typeof AiRequestType];
 

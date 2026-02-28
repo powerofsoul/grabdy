@@ -35,6 +35,7 @@ export class AiUsageProcessor extends WorkerHost {
       user_id: data.userId,
       bot_id: data.botId,
       external_user_id: data.externalUser,
+      description: data.description ?? null,
     };
 
     await this.db.kysely.insertInto('analytics.ai_usage_logs').values(values).execute();

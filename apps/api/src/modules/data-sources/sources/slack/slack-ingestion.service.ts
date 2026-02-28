@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { dbIdSchema } from '@grabdy/common';
-import { Activity, ActivityMethod } from 'nestjs-temporal-core';
 
 import { SlackAgent } from '../../../agent/agents/slack-agent';
 import type { SyncedItem } from '../../../integrations/connector.interface';
@@ -11,7 +10,6 @@ import type { SlackChannelTimestamps } from './types';
 import { SLACK_API_URL } from './utils';
 
 @Injectable()
-@Activity()
 export class SlackIngestionService {
   private readonly logger = new Logger(SlackIngestionService.name);
 
@@ -20,7 +18,6 @@ export class SlackIngestionService {
     private slackAgent: SlackAgent
   ) {}
 
-  @ActivityMethod()
   async joinSlackChannels(params: { accessToken: string; channels: string[] }): Promise<void> {
     for (const channel of params.channels) {
       const response = await fetch(`${SLACK_API_URL}/conversations.join`, {
@@ -38,7 +35,6 @@ export class SlackIngestionService {
     }
   }
 
-  @ActivityMethod()
   async fetchSlackMemberChannels(params: {
     accessToken: string;
   }): Promise<Array<{ id: string; name: string }>> {
@@ -46,7 +42,6 @@ export class SlackIngestionService {
     return channels.map((ch) => ({ id: ch.id, name: ch.name }));
   }
 
-  @ActivityMethod()
   async fetchSlackChannelMessages(params: {
     accessToken: string;
     channel: { id: string; name: string };
@@ -63,7 +58,6 @@ export class SlackIngestionService {
     );
   }
 
-  @ActivityMethod()
   async runSlackAgent(params: {
     org: string;
     accessToken: string;
@@ -83,7 +77,6 @@ export class SlackIngestionService {
     });
   }
 
-  @ActivityMethod()
   async postSlackErrorReply(params: {
     accessToken: string;
     channel: string;

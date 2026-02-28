@@ -20,7 +20,7 @@ export class EmbeddingService {
 
   /**
    * Embed chunks in batches and insert into the database.
-   * Shared by all per-type processors and Temporal activities.
+   * Shared by all per-type processors.
    */
   async embedAndStore(
     chunks: ChunkWithMeta[],
@@ -36,9 +36,17 @@ export class EmbeddingService {
       const batchStart = batchIdx * EMBEDDING_BATCH_SIZE;
       const batch = chunks.slice(batchStart, batchStart + EMBEDDING_BATCH_SIZE);
 
+      // Prepend embedding context to content for richer embeddings
+      const textsToEmbed = batch.map((c) => {
+        if (c.embeddingContext) {
+          return `${c.embeddingContext}\n${c.content}`;
+        }
+        return c.content;
+      });
+
       const result = await embedMany({
         model: openai.embedding('text-embedding-3-small'),
-        values: batch.map((c) => c.content),
+        values: textsToEmbed,
       });
 
       const values = batch.map((chunk, idx) => ({
@@ -49,6 +57,8 @@ export class EmbeddingService {
         source_url: chunk.sourceUrl,
         source_key: chunk.sourceKey,
         embedding: `[${result.embeddings[idx].join(',')}]`,
+        embedding_context: chunk.embeddingContext ?? null,
+        extracted_image_id: chunk.extractedImageId ?? null,
         data_source_id: dataSourceId,
         collection_id: collectionId,
         org_id: orgId,
@@ -62,7 +72,8 @@ export class EmbeddingService {
         0,
         AiCallerType.SYSTEM,
         AiRequestType.EMBEDDING,
-        { orgId, source: 'SYSTEM' }
+        { orgId, source: 'SYSTEM' },
+        { description: 'Embed chunks for data source' }
       );
 
       const batchProgress = progressBase + Math.round(((batchIdx + 1) / totalBatches) * 80);

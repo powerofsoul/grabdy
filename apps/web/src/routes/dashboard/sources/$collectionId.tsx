@@ -87,6 +87,11 @@ function CollectionDetailPage() {
       return [];
     },
     enabled: !!selectedOrgId,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (data?.some((ds) => ds.status === 'DELETING' || ds.status === 'PROCESSING')) return 3000;
+      return false;
+    },
   });
 
   const invalidateSources = () => {
@@ -352,7 +357,7 @@ function CollectionDetailPage() {
                       e.stopPropagation();
                       reprocessMutation.mutate(ds);
                     }}
-                    disabled={ds.status === 'PROCESSING'}
+                    disabled={ds.status !== 'READY' && ds.status !== 'FAILED'}
                   >
                     <ArrowsClockwiseIcon size={16} weight="light" />
                   </IconButton>
@@ -365,6 +370,7 @@ function CollectionDetailPage() {
                       setDeleteTarget(ds);
                     }}
                     sx={{ color: 'error.main' }}
+                    disabled={ds.status !== 'READY' && ds.status !== 'FAILED'}
                   >
                     <TrashIcon size={16} weight="light" />
                   </IconButton>

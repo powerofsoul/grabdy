@@ -85,10 +85,6 @@ export const env = {
 
   // KMS (resource identifier, not a secret)
   kmsKeyArn: process.env.KMS_KEY_ARN || '',
-
-  // Temporal
-  temporalAddress: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
-  temporalNamespace: process.env.TEMPORAL_NAMESPACE || 'default',
 } as const;
 
 type EnvKey = keyof typeof env;

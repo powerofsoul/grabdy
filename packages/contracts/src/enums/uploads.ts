@@ -34,6 +34,9 @@ export const UPLOADS_FILE_TYPES = [
   { mime: 'image/jpeg', ext: 'jpg', type: 'IMAGE', label: 'JPEG' },
   { mime: 'image/webp', ext: 'webp', type: 'IMAGE', label: 'WebP' },
   { mime: 'image/gif', ext: 'gif', type: 'IMAGE', label: 'GIF' },
+  { mime: 'message/rfc822', ext: 'eml', type: 'EMAIL', label: 'EML' },
+  { mime: 'application/vnd.ms-outlook', ext: 'msg', type: 'EMAIL', label: 'MSG' },
+  { mime: 'application/vnd.ms-outlook-pst', ext: 'pst', type: 'EMAIL', label: 'PST' },
 ] as const satisfies readonly UploadFileType[];
 
 /** The DataSourceType values that come from file uploads (e.g. 'PDF', 'DOCX', 'IMAGE'). */

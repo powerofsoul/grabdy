@@ -25,6 +25,7 @@ interface UsageExtras {
   durationMs?: number;
   streaming?: boolean;
   finishReason?: string;
+  description?: string;
 }
 
 @Injectable()
@@ -63,6 +64,7 @@ export class AiUsageService {
         streaming: extras?.streaming ?? false,
         botId: context.botId ?? null,
         externalUser: context.externalUser ?? null,
+        description: extras?.description ?? null,
       });
     } catch (error) {
       this.logger.error(`Failed to send AI usage event: ${error}`);

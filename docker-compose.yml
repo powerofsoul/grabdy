@@ -17,40 +17,5 @@ services:
     ports:
       - '6381:6379'
 
-  temporal:
-    image: temporalio/auto-setup:1.26.2
-    container_name: grabdy-temporal
-    depends_on:
-      - postgres
-    environment:
-      DB: postgres12
-      DB_PORT: 5432
-      POSTGRES_USER: user
-      POSTGRES_PWD: password
-      POSTGRES_SEEDS: postgres
-      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
-    volumes:
-      - ./docker/temporal-dynamicconfig:/etc/temporal/config/dynamicconfig
-    ports:
-      - '7233:7233'
-    healthcheck:
-      test: ['CMD-SHELL', 'tctl cluster health || exit 1']
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-
-  temporal-ui:
-    image: temporalio/ui:2.34.0
-    container_name: grabdy-temporal-ui
-    depends_on:
-      temporal:
-        condition: service_healthy
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      TEMPORAL_CORS_ORIGINS: http://localhost:3000
-    ports:
-      - '8080:8080'
-
 volumes:
   pgdata:

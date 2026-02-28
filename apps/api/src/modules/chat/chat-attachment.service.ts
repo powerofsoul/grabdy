@@ -4,13 +4,11 @@ import type { DbId } from '@grabdy/common';
 import type { ChatAttachment } from '@grabdy/contracts';
 import { isUploadsMime } from '@grabdy/contracts';
 import { randomUUID } from 'node:crypto';
-import { unlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { extname, join } from 'node:path';
+import { extname } from 'node:path';
 
 import { CsvExtractor } from '../data-sources/sources/file/extractors/csv.extractor';
 import { DocxExtractor } from '../data-sources/sources/file/extractors/docx.extractor';
-import { PdfExtractor } from '../data-sources/sources/file/extractors/pdf.extractor';
+import { PdfAnnotationExtractor } from '../data-sources/sources/file/extractors/pdf-annotation.extractor';
 import { TextExtractor } from '../data-sources/sources/file/extractors/text.extractor';
 import { XlsxExtractor } from '../data-sources/sources/file/extractors/xlsx.extractor';
 import { S3FileStorage } from '../storage/s3-file-storage';
@@ -28,7 +26,7 @@ export class ChatAttachmentService {
 
   constructor(
     private readonly storage: S3FileStorage,
-    private readonly pdfExtractor: PdfExtractor,
+    private readonly pdfExtractor: PdfAnnotationExtractor,
     private readonly docxExtractor: DocxExtractor,
     private readonly csvExtractor: CsvExtractor,
     private readonly xlsxExtractor: XlsxExtractor,
@@ -157,18 +155,6 @@ export class ChatAttachmentService {
   }
 
   private async extractPdfText(buffer: Buffer): Promise<string> {
-    const tempPath = join(tmpdir(), `grabdy-chat-${Date.now()}-${randomUUID()}.pdf`);
-    try {
-      await writeFile(tempPath, buffer);
-      const pageCount = await this.pdfExtractor.getPageCountFromFile(tempPath);
-      const pages = await this.pdfExtractor.extractPageRangeFromFile(tempPath, 1, pageCount);
-      return pages.map((p) => p.text).join('');
-    } finally {
-      try {
-        await unlink(tempPath);
-      } catch {
-        // Temp file may already be cleaned up
-      }
-    }
+    return this.pdfExtractor.extractAllText(buffer);
   }
 }

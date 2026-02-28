@@ -20,14 +20,11 @@ import type { Tool, ToolCallContext } from '../base-tool';
 // ---------------------------------------------------------------------------
 
 const ragInputSchema = z.object({
-  reasoning: z.string().describe(
-    `Before searching, explain what the user is asking, what you expect to find, and why you chose these search terms. 
-      Be detailed: 3-6 sentences. Don't skip this step. 
-      This is your chance to plan your search strategy and show your work. 
-      The text you write here is NOT part of your final answer, 
-      it is only for your own reasoning and will be visible to the user as a "thinking" message while the search is in progress.
-      You should not mention things like the user will asked for X and you need to search for Y, but rather focus on the core question and what terms or concepts are most relevant to search for AND why you chose them.`
-  ),
+  reasoning: z
+    .string()
+    .describe(
+      'Brief reasoning about what you are searching for and why. Shown to the user as a thinking indicator. Focus on the core question and search terms, not meta-commentary.'
+    ),
   query: z.string().describe('The search query to find relevant documents'),
   topK: z.number().optional().describe('Number of results to return'),
   sourceTypes: z
@@ -46,8 +43,14 @@ const ragOutputSchema = z.object({
       content: z.string(),
       dataSourceId: z.string(),
       dataSourceName: z.string(),
+      type: z.string(),
       sourceUrl: z.string().nullable(),
+      imageUrl: z.string().nullable(),
       score: z.number(),
+      pages: z.array(z.number()).optional(),
+      sheet: z.string().optional(),
+      row: z.number().optional(),
+      columns: z.array(z.string()).optional(),
       contextBefore: z.string().optional(),
       contextAfter: z.string().optional(),
     })
@@ -71,48 +74,14 @@ export class RagSearchTool implements Tool<RagSearchInput, RagSearchOutput> {
   static readonly TOOL_NAME = 'rag-search' as const;
   readonly toolName = RagSearchTool.TOOL_NAME;
 
-  systemPrompt = `## Search strategy
+  systemPrompt = `## Search tips
 
-You are a researcher. Search aggressively. One search is almost never enough.
-
-**Before searching:**
-- Restate what the user is asking in your own words via the \`reasoning\` field. What is the core question?
-- What specific terms, concepts, or keywords should you search for?
-- What alternative phrasings or synonyms might yield better results?
-
-**Query formulation:**
-- Use short, keyword-focused queries (3-6 words). Not full sentences.
-- Try synonyms, related terms, and different phrasings. Example: "draw star" vs "star shape" vs "polygon" vs "five point" vs "plot star" vs "star coordinates".
-- Decompose complex questions into 2-3 sub-queries and search each separately.
-- If results mention terms or concepts you had not considered, search for those too.
-
-**When to keep searching:**
-- Results are partially relevant but do not fully answer the question. Search with different terms.
-- Results mention related concepts, commands, or techniques. Follow up on those.
-- \`searchMeta.suggestion\` is set. Reformulate and try again.
-- You found general info but not the specific detail the user needs. Narrow down.
-- You only did one search. Do at least one more with different terms.
-
-**When to stop:**
-- You have found specific, directly relevant information that answers the question.
-- You have done 3+ searches with varied terms and nothing relevant came back.
-- Additional searches keep returning the same results.
-
-**After results come back:**
-- How many results came back? Are they relevant or off-topic?
-- What is still missing? What gaps remain in your understanding?
-- What new terms or concepts appeared in the results that you should search for next?
-- If you are not 90% sure you have the right information, keep searching.
-- Only after thorough searching should you conclude and move on to formulating your final answer.
-
-**Before your final answer:**
-- Summarize all the facts you gathered across all searches.
-- How do the sources agree or contradict each other?
-- What is your confidence level? Is the answer well-supported or partial?
-
-**Rules:**
-- Never mention scores, metadata field names, internal IDs, or storage keys in your answer text.
-- NEVER put reasoning in your text output. Text output = final answer only.`;
+- Use short keyword queries (3-6 words), not full sentences.
+- If results are insufficient, try synonyms or different terms.
+- For complex questions, decompose into sub-queries.
+- If \`searchMeta.suggestion\` is set, reformulate and try again.
+- Stop when you have a clear answer or when repeated searches return the same results.
+- Never mention scores, metadata fields, or internal IDs in your answer.`;
   private readonly logger = new Logger(RagSearchTool.name);
 
   constructor(private searchService: SearchService) {}
@@ -129,8 +98,8 @@ You are a researcher. Search aggressively. One search is almost never enough.
       .join(', ');
 
     return tool({
-      description: `Search the knowledge base. Each result includes content, contextBefore/contextAfter, dataSourceName, sourceUrl, score, and metadata (${metadataDesc}).
-Pass source data to cite-sources after your answer. NEVER write source names, file names, or URLs in your text output.
+      description: `Search the knowledge base. Each result includes content, contextBefore/contextAfter, dataSourceName, type, sourceUrl, imageUrl, score, and metadata (${metadataDesc}).
+NEVER write source names, file names, or URLs in your text output (except imageUrl for inline images).
 Filter by source type (PDF, SLACK, LINEAR, etc.) or Slack author name.
 searchMeta.suggestion tells you if results have low relevance and you should refine your query.`,
       inputSchema: ragInputSchema.extend({
@@ -174,8 +143,14 @@ searchMeta.suggestion tells you if results have low relevance and you should ref
           content: r.content,
           dataSourceId: r.dataSourceId,
           dataSourceName: r.dataSourceName,
+          type: r.metadata?.type ?? 'TXT',
           sourceUrl: r.sourceUrl,
+          imageUrl: r.imageUrl,
           score: r.score,
+          ...(r.metadata && 'pages' in r.metadata ? { pages: r.metadata.pages } : {}),
+          ...(r.metadata && 'sheet' in r.metadata ? { sheet: r.metadata.sheet } : {}),
+          ...(r.metadata && 'row' in r.metadata ? { row: r.metadata.row } : {}),
+          ...(r.metadata && 'columns' in r.metadata ? { columns: r.metadata.columns } : {}),
           ...(r.contextBefore ? { contextBefore: r.contextBefore } : {}),
           ...(r.contextAfter ? { contextAfter: r.contextAfter } : {}),
         }));

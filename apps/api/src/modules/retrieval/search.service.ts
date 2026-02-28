@@ -44,11 +44,13 @@ const HYDE_LANGUAGE_MODEL = bedrockProvider('google.gemma-3-4b-it');
 export interface SearchResult {
   chunkId: DbId<'Chunk'>;
   content: string;
+  embeddingContext: string | null;
   score: number;
   metadata: ChunkMeta | null;
   dataSourceName: string;
   dataSourceId: DbId<'DataSource'>;
   sourceUrl: string | null;
+  imageUrl: string | null;
   collectionId: DbId<'Collection'> | null;
   contextBefore?: string;
   contextAfter?: string;
@@ -194,7 +196,11 @@ export class SearchService {
     if (options.rerank && results.length > 1) {
       const reranked = await this.aiService.rerank(
         queryText,
-        results.map((r) => ({ id: r.chunkId, content: r.content, vectorScore: r.score })),
+        results.map((r) => ({
+          id: r.chunkId,
+          content: r.embeddingContext ? `${r.embeddingContext}\n${r.content}` : r.content,
+          vectorScore: r.score,
+        })),
         { orgId, userId: options.userId, source: options.source, callerType: options.callerType }
       );
 
@@ -254,9 +260,15 @@ export class SearchService {
     let query = this.db.kysely
       .selectFrom('data.chunks')
       .innerJoin('data.data_sources', 'data.data_sources.id', 'data.chunks.data_source_id')
+      .leftJoin(
+        'data.extracted_images',
+        'data.extracted_images.id',
+        'data.chunks.extracted_image_id'
+      )
       .select([
         'data.chunks.id as chunk_id',
         'data.chunks.content',
+        'data.chunks.embedding_context',
         'data.chunks.metadata',
         'data.chunks.source_url',
         'data.chunks.source_key',
@@ -264,6 +276,7 @@ export class SearchService {
         'data.data_sources.id as data_source_id',
         'data.chunks.collection_id',
         'data.chunks.org_id',
+        'data.extracted_images.storage_path as image_storage_path',
       ])
       .where('data.chunks.org_id', '=', orgId);
 
@@ -297,6 +310,7 @@ export class SearchService {
     rows: Array<{
       chunk_id: DbId<'Chunk'>;
       content: string;
+      embedding_context: string | null;
       score: number;
       metadata: ChunkMeta | null;
       data_source_name: string;
@@ -305,16 +319,19 @@ export class SearchService {
       source_key: string | null;
       collection_id: DbId<'Collection'> | null;
       org_id: DbId<'Org'>;
+      image_storage_path: string | null;
     }>
   ): SearchResult[] {
     return rows.map((r) => ({
       chunkId: r.chunk_id,
       content: r.content,
+      embeddingContext: r.embedding_context,
       score: Number(r.score),
       metadata: r.metadata,
       dataSourceName: r.data_source_name,
       dataSourceId: r.data_source_id,
       sourceUrl: r.source_key ? storageProxyUrl(r.org_id, r.source_key) : r.source_url,
+      imageUrl: r.image_storage_path ? storageProxyUrl(r.org_id, r.image_storage_path) : null,
       collectionId: r.collection_id,
     }));
   }

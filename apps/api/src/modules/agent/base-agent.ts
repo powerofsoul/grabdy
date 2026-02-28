@@ -135,35 +135,7 @@ export abstract class BaseAgent {
 
     const instructions = toolPrompts ? `${opts.instructions}\n\n${toolPrompts}` : opts.instructions;
 
-    const outerPrepareStep = opts.prepareStep;
-    const enforceableHooks = Object.values(hooks ?? {}).filter(
-      (hook): hook is Tool & Required<Pick<Tool, 'mustBeCalled'>> => hook.mustBeCalled != null
-    );
-
-    const prepareStep: PrepareStepFunction | undefined =
-      enforceableHooks.length > 0
-        ? (stepOpts) => {
-            const { steps } = stepOpts;
-
-            const calledToolNames = new Set(
-              steps.flatMap((step) => step.toolCalls.map((tc) => tc.toolName))
-            );
-
-            const needsEnforcement = enforceableHooks.some(
-              (hook) => !calledToolNames.has(hook.toolName) && hook.mustBeCalled(calledToolNames)
-            );
-
-            if (needsEnforcement) {
-              return { toolChoice: 'required' };
-            }
-
-            if (outerPrepareStep) {
-              return outerPrepareStep(stepOpts);
-            }
-
-            return {};
-          }
-        : outerPrepareStep;
+    const prepareStep = opts.prepareStep;
 
     return new ToolLoopAgent({
       id: this.agentId,
@@ -191,7 +163,8 @@ export abstract class BaseAgent {
               source: opts.source,
               botId: opts.botId,
               externalUser: opts.externalUser,
-            }
+            },
+            { description: 'Agent chat step' }
           )
           .catch((err) => this.logger.error(`Usage logging failed: ${err}`));
       },

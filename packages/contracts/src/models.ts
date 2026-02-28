@@ -47,7 +47,7 @@ export const MODEL_INFO = {
     maxOutput: 8192,
     pricing: { inputPerMillion: 0.04, outputPerMillion: 0.08 },
   },
-  'amazon-bedrock/us.amazon.nova-lite-v1:0': {
+  'amazon-bedrock/eu.amazon.nova-lite-v1:0': {
     label: 'Amazon Nova Lite',
     provider: 'Bedrock',
     contextWindow: 300000,
@@ -61,6 +61,13 @@ export const MODEL_INFO = {
     maxOutput: 16384,
     pricing: { inputPerMillion: 0.15, outputPerMillion: 0.6 },
   },
+  'amazon-bedrock/openai.gpt-oss-20b-1:0': {
+    label: 'GPT-OSS 20B',
+    provider: 'Bedrock',
+    contextWindow: 128000,
+    maxOutput: 16384,
+    pricing: { inputPerMillion: 0.03, outputPerMillion: 0.1 },
+  },
 } satisfies Record<string, ModelInfo>;
 
 export type ModelKey = keyof typeof MODEL_INFO;
@@ -71,6 +78,8 @@ export const CHAT_MODEL_VISION: ModelKey =
 export const EMBEDDING_MODEL: ModelKey = 'openai/text-embedding-3-small';
 export const RERANK_MODEL: ModelKey = 'bedrock/cohere.rerank-v3-5:0';
 export const HYDE_MODEL: ModelKey = 'amazon-bedrock/google.gemma-3-4b-it';
+export const ENRICHMENT_MODEL: ModelKey = 'amazon-bedrock/openai.gpt-oss-20b-1:0';
+export const IMAGE_VISION_MODEL: ModelKey = 'amazon-bedrock/eu.amazon.nova-lite-v1:0';
 
 export function calculateCost(model: ModelKey, inputTokens: number, outputTokens: number): number {
   const { pricing } = MODEL_INFO[model];

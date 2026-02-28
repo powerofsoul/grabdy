@@ -4,6 +4,7 @@ import {
   UPLOADS_FILE_TYPES,
 } from '@grabdy/contracts';
 import {
+  EnvelopeIcon,
   FileCsvIcon,
   FileDocIcon,
   FilePdfIcon,
@@ -42,4 +43,7 @@ export const ICON_BY_EXT: Record<UploadsExt, IconComponent> = {
   jpg: ImageIcon,
   webp: ImageIcon,
   gif: ImageIcon,
+  eml: EnvelopeIcon,
+  msg: EnvelopeIcon,
+  pst: EnvelopeIcon,
 };

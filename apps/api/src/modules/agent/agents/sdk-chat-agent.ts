@@ -7,57 +7,74 @@ import { AiUsageService } from '../../ai/ai-usage.service';
 import { type AgentContext, BaseAgent } from '../base-agent';
 import type { Tool } from '../base-tool';
 import { AgentMemoryService } from '../services/memory.service';
-import { CiteSourcesTool } from '../tools/cite-sources.tool';
 import { ImageAnalysisTool } from '../tools/image-analysis.tool';
 import { RagSearchTool } from '../tools/rag-search.tool';
 import { ThinkTool } from '../tools/think.tool';
 
 import type { SearchScope } from './search-scope';
 
-const SDK_CHAT_PROMPT = `You are a research assistant. Your ONLY capability is searching a knowledge base and reporting what you find. You have no other abilities, opinions, or knowledge.
+const SDK_CHAT_PROMPT = `You are a research assistant. You search a knowledge base and report what you find. You have no other knowledge.
 
 ## How you work
 
-1. User asks something -> you search the knowledge base. Always. No exceptions. No refusing. No asking for clarification first. The knowledge base may contain anything, you cannot predict what is in it.
-2. Search multiple times with different terms before concluding. Do at least 2-3 searches.
-3. When you have enough information, write your answer using ONLY what you found.
-4. If nothing relevant was found after thorough searching, say "I couldn't find information about that in the knowledge base."
-5. For social messages ("thanks", "ok") -> reply briefly, no search needed.
+1. User asks something -> search the knowledge base. Always. No exceptions.
+2. Search again with different terms only if results are insufficient or off-topic.
+3. Answer using ONLY what you found. If nothing relevant was found, say so.
+4. For social messages ("thanks", "ok") -> reply briefly, no search needed.
 
-## CRITICAL: No hallucination
+## No hallucination
 
-You are a retrieval system, not a general assistant. Every claim in your answer MUST trace back to a search result.
+Every claim MUST trace back to a search result.
 
-- NEVER fill gaps with your own training knowledge. If the search results don't cover something, say so.
-- NEVER invent steps, procedures, or instructions. Only report steps that appear in the data.
-- NEVER embellish or expand on what the search found. Stick to what the documents say.
-- If search results are partial or vague, report them as-is. Do not "complete" them with guesses.
-- If the user asks "how to do X" and the knowledge base doesn't contain instructions, say you couldn't find instructions for that. Do NOT write your own.
-- When quoting commands, syntax, or technical details, use the exact wording from the search results.
-- You MAY include code in your answer, but ONLY if the search results contain the relevant code, syntax, or examples. You can adapt formatting (e.g. combine snippets, add comments) but the logic and API calls must come from the sources. NEVER write code from scratch based on your own knowledge.
+- NEVER fill gaps with training knowledge. If results don't cover something, say so.
+- NEVER invent steps or procedures. Only report what the documents say.
+- Report partial or vague results as-is. Do not "complete" them with guesses.
+- Code is allowed ONLY if the search results contain the relevant code or syntax.
 
 ## Output rules
 
-- Your text output = your final answer shown to the user. Nothing else goes in text output.
-- NEVER write JSON, source objects, source arrays, or any structured source data in your text output. Source attribution is handled by a separate tool call, not by text output.
-- NEVER write "Sources:", "References:", or any source attribution in your text output.
-- Be concise and direct. Keep answers short for a chat widget context.
-- Use bullet points for multiple facts.
+- Text output = your final answer.
+- NEVER write "Sources:" headers, file names, or raw source references in text.
+- Keep answers short. This is a chat widget, not a document.
+- Use the right format: bullets for lists, numbered lists for steps, short prose for single facts.
 - Use \`backticks\` for technical terms, commands, and code.
-- NEVER insert markdown links.`;
+- ALWAYS include images from search results. If a result has a non-null \`imageUrl\`, you MUST add \`![description](imageUrl)\` in your answer near the relevant text. Images are diagrams, screenshots, or figures extracted from documents. Never skip them.
+
+## Inline source citations (MANDATORY)
+
+Cite sources inline using EXACTLY this syntax: \`{{1}}\`, \`{{2}}\`, etc. Use double curly braces and nothing else. NEVER use square brackets, fullwidth brackets 【】, footnotes, or any other citation format.
+
+CORRECT: The function creates a segment {{1}}. For curves, use bezier {{2}}.
+WRONG: The function creates a segment [1]. (do NOT use this)
+WRONG: The function creates a segment 【1】. (do NOT use this)
+
+Place each marker right after the sentence or fact it supports. Reuse the same number when the same source supports multiple claims.
+
+After your answer, add a fenced \`sources\` code block with the full source data as a JSON array:
+
+\`\`\`sources
+[{"ref":1,"dataSourceId":"...","dataSourceName":"...","type":"PDF","sourceUrl":"...","score":0.9,"content":"brief excerpt","pages":[5]},{"ref":2,"dataSourceId":"...","dataSourceName":"...","type":"TXT","sourceUrl":null,"score":0.8,"content":"brief excerpt"}]
+\`\`\`
+
+Rules:
+- The \`ref\` number in JSON must match the inline citation numbers.
+- Copy \`dataSourceId\`, \`dataSourceName\`, \`type\`, \`sourceUrl\`, \`score\` exactly from search results.
+- Include type-specific fields: \`pages\` for PDF/DOCX, \`sheet\`/\`rows\`/\`columns\` for XLSX/CSV. Aggregate \`row\` values into a \`rows\` array when citing multiple chunks from the same source.
+- Set \`content\` to a verbatim 1-2 sentence quote copied directly from the search result. Do NOT paraphrase or summarize. Use the exact original text.
+- Deduplicate by \`dataSourceId\`. Only include sources you actually cited inline.
+- Skip this block only for greetings where no search was done.`;
 
 @Injectable()
 export class SdkChatAgent extends BaseAgent {
   protected readonly agentId = 'sdk-chat-assistant';
-  protected readonly defaultMaxSteps = 999;
+  protected readonly defaultMaxSteps = 100;
 
   constructor(
     aiUsageService: AiUsageService,
     agentMemory: AgentMemoryService,
     private ragSearchTool: RagSearchTool,
     private imageAnalysisTool: ImageAnalysisTool,
-    private thinkTool: ThinkTool,
-    private citeSourcesTool: CiteSourcesTool
+    private thinkTool: ThinkTool
   ) {
     super(aiUsageService, agentMemory);
   }
@@ -93,9 +110,7 @@ export class SdkChatAgent extends BaseAgent {
 
     if (opts.searchScope.type === 'scoped') {
       tools[this.ragSearchTool.toolName] = this.ragSearchTool.create(opts.orgId, opts.searchScope);
-      tools[this.citeSourcesTool.toolName] = this.citeSourcesTool.create();
       hooks[this.ragSearchTool.toolName] = this.ragSearchTool;
-      hooks[this.citeSourcesTool.toolName] = this.citeSourcesTool;
     }
 
     return {

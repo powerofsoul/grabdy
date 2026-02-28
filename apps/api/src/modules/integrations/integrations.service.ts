@@ -3,11 +3,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { DbId } from '@grabdy/common';
 import { extractOrgNumericId, packId } from '@grabdy/common';
 import type { ConnectionStatus, IntegrationProvider, SyncTrigger } from '@grabdy/contracts';
+import type { Queue } from 'bullmq';
 import { sql } from 'kysely';
-import { TemporalService } from 'nestjs-temporal-core';
 
 import { EncryptionService } from '../../common/encryption/encryption.service';
 import { DbService } from '../../db/db.module';
+import { InjectTypedQueue } from '../../queue/queue.decorators';
 
 import {
   type OAuthTokens,
@@ -37,22 +38,6 @@ interface ConnectionUpdateFields {
   providerData?: ProviderData;
 }
 
-/** Maps integration provider to its Temporal sync workflow name. */
-const PROVIDER_SYNC_WORKFLOW: Record<IntegrationProvider, string> = {
-  SLACK: 'slackSyncWorkflow',
-  NOTION: 'notionSyncWorkflow',
-  LINEAR: 'linearSyncWorkflow',
-  GITHUB: 'githubSyncWorkflow',
-};
-
-/** Maps integration provider to its Temporal webhook item workflow name. */
-const PROVIDER_WEBHOOK_WORKFLOW: Record<IntegrationProvider, string> = {
-  SLACK: 'slackSyncWorkflow', // Slack doesn't do per-item webhooks
-  NOTION: 'notionWebhookItemWorkflow',
-  LINEAR: 'linearWebhookItemWorkflow',
-  GITHUB: 'githubWebhookItemWorkflow',
-};
-
 @Injectable()
 export class IntegrationsService {
   private readonly logger = new Logger(IntegrationsService.name);
@@ -61,7 +46,9 @@ export class IntegrationsService {
     private db: DbService,
     private encryption: EncryptionService,
     private providerRegistry: ProviderRegistry,
-    private temporalService: TemporalService
+    @InjectTypedQueue('integration-sync') private syncQueue: Queue,
+    @InjectTypedQueue('integration-webhook') private webhookQueue: Queue,
+    @InjectTypedQueue('integration-cleanup') private cleanupQueue: Queue
   ) {}
 
   async listConnections(orgId: DbId<'Org'>) {
@@ -256,7 +243,6 @@ export class IntegrationsService {
       this.logger.warn(`Failed to revoke ${provider} tokens for org ${orgId}: ${err}`);
     }
 
-    // Delete the Temporal sync schedule
     await this.deleteSyncSchedule(connection.id);
 
     await this.db.kysely
@@ -279,7 +265,6 @@ export class IntegrationsService {
 
     if (!connection) return false;
 
-    // Delete the Temporal sync schedule before removing the connection
     await this.deleteSyncSchedule(connection.id);
 
     // Delete associated data sources (chunks cascade from data_sources)
@@ -304,13 +289,9 @@ export class IntegrationsService {
     provider: IntegrationProvider,
     trigger: SyncTrigger
   ) {
-    const workflowType = PROVIDER_SYNC_WORKFLOW[provider];
+    await this.syncQueue.add(provider.toLowerCase(), { connectionId, orgId, trigger });
 
-    await this.temporalService.startWorkflow(workflowType, [{ connectionId, orgId, trigger }], {
-      workflowId: `sync-${connectionId}-${Date.now()}`,
-    });
-
-    this.logger.log(`Started ${workflowType} for connection ${connectionId} (${trigger})`);
+    this.logger.log(`Enqueued sync for ${provider} connection ${connectionId} (${trigger})`);
   }
 
   async startWebhookWorkflow(
@@ -319,14 +300,10 @@ export class IntegrationsService {
     provider: IntegrationProvider,
     event: WebhookEvent
   ) {
-    const workflowType = PROVIDER_WEBHOOK_WORKFLOW[provider];
-
-    await this.temporalService.startWorkflow(workflowType, [{ connectionId, orgId, event }], {
-      workflowId: `webhook-${connectionId}-${event.externalId}-${Date.now()}`,
-    });
+    await this.webhookQueue.add(provider.toLowerCase(), { connectionId, orgId, event });
 
     this.logger.log(
-      `Started ${workflowType} for connection ${connectionId}: ${event.action} ${event.externalId}`
+      `Enqueued webhook for ${provider} connection ${connectionId}: ${event.action} ${event.externalId}`
     );
   }
 
@@ -347,7 +324,7 @@ export class IntegrationsService {
   }
 
   /**
-   * Create a Temporal schedule for periodic syncs of a connection.
+   * Create a repeatable BullMQ job for periodic syncs of a connection.
    * Called after OAuth callback when a connection is created.
    */
   async createSyncSchedule(
@@ -358,20 +335,11 @@ export class IntegrationsService {
     const entry = this.providerRegistry.get(provider);
     if (!entry.syncSchedule) return;
 
-    const workflowType = PROVIDER_SYNC_WORKFLOW[provider];
-
-    await this.temporalService.schedule.createSchedule({
-      scheduleId: `sync-schedule-${connectionId}`,
-      spec: {
-        intervals: [{ every: `${Math.round(entry.syncSchedule.every / 1000)}s` }],
-      },
-      action: {
-        type: 'startWorkflow',
-        workflowType,
-        taskQueue: 'grabdy-main',
-        args: [{ connectionId, orgId, trigger: 'SCHEDULED' }],
-      },
-    });
+    await this.syncQueue.add(
+      provider.toLowerCase(),
+      { connectionId, orgId, trigger: 'SCHEDULED' satisfies SyncTrigger },
+      { repeat: { every: entry.syncSchedule.every }, jobId: `sync-schedule-${connectionId}` }
+    );
 
     this.logger.log(
       `Created sync schedule for ${provider} connection ${connectionId} (every ${entry.syncSchedule.every}ms)`
@@ -379,18 +347,19 @@ export class IntegrationsService {
   }
 
   /**
-   * Delete the Temporal schedule for a connection (on disconnect).
+   * Remove the repeatable sync job for a connection (on disconnect).
    */
   async deleteSyncSchedule(connectionId: DbId<'Connection'>) {
     try {
-      const result = await this.temporalService.schedule.getSchedule(
-        `sync-schedule-${connectionId}`
-      );
-      if (result.success && result.handle) {
-        await result.handle.delete();
+      const repeatables = await this.syncQueue.getRepeatableJobs();
+      for (const job of repeatables) {
+        if (job.id === `sync-schedule-${connectionId}`) {
+          await this.syncQueue.removeRepeatableByKey(job.key);
+          break;
+        }
       }
     } catch {
-      // Schedule may not exist, that's fine
+      // Schedule may not exist
     }
   }
 }

@@ -32,6 +32,10 @@ export interface ChunkWithMeta {
   sourceUrl: string | null;
   /** S3 storage key for uploaded files. Null for external sources. */
   sourceKey: string | null;
+  /** Context prepended before embedding (doc type, heading, page). Stored separately from content. */
+  embeddingContext?: string;
+  /** FK to extracted_images table for image-derived chunks. */
+  extractedImageId?: DbId<'ExtractedImage'>;
 }
 
 export function buildSource(data: DataSourceJobData): {
@@ -48,6 +52,10 @@ export function buildSource(data: DataSourceJobData): {
 }
 
 export function storageProxyUrl(orgId: DbId<'Org'>, storagePath: string): string {
-  const encodedKey = Buffer.from(storagePath).toString('base64url');
-  return `${env.apiUrl}/orgs/${orgId}/storage/${encodedKey}`;
+  // Use the storage path directly as URL path segments (strip orgId/ prefix since it's in the URL)
+  const prefix = `${orgId}/`;
+  const relativePath = storagePath.startsWith(prefix)
+    ? storagePath.slice(prefix.length)
+    : storagePath;
+  return `${env.apiUrl}/orgs/${orgId}/f/${relativePath}`;
 }

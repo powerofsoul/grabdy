@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 
-import { TemporalModule as TemporalCoreModule } from 'nestjs-temporal-core';
-
-import { env } from '../../config/env.config';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { StorageModule } from '../storage/storage.module';
 
+import { FileIngestionProcessor } from './processors/file-ingestion.processor';
+import { IntegrationCleanupProcessor } from './processors/integration-cleanup.processor';
+import { IntegrationSyncProcessor } from './processors/integration-sync.processor';
+import { IntegrationWebhookProcessor } from './processors/integration-webhook.processor';
+import { SlackBotProcessor } from './processors/slack-bot.processor';
 import { IntegrationIngestionService } from './services/integration-ingestion.service';
 import { FileIngestionService } from './sources/file/file-ingestion.service';
 import { SlackModule } from './sources/slack/slack.module';
@@ -18,26 +20,16 @@ const ingestionServices = [
   SlackIngestionService,
 ];
 
+const processors = [
+  FileIngestionProcessor,
+  IntegrationSyncProcessor,
+  IntegrationWebhookProcessor,
+  IntegrationCleanupProcessor,
+  SlackBotProcessor,
+];
+
 @Module({
-  imports: [
-    DataSourcesModule,
-    IntegrationsModule,
-    SlackModule,
-    StorageModule,
-    TemporalCoreModule.register({
-      connection: {
-        address: env.temporalAddress,
-        namespace: env.temporalNamespace,
-      },
-      taskQueue: 'grabdy-main',
-      worker: {
-        workflowsPath: require.resolve('./workflows'),
-        activityClasses: ingestionServices,
-        autoStart: true,
-      },
-      isGlobal: true,
-    }),
-  ],
-  providers: ingestionServices,
+  imports: [DataSourcesModule, IntegrationsModule, SlackModule, StorageModule],
+  providers: [...ingestionServices, ...processors],
 })
 export class IngestionModule {}

@@ -4,7 +4,6 @@ import { DbId, dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
 import type { IntegrationProvider } from '@grabdy/contracts';
 import { integrationProviderEnum } from '@grabdy/contracts';
 import type { Queue } from 'bullmq';
-import { Activity, ActivityMethod } from 'nestjs-temporal-core';
 
 import { DbService } from '../../../db/db.module';
 import { InjectTypedQueue } from '../../../queue/queue.decorators';
@@ -21,7 +20,6 @@ import { ProviderRegistry } from '../../integrations/provider-registry';
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
 @Injectable()
-@Activity()
 export class IntegrationIngestionService {
   private readonly logger = new Logger(IntegrationIngestionService.name);
 
@@ -32,7 +30,6 @@ export class IntegrationIngestionService {
     @InjectTypedQueue('data-source-cleanup') private cleanupQueue: Queue
   ) {}
 
-  @ActivityMethod()
   async loadConnectionWithTokens(params: { connectionId: DbId<'Connection'> }): Promise<{
     accessToken: string;
     provider: IntegrationProvider;
@@ -70,7 +67,6 @@ export class IntegrationIngestionService {
     };
   }
 
-  @ActivityMethod()
   async upsertDataSource(params: {
     connectionId: DbId<'Connection'>;
     orgId: DbId<'Org'>;
@@ -137,7 +133,6 @@ export class IntegrationIngestionService {
     return dataSourceId;
   }
 
-  @ActivityMethod()
   async deleteDataSourceByExternalId(params: {
     connectionId: DbId<'Connection'>;
     orgId: DbId<'Org'>;
@@ -169,7 +164,6 @@ export class IntegrationIngestionService {
     }
   }
 
-  @ActivityMethod()
   async updateProviderData(params: {
     connectionId: DbId<'Connection'>;
     providerData: ProviderData;
@@ -180,7 +174,6 @@ export class IntegrationIngestionService {
     });
   }
 
-  @ActivityMethod()
   async updateLastSynced(params: { connectionId: DbId<'Connection'> }): Promise<void> {
     const connectionId = dbIdSchema('Connection').parse(params.connectionId);
     await this.integrationsService.updateConnection(connectionId, {
@@ -188,7 +181,6 @@ export class IntegrationIngestionService {
     });
   }
 
-  @ActivityMethod()
   async markConnectionDisconnected(params: { connectionId: DbId<'Connection'> }): Promise<void> {
     const connectionId = dbIdSchema('Connection').parse(params.connectionId);
     await this.integrationsService.updateConnection(connectionId, {
@@ -196,7 +188,6 @@ export class IntegrationIngestionService {
     });
   }
 
-  @ActivityMethod()
   async runConnectorSync(params: {
     accessToken: string;
     provider: string;
@@ -214,7 +205,6 @@ export class IntegrationIngestionService {
     });
   }
 
-  @ActivityMethod()
   async runWebhookFetchItem(params: {
     accessToken: string;
     provider: string;
@@ -226,7 +216,6 @@ export class IntegrationIngestionService {
     return entry.webhook.fetchItem(params.accessToken, params.providerData, params.event);
   }
 
-  @ActivityMethod()
   async listDataSourcesByConnection(params: {
     connectionId: DbId<'Connection'>;
     orgId: DbId<'Org'>;
@@ -244,7 +233,6 @@ export class IntegrationIngestionService {
     return rows.map((r) => ({ id: r.id, storagePath: r.storage_path }));
   }
 
-  @ActivityMethod()
   async enqueueDataSourceCleanup(params: {
     orgId: DbId<'Org'>;
     dataSources: Array<{ id: string; storagePath: string }>;
@@ -263,7 +251,6 @@ export class IntegrationIngestionService {
     );
   }
 
-  @ActivityMethod()
   async deleteConnection(params: {
     connectionId: DbId<'Connection'>;
     orgId: DbId<'Org'>;

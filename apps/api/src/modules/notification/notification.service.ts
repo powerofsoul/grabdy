@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import type { DbId } from '@grabdy/common';
 import type { Queue } from 'bullmq';
 
 import { InjectTypedQueue } from '../../queue/queue.decorators';
@@ -19,6 +20,18 @@ export class NotificationService {
       })
       .catch((err) => {
         this.logger.error(`Failed to queue signup notification: ${err}`);
+      });
+  }
+
+  notifyS3CleanupFailure(dataSourceId: DbId<'DataSource'>, failureCount: number): void {
+    this.notificationQueue
+      .add('slack', {
+        orgId: null,
+        type: 's3-cleanup-failure',
+        text: `S3 cleanup failed during reprocess of DataSource ${dataSourceId}: ${failureCount} file(s) could not be deleted`,
+      })
+      .catch((err) => {
+        this.logger.error(`Failed to queue S3 cleanup failure notification: ${err}`);
       });
   }
 

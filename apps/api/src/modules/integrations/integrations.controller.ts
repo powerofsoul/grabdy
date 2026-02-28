@@ -344,7 +344,7 @@ export class IntegrationsController {
         createdById: userId,
       });
 
-      // Create Temporal schedule for periodic syncs
+      // Create repeatable job for periodic syncs
       await this.integrationsService.createSyncSchedule(newConnection.id, orgId, validatedProvider);
 
       // Trigger initial sync

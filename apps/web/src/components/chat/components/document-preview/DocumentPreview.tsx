@@ -4,6 +4,7 @@ import Papa from 'papaparse';
 import { read, utils } from 'xlsx';
 
 import { DocxViewer } from './components/DocxViewer';
+import { EmailViewer } from './components/EmailViewer';
 import { JsonViewer } from './components/JsonViewer';
 import { SpreadsheetViewer } from './components/SpreadsheetViewer';
 import { XlsxViewer } from './components/XlsxViewer';
@@ -17,12 +18,19 @@ interface DocumentPreviewProps {
 
 type ContentResult =
   | { kind: 'text'; text: string }
+  | { kind: 'email'; text: string }
   | { kind: 'csv'; rows: string[][] }
   | { kind: 'docx'; blob: Blob }
   | { kind: 'xlsx'; sheets: { name: string; rows: string[][] }[] }
   | { kind: 'none' };
 
 async function fetchContent(url: string, mimeType: string): Promise<ContentResult> {
+  // Email files (.eml) - only RFC822 text format, not binary .msg/.pst
+  if (mimeType === 'message/rfc822') {
+    const res = await fetch(url);
+    if (res.ok) return { kind: 'email', text: await res.text() };
+  }
+
   // Text-based: TXT, JSON
   if (mimeType === 'text/plain' || mimeType === 'application/json') {
     const res = await fetch(url);
@@ -116,6 +124,11 @@ export function DocumentPreview({ url, mimeType, title, page }: DocumentPreviewP
   // XLSX
   if (content?.kind === 'xlsx') {
     return <XlsxViewer sheets={content.sheets} />;
+  }
+
+  // Email
+  if (content?.kind === 'email') {
+    return <EmailViewer content={content.text} />;
   }
 
   // JSON

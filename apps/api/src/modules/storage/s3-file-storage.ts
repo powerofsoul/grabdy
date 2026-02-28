@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import {
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -91,6 +93,34 @@ export class S3FileStorage implements FileStorage {
         Key: key,
       })
     );
+  }
+
+  async deletePrefix(prefix: string): Promise<void> {
+    let continuationToken: string | undefined;
+    do {
+      const list = await this.s3.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        })
+      );
+
+      const objects = list.Contents;
+      if (objects && objects.length > 0) {
+        await this.s3.send(
+          new DeleteObjectsCommand({
+            Bucket: this.bucket,
+            Delete: {
+              Objects: objects.map((o) => ({ Key: o.Key })),
+              Quiet: true,
+            },
+          })
+        );
+      }
+
+      continuationToken = list.IsTruncated ? list.NextContinuationToken : undefined;
+    } while (continuationToken);
   }
 
   async getUrl(key: string): Promise<string> {

@@ -12,7 +12,7 @@ import {
   type ModelKey,
   RERANK_MODEL,
 } from '@grabdy/contracts';
-import { embed, generateText } from 'ai';
+import { embed, generateObject, generateText } from 'ai';
 import { z } from 'zod';
 
 import { RERANK_MAX_DOC_LENGTH } from '../../config/constants';
@@ -25,9 +25,11 @@ export interface AiCallContext {
   userId?: DbId<'User'> | null;
   source: AiRequestSource;
   callerType?: AiCallerType;
+  description?: string;
 }
 
 type GenerateTextParams = Parameters<typeof generateText>[0];
+type GenerateObjectParams = Parameters<typeof generateObject>[0];
 type EmbedParams = Parameters<typeof embed>[0];
 
 interface RerankInput {
@@ -97,12 +99,42 @@ export class AiService {
     return result;
   }
 
+  // ---- Structured object generation ------------------------------------
+
+  async generateObject<P extends GenerateObjectParams>(
+    params: P,
+    model: ModelKey,
+    requestType: AiRequestType,
+    ctx: AiCallContext
+  ) {
+    const start = Date.now();
+    const result = await generateObject(params);
+    const durationMs = Date.now() - start;
+
+    this.logUsage(
+      model,
+      result.usage.inputTokens ?? 0,
+      result.usage.outputTokens ?? 0,
+      requestType,
+      ctx,
+      {
+        durationMs,
+        finishReason: result.finishReason,
+      }
+    );
+
+    return result;
+  }
+
   // ---- Embeddings -----------------------------------------------------
 
   async embed(params: EmbedParams, ctx: AiCallContext): Promise<Awaited<ReturnType<typeof embed>>> {
     const result = await embed(params);
 
-    this.logUsage(EMBEDDING_MODEL, result.usage.tokens, 0, AiRequestTypeEnum.EMBEDDING, ctx);
+    this.logUsage(EMBEDDING_MODEL, result.usage.tokens, 0, AiRequestTypeEnum.EMBEDDING, {
+      ...ctx,
+      description: ctx.description ?? 'Embed query',
+    });
 
     return result;
   }
@@ -154,9 +186,19 @@ export class AiService {
         JSON.parse(new TextDecoder().decode(response.body))
       );
 
-      this.logUsage(RERANK_MODEL, documents.length, 0, AiRequestTypeEnum.RERANK, ctx, {
-        durationMs,
-      });
+      this.logUsage(
+        RERANK_MODEL,
+        documents.length,
+        0,
+        AiRequestTypeEnum.RERANK,
+        {
+          ...ctx,
+          description: ctx.description ?? 'Rerank search results',
+        },
+        {
+          durationMs,
+        }
+      );
 
       // Build score map
       const semanticScores = new Map<number, number>();
@@ -220,7 +262,7 @@ export class AiService {
         ctx.callerType ?? AiCallerTypeEnum.SYSTEM,
         requestType,
         usageCtx,
-        extras
+        { ...extras, description: ctx.description }
       )
       .catch((err) => this.logger.error(`AI usage logging failed: ${err}`));
   }

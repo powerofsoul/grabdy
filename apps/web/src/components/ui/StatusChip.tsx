@@ -14,7 +14,7 @@ interface StatusChipProps {
 
 export function StatusChip({ status, progress }: StatusChipProps) {
   const theme = useTheme();
-  const isProcessing = status === 'PROCESSING';
+  const shouldPulse = status === 'PROCESSING' || status === 'DELETING';
 
   const configMap: Record<DataSourceStatus, { label: string; color: string; bgColor: string }> = {
     UPLOADED: {
@@ -37,6 +37,11 @@ export function StatusChip({ status, progress }: StatusChipProps) {
       color: theme.palette.error.dark,
       bgColor: alpha(theme.palette.error.main, 0.1),
     },
+    DELETING: {
+      label: 'Deleting',
+      color: theme.palette.text.secondary,
+      bgColor: theme.palette.action.hover,
+    },
   };
 
   const config = configMap[status];
@@ -52,12 +57,12 @@ export function StatusChip({ status, progress }: StatusChipProps) {
           border: 'none',
           fontWeight: 500,
           fontSize: '0.75rem',
-          ...(isProcessing && {
+          ...(shouldPulse && {
             animation: `${pulse} 1.5s ease-in-out infinite`,
           }),
         }}
       />
-      {isProcessing && progress != null && progress > 0 && (
+      {status === 'PROCESSING' && progress != null && progress > 0 && (
         <LinearProgress
           variant="determinate"
           value={progress}

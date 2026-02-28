@@ -8,10 +8,13 @@ import { chatAttachmentSchema, MAX_CHAT_ATTACHMENTS } from '../schemas/chat-atta
 const c = initContract();
 
 const chatSourceBase = {
+  ref: z.number().optional(),
   dataSourceId: dbIdSchema('DataSource'),
   dataSourceName: z.string(),
   score: z.number(),
   sourceUrl: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
+  content: z.string().optional(),
 };
 
 export const chatSourceSchema = z.discriminatedUnion('type', [
@@ -19,13 +22,11 @@ export const chatSourceSchema = z.discriminatedUnion('type', [
     ...chatSourceBase,
     type: z.literal('PDF'),
     pages: z.array(z.number()),
-    content: z.string().optional(),
   }),
   z.object({
     ...chatSourceBase,
     type: z.literal('DOCX'),
     pages: z.array(z.number()),
-    content: z.string().optional(),
   }),
   z.object({
     ...chatSourceBase,
@@ -43,6 +44,7 @@ export const chatSourceSchema = z.discriminatedUnion('type', [
   z.object({ ...chatSourceBase, type: z.literal('TXT') }),
   z.object({ ...chatSourceBase, type: z.literal('JSON') }),
   z.object({ ...chatSourceBase, type: z.literal('IMAGE') }),
+  z.object({ ...chatSourceBase, type: z.literal('EMAIL') }),
   z.object({ ...chatSourceBase, type: z.literal('SLACK') }),
   z.object({ ...chatSourceBase, type: z.literal('LINEAR') }),
   z.object({ ...chatSourceBase, type: z.literal('GITHUB') }),

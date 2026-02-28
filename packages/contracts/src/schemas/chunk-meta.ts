@@ -31,6 +31,15 @@ const txtChunkMetaSchema = z.object({ type: z.literal('TXT') });
 const jsonChunkMetaSchema = z.object({ type: z.literal('JSON') });
 const imageChunkMetaSchema = z.object({ type: z.literal('IMAGE') });
 
+const emailChunkMetaSchema = z.object({
+  type: z.literal('EMAIL'),
+  emailFrom: z.string(),
+  emailTo: z.array(z.string()),
+  emailSubject: z.string(),
+  emailDate: z.string(),
+  emailRfcMessageRef: z.string().nullable(),
+});
+
 // Integration types — location within external system
 const slackChunkMetaSchema = z.object({
   type: z.literal('SLACK'),
@@ -66,6 +75,7 @@ export const chunkMetaSchema = z.discriminatedUnion('type', [
   txtChunkMetaSchema,
   jsonChunkMetaSchema,
   imageChunkMetaSchema,
+  emailChunkMetaSchema,
   slackChunkMetaSchema,
   linearChunkMetaSchema,
   githubChunkMetaSchema,
@@ -100,6 +110,7 @@ export const CHUNK_META_DESCRIPTIONS: Record<DataSourceType, string> = {
   TXT: '{ type }',
   JSON: '{ type }',
   IMAGE: '{ type }',
+  EMAIL: '{ type, emailFrom, emailTo[], emailSubject, emailDate, emailRfcMessageRef }',
   SLACK: '{ type, slackAuthors[] }',
   LINEAR: '{ type }',
   GITHUB: '{ type, githubItemType (issue|pull_request|discussion) }',
