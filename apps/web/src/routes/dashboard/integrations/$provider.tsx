@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { integrationProviderEnum } from '@grabdy/contracts';
-import { Box, Button, CircularProgress, Typography, useTheme } from '@mui/material';
+import { Box, Button, Typography, useTheme } from '@mui/material';
 import { ClockIcon, PlugIcon, PlugsConnectedIcon, TrashIcon } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
@@ -15,6 +15,7 @@ import {
   StatusChip,
 } from '@/components/integrations/provider-detail';
 import { DashboardPage } from '@/components/ui/DashboardPage';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
@@ -134,9 +135,7 @@ function IntegrationDetailPage() {
         showBack
         icon={<ProviderIcon provider={provider} size={22} />}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress size={32} />
-        </Box>
+        <PageLoader />
       </DashboardPage>
     );
   }

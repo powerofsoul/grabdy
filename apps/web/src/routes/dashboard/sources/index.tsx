@@ -4,7 +4,6 @@ import {
   alpha,
   Box,
   Button,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -19,6 +18,7 @@ import { toast } from 'sonner';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { FONT_MONO } from '@/theme';
@@ -90,11 +90,7 @@ function CollectionsPage() {
   };
 
   if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoader />;
   }
 
   return (

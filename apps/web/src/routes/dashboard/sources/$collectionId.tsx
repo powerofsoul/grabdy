@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { dbIdSchema } from '@grabdy/common';
-import { Box, Button, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
+import { Box, Button, IconButton, Tooltip, Typography } from '@mui/material';
 import {
   ArrowsClockwiseIcon,
   DatabaseIcon,
@@ -23,6 +23,7 @@ import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { MainTable } from '@/components/ui/main-table';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
@@ -210,11 +211,7 @@ function CollectionDetailPage() {
   const isLoading = isCollectionLoading || isSourcesLoading;
 
   if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoader />;
   }
 
   if (!collection) {

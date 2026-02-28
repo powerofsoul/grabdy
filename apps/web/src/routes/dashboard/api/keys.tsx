@@ -9,7 +9,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   FormControlLabel,
   Switch,
   TextField,
@@ -26,6 +25,7 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { MainTable } from '@/components/ui/main-table';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { type DrawerProps, useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
@@ -198,9 +198,7 @@ function ApiKeysPage() {
   if (isLoading) {
     return (
       <DashboardPage title="API Keys">
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <PageLoader />
       </DashboardPage>
     );
   }

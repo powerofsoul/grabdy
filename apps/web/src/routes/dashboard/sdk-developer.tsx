@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Box, CircularProgress, MenuItem, TextField } from '@mui/material';
+import { MenuItem, TextField } from '@mui/material';
 import { ChatCircleDotsIcon } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
@@ -9,6 +9,7 @@ import { DeveloperDocs } from './bots/DeveloperDocs';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
@@ -39,9 +40,7 @@ function SdkDeveloperPage() {
   if (isLoading) {
     return (
       <DashboardPage title="SDK Developer Docs" maxWidth={800}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <PageLoader />
       </DashboardPage>
     );
   }

@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   FormControl,
   IconButton,
   MenuItem,
@@ -21,6 +20,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { MainTable } from '@/components/ui/main-table';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
@@ -159,11 +159,7 @@ function MembersPage() {
   };
 
   if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoader />;
   }
 
   const isCurrentUser = (member: Member) => member.userId === user?.id;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
-import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 import { ChatCircleIcon, PlusIcon } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { MainTable } from '@/components/ui/main-table';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
@@ -84,9 +85,7 @@ function BotsPage() {
   if (isLoading) {
     return (
       <DashboardPage title="Bots">
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <PageLoader />
       </DashboardPage>
     );
   }

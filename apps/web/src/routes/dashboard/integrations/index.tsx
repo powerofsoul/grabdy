@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import type { IntegrationProvider } from '@grabdy/contracts';
 import { integrationProviderEnum } from '@grabdy/contracts';
-import { Box, CircularProgress } from '@mui/material';
 import { PlugIcon } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
@@ -12,6 +11,7 @@ import { z } from 'zod';
 import type { ProviderKey } from '@/components/integrations';
 import { IntegrationGrid } from '@/components/integrations';
 import { DashboardPage } from '@/components/ui/DashboardPage';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
@@ -110,9 +110,7 @@ function IntegrationsPage() {
       icon={<PlugIcon size={22} weight="light" color="currentColor" />}
     >
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress size={32} />
-        </Box>
+        <PageLoader />
       ) : (
         <IntegrationGrid
           connections={connections ?? []}

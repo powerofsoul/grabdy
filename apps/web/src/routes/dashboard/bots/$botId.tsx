@@ -4,7 +4,6 @@ import { dbIdSchema } from '@grabdy/common';
 import {
   alpha,
   Box,
-  CircularProgress,
   IconButton,
   Tab,
   Tabs,
@@ -24,6 +23,7 @@ import type { BotAppearance } from './types';
 
 import { ChatPanel } from '@/components/chat';
 import { DashboardPage } from '@/components/ui/DashboardPage';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
@@ -81,9 +81,7 @@ function BotDetailPage() {
   if (isLoading || !bot) {
     return (
       <DashboardPage title="Bot" showBack>
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <PageLoader />
       </DashboardPage>
     );
   }
