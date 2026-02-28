@@ -9,7 +9,6 @@ const usageSummarySchema = z.object({
   totalInputTokens: z.number(),
   totalOutputTokens: z.number(),
   totalTokens: z.number(),
-  totalCost: z.number(),
 });
 
 const dailyUsageSchema = z.object({
@@ -18,32 +17,6 @@ const dailyUsageSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   totalTokens: z.number(),
-  cost: z.number(),
-});
-
-const modelBreakdownSchema = z.object({
-  model: z.string(),
-  provider: z.string(),
-  requests: z.number(),
-  inputTokens: z.number(),
-  outputTokens: z.number(),
-  totalTokens: z.number(),
-  cost: z.number(),
-});
-
-const requestTypeBreakdownSchema = z.object({
-  requestType: z.string(),
-  requests: z.number(),
-  totalTokens: z.number(),
-});
-
-const sourceBreakdownSchema = z.object({
-  source: z.string(),
-  requests: z.number(),
-  inputTokens: z.number(),
-  outputTokens: z.number(),
-  totalTokens: z.number(),
-  cost: z.number(),
 });
 
 const memberBreakdownSchema = z.object({
@@ -53,7 +26,14 @@ const memberBreakdownSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   totalTokens: z.number(),
-  cost: z.number(),
+});
+
+const sourceBreakdownSchema = z.object({
+  source: z.string(),
+  requests: z.number(),
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  totalTokens: z.number(),
 });
 
 export const analyticsContract = c.router(
@@ -71,10 +51,8 @@ export const analyticsContract = c.router(
           data: z.object({
             summary: usageSummarySchema,
             daily: z.array(dailyUsageSchema),
-            byModel: z.array(modelBreakdownSchema),
-            byRequestType: z.array(requestTypeBreakdownSchema),
-            bySource: z.array(sourceBreakdownSchema),
             byMember: z.array(memberBreakdownSchema),
+            bySource: z.array(sourceBreakdownSchema),
           }),
         }),
       },

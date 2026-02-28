@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 
 import { type DbId, dbIdSchema, extractOrgNumericId, GLOBAL_ORG, packId } from '@grabdy/common';
 import type { OrgRole } from '@grabdy/contracts';
@@ -8,6 +8,7 @@ import * as crypto from 'crypto';
 import { Public } from '../../common/decorators/public.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { DbService } from '../../db/db.module';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { EmailService } from '../email/email.service';
 
 import { AdminApiKeyGuard } from './admin-api-key.guard';
@@ -40,7 +41,8 @@ interface AddMemberBody {
 export class AdminController {
   constructor(
     private db: DbService,
-    private emailService: EmailService
+    private emailService: EmailService,
+    private analyticsService: AnalyticsService
   ) {}
 
   /**
@@ -371,5 +373,16 @@ export class AdminController {
         roles: membership.roles,
       },
     };
+  }
+
+  /**
+   * Get global AI usage with cost breakdown across all orgs. Internal only.
+   */
+  @Get('usage')
+  async getGlobalUsage(@Query('days') daysParam?: string) {
+    const days = Math.min(Math.max(Number(daysParam) || 30, 1), 90);
+    const data = await this.analyticsService.getGlobalUsageWithCost(days);
+
+    return { success: true, data };
   }
 }

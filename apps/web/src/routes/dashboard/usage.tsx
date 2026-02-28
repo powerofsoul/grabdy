@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import {
   alpha,
@@ -8,9 +8,11 @@ import {
   LinearProgress,
   MenuItem,
   Select,
+  Stack,
   Typography,
   useTheme,
 } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -19,67 +21,6 @@ import { MainTable } from '@/components/ui/main-table';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { FONT_MONO } from '@/theme';
-
-interface UsageSummary {
-  totalRequests: number;
-  totalInputTokens: number;
-  totalOutputTokens: number;
-  totalTokens: number;
-  totalCost: number;
-}
-
-interface DailyUsage {
-  date: string;
-  requests: number;
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  cost: number;
-}
-
-interface ModelBreakdown {
-  model: string;
-  provider: string;
-  requests: number;
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  cost: number;
-}
-
-interface RequestTypeBreakdown {
-  requestType: string;
-  requests: number;
-  totalTokens: number;
-}
-
-interface SourceBreakdown {
-  source: string;
-  requests: number;
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  cost: number;
-}
-
-interface MemberBreakdown {
-  userId: string | null;
-  userName: string;
-  requests: number;
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  cost: number;
-}
-
-interface UsageData {
-  summary: UsageSummary;
-  daily: DailyUsage[];
-  byModel: ModelBreakdown[];
-  byRequestType: RequestTypeBreakdown[];
-  bySource: SourceBreakdown[];
-  byMember: MemberBreakdown[];
-}
 
 export const Route = createFileRoute('/dashboard/usage')({
   component: UsagePage,
@@ -91,9 +32,9 @@ function formatNumber(n: number): string {
   return n.toString();
 }
 
-function formatCost(n: number): string {
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-  return `$${n.toFixed(2)}`;
+interface DailyUsage {
+  date: string;
+  totalTokens: number;
 }
 
 function DailyChart({ data }: { data: DailyUsage[] }) {
@@ -135,10 +76,7 @@ function DailyChart({ data }: { data: DailyUsage[] }) {
             fontSize: 13,
             boxShadow: 'none',
           }}
-          formatter={(value, _name, entry) => {
-            const cost = (entry.payload as DailyUsage).cost;
-            return [`${formatNumber(Number(value))} (${formatCost(cost)})`, 'Tokens'];
-          }}
+          formatter={(value) => [formatNumber(Number(value)), 'Tokens']}
           labelStyle={{ fontWeight: 600, marginBottom: 4 }}
           cursor={{ fill: alpha(theme.palette.text.primary, 0.04) }}
         />
@@ -148,36 +86,32 @@ function DailyChart({ data }: { data: DailyUsage[] }) {
   );
 }
 
+const statSx = {
+  fontFamily: FONT_MONO,
+  fontSize: { xs: '1.75rem', sm: '2.25rem', md: '3rem' },
+  fontWeight: 400,
+  lineHeight: 1,
+  letterSpacing: '0.05em',
+  color: 'text.primary',
+};
+
 function UsagePage() {
-  const theme = useTheme();
   const { selectedOrgId } = useAuth();
-  const [data, setData] = useState<UsageData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
 
-  const fetchUsage = useCallback(async () => {
-    if (!selectedOrgId) return;
-    setLoading(true);
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ['usage', selectedOrgId, days],
+    queryFn: async () => {
+      if (!selectedOrgId) return null;
       const res = await api.analytics.getUsageSummary({
         params: { orgId: selectedOrgId },
         query: { days },
       });
-      if (res.status === 200) {
-        setData(res.body.data);
-      }
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedOrgId, days]);
-
-  useEffect(() => {
-    fetchUsage();
-  }, [fetchUsage]);
-
-  const ct = theme.palette.text.primary;
+      if (res.status === 200) return res.body.data;
+      return null;
+    },
+    enabled: !!selectedOrgId,
+  });
 
   return (
     <DashboardPage
@@ -194,102 +128,45 @@ function UsagePage() {
         </FormControl>
       }
     >
-      {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {isLoading && <LinearProgress sx={{ mb: 2 }} />}
 
       {data && (
         <>
-          {/* Summary — floating mono numbers with separators */}
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 4, mb: 4 }}>
-            <Box>
-              <Typography
-                sx={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '3rem',
-                  fontWeight: 400,
-                  lineHeight: 1,
-                  letterSpacing: '0.05em',
-                  color: 'text.primary',
-                }}
-              >
-                {formatNumber(data.summary.totalRequests)}
-              </Typography>
+          {/* Summary stats */}
+          <Stack
+            direction="row"
+            sx={{
+              mb: 4,
+              gap: { xs: 2, sm: 3, md: 4 },
+              flexWrap: 'wrap',
+              alignItems: 'baseline',
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={statSx}>{formatNumber(data.summary.totalRequests)}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 Total Requests
               </Typography>
             </Box>
-            <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
-            <Box>
-              <Typography
-                sx={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '3rem',
-                  fontWeight: 400,
-                  lineHeight: 1,
-                  letterSpacing: '0.05em',
-                  color: 'text.primary',
-                }}
-              >
-                {formatNumber(data.summary.totalTokens)}
-              </Typography>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={statSx}>{formatNumber(data.summary.totalTokens)}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 Total Tokens
               </Typography>
             </Box>
-            <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
-            <Box>
-              <Typography
-                sx={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '3rem',
-                  fontWeight: 400,
-                  lineHeight: 1,
-                  letterSpacing: '0.05em',
-                  color: 'text.primary',
-                }}
-              >
-                {formatNumber(data.summary.totalInputTokens)}
-              </Typography>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={statSx}>{formatNumber(data.summary.totalInputTokens)}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 Input Tokens
               </Typography>
             </Box>
-            <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
-            <Box>
-              <Typography
-                sx={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '3rem',
-                  fontWeight: 400,
-                  lineHeight: 1,
-                  letterSpacing: '0.05em',
-                  color: 'text.primary',
-                }}
-              >
-                {formatNumber(data.summary.totalOutputTokens)}
-              </Typography>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={statSx}>{formatNumber(data.summary.totalOutputTokens)}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 Output Tokens
               </Typography>
             </Box>
-            <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
-            <Box>
-              <Typography
-                sx={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '3rem',
-                  fontWeight: 400,
-                  lineHeight: 1,
-                  letterSpacing: '0.05em',
-                  color: 'text.primary',
-                }}
-              >
-                {formatCost(data.summary.totalCost)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Total Cost
-              </Typography>
-            </Box>
-          </Box>
+          </Stack>
 
           {/* Daily usage chart */}
           <Box sx={{ mb: 4 }}>
@@ -299,139 +176,8 @@ function UsagePage() {
             <DailyChart data={data.daily} />
           </Box>
 
-          {/* By Model */}
-          <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            Usage by Model
-          </Typography>
-          <MainTable
-            data={data.byModel}
-            headerNames={{
-              model: 'Model',
-              requests: 'Requests',
-              input: 'Input',
-              output: 'Output',
-              total: 'Total',
-              cost: 'Cost',
-            }}
-            rowTitle={(row) => row.model}
-            keyExtractor={(row) => row.model}
-            renderItems={{
-              model: (row) => (
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {row.model}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {row.provider}
-                  </Typography>
-                </Box>
-              ),
-              requests: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatNumber(row.requests)}
-                </Typography>
-              ),
-              input: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatNumber(row.inputTokens)}
-                </Typography>
-              ),
-              output: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatNumber(row.outputTokens)}
-                </Typography>
-              ),
-              total: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatNumber(row.totalTokens)}
-                </Typography>
-              ),
-              cost: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatCost(row.cost)}
-                </Typography>
-              ),
-            }}
-            sorting={{
-              sortableColumns: ['requests', 'input', 'output', 'total', 'cost'] as const,
-              defaultSort: 'total',
-              defaultDirection: 'desc',
-              getSortValue: (row, col) => {
-                if (col === 'requests') return row.requests;
-                if (col === 'input') return row.inputTokens;
-                if (col === 'output') return row.outputTokens;
-                if (col === 'total') return row.totalTokens;
-                if (col === 'cost') return row.cost;
-                return null;
-              },
-            }}
-          />
-
-          {/* By Source */}
-          <Typography variant="subtitle1" sx={{ mt: 4, mb: 2 }}>
-            Usage by Source
-          </Typography>
-          <MainTable
-            data={data.bySource}
-            headerNames={{
-              source: 'Source',
-              requests: 'Requests',
-              input: 'Input',
-              output: 'Output',
-              total: 'Total',
-              cost: 'Cost',
-            }}
-            rowTitle={(row) => row.source}
-            keyExtractor={(row) => row.source}
-            renderItems={{
-              source: (row) => (
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {row.source}
-                </Typography>
-              ),
-              requests: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatNumber(row.requests)}
-                </Typography>
-              ),
-              input: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatNumber(row.inputTokens)}
-                </Typography>
-              ),
-              output: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatNumber(row.outputTokens)}
-                </Typography>
-              ),
-              total: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatNumber(row.totalTokens)}
-                </Typography>
-              ),
-              cost: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatCost(row.cost)}
-                </Typography>
-              ),
-            }}
-            sorting={{
-              sortableColumns: ['requests', 'input', 'output', 'total', 'cost'] as const,
-              defaultSort: 'total',
-              defaultDirection: 'desc',
-              getSortValue: (row, col) => {
-                if (col === 'requests') return row.requests;
-                if (col === 'input') return row.inputTokens;
-                if (col === 'output') return row.outputTokens;
-                if (col === 'total') return row.totalTokens;
-                if (col === 'cost') return row.cost;
-                return null;
-              },
-            }}
-          />
-
           {/* By Member */}
-          <Typography variant="subtitle1" sx={{ mt: 4, mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ mb: 2 }}>
             Usage by Member
           </Typography>
           <MainTable
@@ -442,7 +188,6 @@ function UsagePage() {
               input: 'Input',
               output: 'Output',
               total: 'Total',
-              cost: 'Cost',
             }}
             rowTitle={(row) => row.userName}
             keyExtractor={(row) => row.userId ?? 'system'}
@@ -472,14 +217,9 @@ function UsagePage() {
                   {formatNumber(row.totalTokens)}
                 </Typography>
               ),
-              cost: (row) => (
-                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
-                  {formatCost(row.cost)}
-                </Typography>
-              ),
             }}
             sorting={{
-              sortableColumns: ['requests', 'input', 'output', 'total', 'cost'] as const,
+              sortableColumns: ['requests', 'input', 'output', 'total'] as const,
               defaultSort: 'total',
               defaultDirection: 'desc',
               getSortValue: (row, col) => {
@@ -487,29 +227,30 @@ function UsagePage() {
                 if (col === 'input') return row.inputTokens;
                 if (col === 'output') return row.outputTokens;
                 if (col === 'total') return row.totalTokens;
-                if (col === 'cost') return row.cost;
                 return null;
               },
             }}
           />
 
-          {/* By Request Type */}
+          {/* By Source */}
           <Typography variant="subtitle1" sx={{ mt: 4, mb: 2 }}>
-            Usage by Type
+            Usage by Channel
           </Typography>
           <MainTable
-            data={data.byRequestType}
+            data={data.bySource}
             headerNames={{
-              type: 'Type',
+              source: 'Channel',
               requests: 'Requests',
-              tokens: 'Tokens',
+              input: 'Input',
+              output: 'Output',
+              total: 'Total',
             }}
-            rowTitle={(row) => row.requestType}
-            keyExtractor={(row) => row.requestType}
+            rowTitle={(row) => row.source}
+            keyExtractor={(row) => row.source}
             renderItems={{
-              type: (row) => (
+              source: (row) => (
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {row.requestType}
+                  {row.source}
                 </Typography>
               ),
               requests: (row) => (
@@ -517,19 +258,31 @@ function UsagePage() {
                   {formatNumber(row.requests)}
                 </Typography>
               ),
-              tokens: (row) => (
+              input: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatNumber(row.inputTokens)}
+                </Typography>
+              ),
+              output: (row) => (
+                <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
+                  {formatNumber(row.outputTokens)}
+                </Typography>
+              ),
+              total: (row) => (
                 <Typography variant="body2" sx={{ fontFamily: FONT_MONO }}>
                   {formatNumber(row.totalTokens)}
                 </Typography>
               ),
             }}
             sorting={{
-              sortableColumns: ['requests', 'tokens'] as const,
-              defaultSort: 'requests',
+              sortableColumns: ['requests', 'input', 'output', 'total'] as const,
+              defaultSort: 'total',
               defaultDirection: 'desc',
               getSortValue: (row, col) => {
                 if (col === 'requests') return row.requests;
-                if (col === 'tokens') return row.totalTokens;
+                if (col === 'input') return row.inputTokens;
+                if (col === 'output') return row.outputTokens;
+                if (col === 'total') return row.totalTokens;
                 return null;
               },
             }}
