@@ -7,6 +7,8 @@ import { FONT_MONO } from '@/theme';
  * Dark code blocks with GitHub-style syntax highlighting.
  */
 export const markdownStyles: SxProps<Theme> = {
+  overflowWrap: 'break-word',
+  wordBreak: 'break-word',
   '& p': { m: 0, fontSize: '0.82rem', lineHeight: 1.6 },
   '& p + p': { mt: 1 },
   '& ul, & ol': { m: 0, pl: 2.5, my: 1 },
