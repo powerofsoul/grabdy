@@ -26,6 +26,7 @@ import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 import { InjectTypedQueue } from '../../queue/queue.decorators';
 import { RedisService } from '../../redis/redis.module';
+import { BillingService } from '../billing/billing.service';
 
 const pendingSignupSchema = z.object({
   passwordHash: z.string(),
@@ -96,6 +97,7 @@ export class AuthService {
     private jwtService: JwtService,
     private emailService: EmailService,
     private notificationService: NotificationService,
+    private billingService: BillingService,
     @InjectTypedQueue('email') private emailQueue: Queue,
     @InjectEnv('jwtSecret') private readonly jwtSecret: string,
     @InjectEnv('googleClientId') private readonly googleClientId: string
@@ -273,12 +275,20 @@ export class AuthService {
         })
         .execute();
 
-      return { user: newUser };
+      return { user: newUser, org: newOrg };
     });
 
     // Clean up Redis keys
     await this.redis.del(redisKeys.pendingSignup(normalizedEmail));
     await this.redis.del(redisKeys.signupRate(normalizedEmail));
+
+    try {
+      await this.billingService.ensureStripeCustomer(result.org.id);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to create Stripe customer for org ${result.org.id}: ${err instanceof Error ? err.message : 'unknown'}`
+      );
+    }
 
     const memberships = await this.getUserMemberships(result.user.id);
     const jwtToken = this.generateToken({
@@ -477,6 +487,14 @@ export class AuthService {
 
       return { user: newUser, org: newOrg };
     });
+
+    try {
+      await this.billingService.ensureStripeCustomer(result.org.id);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to create Stripe customer for org ${result.org.id}: ${err instanceof Error ? err.message : 'unknown'}`
+      );
+    }
 
     const memberships = await this.getUserMemberships(result.user.id);
     const jwtToken = this.generateToken({

@@ -76,6 +76,13 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - Keep TypeScript model names in PascalCase, field names in camelCase.
 - **NEVER modify existing migration files.** Production has already run them. Always create a new migration for schema changes.
 
+### Error Handling - CRITICAL
+
+- **NEVER expose internal error details (stack traces, DB errors, config info) to users in production.** Error messages returned in API responses must be generic and user-friendly (e.g., "Something went wrong", "Billing is not available").
+- **NEVER catch errors in controllers just to re-throw or wrap them.** Let exceptions propagate to `GlobalExceptionFilter`, which handles logging and safe responses. Only catch in controllers when you need to return a different success response (e.g., fallback data).
+- **Log the full error server-side** using `{ err: exception }` as the first pino arg so stack traces appear in logs.
+- `GlobalExceptionFilter` adds a `debug` field with message and stack trace only when `NODE_ENV !== 'production'`.
+
 ### NestJS
 
 - **NEVER make injected services optional.**

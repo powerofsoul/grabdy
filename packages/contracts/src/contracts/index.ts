@@ -3,6 +3,7 @@ import { initContract } from '@ts-rest/core';
 import { analyticsContract } from './analytics.contract.js';
 import { apiKeysContract } from './api-keys.contract.js';
 import { authContract } from './auth.contract.js';
+import { billingContract } from './billing.contract.js';
 import { botsContract } from './bots.contract.js';
 import { chatContract, streamChatBodySchema } from './chat.contract.js';
 import { collectionsContract } from './collections.contract.js';
@@ -19,6 +20,7 @@ const c = initContract();
 export const contract = c.router({
   analytics: analyticsContract,
   auth: authContract,
+  billing: billingContract,
   orgs: orgsContract,
   collections: collectionsContract,
   dataSources: dataSourcesContract,
@@ -35,6 +37,7 @@ export {
   analyticsContract,
   apiKeysContract,
   authContract,
+  billingContract,
   botsContract,
   chatContract,
   collectionsContract,

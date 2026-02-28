@@ -27,6 +27,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { BotModule } from './modules/bot/bot.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CollectionsModule } from './modules/collections/collections.module';
@@ -81,6 +82,7 @@ import { RedisModule } from './redis/redis.module';
     IngestionModule,
     AdminModule,
     AgentModule,
+    BillingModule,
     AiModule,
     AnalyticsModule,
     EmailModule,

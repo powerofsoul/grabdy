@@ -24,6 +24,7 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settin
 import { Route as DashboardSdkDeveloperRouteImport } from './routes/dashboard/sdk-developer'
 import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
 import { Route as DashboardChatRouteImport } from './routes/dashboard/chat'
+import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
@@ -113,6 +114,11 @@ const DashboardMembersRoute = DashboardMembersRouteImport.update({
 const DashboardChatRoute = DashboardChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardBillingRoute = DashboardBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => DashboardRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/chat': typeof DashboardChatRouteWithChildren
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/sdk-developer': typeof DashboardSdkDeveloperRoute
@@ -238,6 +245,7 @@ export interface FileRoutesByTo {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/sdk-developer': typeof DashboardSdkDeveloperRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/chat': typeof DashboardChatRouteWithChildren
   '/dashboard/members': typeof DashboardMembersRoute
   '/dashboard/sdk-developer': typeof DashboardSdkDeveloperRoute
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/signup'
+    | '/dashboard/billing'
     | '/dashboard/chat'
     | '/dashboard/members'
     | '/dashboard/sdk-developer'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/signup'
+    | '/dashboard/billing'
     | '/dashboard/members'
     | '/dashboard/sdk-developer'
     | '/dashboard/settings'
@@ -366,6 +377,7 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/signup'
+    | '/dashboard/billing'
     | '/dashboard/chat'
     | '/dashboard/members'
     | '/dashboard/sdk-developer'
@@ -503,6 +515,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/dashboard/chat'
       preLoaderRoute: typeof DashboardChatRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/billing': {
+      id: '/dashboard/billing'
+      path: '/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof DashboardBillingRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/auth/signup': {
@@ -644,6 +663,7 @@ const DashboardChatRouteWithChildren = DashboardChatRoute._addFileChildren(
 )
 
 interface DashboardRouteChildren {
+  DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardChatRoute: typeof DashboardChatRouteWithChildren
   DashboardMembersRoute: typeof DashboardMembersRoute
   DashboardSdkDeveloperRoute: typeof DashboardSdkDeveloperRoute
@@ -662,6 +682,7 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardBillingRoute: DashboardBillingRoute,
   DashboardChatRoute: DashboardChatRouteWithChildren,
   DashboardMembersRoute: DashboardMembersRoute,
   DashboardSdkDeveloperRoute: DashboardSdkDeveloperRoute,

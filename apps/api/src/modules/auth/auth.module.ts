@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
 import { env } from '../../config/env.config';
+import { BillingModule } from '../billing/billing.module';
 
 import { AuthController } from './auth.controller';
 import { AUTH_TOKEN_EXPIRY, AuthService } from './auth.service';
@@ -12,6 +13,7 @@ import { AUTH_TOKEN_EXPIRY, AuthService } from './auth.service';
       secret: env.jwtSecret,
       signOptions: { expiresIn: AUTH_TOKEN_EXPIRY },
     }),
+    BillingModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -14,6 +15,7 @@ import { authLinks } from '../../common/auth-links';
 import { INVITE_EXPIRY_MS, INVITE_TOKEN_BYTES } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { InjectTypedQueue } from '../../queue/queue.decorators';
+import { BillingService } from '../billing/billing.service';
 
 function generateInviteToken(): string {
   return randomBytes(INVITE_TOKEN_BYTES).toString('hex');
@@ -21,8 +23,11 @@ function generateInviteToken(): string {
 
 @Injectable()
 export class OrgsService {
+  private readonly logger = new Logger(OrgsService.name);
+
   constructor(
     private db: DbService,
+    private billingService: BillingService,
     @InjectTypedQueue('email') private emailQueue: Queue
   ) {}
 
@@ -49,6 +54,15 @@ export class OrgsService {
 
       return org;
     });
+
+    // Create Stripe customer for the new org (non-blocking for dev without Stripe keys)
+    try {
+      await this.billingService.ensureStripeCustomer(result.id);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to create Stripe customer for org ${result.id}: ${err instanceof Error ? err.message : 'unknown'}`
+      );
+    }
 
     return {
       id: result.id,
@@ -89,6 +103,14 @@ export class OrgsService {
       .where('id', '=', id)
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    if (data.name) {
+      this.billingService.syncCustomerName(id, data.name).catch((err) => {
+        this.logger.warn(
+          `Failed to sync Stripe customer name: ${err instanceof Error ? err.message : 'unknown'}`
+        );
+      });
+    }
 
     return {
       id: org.id,

@@ -19,6 +19,7 @@ import {
   ChartBarIcon,
   ChatCircleIcon,
   CheckIcon,
+  CreditCardIcon,
   EyeIcon,
   FolderIcon,
   GearIcon,
@@ -403,6 +404,11 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
             to="/dashboard/usage"
             label="AI Usage"
             icon={<ChartBarIcon size={16} weight="light" color="currentColor" />}
+          />
+          <NavItem
+            to="/dashboard/billing"
+            label="Billing"
+            icon={<CreditCardIcon size={16} weight="light" color="currentColor" />}
           />
           <NavItem
             to="/dashboard/settings"

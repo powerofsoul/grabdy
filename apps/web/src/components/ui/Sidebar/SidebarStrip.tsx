@@ -18,6 +18,7 @@ import {
   ChartBarIcon,
   ChatCircleIcon,
   CheckIcon,
+  CreditCardIcon,
   EyeIcon,
   FolderIcon,
   GearIcon,
@@ -296,6 +297,11 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
         to="/dashboard/usage"
         label="AI Usage"
         icon={<ChartBarIcon size={18} weight="light" color="currentColor" />}
+      />
+      <StripIcon
+        to="/dashboard/billing"
+        label="Billing"
+        icon={<CreditCardIcon size={18} weight="light" color="currentColor" />}
       />
       <StripIcon
         to="/dashboard/settings"

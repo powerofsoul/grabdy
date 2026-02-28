@@ -63,11 +63,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Everything else: log the real error, return a generic message
-    this.logger.error('Unhandled exception', exception);
+    const stack = exception instanceof Error ? exception.stack : undefined;
+    this.logger.error(
+      { err: exception },
+      `Unhandled exception: ${exception instanceof Error ? exception.message : String(exception)}`
+    );
 
     response.status(500).json({
       success: false,
       error: 'Something went wrong',
+      ...(process.env.NODE_ENV !== 'production' && {
+        debug: {
+          message: exception instanceof Error ? exception.message : String(exception),
+          stack,
+        },
+      }),
     });
   }
 }

@@ -83,6 +83,9 @@ export const env = {
   // Slack internal notifications
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
 
+  // Stripe
+  stripeSecretKey: requiredInProd('STRIPE_SECRET_KEY', ''),
+
   // KMS (resource identifier, not a secret)
   kmsKeyArn: process.env.KMS_KEY_ARN || '',
 } as const;

@@ -3938,6 +3938,7 @@ __metadata:
     react-email: "npm:^5.2.8"
     reflect-metadata: "npm:^0.2.2"
     rxjs: "npm:^7.8.1"
+    stripe: "npm:^20.4.0"
     tsx: "npm:^4.16.0"
     typescript: "npm:^5.3.3"
     zod: "npm:^4.0.0"
@@ -19899,6 +19900,18 @@ __metadata:
   version: 5.0.3
   resolution: "strip-json-comments@npm:5.0.3"
   checksum: 10c0/daaf20b29f69fb51112698f4a9a662490dbb78d5baf6127c75a0a83c2ac6c078a8c0f74b389ad5e0519d6fc359c4a57cb9971b1ae201aef62ce45a13247791e0
+  languageName: node
+  linkType: hard
+
+"stripe@npm:^20.4.0":
+  version: 20.4.0
+  resolution: "stripe@npm:20.4.0"
+  peerDependencies:
+    "@types/node": ">=16"
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+  checksum: 10c0/891dcf9ce00fa29760c74a0906dbddf7910a3afb781c853b932290e7dd1b9544b9feccd990027720eb3a6978532d8b28277aa301868de56a6a5ba0f410ce8e3e
   languageName: node
   linkType: hard
 

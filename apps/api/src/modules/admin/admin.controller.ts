@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Post, Query, UseGuards } from '@nestjs/common';
 
 import { type DbId, dbIdSchema, extractOrgNumericId, GLOBAL_ORG, packId } from '@grabdy/common';
 import type { OrgRole } from '@grabdy/contracts';
@@ -9,6 +9,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { DbService } from '../../db/db.module';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { BillingService } from '../billing/billing.service';
 import { EmailService } from '../email/email.service';
 
 import { AdminApiKeyGuard } from './admin-api-key.guard';
@@ -39,10 +40,13 @@ interface AddMemberBody {
 @Public()
 @UseGuards(AdminApiKeyGuard)
 export class AdminController {
+  private readonly logger = new Logger(AdminController.name);
+
   constructor(
     private db: DbService,
     private emailService: EmailService,
-    private analyticsService: AnalyticsService
+    private analyticsService: AnalyticsService,
+    private billingService: BillingService
   ) {}
 
   /**
@@ -103,6 +107,14 @@ export class AdminController {
 
       return { user: newUser, org: newOrg, membership };
     });
+
+    try {
+      await this.billingService.ensureStripeCustomer(result.org.id);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to create Stripe customer for org ${result.org.id}: ${err instanceof Error ? err.message : 'unknown'}`
+      );
+    }
 
     return {
       success: true,
@@ -301,6 +313,14 @@ export class AdminController {
       })
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    try {
+      await this.billingService.ensureStripeCustomer(newOrg.id);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to create Stripe customer for org ${newOrg.id}: ${err instanceof Error ? err.message : 'unknown'}`
+      );
+    }
 
     return {
       success: true,
