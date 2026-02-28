@@ -109,8 +109,18 @@ export class BillingService {
       return org.stripe_customer_id;
     }
 
+    // Fetch the owner's email for Stripe invoicing
+    const owner = await this.db.kysely
+      .selectFrom('org.org_memberships')
+      .innerJoin('auth.users', 'auth.users.id', 'org.org_memberships.user_id')
+      .select('auth.users.email')
+      .where('org.org_memberships.org_id', '=', orgId)
+      .where('org.org_memberships.roles', '@>', ['OWNER'])
+      .executeTakeFirst();
+
     const customer = await this.stripe.customers.create({
       name: org.name,
+      email: owner?.email ?? undefined,
       metadata: { orgId },
     });
 
