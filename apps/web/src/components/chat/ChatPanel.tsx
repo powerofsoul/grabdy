@@ -328,6 +328,7 @@ export function ChatPanel({
           }}
         >
           <Typography sx={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, pl: 1 }}>Chat</Typography>
+          {threadManager.activeThreadId && <ShareButton threadId={threadManager.activeThreadId} />}
           {showMobileSidebar && (
             <IconButton size="small" onClick={toggleMobileSidebar} sx={{ color: 'text.primary' }}>
               <ListIcon size={20} weight="regular" />
