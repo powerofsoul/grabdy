@@ -3,12 +3,13 @@ import { alpha, Box, Button, Typography, useTheme } from '@mui/material';
 import {
   CaretRightIcon,
   CheckIcon,
-  DatabaseIcon,
   PauseIcon,
   PlugsConnectedIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react';
 import { formatDistanceToNow } from 'date-fns';
+
+import { PROVIDER_SOURCE_NOUN } from '../data-source-picker/constants';
 
 import type { ConnectionSummary } from './IntegrationGrid';
 import type { ProviderKey } from './ProviderIcon';
@@ -199,20 +200,16 @@ export function IntegrationCard({
             justifyContent: 'space-between',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <DatabaseIcon size={11} weight="light" color={theme.palette.text.secondary} />
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
-                {connection.dataSourceCount.toLocaleString()}{' '}
-                {connection.dataSourceCount === 1 ? 'item' : 'items'}
-              </Typography>
-            </Box>
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: 11 }}>
-              {connection.lastSyncedAt
-                ? `Synced ${formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true })}`
-                : 'Not synced yet'}
-            </Typography>
-          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+            {(() => {
+              const [singular, plural] = PROVIDER_SOURCE_NOUN[connection.provider];
+              const countLabel = `${connection.dataSourceCount} ${connection.dataSourceCount === 1 ? singular : plural}`;
+              const syncLabel = connection.lastSyncedAt
+                ? formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true })
+                : null;
+              return syncLabel ? `${countLabel}, synced ${syncLabel}` : countLabel;
+            })()}
+          </Typography>
           <CaretRightIcon size={16} weight="light" color={theme.palette.text.disabled} />
         </Box>
       </Box>

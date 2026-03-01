@@ -140,7 +140,7 @@ export class SdkChatStreamService {
       options?.threadId
     );
 
-    // Extract collection IDs and data source IDs from config
+    // Extract collection IDs, data source IDs, and connection IDs from config
     const collectionIds = sdkAuth.dataSourceConfig
       .filter(
         (s): s is { type: 'COLLECTION'; collectionId: DbId<'Collection'> } =>
@@ -155,10 +155,17 @@ export class SdkChatStreamService {
       )
       .map((s) => s.dataSourceId);
 
+    const connectionIds = sdkAuth.dataSourceConfig
+      .filter(
+        (s): s is { type: 'CONNECTION'; connectionId: DbId<'Connection'> } =>
+          s.type === 'CONNECTION'
+      )
+      .map((s) => s.connectionId);
+
     // SDK is always scoped or none. Never 'all', since external widget users must not access unselected org data.
     const searchScope: SearchScope =
-      collectionIds.length > 0 || dataSourceIds.length > 0
-        ? { type: 'scoped', collectionIds, dataSourceIds }
+      collectionIds.length > 0 || dataSourceIds.length > 0 || connectionIds.length > 0
+        ? { type: 'scoped', collectionIds, dataSourceIds, connectionIds }
         : { type: 'none' };
 
     const ctx = this.sdkChatAgent.create({

@@ -82,19 +82,26 @@ export class DataSourcesService {
     return this.toResponse(dataSource);
   }
 
-  async list(orgId: DbId<'Org'>, collectionId?: DbId<'Collection'>, type?: DataSourceType) {
+  async list(
+    orgId: DbId<'Org'>,
+    options?: { collectionId?: DbId<'Collection'>; type?: DataSourceType; hasCollection?: boolean }
+  ) {
     let query = this.db.kysely
       .selectFrom('data.data_sources')
       .selectAll()
       .where('org_id', '=', orgId)
       .where('parent_data_source_id', 'is', null);
 
-    if (collectionId) {
-      query = query.where('collection_id', '=', collectionId);
+    if (options?.collectionId) {
+      query = query.where('collection_id', '=', options.collectionId);
     }
 
-    if (type) {
-      query = query.where('type', '=', type);
+    if (options?.type) {
+      query = query.where('type', '=', options.type);
+    }
+
+    if (options?.hasCollection) {
+      query = query.where('collection_id', 'is not', null);
     }
 
     const dataSources = await query.orderBy('created_at', 'desc').execute();

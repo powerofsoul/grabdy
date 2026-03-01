@@ -74,6 +74,7 @@ export class RetrievalService {
           type: 'scoped' as const,
           collectionIds: options.collectionIds,
           dataSourceIds: [] satisfies DbId<'DataSource'>[],
+          connectionIds: [] satisfies DbId<'Connection'>[],
         }
       : { type: 'all' as const };
 

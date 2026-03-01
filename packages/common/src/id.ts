@@ -168,6 +168,14 @@ export function idBelongsToOrg(id: string, orgNumericId: OrgNumericId): boolean 
   return extractOrgNumericId(id) === orgNumericId;
 }
 
+/** Throws if any of the given IDs do not belong to the same org as orgId. */
+export function assertIdsInOrg(orgId: DbId<'Org'>, ...ids: string[]): void {
+  const orgNum = extractOrgNumericId(orgId);
+  if (!ids.every((id) => idBelongsToOrg(id, orgNum))) {
+    throw new Error(`One or more IDs do not belong to org ${orgId}`);
+  }
+}
+
 // ── Zod schemas ──────────────────────────────────────────────────────────
 
 /**

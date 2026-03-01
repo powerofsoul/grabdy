@@ -26,6 +26,16 @@ export function ChatMessages({
 }: ChatMessagesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
+  const prevMessageCountRef = useRef(messages.length);
+
+  // Resume auto-scroll when the user sends a new message
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (messages.length > prevMessageCountRef.current && lastMessage?.role === 'user') {
+      shouldAutoScrollRef.current = true;
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages.length]);
 
   const scrollToBottom = (smooth = false) => {
     const container = containerRef.current;

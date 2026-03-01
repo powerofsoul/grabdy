@@ -76,11 +76,11 @@ export class DataSourcesController {
   @TsRestHandler(dataSourcesContract.list)
   async list() {
     return tsRestHandler(dataSourcesContract.list, async ({ params, query }) => {
-      const dataSources = await this.dataSourcesService.list(
-        params.orgId,
-        query.collectionId,
-        query.type
-      );
+      const dataSources = await this.dataSourcesService.list(params.orgId, {
+        collectionId: query.collectionId,
+        type: query.type,
+        hasCollection: query.hasCollection,
+      });
       return {
         status: 200 as const,
         body: {

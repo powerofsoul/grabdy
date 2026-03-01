@@ -294,7 +294,11 @@ export interface DB {
     id: Generated<DbId<'Bot'>>;
     org_id: DbId<'Org'>;
     name: string;
-    data_source_config: ColumnType<unknown, unknown, unknown>;
+    data_source_config: Array<
+      | { type: 'COLLECTION'; collectionId: DbId<'Collection'> }
+      | { type: 'DATA_SOURCE'; dataSourceId: DbId<'DataSource'> }
+      | { type: 'CONNECTION'; connectionId: DbId<'Connection'> }
+    >;
     system_prompt: string | null;
     title: string | null;
     subtitle: string | null;

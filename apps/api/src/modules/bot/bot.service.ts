@@ -3,6 +3,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { type DbId, packId } from '@grabdy/common';
 import { type BotSourceConfig, botSourceConfigSchema } from '@grabdy/contracts';
 import * as crypto from 'crypto';
+import { sql } from 'kysely';
 import { extname } from 'path';
 
 import { EncryptionService } from '../../common/encryption/encryption.service';
@@ -37,7 +38,7 @@ export class BotService {
         id: packId('Bot', orgId),
         org_id: orgId,
         name: data.name,
-        data_source_config: JSON.stringify(data.dataSourceConfig),
+        data_source_config: sql`${JSON.stringify(data.dataSourceConfig)}::jsonb`,
         system_prompt: data.systemPrompt ?? null,
         title: data.title ?? null,
         subtitle: data.subtitle ?? null,
@@ -100,31 +101,19 @@ export class BotService {
       primaryColor?: string | null;
     }
   ) {
-    const updates: Partial<{
-      name: string;
-      data_source_config: string;
-      system_prompt: string | null;
-      title: string | null;
-      subtitle: string | null;
-      placeholder: string | null;
-      accent_color: string | null;
-      primary_color: string | null;
-      updated_at: Date;
-    }> = { updated_at: new Date() };
+    let query = this.db.kysely.updateTable('sdk.bots').set('updated_at', new Date());
 
-    if (data.name !== undefined) updates.name = data.name;
+    if (data.name !== undefined) query = query.set('name', data.name);
     if (data.dataSourceConfig !== undefined)
-      updates.data_source_config = JSON.stringify(data.dataSourceConfig);
-    if (data.systemPrompt !== undefined) updates.system_prompt = data.systemPrompt;
-    if (data.title !== undefined) updates.title = data.title;
-    if (data.subtitle !== undefined) updates.subtitle = data.subtitle;
-    if (data.placeholder !== undefined) updates.placeholder = data.placeholder;
-    if (data.accentColor !== undefined) updates.accent_color = data.accentColor;
-    if (data.primaryColor !== undefined) updates.primary_color = data.primaryColor;
+      query = query.set('data_source_config', sql`${JSON.stringify(data.dataSourceConfig)}::jsonb`);
+    if (data.systemPrompt !== undefined) query = query.set('system_prompt', data.systemPrompt);
+    if (data.title !== undefined) query = query.set('title', data.title);
+    if (data.subtitle !== undefined) query = query.set('subtitle', data.subtitle);
+    if (data.placeholder !== undefined) query = query.set('placeholder', data.placeholder);
+    if (data.accentColor !== undefined) query = query.set('accent_color', data.accentColor);
+    if (data.primaryColor !== undefined) query = query.set('primary_color', data.primaryColor);
 
-    const row = await this.db.kysely
-      .updateTable('sdk.bots')
-      .set(updates)
+    const row = await query
       .where('id', '=', botId)
       .where('org_id', '=', orgId)
       .returningAll()
@@ -326,7 +315,7 @@ export class BotService {
   private mapBotLight(row: {
     id: DbId<'Bot'>;
     name: string;
-    data_source_config: unknown;
+    data_source_config: BotSourceConfig;
     system_prompt: string | null;
     title: string | null;
     subtitle: string | null;
@@ -356,7 +345,7 @@ export class BotService {
   private async mapBot(row: {
     id: DbId<'Bot'>;
     name: string;
-    data_source_config: unknown;
+    data_source_config: BotSourceConfig;
     system_prompt: string | null;
     title: string | null;
     subtitle: string | null;

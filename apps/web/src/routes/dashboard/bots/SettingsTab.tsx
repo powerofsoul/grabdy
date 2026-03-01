@@ -199,13 +199,11 @@ export function SettingsTab({
         Select which collections and data sources this chat can search.
       </Typography>
       {selectedOrgId && (
-        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-          <DataSourcePicker
-            value={dataSourceConfig}
-            onChange={setDataSourceConfig}
-            orgId={selectedOrgId}
-          />
-        </Box>
+        <DataSourcePicker
+          value={dataSourceConfig}
+          onChange={setDataSourceConfig}
+          orgId={selectedOrgId}
+        />
       )}
 
       {/* Appearance */}

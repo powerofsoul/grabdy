@@ -31,6 +31,7 @@ export class ChatService {
     systemPrompt: string | null;
     collectionIds: DbId<'Collection'>[];
     dataSourceIds: DbId<'DataSource'>[];
+    connectionIds: DbId<'Connection'>[];
   }> {
     const row = await this.db.kysely
       .selectFrom('sdk.bots')
@@ -46,16 +47,19 @@ export class ChatService {
     const config = botSourceConfigSchema.parse(row.data_source_config);
     const collectionIds: DbId<'Collection'>[] = [];
     const dataSourceIds: DbId<'DataSource'>[] = [];
+    const connectionIds: DbId<'Connection'>[] = [];
 
     for (const entry of config) {
       if (entry.type === 'COLLECTION') {
         collectionIds.push(entry.collectionId);
-      } else {
+      } else if (entry.type === 'DATA_SOURCE') {
         dataSourceIds.push(entry.dataSourceId);
+      } else {
+        connectionIds.push(entry.connectionId);
       }
     }
 
-    return { systemPrompt: row.system_prompt, collectionIds, dataSourceIds };
+    return { systemPrompt: row.system_prompt, collectionIds, dataSourceIds, connectionIds };
   }
 
   private async ensureThread(
@@ -118,18 +122,28 @@ export class ChatService {
 
     if (options.botId) {
       const botConfig = await this.getBotConfig(orgId, options.botId);
-      if (botConfig.collectionIds.length > 0 || botConfig.dataSourceIds.length > 0) {
+      if (
+        botConfig.collectionIds.length > 0 ||
+        botConfig.dataSourceIds.length > 0 ||
+        botConfig.connectionIds.length > 0
+      ) {
         searchScope = {
           type: 'scoped',
           collectionIds: botConfig.collectionIds,
           dataSourceIds: botConfig.dataSourceIds,
+          connectionIds: botConfig.connectionIds,
         };
       } else {
         searchScope = { type: 'none' };
       }
       if (botConfig.systemPrompt) instructions = botConfig.systemPrompt;
     } else if (options.collectionId) {
-      searchScope = { type: 'scoped', collectionIds: [options.collectionId], dataSourceIds: [] };
+      searchScope = {
+        type: 'scoped',
+        collectionIds: [options.collectionId],
+        dataSourceIds: [],
+        connectionIds: [],
+      };
     }
 
     const ctx = this.dataAgent.create({

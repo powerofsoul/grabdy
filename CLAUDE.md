@@ -75,6 +75,7 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - **Use snake_case for all PostgreSQL table and column names.**
 - Keep TypeScript model names in PascalCase, field names in camelCase.
 - **NEVER modify existing migration files.** Production has already run them. Always create a new migration for schema changes.
+- **`db.ts` MUST be a 1-to-1 mirror of the actual database schema.** Column types are inlined, not imported from contracts or other packages. JSONB columns use inline discriminated unions that match the stored shape. Never use `unknown` for typed JSONB columns.
 
 ### Error Handling - CRITICAL
 

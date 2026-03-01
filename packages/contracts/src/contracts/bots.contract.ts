@@ -11,6 +11,7 @@ const c = initContract();
 const botSourceSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('COLLECTION'), collectionId: dbIdSchema('Collection') }),
   z.object({ type: z.literal('DATA_SOURCE'), dataSourceId: dbIdSchema('DataSource') }),
+  z.object({ type: z.literal('CONNECTION'), connectionId: dbIdSchema('Connection') }),
 ]);
 
 export type BotSource = z.infer<typeof botSourceSchema>;

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { type DbId, extractOrgNumericId, idBelongsToOrg } from '@grabdy/common';
+import { assertIdsInOrg, type DbId } from '@grabdy/common';
 import type { StreamChunk } from '@grabdy/contracts';
 import {
   AiCallerType,
@@ -89,7 +89,13 @@ export class RagSearchTool implements Tool<RagSearchInput, RagSearchOutput> {
   create(orgId: DbId<'Org'>, scope: SearchScope, defaultTopK = 5, userId?: DbId<'User'> | null) {
     const collectionIds = scope.type === 'scoped' ? scope.collectionIds : undefined;
     const dataSourceIds = scope.type === 'scoped' ? scope.dataSourceIds : undefined;
-    this.idsBelongToSameOrg(orgId, ...(collectionIds ?? []), ...(dataSourceIds ?? []));
+    const connectionIds = scope.type === 'scoped' ? scope.connectionIds : undefined;
+    assertIdsInOrg(
+      orgId,
+      ...(collectionIds ?? []),
+      ...(dataSourceIds ?? []),
+      ...(connectionIds ?? [])
+    );
 
     const searchService = this.searchService;
 
@@ -123,6 +129,7 @@ searchMeta.suggestion tells you if results have low relevance and you should ref
         const { results, queryTimeMs } = await searchService.search(orgId, input.query, {
           collectionIds,
           dataSourceIds,
+          connectionIds,
           limit: input.topK,
           filters: filters.length > 0 ? filters : undefined,
           callerType: AiCallerType.SYSTEM,
@@ -155,7 +162,7 @@ searchMeta.suggestion tells you if results have low relevance and you should ref
           ...(r.contextAfter ? { contextAfter: r.contextAfter } : {}),
         }));
 
-        this.idsBelongToSameOrg(orgId, ...cleanResults.map((r) => r.dataSourceId));
+        assertIdsInOrg(orgId, ...cleanResults.map((r) => r.dataSourceId));
 
         return {
           results: cleanResults,
@@ -174,14 +181,5 @@ searchMeta.suggestion tells you if results have low relevance and you should ref
       return { type: 'thinking', text: ctx.input.reasoning };
     }
     return null;
-  }
-
-  private idsBelongToSameOrg(orgId: DbId<'Org'>, ...ids: string[]) {
-    const orgNumericId = extractOrgNumericId(orgId);
-
-    const allBelong = ids.every((id) => idBelongsToOrg(id, orgNumericId));
-    if (!allBelong) {
-      throw new Error(`One or more IDs do not belong to org ${orgId}`);
-    }
   }
 }
