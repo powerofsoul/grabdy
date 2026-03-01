@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const billingStatusValues = [
-  'trial',
+  'none',
   'active',
   'past_due',
   'canceled',

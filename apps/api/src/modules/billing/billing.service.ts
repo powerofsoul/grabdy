@@ -7,11 +7,20 @@ import Stripe from 'stripe';
 import { InjectEnv } from '../../config/env.config';
 import { DbService } from '../../db/db.module';
 
+interface BillingInvoice {
+  amount: number;
+  currency: string;
+  status: string;
+  date: string;
+  url: string | null;
+}
+
 interface BillingStatusResult {
   status: BillingStatus;
   planName: string | null;
   currentPeriodEnd: string | null;
   stripeCustomer: string | null;
+  invoices: BillingInvoice[];
 }
 
 @Injectable()
@@ -45,33 +54,64 @@ export class BillingService {
 
     if (!stripeCustomer || !this.stripe) {
       return {
-        status: 'trial',
+        status: 'none',
         planName: null,
         currentPeriodEnd: null,
         stripeCustomer,
+        invoices: [],
       };
     }
 
     try {
-      const subscriptions = await this.stripe.subscriptions.list({
-        customer: stripeCustomer,
-        limit: 1,
-      });
+      const [subscriptions, invoiceList] = await Promise.all([
+        this.stripe.subscriptions.list({
+          customer: stripeCustomer,
+          limit: 5,
+          status: 'all',
+        }),
+        this.stripe.invoices.list({
+          customer: stripeCustomer,
+          limit: 10,
+        }),
+      ]);
 
-      const subscription = subscriptions.data[0];
+      const invoices: BillingInvoice[] = invoiceList.data
+        .filter((inv) => inv.status === 'paid' || inv.status === 'open')
+        .map((inv) => ({
+          amount: inv.amount_due,
+          currency: inv.currency,
+          status: inv.status === 'paid' ? 'paid' : 'unpaid',
+          date: new Date((inv.created ?? 0) * 1000).toISOString(),
+          url: inv.hosted_invoice_url ?? null,
+        }));
+
+      // Pick the most relevant subscription: active > past_due > canceled > any
+      const activeSub = subscriptions.data.find(
+        (s) => s.status === 'active' || s.status === 'trialing'
+      );
+      const pastDueSub = subscriptions.data.find((s) => s.status === 'past_due');
+      const subscription = activeSub ?? pastDueSub ?? subscriptions.data[0] ?? null;
+
       if (!subscription) {
         return {
-          status: 'trial',
+          status: 'none',
           planName: null,
           currentPeriodEnd: null,
           stripeCustomer,
+          invoices,
         };
       }
 
       const firstItem = subscription.items.data[0];
-      const planName =
-        firstItem?.price?.nickname ??
-        (typeof firstItem?.price?.product === 'string' ? firstItem.price.product : null);
+      let planName = firstItem?.price?.nickname ?? null;
+      if (!planName && firstItem?.price?.product && this.stripe) {
+        const productId =
+          typeof firstItem.price.product === 'string'
+            ? firstItem.price.product
+            : firstItem.price.product.id;
+        const product = await this.stripe.products.retrieve(productId);
+        planName = product.name;
+      }
       const periodEndTs = subscription.cancel_at ?? subscription.billing_cycle_anchor;
       const currentPeriodEnd = new Date(periodEndTs * 1000).toISOString();
 
@@ -80,16 +120,18 @@ export class BillingService {
         planName,
         currentPeriodEnd,
         stripeCustomer,
+        invoices,
       };
     } catch (err) {
       this.logger.warn(
         `Failed to fetch subscriptions for ${stripeCustomer}: ${err instanceof Error ? err.message : 'unknown'}`
       );
       return {
-        status: 'trial',
+        status: 'none',
         planName: null,
         currentPeriodEnd: null,
         stripeCustomer,
+        invoices: [],
       };
     }
   }
@@ -195,7 +237,7 @@ export class BillingService {
       case 'incomplete_expired':
         return 'unpaid';
       default:
-        return 'trial';
+        return 'none';
     }
   }
 }

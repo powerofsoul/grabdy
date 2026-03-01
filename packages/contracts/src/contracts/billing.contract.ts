@@ -6,11 +6,20 @@ import { billingStatusEnum } from '../enums/index.js';
 
 const c = initContract();
 
+const billingInvoiceSchema = z.object({
+  amount: z.number(),
+  currency: z.string(),
+  status: z.string(),
+  date: z.string(),
+  url: z.string().nullable(),
+});
+
 const billingStatusSchema = z.object({
   status: billingStatusEnum,
   planName: z.string().nullable(),
   currentPeriodEnd: z.string().nullable(),
   stripeCustomer: z.string().nullable(),
+  invoices: z.array(billingInvoiceSchema),
 });
 
 export const billingContract = c.router(
