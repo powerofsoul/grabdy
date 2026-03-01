@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { DataAgent } from '../agent/agents/data-agent';
-import type { SearchScope } from '../agent/agents/search-scope';
+import type { ConnectionResource, SearchScope } from '../agent/agents/search-scope';
 import type { AttachmentContext } from '../agent/base-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
 
@@ -32,6 +32,7 @@ export class ChatService {
     collectionIds: DbId<'Collection'>[];
     dataSourceIds: DbId<'DataSource'>[];
     connectionIds: DbId<'Connection'>[];
+    connectionResources: ConnectionResource[];
   }> {
     const row = await this.db.kysely
       .selectFrom('sdk.bots')
@@ -48,18 +49,30 @@ export class ChatService {
     const collectionIds: DbId<'Collection'>[] = [];
     const dataSourceIds: DbId<'DataSource'>[] = [];
     const connectionIds: DbId<'Connection'>[] = [];
+    const connectionResources: ConnectionResource[] = [];
 
     for (const entry of config) {
       if (entry.type === 'COLLECTION') {
         collectionIds.push(entry.collectionId);
       } else if (entry.type === 'DATA_SOURCE') {
         dataSourceIds.push(entry.dataSourceId);
-      } else {
+      } else if (entry.type === 'CONNECTION') {
         connectionIds.push(entry.connectionId);
+      } else if (entry.type === 'CONNECTION_RESOURCE') {
+        connectionResources.push({
+          connectionId: entry.connectionId,
+          githubRepo: entry.githubRepo,
+        });
       }
     }
 
-    return { systemPrompt: row.system_prompt, collectionIds, dataSourceIds, connectionIds };
+    return {
+      systemPrompt: row.system_prompt,
+      collectionIds,
+      dataSourceIds,
+      connectionIds,
+      connectionResources,
+    };
   }
 
   private async ensureThread(
@@ -125,13 +138,15 @@ export class ChatService {
       if (
         botConfig.collectionIds.length > 0 ||
         botConfig.dataSourceIds.length > 0 ||
-        botConfig.connectionIds.length > 0
+        botConfig.connectionIds.length > 0 ||
+        botConfig.connectionResources.length > 0
       ) {
         searchScope = {
           type: 'scoped',
           collectionIds: botConfig.collectionIds,
           dataSourceIds: botConfig.dataSourceIds,
           connectionIds: botConfig.connectionIds,
+          connectionResources: botConfig.connectionResources,
         };
       } else {
         searchScope = { type: 'none' };
@@ -143,6 +158,7 @@ export class ChatService {
         collectionIds: [options.collectionId],
         dataSourceIds: [],
         connectionIds: [],
+        connectionResources: [],
       };
     }
 

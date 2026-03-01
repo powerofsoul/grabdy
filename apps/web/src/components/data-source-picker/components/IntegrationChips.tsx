@@ -43,7 +43,8 @@ function IntegrationRow({
   value: BotSourceConfig;
   onChange: (config: BotSourceConfig) => void;
 }) {
-  const isIndividual = isIndividuallySelectable(section.provider);
+  const hasResources = section.resources.length > 0;
+  const isIndividual = isIndividuallySelectable(section.provider) || hasResources;
   const [expanded, setExpanded] = useState(false);
 
   const allSelected = value.some(
@@ -53,6 +54,7 @@ function IntegrationRow({
   const providerLabel = getProviderLabel(section.provider);
   const [, noun] = PROVIDER_SOURCE_NOUN[section.provider];
 
+  // Data source selections (Slack, Notion)
   const selectedDsIds = new Set(
     value
       .filter(
@@ -62,7 +64,22 @@ function IntegrationRow({
       .map((s) => s.dataSourceId)
   );
 
-  const selectedCount = section.dataSources.filter((ds) => selectedDsIds.has(ds.id)).length;
+  // Resource selections (GitHub repos)
+  const selectedResourceIds = new Set(
+    value
+      .filter(
+        (s): s is Extract<BotSourceConfig[number], { type: 'CONNECTION_RESOURCE' }> =>
+          s.type === 'CONNECTION_RESOURCE' && s.connectionId === section.connectionId
+      )
+      .map((s) => s.githubRepo)
+  );
+
+  const selectedDsCount = section.dataSources.filter((ds) => selectedDsIds.has(ds.id)).length;
+  const selectedResourceCount = section.resources.filter((r) =>
+    selectedResourceIds.has(r.id)
+  ).length;
+  const selectedCount = selectedDsCount + selectedResourceCount;
+  const totalCount = section.dataSources.length + section.resources.length;
   const hasSelection = allSelected || selectedCount > 0;
 
   const handleAllToggle = () => {
@@ -72,9 +89,17 @@ function IntegrationRow({
       );
     } else {
       const dsIds = new Set(section.dataSources.map((ds) => ds.id));
-      const filtered = value.filter(
-        (s) => !(s.type === 'DATA_SOURCE' && dsIds.has(s.dataSourceId))
-      );
+      const resourceIds = new Set(section.resources.map((r) => r.id));
+      const filtered = value.filter((s) => {
+        if (s.type === 'DATA_SOURCE' && dsIds.has(s.dataSourceId)) return false;
+        if (
+          s.type === 'CONNECTION_RESOURCE' &&
+          s.connectionId === section.connectionId &&
+          resourceIds.has(s.githubRepo)
+        )
+          return false;
+        return true;
+      });
       onChange([...filtered, { type: 'CONNECTION', connectionId: section.connectionId }]);
     }
   };
@@ -84,6 +109,26 @@ function IntegrationRow({
       onChange(value.filter((s) => !(s.type === 'DATA_SOURCE' && s.dataSourceId === dsId)));
     } else {
       onChange([...value, { type: 'DATA_SOURCE', dataSourceId: dsId }]);
+    }
+  };
+
+  const handleResourceToggle = (githubRepo: string) => {
+    if (selectedResourceIds.has(githubRepo)) {
+      onChange(
+        value.filter(
+          (s) =>
+            !(
+              s.type === 'CONNECTION_RESOURCE' &&
+              s.connectionId === section.connectionId &&
+              s.githubRepo === githubRepo
+            )
+        )
+      );
+    } else {
+      onChange([
+        ...value,
+        { type: 'CONNECTION_RESOURCE', connectionId: section.connectionId, githubRepo },
+      ]);
     }
   };
 
@@ -122,7 +167,7 @@ function IntegrationRow({
         </Typography>
         {hasSelection && (
           <Typography variant="caption" color="text.secondary">
-            {allSelected ? 'All' : `${selectedCount}/${section.dataSources.length}`}
+            {allSelected ? 'All' : `${selectedCount}/${totalCount}`}
           </Typography>
         )}
       </Stack>
@@ -137,6 +182,15 @@ function IntegrationRow({
               selected={allSelected || selectedDsIds.has(ds.id)}
               disabled={allSelected}
               onClick={() => handleDsToggle(ds.id)}
+            />
+          ))}
+          {section.resources.map((resource) => (
+            <SourceChip
+              key={resource.id}
+              label={resource.name}
+              selected={allSelected || selectedResourceIds.has(resource.id)}
+              disabled={allSelected}
+              onClick={() => handleResourceToggle(resource.id)}
             />
           ))}
         </Box>

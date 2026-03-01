@@ -23,6 +23,7 @@ const linearProviderDataSchema = z.object({
 const githubProviderDataSchema = z.object({
   provider: z.literal('GITHUB'),
   installationOwner: z.string().optional(),
+  selectedRepos: z.array(z.string()).optional(),
   lastSyncedAt: z.string().nullable(),
 });
 

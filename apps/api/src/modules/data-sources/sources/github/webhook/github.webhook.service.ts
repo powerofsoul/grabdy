@@ -69,9 +69,15 @@ export class GitHubWebhookService implements IntegrationWebhook<'GITHUB'> {
     const event = this.extractWebhookEvent(headers, body);
     if (!event) return { response: { ok: true } };
 
-    const matched = payloadInstallationId
+    const matchedByInstallation = payloadInstallationId
       ? connections.filter((c) => c.providerData.githubInstallationId === payloadInstallationId)
       : connections;
+
+    const repoFullName = event.externalId.split('#')[0];
+    const matched = matchedByInstallation.filter((c) => {
+      const selected = c.providerData.selectedRepos ?? [];
+      return selected.includes(repoFullName);
+    });
 
     return {
       response: { ok: true },

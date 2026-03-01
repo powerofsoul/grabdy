@@ -37,11 +37,27 @@ export class GitHubSyncService implements IntegrationSync<'GITHUB'> {
     let maxUpdatedAt = providerData.lastSyncedAt;
     let hasMore = false;
 
-    const { data: reposResponse } = await octokit.apps.listReposAccessibleToInstallation({
-      per_page: 100,
-    });
+    const selectedSet = new Set(providerData.selectedRepos ?? []);
+    const allRepos: Array<{ owner: { login: string }; name: string; full_name: string }> = [];
+    let page = 1;
+    let done = false;
 
-    for (const repo of reposResponse.repositories) {
+    while (!done) {
+      const { data } = await octokit.apps.listReposAccessibleToInstallation({
+        per_page: 100,
+        page,
+      });
+      allRepos.push(...data.repositories);
+      if (allRepos.length >= data.total_count) {
+        done = true;
+      } else {
+        page++;
+      }
+    }
+
+    const filteredRepos = allRepos.filter((r) => selectedSet.has(r.full_name));
+
+    for (const repo of filteredRepos) {
       const owner = repo.owner.login;
       const repoName = repo.name;
       const repoFullName = repo.full_name;

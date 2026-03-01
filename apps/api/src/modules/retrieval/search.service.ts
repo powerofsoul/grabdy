@@ -22,6 +22,7 @@ import {
   HYDE_TIMEOUT_MS,
 } from '../../config/constants';
 import { DbService } from '../../db/db.module';
+import type { ConnectionResource } from '../agent/agents/search-scope';
 import { AiService } from '../ai/ai.service';
 import { extractedImageUrl, storageProxyUrl } from '../data-sources/data-source.types';
 
@@ -60,6 +61,7 @@ export interface SearchOptions {
   collectionIds?: DbId<'Collection'>[];
   dataSourceIds?: DbId<'DataSource'>[];
   connectionIds?: DbId<'Connection'>[];
+  connectionResources?: ConnectionResource[];
   limit?: number;
   filters?: MetadataFilter[];
   callerType: AiCallerType;
@@ -284,14 +286,25 @@ export class SearchService {
     const cIds = options.collectionIds ?? [];
     const dsIds = options.dataSourceIds ?? [];
     const connIds = options.connectionIds ?? [];
+    const connResources = options.connectionResources ?? [];
 
-    const hasScope = cIds.length > 0 || dsIds.length > 0 || connIds.length > 0;
+    const hasScope =
+      cIds.length > 0 || dsIds.length > 0 || connIds.length > 0 || connResources.length > 0;
     if (hasScope) {
       query = query.where((eb) => {
         const parts = [];
         if (cIds.length > 0) parts.push(eb('data.chunks.collection_id', 'in', cIds));
         if (dsIds.length > 0) parts.push(eb('data.chunks.data_source_id', 'in', dsIds));
         if (connIds.length > 0) parts.push(eb('data.data_sources.connection_id', 'in', connIds));
+        for (const cr of connResources) {
+          const escaped = cr.githubRepo.replace(/[%_\\]/g, '\\$&');
+          parts.push(
+            eb.and([
+              eb('data.data_sources.connection_id', '=', cr.connectionId),
+              eb('data.data_sources.external_id', 'like', `${escaped}#%`),
+            ])
+          );
+        }
         return parts.length === 1 ? parts[0] : eb.or(parts);
       });
     }

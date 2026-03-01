@@ -6,7 +6,7 @@ import type { BotSourceConfig, ChatAttachment } from '@grabdy/contracts';
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { SdkChatAgent } from '../agent/agents/sdk-chat-agent';
-import type { SearchScope } from '../agent/agents/search-scope';
+import type { ConnectionResource, SearchScope } from '../agent/agents/search-scope';
 import type { AttachmentContext } from '../agent/base-agent';
 
 function hasErrorCode(err: unknown): err is Error & { code: string } {
@@ -162,10 +162,20 @@ export class SdkChatStreamService {
       )
       .map((s) => s.connectionId);
 
+    const connectionResources: ConnectionResource[] = sdkAuth.dataSourceConfig
+      .filter(
+        (s): s is Extract<BotSourceConfig[number], { type: 'CONNECTION_RESOURCE' }> =>
+          s.type === 'CONNECTION_RESOURCE'
+      )
+      .map((s) => ({ connectionId: s.connectionId, githubRepo: s.githubRepo }));
+
     // SDK is always scoped or none. Never 'all', since external widget users must not access unselected org data.
     const searchScope: SearchScope =
-      collectionIds.length > 0 || dataSourceIds.length > 0 || connectionIds.length > 0
-        ? { type: 'scoped', collectionIds, dataSourceIds, connectionIds }
+      collectionIds.length > 0 ||
+      dataSourceIds.length > 0 ||
+      connectionIds.length > 0 ||
+      connectionResources.length > 0
+        ? { type: 'scoped', collectionIds, dataSourceIds, connectionIds, connectionResources }
         : { type: 'none' };
 
     const ctx = this.sdkChatAgent.create({

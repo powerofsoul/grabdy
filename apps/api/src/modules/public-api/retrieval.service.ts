@@ -75,6 +75,7 @@ export class RetrievalService {
           collectionIds: options.collectionIds,
           dataSourceIds: [] satisfies DbId<'DataSource'>[],
           connectionIds: [] satisfies DbId<'Connection'>[],
+          connectionResources: [],
         }
       : { type: 'all' as const };
 

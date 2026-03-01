@@ -88,6 +88,44 @@ export class GitHubOAuthService implements IntegrationOAuth<'GITHUB'> {
     };
   }
 
+  async listResources(
+    accessToken: string,
+    providerData: GitHubProviderData
+  ): Promise<Array<{ id: string; name: string; selected: boolean }>> {
+    const octokit = new Octokit({ auth: accessToken });
+    const selectedSet = providerData.selectedRepos ? new Set(providerData.selectedRepos) : null;
+
+    const repos: Array<{ id: string; name: string; selected: boolean }> = [];
+    let page = 1;
+    let done = false;
+
+    while (!done) {
+      const { data } = await octokit.apps.listReposAccessibleToInstallation({
+        per_page: 100,
+        page,
+      });
+      for (const repo of data.repositories) {
+        repos.push({
+          id: repo.full_name,
+          name: repo.full_name,
+          selected: selectedSet ? selectedSet.has(repo.full_name) : false,
+        });
+      }
+      if (repos.length >= data.total_count) {
+        done = true;
+      } else {
+        page++;
+      }
+    }
+
+    repos.sort((a, b) => {
+      if (a.selected !== b.selected) return a.selected ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return repos;
+  }
+
   verifyWebhookSignature(
     headers: Record<string, string>,
     body: unknown,

@@ -4,7 +4,6 @@ import type { IntegrationProvider } from '@grabdy/contracts';
 export const INDIVIDUALLY_SELECTABLE_PROVIDERS = [
   'SLACK',
   'NOTION',
-  'GITHUB',
 ] as const satisfies readonly IntegrationProvider[];
 
 export type IndividuallySelectableProvider = (typeof INDIVIDUALLY_SELECTABLE_PROVIDERS)[number];

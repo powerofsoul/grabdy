@@ -90,11 +90,13 @@ export class RagSearchTool implements Tool<RagSearchInput, RagSearchOutput> {
     const collectionIds = scope.type === 'scoped' ? scope.collectionIds : undefined;
     const dataSourceIds = scope.type === 'scoped' ? scope.dataSourceIds : undefined;
     const connectionIds = scope.type === 'scoped' ? scope.connectionIds : undefined;
+    const connectionResources = scope.type === 'scoped' ? scope.connectionResources : undefined;
     assertIdsInOrg(
       orgId,
       ...(collectionIds ?? []),
       ...(dataSourceIds ?? []),
-      ...(connectionIds ?? [])
+      ...(connectionIds ?? []),
+      ...(connectionResources ?? []).map((cr) => cr.connectionId)
     );
 
     const searchService = this.searchService;
@@ -130,6 +132,7 @@ searchMeta.suggestion tells you if results have low relevance and you should ref
           collectionIds,
           dataSourceIds,
           connectionIds,
+          connectionResources,
           limit: input.topK,
           filters: filters.length > 0 ? filters : undefined,
           callerType: AiCallerType.SYSTEM,

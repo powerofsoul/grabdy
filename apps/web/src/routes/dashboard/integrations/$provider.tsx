@@ -15,10 +15,11 @@ import { toast } from 'sonner';
 
 import { getProviderLabel, ProviderIcon } from '@/components/integrations';
 import {
-  ChannelPicker,
   formatRelativeTime,
+  ResourcePicker,
   Section,
   StatusChip,
+  SyncGuide,
 } from '@/components/integrations/provider-detail';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { PageLoader } from '@/components/ui/PageLoader';
@@ -251,8 +252,14 @@ function IntegrationDetailPage() {
           </Box>
         </Section>
 
-        {provider === 'SLACK' && isActive && selectedOrgId && (
-          <ChannelPicker provider={provider} orgId={selectedOrgId} onRefresh={refreshConnections} />
+        {isActive && <SyncGuide provider={provider} />}
+
+        {(provider === 'SLACK' || provider === 'GITHUB') && isActive && selectedOrgId && (
+          <ResourcePicker
+            provider={provider}
+            orgId={selectedOrgId}
+            onRefresh={refreshConnections}
+          />
         )}
 
         <Section title={isDisconnected ? 'Actions' : 'Danger Zone'}>

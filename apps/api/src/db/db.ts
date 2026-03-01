@@ -38,6 +38,7 @@ type ConnectionProviderData =
       provider: 'GITHUB';
       githubInstallationId: number;
       installationOwner?: string;
+      selectedRepos?: string[];
       lastSyncedAt: string | null;
     }
   | {
@@ -298,6 +299,7 @@ export interface DB {
       | { type: 'COLLECTION'; collectionId: DbId<'Collection'> }
       | { type: 'DATA_SOURCE'; dataSourceId: DbId<'DataSource'> }
       | { type: 'CONNECTION'; connectionId: DbId<'Connection'> }
+      | { type: 'CONNECTION_RESOURCE'; connectionId: DbId<'Connection'>; githubRepo: string }
     >;
     system_prompt: string | null;
     title: string | null;

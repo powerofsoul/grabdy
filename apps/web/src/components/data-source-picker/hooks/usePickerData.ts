@@ -42,7 +42,7 @@ export function usePickerData(orgId: DbId<'Org'>) {
   const hasActiveProvider = (provider: IntegrationProvider) =>
     connectionsQuery.data?.some((c) => c.provider === provider && c.status === 'ACTIVE');
 
-  // Per individually-selectable provider: fetch data sources
+  // Per individually-selectable provider (excluding GitHub): fetch data sources
   const slackDsQuery = useQuery({
     queryKey: ['dataSources', orgId, 'byType', 'SLACK'],
     queryFn: async () => {
@@ -63,26 +63,13 @@ export function usePickerData(orgId: DbId<'Org'>) {
     enabled: hasActiveProvider('NOTION'),
   });
 
-  const githubDsQuery = useQuery({
-    queryKey: ['dataSources', orgId, 'byType', 'GITHUB'],
-    queryFn: async () => {
-      const res = await api.dataSources.list({ params: { orgId }, query: { type: 'GITHUB' } });
-      if (res.status === 200) return res.body.data;
-      return [];
-    },
-    enabled: hasActiveProvider('GITHUB'),
-  });
-
   // Exhaustive record keyed by IndividuallySelectableProvider.
-  // Adding a new entry to INDIVIDUALLY_SELECTABLE_PROVIDERS without adding
-  // a query + entry here will produce a compile error.
   const individualQueries: Record<
     IndividuallySelectableProvider,
     { data: Array<{ id: DbId<'DataSource'>; title: string }> | undefined }
   > = {
     SLACK: slackDsQuery,
     NOTION: notionDsQuery,
-    GITHUB: githubDsQuery,
   };
 
   const isLoading =
@@ -90,8 +77,7 @@ export function usePickerData(orgId: DbId<'Org'>) {
     allDsQuery.isLoading ||
     connectionsQuery.isLoading ||
     slackDsQuery.isLoading ||
-    notionDsQuery.isLoading ||
-    githubDsQuery.isLoading;
+    notionDsQuery.isLoading;
 
   // Group data sources by collectionId
   const dsByCollection = new Map<string, DataSourceItem[]>();
@@ -121,10 +107,20 @@ export function usePickerData(orgId: DbId<'Org'>) {
         dataSources = (dsData ?? []).map((ds) => ({ id: ds.id, title: ds.title }));
       }
 
+      // For GitHub, use selectedRepos from providerData as resources
+      let resources: IntegrationSection['resources'] = [];
+      if (conn.provider === 'GITHUB' && conn.providerData.provider === 'GITHUB') {
+        resources = (conn.providerData.selectedRepos ?? []).map((repo) => ({
+          id: repo,
+          name: repo,
+        }));
+      }
+
       return {
         connectionId: conn.id,
         provider: conn.provider,
         dataSources,
+        resources,
       };
     });
 

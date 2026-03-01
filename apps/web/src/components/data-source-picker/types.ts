@@ -12,8 +12,14 @@ export interface CollectionOption {
   dataSources: DataSourceItem[];
 }
 
+export interface ResourceItem {
+  id: string;
+  name: string;
+}
+
 export interface IntegrationSection {
   connectionId: DbId<'Connection'>;
   provider: IntegrationProvider;
   dataSources: DataSourceItem[];
+  resources: ResourceItem[];
 }

@@ -9,6 +9,7 @@ export interface GitHubProviderData {
   provider: 'GITHUB';
   githubInstallationId: number;
   installationOwner?: string;
+  selectedRepos?: string[];
   lastSyncedAt: string | null;
 }
 
@@ -16,6 +17,7 @@ export const githubProviderDataSchema = z.object({
   provider: z.literal('GITHUB'),
   githubInstallationId: z.number(),
   installationOwner: z.string().optional(),
+  selectedRepos: z.array(z.string()).optional(),
   lastSyncedAt: z.string().nullable(),
 });
 
@@ -23,6 +25,7 @@ export const githubProviderDataSchema = z.object({
 export const githubPublicSchema = z.object({
   provider: z.literal('GITHUB'),
   installationOwner: z.string().optional(),
+  selectedRepos: z.array(z.string()).optional(),
   lastSyncedAt: z.string().nullable(),
 });
 
