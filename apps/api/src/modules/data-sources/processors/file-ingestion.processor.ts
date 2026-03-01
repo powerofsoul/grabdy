@@ -11,7 +11,7 @@ import { S3FileStorage } from '../../storage/s3-file-storage';
 import { chunkEmail } from '../services/chunking/chunk-content';
 import type { EmailExtractionResult } from '../services/chunking/extractor.interface';
 import { EmbeddingService } from '../services/embedding.service';
-import { EnrichmentService } from '../services/enrichment.service';
+import { EnrichmentService, type ImageAnalysis } from '../services/enrichment.service';
 import { PipelineService } from '../services/pipeline.service';
 import { EmailExtractor } from '../sources/file/extractors/email.extractor';
 import { MsgExtractor } from '../sources/file/extractors/msg.extractor';
@@ -129,7 +129,7 @@ export class FileIngestionProcessor extends WorkerHost {
             buffer: img.buffer,
             mimeType: img.mimeType,
             pageNumber: img.page,
-            aiDescription: imageDescriptions[idx]?.description,
+            aiDescription: formatImageDescription(imageDescriptions[idx]?.analysis),
           })),
           dataSourceId: parsedDsId,
           orgId: parsedOrgId,
@@ -140,8 +140,8 @@ export class FileIngestionProcessor extends WorkerHost {
         const pageImageIdList = new Map<number, Array<(typeof imageIds)[number]>>();
         for (let i = 0; i < images.length; i++) {
           const page = images[i].page;
-          const desc = imageDescriptions[i]?.description ?? '';
-          if (desc.trim()) {
+          const desc = formatImageDescription(imageDescriptions[i]?.analysis);
+          if (desc) {
             const existing = pageImageDescs.get(page) ?? [];
             existing.push(desc);
             pageImageDescs.set(page, existing);
@@ -165,6 +165,51 @@ export class FileIngestionProcessor extends WorkerHost {
                 chunk.extractedImageId = ids[0];
               }
             }
+          }
+        }
+
+        // Create dedicated image chunks so each image is independently searchable
+        const source = { sourceUrl: null, sourceKey: storagePath };
+        for (let i = 0; i < images.length; i++) {
+          const desc = formatImageDescription(imageDescriptions[i]?.analysis);
+          if (!desc) continue;
+
+          const page = images[i].page;
+          const imgPageIds = pageImageIdList.get(page) ?? [];
+          const imgIndex = images.filter((img) => img.page === page).indexOf(images[i]);
+          const matchedImageId = imgPageIds[imgIndex];
+
+          rawChunks.push({
+            content: desc,
+            metadata: { type: 'IMAGE' },
+            sourceUrl: source.sourceUrl,
+            sourceKey: source.sourceKey,
+            extractedImageId: matchedImageId,
+          });
+        }
+      }
+
+      // For standalone image uploads, create an extracted_images record so search results include imageUrl
+      if (mimeType.startsWith('image/') && rawChunks.length > 0 && !images) {
+        const parsedDsId = dbIdSchema('DataSource').parse(dataSourceId);
+        const parsedOrgId = dbIdSchema('Org').parse(orgId);
+        const buffer = await this.storage.get(storagePath);
+
+        const imageIds = await this.pipelineService.storeExtractedImages({
+          images: [
+            {
+              buffer,
+              mimeType,
+              aiDescription: rawChunks[0].content.slice(0, 2000),
+            },
+          ],
+          dataSourceId: parsedDsId,
+          orgId: parsedOrgId,
+        });
+
+        if (imageIds.length > 0) {
+          for (const chunk of rawChunks) {
+            chunk.extractedImageId = imageIds[0];
           }
         }
       }
@@ -506,4 +551,14 @@ function buildEmlFromExtraction(email: EmailExtractionResult): Buffer {
   lines.push('');
   lines.push(email.bodyText);
   return Buffer.from(lines.join('\r\n'), 'utf-8');
+}
+
+function formatImageDescription(analysis: ImageAnalysis | undefined): string {
+  if (!analysis || !analysis.description.trim()) return '';
+
+  const parts = [`[${analysis.type}] ${analysis.description}`];
+  if (analysis.visibleText) parts.push(`Text: ${analysis.visibleText}`);
+  if (analysis.dataValues) parts.push(`Data: ${analysis.dataValues}`);
+  if (analysis.relationships) parts.push(`Relationships: ${analysis.relationships}`);
+  return parts.join(' ');
 }

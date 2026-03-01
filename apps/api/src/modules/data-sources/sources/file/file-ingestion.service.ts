@@ -20,7 +20,7 @@ import {
   groupMessages,
 } from '../../services/chunking/chunk-content';
 import { EmbeddingService } from '../../services/embedding.service';
-import { EnrichmentService } from '../../services/enrichment.service';
+import { EnrichmentService, type ImageAnalysis } from '../../services/enrichment.service';
 import { PipelineService } from '../../services/pipeline.service';
 
 import { CsvExtractor } from './extractors/csv.extractor';
@@ -421,7 +421,9 @@ export class FileIngestionService {
           const pageImageTags = new Map<number, PositionedTag[]>();
 
           if (extractedImages.length > 0 && imageDescriptions) {
-            const describedCount = imageDescriptions.filter((d) => d?.description?.trim()).length;
+            const describedCount = imageDescriptions.filter((d) =>
+              d?.analysis.description.trim()
+            ).length;
             this.logger.debug(
               `${dsLabel}   [${rangeLabel}] Vision returned ${describedCount}/${extractedImages.length} descriptions`
             );
@@ -433,7 +435,7 @@ export class FileIngestionService {
                 pageNumber: img.page,
                 width: img.width,
                 height: img.height,
-                aiDescription: imageDescriptions[idx]?.description,
+                aiDescription: formatImageDescription(imageDescriptions[idx]?.analysis),
               })),
               dataSourceId,
               orgId,
@@ -450,8 +452,8 @@ export class FileIngestionService {
               existing.push(imageId);
               pageImageIds.set(page, existing);
 
-              const desc = imageDescriptions[i]?.description ?? '';
-              if (desc.trim()) {
+              const desc = formatImageDescription(imageDescriptions[i]?.analysis);
+              if (desc) {
                 const imgTags = pageImageTags.get(page) ?? [];
                 imgTags.push({
                   tag: `[IMAGE: ${desc}]`,
@@ -492,7 +494,7 @@ export class FileIngestionService {
             `${dsLabel}   [${rangeLabel}] Chunked: ${textChunks.length} raw, ${rangeChunks.length} after overlap filter`
           );
 
-          // Link extracted_image_id to chunks based on page
+          // Link extracted_image_id to text chunks based on page (first image per page)
           for (const chunk of rangeChunks) {
             if (chunk.metadata.type === 'PDF') {
               for (const page of chunk.metadata.pages) {
@@ -506,6 +508,30 @@ export class FileIngestionService {
           }
 
           allChunks.push(...rangeChunks);
+
+          // Create dedicated image chunks so each image is independently searchable
+          if (extractedImages.length > 0 && imageDescriptions) {
+            for (let i = 0; i < extractedImages.length; i++) {
+              const desc = formatImageDescription(imageDescriptions[i]?.analysis);
+              if (!desc) continue;
+
+              const page = extractedImages[i].page;
+              const imgPageIds = pageImageIds.get(page) ?? [];
+              const imgIndex = extractedImages
+                .filter((img) => img.page === page)
+                .indexOf(extractedImages[i]);
+              const matchedImageId = imgPageIds[imgIndex];
+
+              const imageChunk: ChunkWithMeta = {
+                content: desc,
+                metadata: { type: 'IMAGE' },
+                sourceUrl: null,
+                sourceKey: source.sourceKey,
+                extractedImageId: matchedImageId,
+              };
+              allChunks.push(imageChunk);
+            }
+          }
 
           completedRanges++;
           const extractProgress = 2 + Math.round((completedRanges / ranges.length) * 28);
@@ -548,7 +574,7 @@ export class FileIngestionService {
 
       const chunkData = allChunks.map((c) => {
         const pages = c.metadata.type === 'PDF' ? c.metadata.pages : [];
-        return { content: c.content, pageNumber: pages[0] ?? 1 };
+        return { content: c.content, pageNumber: pages[0] ?? 1, chunkType: c.metadata.type };
       });
 
       const contexts = await this.enrichmentService.generateChunkContexts({
@@ -556,6 +582,7 @@ export class FileIngestionService {
         chunks: chunkData,
         documentSummary: docSummary,
         filename: params.filename ?? '',
+        sourceType: 'PDF',
       });
       const contextCount = contexts.filter((c) => c.context.trim()).length;
       this.logger.debug(
@@ -565,12 +592,17 @@ export class FileIngestionService {
       // Build embedding context: filename + outline + page + AI context + questions
       for (let i = 0; i < allChunks.length; i++) {
         const chunk = allChunks[i];
+        const isImageChunk = chunk.metadata.type === 'IMAGE';
         const pages = chunk.metadata.type === 'PDF' ? chunk.metadata.pages : [];
         const pageNum = pages[0] ?? 1;
 
         const lines: string[] = [];
         if (params.filename) {
           lines.push(`Document: ${params.filename}`);
+        }
+
+        if (isImageChunk) {
+          lines.push('Type: Image');
         }
 
         const activeHeadings: Array<{ title: string; level: number }> = [];
@@ -588,7 +620,9 @@ export class FileIngestionService {
           lines.push(`Section: ${activeHeadings.map((h) => h.title).join(' > ')}`);
         }
 
-        lines.push(`Page: ${pageNum}`);
+        if (!isImageChunk) {
+          lines.push(`Page: ${pageNum}`);
+        }
 
         const ctx = contexts[i];
         if (ctx && ctx.context) {
@@ -626,4 +660,14 @@ export class FileIngestionService {
       await tempPdf.cleanup();
     }
   }
+}
+
+function formatImageDescription(analysis: ImageAnalysis | undefined): string {
+  if (!analysis || !analysis.description.trim()) return '';
+
+  const parts = [`[${analysis.type}] ${analysis.description}`];
+  if (analysis.visibleText) parts.push(`Text: ${analysis.visibleText}`);
+  if (analysis.dataValues) parts.push(`Data: ${analysis.dataValues}`);
+  if (analysis.relationships) parts.push(`Relationships: ${analysis.relationships}`);
+  return parts.join(' ');
 }

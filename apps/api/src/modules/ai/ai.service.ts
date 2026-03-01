@@ -12,7 +12,7 @@ import {
   type ModelKey,
   RERANK_MODEL,
 } from '@grabdy/contracts';
-import { embed, generateObject, generateText } from 'ai';
+import { embed, generateText, Output } from 'ai';
 import { z } from 'zod';
 
 import { RERANK_MAX_DOC_LENGTH } from '../../config/constants';
@@ -29,8 +29,14 @@ export interface AiCallContext {
 }
 
 type GenerateTextParams = Parameters<typeof generateText>[0];
-type GenerateObjectParams = Parameters<typeof generateObject>[0];
 type EmbedParams = Parameters<typeof embed>[0];
+
+interface StructuredObjectParams {
+  model: GenerateTextParams['model'];
+  system?: string;
+  messages: GenerateTextParams extends { messages?: infer M } ? NonNullable<M> : never;
+  temperature?: number;
+}
 
 interface RerankInput {
   id: string;
@@ -101,14 +107,23 @@ export class AiService {
 
   // ---- Structured object generation ------------------------------------
 
-  async generateObject<P extends GenerateObjectParams>(
-    params: P,
+  async generateStructuredObject<T extends z.ZodType>(
+    schema: T,
+    params: StructuredObjectParams,
     model: ModelKey,
     requestType: AiRequestType,
     ctx: AiCallContext
-  ) {
+  ): Promise<z.infer<T>> {
     const start = Date.now();
-    const result = await generateObject(params);
+
+    const result = await generateText({
+      model: params.model,
+      output: Output.object({ schema }),
+      system: params.system,
+      messages: params.messages,
+      temperature: params.temperature,
+    });
+
     const durationMs = Date.now() - start;
 
     this.logUsage(
@@ -123,7 +138,7 @@ export class AiService {
       }
     );
 
-    return result;
+    return schema.parse(result.output);
   }
 
   // ---- Embeddings -----------------------------------------------------

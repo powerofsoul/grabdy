@@ -9,6 +9,7 @@ import {
   IMAGE_VISION_MODEL,
 } from '@grabdy/contracts';
 import pMap from 'p-map';
+import { z } from 'zod';
 
 import { AiService } from '../../ai/ai.service';
 import {
@@ -25,6 +26,44 @@ const IMAGE_BATCH_CONCURRENCY = 2;
 const CONTEXT_CONCURRENCY = 25;
 const MAX_IMAGE_ASPECT_RATIO = 20;
 
+const IMAGE_TYPE_VALUES = [
+  'photo',
+  'chart',
+  'diagram',
+  'table',
+  'screenshot',
+  'illustration',
+  'logo',
+  'map',
+  'formula',
+  'other',
+] as const;
+
+export const imageAnalysisSchema = z.object({
+  type: z.enum(IMAGE_TYPE_VALUES).describe('The type of image'),
+  description: z.string().describe('2-4 sentence description of content and purpose'),
+  visibleText: z
+    .string()
+    .describe('All readable text: labels, axes, legends, titles, captions. Empty string if none'),
+  dataValues: z
+    .string()
+    .describe('Key numeric values, measurements, data points. Empty string if none'),
+  relationships: z
+    .string()
+    .describe(
+      'How elements relate, e.g. "Revenue grew Q1-Q3", "A depends on B". Empty string if n/a'
+    ),
+});
+
+export type ImageAnalysis = z.infer<typeof imageAnalysisSchema>;
+
+const batchImageAnalysisSchema = z.object({
+  images: z.array(imageAnalysisSchema),
+});
+
+export const VISION_SYSTEM_PROMPT =
+  'Analyze images from a document. Describe content, extract all visible text, note data values and relationships between elements.';
+
 @Injectable()
 export class EnrichmentService {
   private readonly logger = new Logger(EnrichmentService.name);
@@ -40,7 +79,7 @@ export class EnrichmentService {
       height?: number;
       surroundingText?: string;
     }>;
-  }): Promise<Array<{ page?: number; description: string }>> {
+  }): Promise<Array<{ page?: number; analysis: ImageAnalysis }>> {
     const orgId = dbIdSchema('Org').parse(params.orgId);
     const images = params.images.slice(0, MAX_IMAGES_PER_DOCUMENT);
 
@@ -71,19 +110,18 @@ export class EnrichmentService {
         const contextLine = image.surroundingText
           ? `Surrounding text: ${image.surroundingText}`
           : '';
-        const prompt = ['Describe this image in the context of the document.', contextLine]
-          .filter(Boolean)
-          .join(' ');
         const pageLabel = image.page !== undefined ? ` (page ${image.page})` : '';
 
-        const aiResult = await this.aiService.generateText(
+        const aiResult = await this.aiService.generateStructuredObject(
+          imageAnalysisSchema,
           {
             model: CHAT_VISION_LANGUAGE_MODEL,
+            system: VISION_SYSTEM_PROMPT,
             messages: [
               {
                 role: 'user',
                 content: [
-                  { type: 'text', text: prompt },
+                  ...(contextLine ? [{ type: 'text' as const, text: contextLine }] : []),
                   { type: 'image', image: new Uint8Array(image.buffer) },
                 ],
               },
@@ -94,30 +132,36 @@ export class EnrichmentService {
           { orgId, source: 'SYSTEM', description: `Describe PDF image${pageLabel} (fallback)` }
         );
 
-        return { page: image.page, description: aiResult.text };
+        return { page: image.page, analysis: aiResult };
       },
       { concurrency: IMAGE_BATCH_CONCURRENCY }
     );
 
     // Reassemble results in original order
-    const resultMap = new Map<number, { page?: number; description: string }>();
+    const resultMap = new Map<number, { page?: number; analysis: ImageAnalysis }>();
     for (const r of [...novaResults, ...fallbackResults]) {
-      // Use page as key (images are unique per page in a range)
       if (r.page !== undefined) {
         resultMap.set(r.page, r);
       }
     }
 
+    const emptyAnalysis: ImageAnalysis = {
+      type: 'other',
+      description: '',
+      visibleText: '',
+      dataValues: '',
+      relationships: '',
+    };
+
     return images.map((img) => {
       if (img.page !== undefined) {
-        return resultMap.get(img.page) ?? { page: img.page, description: '' };
+        return resultMap.get(img.page) ?? { page: img.page, analysis: emptyAnalysis };
       }
-      // No page info: nova results come first, then fallback
       const novaIdx = novaImages.indexOf(img);
       if (novaIdx >= 0) return novaResults[novaIdx];
       const fbIdx = fallbackImages.indexOf(img);
       if (fbIdx >= 0) return fallbackResults[fbIdx];
-      return { page: undefined, description: '' };
+      return { page: undefined, analysis: emptyAnalysis };
     });
   }
 
@@ -130,7 +174,7 @@ export class EnrichmentService {
       height?: number;
       surroundingText?: string;
     }>
-  ): Promise<Array<{ page?: number; description: string }>> {
+  ): Promise<Array<{ page?: number; analysis: ImageAnalysis }>> {
     if (images.length === 0) return [];
 
     const batches: Array<typeof images> = [];
@@ -138,24 +182,12 @@ export class EnrichmentService {
       batches.push(images.slice(i, i + IMAGE_BATCH_SIZE));
     }
 
-    const SEPARATOR = '---IMG---';
-
     const batchResults = await pMap(
       batches,
       async (batch) => {
         const imageContent: Array<
           { type: 'text'; text: string } | { type: 'image'; image: Uint8Array }
         > = [];
-
-        const promptLines = [
-          `Describe each of the following ${batch.length} image(s) in the context of the document.`,
-          `Return exactly ${batch.length} description(s), one per image in order.`,
-        ];
-        if (batch.length > 1) {
-          promptLines.push(`Separate each description with "${SEPARATOR}" on its own line.`);
-        }
-
-        imageContent.push({ type: 'text', text: promptLines.join(' ') });
 
         for (const image of batch) {
           if (image.surroundingText) {
@@ -167,9 +199,13 @@ export class EnrichmentService {
         const pageLabel =
           batch[0].page !== undefined ? ` (pages ${batch.map((b) => b.page).join(',')})` : '';
 
-        const aiResult = await this.aiService.generateText(
+        const aiResult = await this.aiService.generateStructuredObject(
+          batchImageAnalysisSchema,
           {
             model: IMAGE_VISION_LANGUAGE_MODEL,
+            system:
+              VISION_SYSTEM_PROMPT +
+              ` Return exactly ${batch.length} image analysis result(s) in the images array, one per image in order.`,
             messages: [{ role: 'user', content: imageContent }],
           },
           IMAGE_VISION_MODEL,
@@ -181,17 +217,17 @@ export class EnrichmentService {
           }
         );
 
-        const descriptions =
-          batch.length === 1
-            ? [aiResult.text.trim()]
-            : aiResult.text
-                .split(SEPARATOR)
-                .map((d) => d.trim())
-                .filter(Boolean);
-
+        const { images: analyses } = aiResult;
+        const emptyAnalysis: ImageAnalysis = {
+          type: 'other',
+          description: '',
+          visibleText: '',
+          dataValues: '',
+          relationships: '',
+        };
         return batch.map((image, idx) => ({
           page: image.page,
-          description: descriptions[idx] ?? '',
+          analysis: analyses[idx] ?? emptyAnalysis,
         }));
       },
       { concurrency: IMAGE_BATCH_CONCURRENCY }
@@ -208,7 +244,7 @@ export class EnrichmentService {
 
   async generateChunkContexts(params: {
     orgId: DbId<'Org'>;
-    chunks: Array<{ content: string; pageNumber: number }>;
+    chunks: Array<{ content: string; pageNumber: number; chunkType?: ChunkMeta['type'] }>;
     documentSummary: string;
     filename: string;
     sourceType?: ChunkMeta['type'];
@@ -216,21 +252,26 @@ export class EnrichmentService {
     const orgId = dbIdSchema('Org').parse(params.orgId);
     const chunks = params.chunks;
     const docSummary = params.documentSummary.slice(0, MAX_DOCUMENT_SUMMARY_CHARS);
-    const questionGuidance = sourceTypeQuestionGuidance(params.sourceType);
+    const defaultGuidance = sourceTypeQuestionGuidance(params.sourceType);
     const contexts = await pMap(
       chunks,
       async (chunk, idx) => {
         try {
+          const isImage = chunk.chunkType === 'IMAGE';
+          const questionGuidance = isImage ? sourceTypeQuestionGuidance('IMAGE') : defaultGuidance;
+          const contextInstruction = isImage
+            ? '1. Write a short context (1-2 sentences) describing what this image shows and its role in the document.'
+            : '1. Write a short context (1-2 sentences) that situates this chunk, mentioning specific entities, topics, or details.';
           const prompt = [
             '<source>',
             `Title: ${params.filename}`,
             docSummary,
             '</source>',
-            '<chunk>',
+            `<chunk${isImage ? ' type="image"' : ''}>`,
             chunk.content.slice(0, 1500),
             '</chunk>',
             'Given this source and chunk:',
-            '1. Write a short context (1-2 sentences) that situates this chunk, mentioning specific entities, topics, or details.',
+            contextInstruction,
             `2. Write two questions a user would naturally type into a search box to find this information. ${questionGuidance}`,
             '',
             'Context: ...',
@@ -282,6 +323,7 @@ export class EnrichmentService {
     const chunkData = chunks.map((c) => ({
       content: c.content,
       pageNumber: getPageFromMeta(c.metadata),
+      chunkType: c.metadata.type,
     }));
 
     const sourceType = chunks[0].metadata.type;
@@ -419,6 +461,8 @@ function buildMetadataHeader(meta: ChunkMeta, title: string): string[] {
 
 function sourceTypeQuestionGuidance(sourceType?: ChunkMeta['type']): string {
   switch (sourceType) {
+    case 'IMAGE':
+      return 'Focus on what the image shows, data values, diagram content, or visual elements, e.g. "chart showing [metric]" or "diagram of [process]"';
     case 'SLACK':
       return 'Focus on who said what and the topic discussed, e.g. "what did [person] say about [topic]?"';
     case 'CSV':

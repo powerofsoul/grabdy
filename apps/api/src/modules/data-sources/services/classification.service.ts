@@ -53,12 +53,12 @@ export class ClassificationService {
     const pageInfo = params.pageCount !== undefined ? `\nPage count: ${params.pageCount}` : '';
     const userMessage = `MIME type: ${params.mimeType}\nFile size: ${params.fileSize} bytes${pageInfo}\n\nDocument preview:\n${params.preview.slice(0, 4000)}`;
 
-    const result = await this.aiService.generateObject(
+    const result = await this.aiService.generateStructuredObject(
+      documentClassificationSchema,
       {
         model: ENRICHMENT_LANGUAGE_MODEL,
-        schema: documentClassificationSchema,
         system: CLASSIFICATION_PROMPT,
-        prompt: userMessage,
+        messages: [{ role: 'user', content: userMessage }],
         temperature: 0,
       },
       ENRICHMENT_MODEL,
@@ -66,7 +66,7 @@ export class ClassificationService {
       { orgId: params.orgId, source: 'SYSTEM', description: 'Document classification' }
     );
 
-    return documentClassificationSchema.parse(result.object);
+    return result;
   }
 
   /**
