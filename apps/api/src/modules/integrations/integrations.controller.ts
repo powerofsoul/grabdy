@@ -82,6 +82,7 @@ export class IntegrationsController {
               syncScheduleLabel,
               createdAt: toISOString(c.createdAt),
               updatedAt: toISOString(c.updatedAt),
+              dataSourceCount: c.dataSourceCount,
             };
           }),
         },
@@ -242,10 +243,9 @@ export class IntegrationsController {
         );
       }
 
-      const updated = await this.integrationsService.getConnectionMeta(
-        params.orgId,
-        params.provider
-      );
+      // Re-fetch via listConnections to include dataSourceCount
+      const allConnections = await this.integrationsService.listConnections(params.orgId);
+      const updated = allConnections.find((c) => c.provider === params.provider);
       if (!updated) {
         return {
           status: 404 as const,
@@ -268,14 +268,15 @@ export class IntegrationsController {
             id: updated.id,
             provider: updated.provider,
             status: updated.status,
-            externalAccountId: updated.external_account_id,
-            externalAccountName: updated.external_account_name,
-            lastSyncedAt: toISOStringOrNull(updated.last_synced_at),
+            externalAccountId: updated.externalAccountId,
+            externalAccountName: updated.externalAccountName,
+            lastSyncedAt: toISOStringOrNull(updated.lastSyncedAt),
             syncScheduleLabel,
-            providerData: parsePublicProviderData(updated.provider_data),
-            orgId: updated.org_id,
-            createdAt: toISOString(updated.created_at),
-            updatedAt: toISOString(updated.updated_at),
+            dataSourceCount: updated.dataSourceCount,
+            providerData: parsePublicProviderData(updated.providerData),
+            orgId: updated.orgId,
+            createdAt: toISOString(updated.createdAt),
+            updatedAt: toISOString(updated.updatedAt),
           },
         },
       };

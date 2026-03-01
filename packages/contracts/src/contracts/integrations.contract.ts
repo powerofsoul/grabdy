@@ -55,6 +55,7 @@ const connectionSchema = z.object({
   externalAccountName: z.string().nullable(),
   lastSyncedAt: z.string().nullable(),
   syncScheduleLabel: z.string().nullable(),
+  dataSourceCount: z.number(),
   providerData: providerDataSchema,
   orgId: dbIdSchema('Org'),
   createdAt: z.string(),

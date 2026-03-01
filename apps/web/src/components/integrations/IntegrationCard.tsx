@@ -3,6 +3,7 @@ import { alpha, Box, Button, Typography, useTheme } from '@mui/material';
 import {
   CaretRightIcon,
   CheckIcon,
+  DatabaseIcon,
   PauseIcon,
   PlugsConnectedIcon,
   WarningCircleIcon,
@@ -188,7 +189,7 @@ export function IntegrationCard({
           </Typography>
         )}
 
-        {/* Bottom row: Sync time + chevron */}
+        {/* Bottom row: Stats + chevron */}
         <Box
           sx={{
             mt: 'auto',
@@ -198,11 +199,20 @@ export function IntegrationCard({
             justifyContent: 'space-between',
           }}
         >
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
-            {connection.lastSyncedAt
-              ? `Synced ${formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true })}`
-              : 'Not synced yet'}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <DatabaseIcon size={11} weight="light" color={theme.palette.text.secondary} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                {connection.dataSourceCount.toLocaleString()}{' '}
+                {connection.dataSourceCount === 1 ? 'item' : 'items'}
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.disabled" sx={{ fontSize: 11 }}>
+              {connection.lastSyncedAt
+                ? `Synced ${formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true })}`
+                : 'Not synced yet'}
+            </Typography>
+          </Box>
           <CaretRightIcon size={16} weight="light" color={theme.palette.text.disabled} />
         </Box>
       </Box>

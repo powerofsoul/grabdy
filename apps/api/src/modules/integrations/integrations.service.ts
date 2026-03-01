@@ -54,9 +54,17 @@ export class IntegrationsService {
   async listConnections(orgId: DbId<'Org'>) {
     const rows = await this.db.kysely
       .selectFrom('integration.connections')
-      .selectAll()
-      .where('org_id', '=', orgId)
-      .orderBy('created_at', 'asc')
+      .selectAll('integration.connections')
+      .select((eb) =>
+        eb
+          .selectFrom('data.data_sources')
+          .select(eb.fn.countAll<number>().as('count'))
+          .whereRef('data.data_sources.connection_id', '=', 'integration.connections.id')
+          .where('data.data_sources.org_id', '=', orgId)
+          .as('data_source_count')
+      )
+      .where('integration.connections.org_id', '=', orgId)
+      .orderBy('integration.connections.created_at', 'asc')
       .execute();
 
     return rows.map((row) => ({
@@ -66,6 +74,7 @@ export class IntegrationsService {
       externalAccountId: row.external_account_id,
       externalAccountName: row.external_account_name,
       lastSyncedAt: row.last_synced_at,
+      dataSourceCount: Number(row.data_source_count ?? 0),
       providerData: row.provider_data,
       orgId: row.org_id,
       createdAt: row.created_at,

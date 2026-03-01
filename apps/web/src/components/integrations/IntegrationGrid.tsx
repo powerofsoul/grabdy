@@ -11,6 +11,7 @@ export interface ConnectionSummary {
   lastSyncedAt: string | null;
   externalAccountName: string | null;
   syncScheduleLabel: string | null;
+  dataSourceCount: number;
 }
 
 interface IntegrationGridProps {
@@ -124,7 +125,12 @@ export function IntegrationGrid({ connections, onConnect, onManage }: Integratio
           )}
           {/* Coming soon cards */}
           {COMING_SOON_PROVIDERS.map((provider) => (
-            <IntegrationCard key={provider} provider={provider} connection={null} onManage={onManage} />
+            <IntegrationCard
+              key={provider}
+              provider={provider}
+              connection={null}
+              onManage={onManage}
+            />
           ))}
         </Box>
       </Box>

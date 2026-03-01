@@ -2,7 +2,13 @@ import { useState } from 'react';
 
 import { integrationProviderEnum } from '@grabdy/contracts';
 import { Box, Button, Typography, useTheme } from '@mui/material';
-import { ClockIcon, PlugIcon, PlugsConnectedIcon, TrashIcon } from '@phosphor-icons/react';
+import {
+  ClockIcon,
+  DatabaseIcon,
+  PlugIcon,
+  PlugsConnectedIcon,
+  TrashIcon,
+} from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
@@ -206,6 +212,18 @@ function IntegrationDetailPage() {
                 Status
               </Typography>
               <StatusChip status={connection.status} />
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                Items synced
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <DatabaseIcon size={14} weight="light" color={theme.palette.text.secondary} />
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {connection.dataSourceCount.toLocaleString()}
+                </Typography>
+              </Box>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
