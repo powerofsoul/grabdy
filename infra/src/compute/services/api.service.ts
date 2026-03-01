@@ -109,3 +109,49 @@ const apiService = new aws.ecs.Service('grabdy-api', {
   serviceRegistries: { registryArn: apiServiceDiscovery.arn },
   forceNewDeployment: true,
 }, { dependsOn: [runMigration] });
+
+// Worker process: runs BullMQ processors, no HTTP server
+const workerLogGroup = new aws.cloudwatch.LogGroup('grabdy-worker-logs', {
+  retentionInDays: 14,
+});
+
+const workerTaskDefinition = new aws.ecs.TaskDefinition('grabdy-worker-task', {
+  family: 'grabdy-worker',
+  cpu: '1024',
+  memory: '4096',
+  networkMode: 'awsvpc',
+  requiresCompatibilities: ['FARGATE'],
+  runtimePlatform: { cpuArchitecture: 'ARM64', operatingSystemFamily: 'LINUX' },
+  executionRoleArn: executionRole.arn,
+  taskRoleArn: taskRole.arn,
+  containerDefinitions: pulumi.jsonStringify([
+    {
+      name: 'worker',
+      image: imageUri,
+      command: ['node', '--max-old-space-size=3584', 'apps/api/dist/worker.js'],
+      environment: baseEnvironment,
+      stopTimeout: 120,
+      logConfiguration: {
+        logDriver: 'awslogs',
+        options: {
+          'awslogs-group': workerLogGroup.name,
+          'awslogs-region': Env.region.name,
+          'awslogs-stream-prefix': 'worker',
+        },
+      },
+    },
+  ]),
+});
+
+const workerService = new aws.ecs.Service('grabdy-worker', {
+  cluster: cluster.arn,
+  desiredCount: 1,
+  taskDefinition: workerTaskDefinition.arn,
+  launchType: 'FARGATE',
+  networkConfiguration: {
+    subnets: vpc.publicSubnetIds,
+    securityGroups: [apiSg.id],
+    assignPublicIp: true,
+  },
+  forceNewDeployment: true,
+}, { dependsOn: [runMigration] });

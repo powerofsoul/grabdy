@@ -11,6 +11,7 @@
     "lint:fix": "yarn eslint src --fix",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:reset": "tsx src/db/migrate.ts fresh",
+    "start:worker": "tsx watch src/worker.ts",
     "email:dev": "email dev --dir src/modules/email/templates --port 3001"
   },
   "dependencies": {

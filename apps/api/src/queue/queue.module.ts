@@ -1,5 +1,12 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Global, Logger, Module, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import {
+  Global,
+  Logger,
+  Module,
+  type OnModuleDestroy,
+  type OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 
 import { createBullBoard } from '@bull-board/api';
@@ -34,10 +41,18 @@ import { QUEUE_NAMES } from './queue.constants';
 export class QueueModule implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(QueueModule.name);
   private boardQueues: Queue[] = [];
+  private readonly httpAdapterHost: HttpAdapterHost | null;
 
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(@Optional() httpAdapterHost?: HttpAdapterHost) {
+    this.httpAdapterHost = httpAdapterHost ?? null;
+  }
 
   onModuleInit() {
+    if (!this.httpAdapterHost?.httpAdapter) {
+      this.logger.log('No HTTP adapter, skipping Bull Board (worker mode)');
+      return;
+    }
+
     const serverAdapter = new ExpressAdapter();
     serverAdapter.setBasePath('/admin/queues');
 

@@ -79,7 +79,9 @@ import { RedisModule } from './redis/redis.module';
       },
     ]),
     QueueModule,
-    IngestionModule,
+    // In production, processors run in a separate worker process (worker.module.ts).
+    // Locally, run everything in one process for convenience.
+    ...(process.env.NODE_ENV !== 'production' ? [IngestionModule] : []),
     AdminModule,
     AgentModule,
     BillingModule,

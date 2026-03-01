@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 
 import { StorageModule } from '../storage/storage.module';
 
-import { DataSourceCleanupProcessor } from './processors/cleanup.processor';
 import { ClassificationService } from './services/classification.service';
 import { EmbeddingService } from './services/embedding.service';
 import { EnrichmentService } from './services/enrichment.service';
@@ -39,7 +38,6 @@ import { DataSourcesService } from './data-sources.service';
     EmailExtractor,
     MsgExtractor,
     PstExtractor,
-    DataSourceCleanupProcessor,
   ],
   exports: [
     DataSourcesService,

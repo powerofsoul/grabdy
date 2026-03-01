@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { StorageModule } from '../storage/storage.module';
 
+import { DataSourceCleanupProcessor } from './processors/cleanup.processor';
 import { FileIngestionProcessor } from './processors/file-ingestion.processor';
 import { IntegrationCleanupProcessor } from './processors/integration-cleanup.processor';
 import { IntegrationSyncProcessor } from './processors/integration-sync.processor';
@@ -26,6 +27,7 @@ const processors = [
   IntegrationWebhookProcessor,
   IntegrationCleanupProcessor,
   SlackBotProcessor,
+  DataSourceCleanupProcessor,
 ];
 
 @Module({
