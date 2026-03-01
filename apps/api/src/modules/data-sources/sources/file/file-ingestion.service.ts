@@ -10,7 +10,6 @@ import pMap from 'p-map';
 
 import { PDF_PAGE_OVERLAP, PDF_PAGE_RANGE_SIZE } from '../../../../config/constants';
 import { DbService } from '../../../../db/db.module';
-import { StorageKeys } from '../../../storage/file-storage.interface';
 import { S3FileStorage } from '../../../storage/s3-file-storage';
 import type { ChunkWithMeta, SyncedMessageData } from '../../data-source.types';
 import {
@@ -438,7 +437,6 @@ export class FileIngestionService {
               })),
               dataSourceId,
               orgId,
-              storagePrefix: StorageKeys.extractedImages(orgId, dataSourceId),
             });
             this.logger.debug(
               `${dsLabel}   [${rangeLabel}] Stored ${imageIds.length} images to S3`

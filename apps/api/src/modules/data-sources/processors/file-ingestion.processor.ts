@@ -7,7 +7,6 @@ import type { Job, Queue } from 'bullmq';
 
 import { DbService } from '../../../db/db.module';
 import { InjectTypedQueue } from '../../../queue/queue.decorators';
-import { StorageKeys } from '../../storage/file-storage.interface';
 import { S3FileStorage } from '../../storage/s3-file-storage';
 import { chunkEmail } from '../services/chunking/chunk-content';
 import type { EmailExtractionResult } from '../services/chunking/extractor.interface';
@@ -134,7 +133,6 @@ export class FileIngestionProcessor extends WorkerHost {
           })),
           dataSourceId: parsedDsId,
           orgId: parsedOrgId,
-          storagePrefix: StorageKeys.extractedImages(parsedOrgId, parsedDsId),
         });
 
         // Build page-to-descriptions map (multiple images per page) and link chunks to images

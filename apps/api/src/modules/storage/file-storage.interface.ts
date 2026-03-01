@@ -40,4 +40,13 @@ export const StorageKeys = {
   extractedImages(orgId: DbId<'Org'>, dataSourceId: DbId<'DataSource'>): string {
     return `${orgId}/extracted-images/${dataSourceId}`;
   },
+
+  /** Single extracted image: orgId/extracted-images/dataSourceId/imageId */
+  extractedImage(
+    orgId: DbId<'Org'>,
+    dataSourceId: DbId<'DataSource'>,
+    imageId: DbId<'ExtractedImage'>
+  ): string {
+    return `${orgId}/extracted-images/${dataSourceId}/${imageId}`;
+  },
 };

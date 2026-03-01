@@ -59,3 +59,7 @@ export function storageProxyUrl(orgId: DbId<'Org'>, storagePath: string): string
     : storagePath;
   return `${env.apiUrl}/orgs/${orgId}/f/${relativePath}`;
 }
+
+export function extractedImageUrl(orgId: DbId<'Org'>, imageId: DbId<'ExtractedImage'>): string {
+  return `${env.apiUrl}/orgs/${orgId}/img/${imageId}`;
+}

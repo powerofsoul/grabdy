@@ -177,6 +177,33 @@ export class DataSourcesController {
   }
 
   /**
+   * Short image proxy: resolves an extracted image ID to a presigned S3 URL.
+   * Uses a single UUID in the URL so the LLM is less likely to corrupt the path.
+   */
+  @Public()
+  @UseGuards(DualAuthGuard)
+  @Get('orgs/:orgId/img/:imageId')
+  async imageProxy(
+    @Param('orgId') orgIdRaw: string,
+    @Param('imageId') imageIdRaw: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    const orgId = dbIdSchema('Org').parse(orgIdRaw);
+    this.verifyOrgAccess(orgId, req, res);
+    if (res.headersSent) return;
+
+    const imageId = dbIdSchema('ExtractedImage').parse(imageIdRaw);
+
+    try {
+      const url = await this.dataSourcesService.getExtractedImageUrl(orgId, imageId);
+      res.redirect(url);
+    } catch {
+      res.status(404).json({ error: 'Not found' });
+    }
+  }
+
+  /**
    * Short file proxy: redirects to a fresh presigned S3 URL.
    * The AI embeds these URLs in markdown so they must not expire.
    * The file path is passed directly as URL path segments for short URLs.

@@ -23,7 +23,7 @@ import {
 } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { AiService } from '../ai/ai.service';
-import { storageProxyUrl } from '../data-sources/data-source.types';
+import { extractedImageUrl, storageProxyUrl } from '../data-sources/data-source.types';
 
 import { reciprocalRankFusion } from './hybrid-search';
 
@@ -59,6 +59,7 @@ export interface SearchResult {
 export interface SearchOptions {
   collectionIds?: DbId<'Collection'>[];
   dataSourceIds?: DbId<'DataSource'>[];
+  connectionIds?: DbId<'Connection'>[];
   limit?: number;
   filters?: MetadataFilter[];
   callerType: AiCallerType;
@@ -276,25 +277,23 @@ export class SearchService {
         'data.data_sources.id as data_source_id',
         'data.chunks.collection_id',
         'data.chunks.org_id',
-        'data.extracted_images.storage_path as image_storage_path',
+        'data.extracted_images.id as image_id',
       ])
       .where('data.chunks.org_id', '=', orgId);
 
     const cIds = options.collectionIds ?? [];
     const dsIds = options.dataSourceIds ?? [];
+    const connIds = options.connectionIds ?? [];
 
-    if (cIds.length > 0 && dsIds.length > 0) {
-      // OR: match chunks in selected collections OR specific data sources
-      query = query.where((eb) =>
-        eb.or([
-          eb('data.chunks.collection_id', 'in', cIds),
-          eb('data.chunks.data_source_id', 'in', dsIds),
-        ])
-      );
-    } else if (cIds.length > 0) {
-      query = query.where('data.chunks.collection_id', 'in', cIds);
-    } else if (dsIds.length > 0) {
-      query = query.where('data.chunks.data_source_id', 'in', dsIds);
+    const hasScope = cIds.length > 0 || dsIds.length > 0 || connIds.length > 0;
+    if (hasScope) {
+      query = query.where((eb) => {
+        const parts = [];
+        if (cIds.length > 0) parts.push(eb('data.chunks.collection_id', 'in', cIds));
+        if (dsIds.length > 0) parts.push(eb('data.chunks.data_source_id', 'in', dsIds));
+        if (connIds.length > 0) parts.push(eb('data.data_sources.connection_id', 'in', connIds));
+        return parts.length === 1 ? parts[0] : eb.or(parts);
+      });
     }
 
     if (options.filters && options.filters.length > 0) {
@@ -319,7 +318,7 @@ export class SearchService {
       source_key: string | null;
       collection_id: DbId<'Collection'> | null;
       org_id: DbId<'Org'>;
-      image_storage_path: string | null;
+      image_id: DbId<'ExtractedImage'> | null;
     }>
   ): SearchResult[] {
     return rows.map((r) => ({
@@ -331,7 +330,7 @@ export class SearchService {
       dataSourceName: r.data_source_name,
       dataSourceId: r.data_source_id,
       sourceUrl: r.source_key ? storageProxyUrl(r.org_id, r.source_key) : r.source_url,
-      imageUrl: r.image_storage_path ? storageProxyUrl(r.org_id, r.image_storage_path) : null,
+      imageUrl: r.image_id ? extractedImageUrl(r.org_id, r.image_id) : null,
       collectionId: r.collection_id,
     }));
   }

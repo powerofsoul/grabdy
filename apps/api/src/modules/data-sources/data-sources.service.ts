@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { type DbId, packId } from '@grabdy/common';
+import { type DbId, dbIdSchema, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
 import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
 import type { Queue } from 'bullmq';
@@ -166,6 +166,21 @@ export class DataSourcesService {
     }
 
     return this.toResponse(dataSource);
+  }
+
+  async getExtractedImageUrl(orgId: DbId<'Org'>, imageId: DbId<'ExtractedImage'>) {
+    const image = await this.db.kysely
+      .selectFrom('data.extracted_images')
+      .select('storage_path')
+      .where('id', '=', imageId)
+      .where('org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (!image) {
+      throw new NotFoundException('Image not found');
+    }
+
+    return this.storage.getUrl(image.storage_path);
   }
 
   async getPreviewUrl(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {

@@ -4,6 +4,7 @@ import { type DbId, dbIdSchema, extractOrgNumericId, packId } from '@grabdy/comm
 import type { ChunkMeta } from '@grabdy/contracts';
 
 import { DbService } from '../../../db/db.module';
+import { StorageKeys } from '../../storage/file-storage.interface';
 import { S3FileStorage } from '../../storage/s3-file-storage';
 
 import type { BatchPlan, DocumentMetadata } from './chunking/extractor.interface';
@@ -111,7 +112,6 @@ export class PipelineService {
       width?: number;
       height?: number;
     }>;
-    storagePrefix: string;
   }): Promise<Array<DbId<'ExtractedImage'>>> {
     const dataSourceId = dbIdSchema('DataSource').parse(params.dataSourceId);
     const orgId = dbIdSchema('Org').parse(params.orgId);
@@ -124,7 +124,7 @@ export class PipelineService {
     for (let i = 0; i < params.images.length; i++) {
       const img = params.images[i];
       const imageId = packId('ExtractedImage', orgNum);
-      const storagePath = `${params.storagePrefix}/${imageId}`;
+      const storagePath = StorageKeys.extractedImage(orgId, dataSourceId, imageId);
 
       await this.storage.put(storagePath, img.buffer, img.mimeType);
 
