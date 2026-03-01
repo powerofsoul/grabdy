@@ -3,19 +3,14 @@ import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 
 import { EncryptionModule } from './common/encryption/encryption.module';
+import { SdkJwtModule } from './common/guards/sdk-jwt.module';
 import { EnvModule } from './config/env.config';
 import { DbModule } from './db/db.module';
+import { AgentModule } from './modules/agent/agent.module';
 import { AiModule } from './modules/ai/ai.module';
-import { BillingModule } from './modules/billing/billing.module';
-import { BotModule } from './modules/bot/bot.module';
-import { CollectionsModule } from './modules/collections/collections.module';
-import { DataSourcesModule } from './modules/data-sources/data-sources.module';
 import { IngestionModule } from './modules/data-sources/ingestion.module';
 import { EmailModule } from './modules/email/email.module';
-import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { NotificationModule } from './modules/notification/notification.module';
-import { OrgsModule } from './modules/orgs/orgs.module';
-import { StorageModule } from './modules/storage/storage.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
 
@@ -32,20 +27,15 @@ import { RedisModule } from './redis/redis.module';
     DbModule,
     RedisModule,
     EncryptionModule,
+    SdkJwtModule,
     QueueModule,
-    // Processor modules
-    IngestionModule,
+    // Global modules (provide services to all processor modules)
     AiModule,
+    AgentModule,
     EmailModule,
     NotificationModule,
-    // Transitive deps required by processors
-    DataSourcesModule,
-    IntegrationsModule,
-    StorageModule,
-    CollectionsModule,
-    BillingModule,
-    OrgsModule,
-    BotModule,
+    // Processor module
+    IngestionModule,
   ],
 })
 export class WorkerModule {}
