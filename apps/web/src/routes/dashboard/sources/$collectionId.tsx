@@ -354,7 +354,7 @@ function CollectionDetailPage() {
                       e.stopPropagation();
                       reprocessMutation.mutate(ds);
                     }}
-                    disabled={ds.status !== 'READY' && ds.status !== 'FAILED'}
+                    disabled={ds.status !== 'FAILED'}
                   >
                     <ArrowsClockwiseIcon size={16} weight="light" />
                   </IconButton>

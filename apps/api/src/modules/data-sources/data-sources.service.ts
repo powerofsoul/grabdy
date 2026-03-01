@@ -205,6 +205,10 @@ export class DataSourcesService {
       throw new UserFacingError('Cannot reprocess a child data source');
     }
 
+    if (dataSource.status !== 'FAILED') {
+      throw new UserFacingError('Only failed data sources can be reprocessed');
+    }
+
     if (!isUploadsMime(dataSource.mime_type)) {
       throw new UserFacingError(`Unsupported file type: ${dataSource.mime_type}`);
     }
