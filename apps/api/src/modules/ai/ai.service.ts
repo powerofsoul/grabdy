@@ -12,7 +12,7 @@ import {
   type ModelKey,
   RERANK_MODEL,
 } from '@grabdy/contracts';
-import { embed, generateText, Output } from 'ai';
+import { embed, generateObject, generateText } from 'ai';
 import { z } from 'zod';
 
 import { RERANK_MAX_DOC_LENGTH } from '../../config/constants';
@@ -116,9 +116,10 @@ export class AiService {
   ): Promise<z.infer<T>> {
     const start = Date.now();
 
-    const result = await generateText({
+    const result = await generateObject({
       model: params.model,
-      output: Output.object({ schema }),
+      schema,
+      mode: 'json',
       system: params.system,
       messages: params.messages,
       temperature: params.temperature,
@@ -138,7 +139,7 @@ export class AiService {
       }
     );
 
-    return schema.parse(result.output);
+    return schema.parse(result.object);
   }
 
   // ---- Embeddings -----------------------------------------------------
