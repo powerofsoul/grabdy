@@ -7,6 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 
 import { CTASection } from '@/components/landing/CTASection';
+import { FAQSection } from '@/components/landing/faq';
 import { FeaturesScrollSection } from '@/components/landing/features-scroll';
 import { Footer } from '@/components/landing/Footer';
 import { HeroSection } from '@/components/landing/hero';
@@ -50,6 +51,7 @@ function LandingPage() {
       <HeroSection />
       <FeaturesScrollSection />
       <PricingSection />
+      <FAQSection />
       <CTASection />
       <Footer />
     </Box>
