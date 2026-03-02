@@ -73,6 +73,17 @@ export function getMaxFileSizeForMime(mime: string): number {
 export const API_KEY_RANDOM_BYTES = 32;
 export const API_KEY_PREFIX_LENGTH = 12;
 
+// ── Vector Figure Detection ──────────────────────────────────────────
+export const VECTOR_FIG_MIN_WIDTH_PTS = 100; // ~1.4 inches
+export const VECTOR_FIG_MIN_HEIGHT_PTS = 80; // ~1.1 inches
+export const VECTOR_FIG_MIN_PATHS = 8; // charts have many paths, borders have 1-2
+export const VECTOR_FIG_MERGE_DISTANCE_PTS = 15; // merge nearby regions
+export const VECTOR_FIG_RENDER_DPI = 200;
+export const VECTOR_FIG_PADDING_PTS = 10;
+export const VECTOR_FIG_MAX_TEXT_COVERAGE = 0.8; // skip if >80% text
+export const VECTOR_FIG_MAX_RAW_PATHS = 5000; // safety limit per page
+export const VECTOR_FIG_DEDUP_Y_TOLERANCE_PTS = 50; // prefer raster over vector within this Y range
+
 // ── Invitations ─────────────────────────────────────────────────────
 export const INVITE_TOKEN_BYTES = 32;
 export const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;

@@ -19,21 +19,39 @@ import {
   PDFString,
 } from 'pdf-lib';
 
+import {
+  VECTOR_FIG_MAX_RAW_PATHS,
+  VECTOR_FIG_MAX_TEXT_COVERAGE,
+  VECTOR_FIG_MERGE_DISTANCE_PTS,
+  VECTOR_FIG_MIN_HEIGHT_PTS,
+  VECTOR_FIG_MIN_PATHS,
+  VECTOR_FIG_MIN_WIDTH_PTS,
+  VECTOR_FIG_PADDING_PTS,
+  VECTOR_FIG_RENDER_DPI,
+} from '../../../../../config/constants';
+
+/** Max decoded stream size: 10 MB (content streams are typically a few KB) */
+const MAX_DECODED_STREAM_BYTES = 10 * 1024 * 1024;
+
 /**
  * Decode a PDFRawStream and return its uncompressed bytes.
- * pdf-lib's decodePDFRawStream returns a loosely-typed internal Stream object
- * with a .bytes property holding the decoded Uint8Array.
+ * pdf-lib's decodePDFRawStream returns different internal stream types
+ * depending on the filter: FlateStream (FlateDecode), ASCIIHexStream, etc.
+ * These expose decoded data via getBytes(length) method or a bytes property.
  */
 function getDecodedStreamBytes(stream: PDFRawStream): Uint8Array {
   const decoded = decodePDFRawStream(stream);
-  // The internal Stream type has a .bytes Uint8Array at runtime
-  const bytes =
-    (decoded satisfies unknown) && 'bytes' in decoded
-      ? decoded.bytes instanceof Uint8Array
-        ? decoded.bytes
-        : undefined
-      : undefined;
-  return bytes ?? new Uint8Array(0);
+  // FlateStream and other decode streams expose getBytes(length)
+  if (decoded && 'getBytes' in decoded && typeof decoded.getBytes === 'function') {
+    const result: unknown = decoded.getBytes(MAX_DECODED_STREAM_BYTES);
+    if (result instanceof Uint8Array) return result;
+  }
+  // Some stream types expose a bytes property directly
+  if (decoded && 'bytes' in decoded) {
+    const b = decoded.bytes;
+    if (b instanceof Uint8Array) return b;
+  }
+  return new Uint8Array(0);
 }
 
 import type {
@@ -95,6 +113,15 @@ export interface ExtractedImage {
   width: number;
   height: number;
   yPosition?: number;
+}
+
+export interface VectorFigure {
+  page: number;
+  x: number; // PDF points, bottom-left origin
+  y: number;
+  width: number;
+  height: number;
+  pathCount: number;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -763,6 +790,570 @@ export class PdfAnnotationExtractor {
       } catch (err) {
         this.logger.warn(`Failed to assign image positions: ${String(err)}`);
       }
+    }
+
+    return images;
+  }
+
+  /**
+   * Detect vector figure regions (charts, diagrams) in PDF content streams.
+   * Parses path construction/painting operators to find clusters of vector paths
+   * that likely represent figures rather than text or borders.
+   */
+  extractVectorFigures(
+    pdfDoc: PDFDocument,
+    startPage: number,
+    endPage: number,
+    wordPositionsMap: Map<number, WordPosition[]>,
+    pageHeights: Map<number, number>
+  ): Map<number, VectorFigure[]> {
+    const result = new Map<number, VectorFigure[]>();
+    const pages = pdfDoc.getPages();
+
+    for (let pageIdx = startPage - 1; pageIdx < Math.min(endPage, pages.length); pageIdx++) {
+      const page = pages[pageIdx];
+      const pageNum = pageIdx + 1;
+      const pageHeight = pageHeights.get(pageNum) ?? page.getHeight();
+      const pageWidth = page.getWidth();
+
+      try {
+        // Get content stream bytes (same approach as extractImagePositions)
+        const contentsRef = page.node.get(PDFName.of('Contents'));
+        if (!contentsRef) continue;
+
+        const contentsObj = page.node.lookup(PDFName.of('Contents'));
+        let streamBytes: Uint8Array | undefined;
+
+        if (contentsObj instanceof PDFArray) {
+          const parts: Uint8Array[] = [];
+          for (let i = 0; i < contentsObj.size(); i++) {
+            const ref = contentsObj.get(i);
+            const stream = ref instanceof PDFRef ? pdfDoc.context.lookup(ref) : ref;
+            if (stream instanceof PDFRawStream) {
+              parts.push(getDecodedStreamBytes(stream));
+            } else if (stream instanceof PDFStream) {
+              parts.push(stream.getContents());
+            }
+          }
+          if (parts.length > 0) {
+            const total = parts.reduce((sum, p) => sum + p.length, 0);
+            streamBytes = new Uint8Array(total);
+            let offset = 0;
+            for (const part of parts) {
+              streamBytes.set(part, offset);
+              offset += part.length;
+            }
+          }
+        } else if (contentsObj instanceof PDFRawStream) {
+          streamBytes = getDecodedStreamBytes(contentsObj);
+        } else if (contentsObj instanceof PDFStream) {
+          streamBytes = contentsObj.getContents();
+        }
+
+        if (!streamBytes) continue;
+
+        const content = Buffer.from(streamBytes).toString('latin1');
+
+        // Get the XObject dictionary for Form XObject recursion
+        const resources = page.node.lookup(PDFName.of('Resources'));
+        const xObjects =
+          resources instanceof PDFDict ? resources.lookup(PDFName.of('XObject')) : undefined;
+        const xObjDict = xObjects instanceof PDFDict ? xObjects : undefined;
+
+        // Parse content stream for path operations, recursing into Form XObjects
+        const MAX_DECODED_PER_PAGE = 20 * 1024 * 1024; // 20MB budget for all streams on a page
+        let totalDecodedBytes = streamBytes.length;
+
+        interface RawRegion {
+          xMin: number;
+          yMin: number;
+          xMax: number;
+          yMax: number;
+        }
+        const rawRegions: RawRegion[] = [];
+
+        type Matrix = [number, number, number, number, number, number];
+        const identityMatrix: Matrix = [1, 0, 0, 1, 0, 0];
+
+        const multiplyMatrices = (m1: Matrix, m2: Matrix): Matrix => [
+          m1[0] * m2[0] + m1[1] * m2[2],
+          m1[0] * m2[1] + m1[1] * m2[3],
+          m1[2] * m2[0] + m1[3] * m2[2],
+          m1[2] * m2[1] + m1[3] * m2[3],
+          m1[4] * m2[0] + m1[5] * m2[2] + m2[4],
+          m1[4] * m2[1] + m1[5] * m2[3] + m2[5],
+        ];
+
+        /**
+         * Parse a content stream and collect path regions into rawRegions.
+         * Called for both the page stream and any Form XObject streams.
+         */
+        const parseContentStream = (
+          streamContent: string,
+          initialCtm: Matrix,
+          resourceDict: PDFDict | undefined,
+          depth: number
+        ): void => {
+          if (depth > 3) return; // prevent deep recursion
+
+          const matrixStack: Matrix[] = [];
+          let ctm: Matrix = [...initialCtm];
+
+          const applyCtm = (x: number, y: number): { x: number; y: number } => ({
+            x: ctm[0] * x + ctm[2] * y + ctm[4],
+            y: ctm[1] * x + ctm[3] * y + ctm[5],
+          });
+
+          let currentPathPoints: Array<{ x: number; y: number }> = [];
+          let fillIsWhite = false;
+
+          const flushPath = (painted: boolean, isFill: boolean): void => {
+            if (!painted || currentPathPoints.length === 0 || (isFill && fillIsWhite)) {
+              currentPathPoints = [];
+              return;
+            }
+
+            let xMin = Infinity;
+            let yMin = Infinity;
+            let xMax = -Infinity;
+            let yMax = -Infinity;
+            for (const pt of currentPathPoints) {
+              if (pt.x < xMin) xMin = pt.x;
+              if (pt.y < yMin) yMin = pt.y;
+              if (pt.x > xMax) xMax = pt.x;
+              if (pt.y > yMax) yMax = pt.y;
+            }
+
+            const w = xMax - xMin;
+            const h = yMax - yMin;
+
+            if (w < 5 && h < 5) {
+              currentPathPoints = [];
+              return;
+            }
+
+            if (w > pageWidth * 0.9 && h > pageHeight * 0.9) {
+              currentPathPoints = [];
+              return;
+            }
+
+            rawRegions.push({ xMin, yMin, xMax, yMax });
+            currentPathPoints = [];
+          };
+
+          // Resolve XObject dict for this stream (Form XObjects may have their own Resources)
+          const localXObjects = resourceDict
+            ? resourceDict.lookup(PDFName.of('XObject'))
+            : undefined;
+          const localXObjDict = localXObjects instanceof PDFDict ? localXObjects : undefined;
+
+          const tokens = streamContent.match(/\/?\S+/g) ?? [];
+          const operandStack: string[] = [];
+
+          for (const token of tokens) {
+            switch (token) {
+              case 'q':
+                matrixStack.push([...ctm]);
+                break;
+              case 'Q':
+                ctm = matrixStack.pop() ?? [...initialCtm];
+                break;
+              case 'cm': {
+                if (operandStack.length >= 6) {
+                  const nums = operandStack.splice(-6).map(Number);
+                  const m: Matrix = [nums[0], nums[1], nums[2], nums[3], nums[4], nums[5]];
+                  ctm = multiplyMatrices(m, ctm);
+                }
+                break;
+              }
+              case 'Do': {
+                // Check if this is a Form XObject and recurse into it
+                const name = operandStack.pop();
+                if (!name) break;
+                const xObjName = name.startsWith('/') ? name.slice(1) : name;
+
+                // Try local resources first, then page-level
+                const dict = localXObjDict ?? xObjDict;
+                if (!dict) break;
+
+                const xObj = dict.lookup(PDFName.of(xObjName));
+                if (!xObj) break;
+
+                // Get the stream dict (works for both PDFRawStream and PDFStream)
+                const objDict =
+                  xObj instanceof PDFRawStream
+                    ? xObj.dict
+                    : xObj instanceof PDFStream
+                      ? xObj.dict
+                      : xObj instanceof PDFDict
+                        ? xObj
+                        : undefined;
+                if (!objDict) break;
+
+                const subtype = objDict.get(PDFName.of('Subtype'));
+                if (!(subtype instanceof PDFName) || subtype.decodeText() !== 'Form') break;
+
+                // Get the Form XObject's content stream
+                let formBytes: Uint8Array | undefined;
+                if (xObj instanceof PDFRawStream) {
+                  formBytes = getDecodedStreamBytes(xObj);
+                } else if (xObj instanceof PDFStream) {
+                  formBytes = xObj.getContents();
+                }
+                if (!formBytes || formBytes.length === 0) break;
+
+                // Check per-page decoded bytes budget
+                totalDecodedBytes += formBytes.length;
+                if (totalDecodedBytes > MAX_DECODED_PER_PAGE) break;
+
+                // Apply the Form's own Matrix if present
+                let formCtm: Matrix = [...ctm];
+                const matrixArr = objDict.get(PDFName.of('Matrix'));
+                if (matrixArr instanceof PDFArray && matrixArr.size() === 6) {
+                  const fm: Matrix = [
+                    pdfNumberValue(matrixArr.get(0)),
+                    pdfNumberValue(matrixArr.get(1)),
+                    pdfNumberValue(matrixArr.get(2)),
+                    pdfNumberValue(matrixArr.get(3)),
+                    pdfNumberValue(matrixArr.get(4)),
+                    pdfNumberValue(matrixArr.get(5)),
+                  ];
+                  formCtm = multiplyMatrices(fm, ctm);
+                }
+
+                // Get Form's own Resources (may override page resources)
+                const formResources = objDict.lookup(PDFName.of('Resources'));
+                const formResourceDict =
+                  formResources instanceof PDFDict ? formResources : resourceDict;
+
+                const formContent = Buffer.from(formBytes).toString('latin1');
+                parseContentStream(formContent, formCtm, formResourceDict, depth + 1);
+                break;
+              }
+              // Path construction
+              case 'm': {
+                if (operandStack.length >= 2) {
+                  const y = Number(operandStack.pop());
+                  const x = Number(operandStack.pop());
+                  const pt = applyCtm(x, y);
+                  currentPathPoints.push(pt);
+                }
+                break;
+              }
+              case 'l': {
+                if (operandStack.length >= 2) {
+                  const y = Number(operandStack.pop());
+                  const x = Number(operandStack.pop());
+                  const pt = applyCtm(x, y);
+                  currentPathPoints.push(pt);
+                }
+                break;
+              }
+              case 'c': {
+                if (operandStack.length >= 6) {
+                  const nums = operandStack.splice(-6).map(Number);
+                  currentPathPoints.push(applyCtm(nums[0], nums[1]));
+                  currentPathPoints.push(applyCtm(nums[2], nums[3]));
+                  currentPathPoints.push(applyCtm(nums[4], nums[5]));
+                }
+                break;
+              }
+              case 'v': {
+                if (operandStack.length >= 4) {
+                  const nums = operandStack.splice(-4).map(Number);
+                  currentPathPoints.push(applyCtm(nums[0], nums[1]));
+                  currentPathPoints.push(applyCtm(nums[2], nums[3]));
+                }
+                break;
+              }
+              case 'y': {
+                if (operandStack.length >= 4) {
+                  const nums = operandStack.splice(-4).map(Number);
+                  currentPathPoints.push(applyCtm(nums[0], nums[1]));
+                  currentPathPoints.push(applyCtm(nums[2], nums[3]));
+                }
+                break;
+              }
+              case 're': {
+                if (operandStack.length >= 4) {
+                  const nums = operandStack.splice(-4).map(Number);
+                  const [rx, ry, rw, rh] = nums;
+                  currentPathPoints.push(applyCtm(rx, ry));
+                  currentPathPoints.push(applyCtm(rx + rw, ry));
+                  currentPathPoints.push(applyCtm(rx + rw, ry + rh));
+                  currentPathPoints.push(applyCtm(rx, ry + rh));
+                }
+                break;
+              }
+              // Path painting operators: stroke-only
+              case 'S':
+              case 's':
+                flushPath(true, false);
+                break;
+              // Fill-only
+              case 'f':
+              case 'F':
+              case 'f*':
+                flushPath(true, true);
+                break;
+              // Fill-and-stroke
+              case 'B':
+              case 'B*':
+              case 'b':
+              case 'b*':
+                flushPath(true, true);
+                break;
+              case 'n':
+                flushPath(false, false);
+                break;
+              // Color operators: track fill color to detect white fills
+              case 'rg': {
+                if (operandStack.length >= 3) {
+                  const b = Number(operandStack.pop());
+                  const g = Number(operandStack.pop());
+                  const r = Number(operandStack.pop());
+                  fillIsWhite = r > 0.95 && g > 0.95 && b > 0.95;
+                }
+                break;
+              }
+              case 'g': {
+                if (operandStack.length >= 1) {
+                  const gray = Number(operandStack.pop());
+                  fillIsWhite = gray > 0.95;
+                }
+                break;
+              }
+              case 'k': {
+                if (operandStack.length >= 4) {
+                  const nums = operandStack.splice(-4).map(Number);
+                  fillIsWhite = nums.every((n) => n < 0.05);
+                }
+                break;
+              }
+              case 'RG':
+              case 'G':
+              case 'K':
+              case 'cs':
+              case 'CS':
+              case 'sc':
+              case 'SC':
+              case 'scn':
+              case 'SCN':
+                operandStack.length = 0;
+                break;
+              default:
+                operandStack.push(token);
+                break;
+            }
+          }
+        };
+
+        // Get page-level Resources dict for XObject lookups
+        const pageResourceDict = resources instanceof PDFDict ? resources : undefined;
+        parseContentStream(content, identityMatrix, pageResourceDict, 0);
+
+        // Safety limit: skip if too many raw regions (decorative/complex backgrounds)
+        if (rawRegions.length > VECTOR_FIG_MAX_RAW_PATHS) {
+          this.logger.debug(
+            `Vector figure detection: skipping page ${pageNum} (${rawRegions.length} raw path regions exceeds limit)`
+          );
+          continue;
+        }
+
+        if (rawRegions.length < VECTOR_FIG_MIN_PATHS) continue;
+
+        // Cluster nearby/overlapping regions using iterative merge
+        let clusters = rawRegions.map((r) => ({
+          xMin: r.xMin,
+          yMin: r.yMin,
+          xMax: r.xMax,
+          yMax: r.yMax,
+          pathCount: 1,
+        }));
+
+        let merged = true;
+        let mergeIterations = 0;
+        while (merged && mergeIterations < 50) {
+          mergeIterations++;
+          merged = false;
+          clusters.sort((a, b) => a.yMin - b.yMin);
+          const next: typeof clusters = [];
+
+          for (const cluster of clusters) {
+            let didMerge = false;
+            for (const existing of next) {
+              // Check if overlapping or within merge distance
+              const overlapOrClose =
+                cluster.xMin <= existing.xMax + VECTOR_FIG_MERGE_DISTANCE_PTS &&
+                cluster.xMax >= existing.xMin - VECTOR_FIG_MERGE_DISTANCE_PTS &&
+                cluster.yMin <= existing.yMax + VECTOR_FIG_MERGE_DISTANCE_PTS &&
+                cluster.yMax >= existing.yMin - VECTOR_FIG_MERGE_DISTANCE_PTS;
+
+              if (overlapOrClose) {
+                existing.xMin = Math.min(existing.xMin, cluster.xMin);
+                existing.yMin = Math.min(existing.yMin, cluster.yMin);
+                existing.xMax = Math.max(existing.xMax, cluster.xMax);
+                existing.yMax = Math.max(existing.yMax, cluster.yMax);
+                existing.pathCount += cluster.pathCount;
+                didMerge = true;
+                merged = true;
+                break;
+              }
+            }
+            if (!didMerge) {
+              next.push({ ...cluster });
+            }
+          }
+          clusters = next;
+        }
+
+        // Filter clusters by minimum size and path count
+        const figures: VectorFigure[] = [];
+        const wordPositions = wordPositionsMap.get(pageNum) ?? [];
+
+        for (const cluster of clusters) {
+          const w = cluster.xMax - cluster.xMin;
+          const h = cluster.yMax - cluster.yMin;
+
+          if (w < VECTOR_FIG_MIN_WIDTH_PTS || h < VECTOR_FIG_MIN_HEIGHT_PTS) continue;
+          if (cluster.pathCount < VECTOR_FIG_MIN_PATHS) continue;
+
+          // Check text coverage: convert figure bbox to pdftotext coords (top-left origin)
+          const figTopLeftY = pageHeight - cluster.yMax;
+          const figBottomLeftY = pageHeight - cluster.yMin;
+
+          let textOverlapArea = 0;
+          for (const word of wordPositions) {
+            const overlapXMin = Math.max(cluster.xMin, word.xMin);
+            const overlapXMax = Math.min(cluster.xMax, word.xMax);
+            const overlapYMin = Math.max(figTopLeftY, word.yMin);
+            const overlapYMax = Math.min(figBottomLeftY, word.yMax);
+            if (overlapXMin < overlapXMax && overlapYMin < overlapYMax) {
+              textOverlapArea += (overlapXMax - overlapXMin) * (overlapYMax - overlapYMin);
+            }
+          }
+
+          const figArea = w * h;
+          if (figArea > 0 && textOverlapArea / figArea > VECTOR_FIG_MAX_TEXT_COVERAGE) continue;
+
+          figures.push({
+            page: pageNum,
+            x: cluster.xMin,
+            y: cluster.yMin,
+            width: w,
+            height: h,
+            pathCount: cluster.pathCount,
+          });
+        }
+
+        if (figures.length > 0) {
+          result.set(pageNum, figures);
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to extract vector figures for page ${pageNum}: ${String(err)}`);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Render detected vector figures as PNG images using pdftocairo.
+   * Each figure region is cropped and rendered at the configured DPI.
+   */
+  async renderVectorFigures(
+    filePath: string,
+    vectorFigures: Map<number, VectorFigure[]>,
+    pageDimensions: Map<number, { width: number; height: number }>
+  ): Promise<ExtractedImage[]> {
+    const images: ExtractedImage[] = [];
+    const tmpDir = await mkdtemp(join(tmpdir(), 'vector-fig-'));
+
+    try {
+      let figIdx = 0;
+      for (const [pageNum, figures] of vectorFigures) {
+        const dims = pageDimensions.get(pageNum) ?? { width: 612, height: 792 };
+
+        for (const fig of figures) {
+          try {
+            // Add padding and clamp to page bounds
+            const padded = {
+              x: Math.max(0, fig.x - VECTOR_FIG_PADDING_PTS),
+              y: Math.max(0, fig.y - VECTOR_FIG_PADDING_PTS),
+              width: Math.min(
+                fig.width + 2 * VECTOR_FIG_PADDING_PTS,
+                dims.width - Math.max(0, fig.x - VECTOR_FIG_PADDING_PTS)
+              ),
+              height: Math.min(
+                fig.height + 2 * VECTOR_FIG_PADDING_PTS,
+                dims.height - Math.max(0, fig.y - VECTOR_FIG_PADDING_PTS)
+              ),
+            };
+
+            // Convert from PDF bottom-left to top-left origin for pdftocairo
+            const yTop = dims.height - (padded.y + padded.height);
+
+            // Scale points to pixels
+            const scale = VECTOR_FIG_RENDER_DPI / 72;
+            const px = Math.round(padded.x * scale);
+            const py = Math.round(yTop * scale);
+            const pw = Math.round(padded.width * scale);
+            const ph = Math.round(padded.height * scale);
+
+            const outPrefix = join(tmpDir, `fig-${figIdx}`);
+            await execFileAsync('pdftocairo', [
+              '-png',
+              '-singlefile',
+              '-r',
+              String(VECTOR_FIG_RENDER_DPI),
+              '-x',
+              String(px),
+              '-y',
+              String(py),
+              '-W',
+              String(pw),
+              '-H',
+              String(ph),
+              '-f',
+              String(pageNum),
+              '-l',
+              String(pageNum),
+              filePath,
+              outPrefix,
+            ]);
+
+            const pngPath = `${outPrefix}.png`;
+            const imgBuffer = await readFile(pngPath);
+
+            // Extract dimensions from PNG header
+            if (imgBuffer.length >= 24) {
+              const width = imgBuffer.readUInt32BE(16);
+              const height = imgBuffer.readUInt32BE(20);
+
+              // Skip if rendering produced a very small image
+              if (width >= 50 && height >= 50) {
+                // yPosition in pdftotext coords (top-left origin) for text insertion
+                const yPosition = dims.height - (fig.y + fig.height);
+
+                images.push({
+                  page: pageNum,
+                  buffer: Buffer.from(imgBuffer),
+                  width,
+                  height,
+                  yPosition,
+                });
+              }
+            }
+
+            figIdx++;
+          } catch (err) {
+            this.logger.warn(`Failed to render vector figure on page ${pageNum}: ${String(err)}`);
+            figIdx++;
+          }
+        }
+      }
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     }
 
     return images;

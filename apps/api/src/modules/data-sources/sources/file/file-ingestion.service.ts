@@ -7,8 +7,13 @@ import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import pMap from 'p-map';
+import { PDFDocument } from 'pdf-lib';
 
-import { PDF_PAGE_OVERLAP, PDF_PAGE_RANGE_SIZE } from '../../../../config/constants';
+import {
+  PDF_PAGE_OVERLAP,
+  PDF_PAGE_RANGE_SIZE,
+  VECTOR_FIG_DEDUP_Y_TOLERANCE_PTS,
+} from '../../../../config/constants';
 import { DbService } from '../../../../db/db.module';
 import { S3FileStorage } from '../../../storage/s3-file-storage';
 import type { ChunkWithMeta, SyncedMessageData } from '../../data-source.types';
@@ -28,6 +33,7 @@ import { DocxExtractor, type DocxImage } from './extractors/docx.extractor';
 import { ImageExtractor } from './extractors/image.extractor';
 import { PdfExtractor } from './extractors/pdf.extractor';
 import {
+  type ExtractedImage,
   insertTagsAtPositions,
   PdfAnnotationExtractor,
   type PositionedTag,
@@ -306,9 +312,10 @@ export class FileIngestionService {
 
       this.logger.debug(`${dsLabel} Extracting annotations and outline...`);
       const pdfBuffer = await readFile(tempPdf.path);
-      const [annotationsMap, outline] = await Promise.all([
+      const [annotationsMap, outline, vectorPdfDoc] = await Promise.all([
         this.pdfAnnotationExtractor.extractAnnotations(pdfBuffer),
         this.pdfAnnotationExtractor.extractOutline(pdfBuffer),
+        PDFDocument.load(pdfBuffer, { ignoreEncryption: true }),
       ]);
       this.logger.debug(
         `${dsLabel} Annotations: ${annotationsMap.size} pages with annotations, outline: ${outline.length} headings`
@@ -335,8 +342,8 @@ export class FileIngestionService {
             `${dsLabel} Range ${rangeLabel}: extracting ${extractStart}-${extractEnd} with overlap`
           );
 
-          // Extract text, word positions, and images in parallel
-          const [pages, wordPositionsMap, extractedImages] = await Promise.all([
+          // Extract text, word positions, and raster images in parallel
+          const [pages, wordPositionsMap, rasterImages] = await Promise.all([
             this.pdfAnnotationExtractor.extractPageRangeFromFile(
               tempPdf.path,
               extractStart,
@@ -354,6 +361,51 @@ export class FileIngestionService {
               pdfBuffer
             ),
           ]);
+
+          // Detect and render vector figures (charts, diagrams drawn as paths)
+          let extractedImages = rasterImages;
+          try {
+            // Collect page heights for the range
+            const pageHeights = new Map<number, number>();
+            const pageDims = new Map<number, { width: number; height: number }>();
+            await Promise.all(
+              Array.from({ length: range.end - range.start + 1 }, (_, i) => range.start + i).map(
+                async (p) => {
+                  const dims = await this.pdfAnnotationExtractor.getPageDimensions(tempPdf.path, p);
+                  pageHeights.set(p, dims.height);
+                  pageDims.set(p, dims);
+                }
+              )
+            );
+
+            const vectorFigures = this.pdfAnnotationExtractor.extractVectorFigures(
+              vectorPdfDoc,
+              range.start,
+              range.end,
+              wordPositionsMap,
+              pageHeights
+            );
+
+            if (vectorFigures.size > 0) {
+              const vectorImages = await this.pdfAnnotationExtractor.renderVectorFigures(
+                tempPdf.path,
+                vectorFigures,
+                pageDims
+              );
+
+              if (vectorImages.length > 0) {
+                this.logger.debug(
+                  `${dsLabel}   [${rangeLabel}] Detected ${vectorFigures.size} pages with vector figures, rendered ${vectorImages.length} images`
+                );
+                extractedImages = deduplicateImages(rasterImages, vectorImages);
+              }
+            }
+          } catch (err) {
+            this.logger.warn(
+              `${dsLabel}   [${rangeLabel}] Vector figure detection failed, using raster only: ${String(err)}`
+            );
+          }
+
           this.logger.debug(
             `${dsLabel}   [${rangeLabel}] Extracted text for ${pages.length} pages, ${extractedImages.length} images, word positions for ${wordPositionsMap.size} pages`
           );
@@ -585,6 +637,10 @@ export class FileIngestionService {
         documentSummary: docSummary,
         filename: params.filename ?? '',
         sourceType: 'PDF',
+        onProgress: (completed, total) => {
+          const contextProgress = 30 + Math.round((completed / total) * 20);
+          this.embeddingService.setProgress(dataSourceId, orgId, contextProgress).catch(() => {});
+        },
       });
       const contextCount = contexts.filter((c) => c.context.trim()).length;
       this.logger.debug(
@@ -662,6 +718,25 @@ export class FileIngestionService {
       await tempPdf.cleanup();
     }
   }
+}
+
+/**
+ * Deduplicate vector images that overlap with raster images on the same page.
+ * Prefers raster images since they were explicitly embedded by the PDF author.
+ */
+function deduplicateImages(
+  rasterImages: ExtractedImage[],
+  vectorImages: ExtractedImage[]
+): ExtractedImage[] {
+  const filtered = vectorImages.filter((vec) => {
+    // Skip vector images that overlap with a raster image on the same page
+    return !rasterImages.some((raster) => {
+      if (raster.page !== vec.page) return false;
+      if (raster.yPosition === undefined || vec.yPosition === undefined) return false;
+      return Math.abs(raster.yPosition - vec.yPosition) < VECTOR_FIG_DEDUP_Y_TOLERANCE_PTS;
+    });
+  });
+  return [...rasterImages, ...filtered];
 }
 
 function formatImageDescription(analysis: ImageAnalysis | undefined): string {

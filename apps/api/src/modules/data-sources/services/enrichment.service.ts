@@ -322,11 +322,13 @@ export class EnrichmentService {
     documentSummary: string;
     filename: string;
     sourceType?: ChunkMeta['type'];
+    onProgress?: (completed: number, total: number) => void;
   }): Promise<Array<{ context: string; questions: string[] }>> {
     const orgId = dbIdSchema('Org').parse(params.orgId);
     const chunks = params.chunks;
     const docSummary = params.documentSummary.slice(0, MAX_DOCUMENT_SUMMARY_CHARS);
     const defaultGuidance = sourceTypeQuestionGuidance(params.sourceType);
+    let completedCount = 0;
     const contexts = await pMap(
       chunks,
       async (chunk, idx) => {
@@ -368,6 +370,9 @@ export class EnrichmentService {
         } catch (err) {
           this.logger.warn(`Failed to generate context for chunk ${idx}: ${String(err)}`);
           return { context: '', questions: [] };
+        } finally {
+          completedCount++;
+          params.onProgress?.(completedCount, chunks.length);
         }
       },
       { concurrency: CONTEXT_CONCURRENCY }
