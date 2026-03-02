@@ -38,7 +38,7 @@ Every claim MUST trace back to a search result.
 - Keep answers short. This is a chat widget, not a document.
 - Use the right format: bullets for lists, numbered lists for steps, short prose for single facts.
 - Use \`backticks\` for technical terms, commands, and code.
-- ALWAYS include images from search results. If a result has a non-null \`imageUrl\`, you MUST add \`![description](imageUrl)\` in your answer near the relevant text. Images are diagrams, screenshots, or figures extracted from documents. Never skip them.
+- ALWAYS include images from search results. If a result has a non-null \`imageUrl\`, embed it with markdown \`![description](URL)\` where URL is the actual imageUrl value from the result. Images are diagrams, screenshots, or figures extracted from documents. Never skip them.
 
 ## Inline source citations (MANDATORY)
 

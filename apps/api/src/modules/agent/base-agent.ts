@@ -244,24 +244,27 @@ export abstract class BaseAgent {
         const prefix = attempt === 0 ? ctx.logPrefix : `${ctx.logPrefix ?? '[stream]'} retry`;
         const processed = processStream(streamResult.fullStream, ctx.hooks, prefix);
 
-        // Buffer non-text chunks so we don't send duplicates on retry
-        const buffered: string[] = [];
+        // Buffer sources so we don't send duplicates on retry.
+        // Thinking chunks stream immediately for real-time UX.
+        const bufferedSources: string[] = [];
         let hasText = false;
 
         for await (const chunk of processed.chunks) {
           if (chunk.type === 'text') {
-            // Flush buffered meta chunks on first text, then stream normally
             if (!hasText) {
-              for (const b of buffered) yield b;
+              for (const b of bufferedSources) yield b;
+              bufferedSources.length = 0;
               hasText = true;
             }
             yield sseText(chunk.text);
+          } else if (chunk.type === 'thinking') {
+            yield sseMeta(chunk);
           } else {
             const encoded = sseMeta(chunk);
             if (hasText) {
               yield encoded;
             } else {
-              buffered.push(encoded);
+              bufferedSources.push(encoded);
             }
           }
         }
@@ -272,8 +275,6 @@ export abstract class BaseAgent {
         finishReason = processed.getLastFinishReason();
 
         if (fullText.trim()) {
-          // Flush any remaining buffered chunks (e.g. sources emitted after text)
-          // Already yielded inline above since hasText was true
           break;
         }
 
