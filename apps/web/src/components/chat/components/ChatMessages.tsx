@@ -30,11 +30,18 @@ export function ChatMessages({
   const shouldAutoScrollRef = useRef(true);
   const prevMessageCountRef = useRef(messages.length);
 
-  // Resume auto-scroll when the user sends a new message
+  // Resume auto-scroll and immediately scroll when the user sends a new message
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (messages.length > prevMessageCountRef.current && lastMessage?.role === 'user') {
       shouldAutoScrollRef.current = true;
+      // Scroll after layout so the new message is in the DOM
+      requestAnimationFrame(() => {
+        const container = containerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      });
     }
     prevMessageCountRef.current = messages.length;
   }, [messages.length]);

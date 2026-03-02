@@ -53,7 +53,16 @@ function DashboardLayout() {
     <MobileSidebarProvider>
       <Box sx={{ display: 'flex', height: '100%' }}>
         <Sidebar />
-        <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: 0,
+          }}
+        >
           <Outlet />
         </Box>
         <BackgroundWatermark />
