@@ -17,6 +17,7 @@ import {
   ENRICHMENT_LANGUAGE_MODEL,
   IMAGE_VISION_LANGUAGE_MODEL,
 } from '../../ai/bedrock.provider';
+import { NotificationService } from '../../notification/notification.service';
 import type { ChunkWithMeta } from '../data-source.types';
 
 const MAX_IMAGES_PER_DOCUMENT = 20;
@@ -64,14 +65,27 @@ const batchImageAnalysisSchema = z.object({
 export const VISION_SYSTEM_PROMPT =
   'Analyze images from a document. Describe content, extract all visible text, note data values and relationships between elements.';
 
+const EMPTY_IMAGE_ANALYSIS: ImageAnalysis = {
+  type: 'other',
+  description: '',
+  visibleText: '',
+  dataValues: '',
+  relationships: '',
+};
+
 @Injectable()
 export class EnrichmentService {
   private readonly logger = new Logger(EnrichmentService.name);
 
-  constructor(private aiService: AiService) {}
+  constructor(
+    private aiService: AiService,
+    private notification: NotificationService
+  ) {}
 
   async describeImages(params: {
     orgId: DbId<'Org'>;
+    dataSourceId: DbId<'DataSource'>;
+    storagePath: string;
     images: Array<{
       buffer: Buffer;
       page?: number;
@@ -86,8 +100,10 @@ export class EnrichmentService {
     if (images.length === 0) return [];
 
     // Split images by aspect ratio: Nova Lite rejects images > 20:1
+    // Track which group each image belongs to for reassembly
     const novaImages: typeof images = [];
     const fallbackImages: typeof images = [];
+    const isFallback: boolean[] = [];
 
     for (const image of images) {
       const w = image.width ?? 1;
@@ -95,78 +111,84 @@ export class EnrichmentService {
       const ratio = Math.max(w, h) / Math.min(w, h);
       if (ratio > MAX_IMAGE_ASPECT_RATIO) {
         fallbackImages.push(image);
+        isFallback.push(true);
       } else {
         novaImages.push(image);
+        isFallback.push(false);
       }
     }
 
     // Process normal images in batches via Nova Lite
-    const novaResults = await this.describeImageBatchesNovaLite(orgId, novaImages);
+    const novaResults = await this.describeImageBatchesNovaLite(
+      orgId,
+      params.dataSourceId,
+      params.storagePath,
+      novaImages
+    );
 
     // Process extreme aspect ratio images individually via Haiku (no ratio limit)
+
     const fallbackResults = await pMap(
       fallbackImages,
       async (image) => {
-        const contextLine = image.surroundingText
-          ? `Surrounding text: ${image.surroundingText}`
-          : '';
-        const pageLabel = image.page !== undefined ? ` (page ${image.page})` : '';
+        try {
+          const contextLine = image.surroundingText
+            ? `Surrounding text: ${image.surroundingText}`
+            : '';
+          const pageLabel = image.page !== undefined ? ` (page ${image.page})` : '';
 
-        const aiResult = await this.aiService.generateStructuredObject(
-          imageAnalysisSchema,
-          {
-            model: CHAT_VISION_LANGUAGE_MODEL,
-            system: VISION_SYSTEM_PROMPT,
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  ...(contextLine ? [{ type: 'text' as const, text: contextLine }] : []),
-                  { type: 'image', image: new Uint8Array(image.buffer) },
-                ],
-              },
-            ],
-          },
-          CHAT_MODEL_VISION,
-          AiRequestType.IMAGE_ANALYSIS,
-          { orgId, source: 'SYSTEM', description: `Describe PDF image${pageLabel} (fallback)` }
-        );
+          const aiResult = await this.aiService.generateStructuredObject(
+            imageAnalysisSchema,
+            {
+              model: CHAT_VISION_LANGUAGE_MODEL,
+              system: VISION_SYSTEM_PROMPT,
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    ...(contextLine ? [{ type: 'text' as const, text: contextLine }] : []),
+                    { type: 'image', image: new Uint8Array(image.buffer) },
+                  ],
+                },
+              ],
+            },
+            CHAT_MODEL_VISION,
+            AiRequestType.IMAGE_ANALYSIS,
+            { orgId, source: 'SYSTEM', description: `Describe PDF image${pageLabel} (fallback)` }
+          );
 
-        return { page: image.page, analysis: aiResult };
+          return { page: image.page, analysis: aiResult };
+        } catch (err) {
+          this.logger.warn(
+            `Fallback image description failed (page ${image.page}), skipping: ${String(err)}`
+          );
+          this.notification.notifyImageDescriptionFailure(
+            params.dataSourceId,
+            params.storagePath,
+            image.page !== undefined ? [image.page] : [],
+            String(err)
+          );
+          return { page: image.page, analysis: EMPTY_IMAGE_ANALYSIS };
+        }
       },
       { concurrency: IMAGE_BATCH_CONCURRENCY }
     );
 
-    // Reassemble results in original order
-    const resultMap = new Map<number, { page?: number; analysis: ImageAnalysis }>();
-    for (const r of [...novaResults, ...fallbackResults]) {
-      if (r.page !== undefined) {
-        resultMap.set(r.page, r);
+    // Reassemble results in original order using tracked group indices
+    let novaIdx = 0;
+    let fbIdx = 0;
+    return images.map((img, i) => {
+      if (isFallback[i]) {
+        return fallbackResults[fbIdx++] ?? { page: img.page, analysis: EMPTY_IMAGE_ANALYSIS };
       }
-    }
-
-    const emptyAnalysis: ImageAnalysis = {
-      type: 'other',
-      description: '',
-      visibleText: '',
-      dataValues: '',
-      relationships: '',
-    };
-
-    return images.map((img) => {
-      if (img.page !== undefined) {
-        return resultMap.get(img.page) ?? { page: img.page, analysis: emptyAnalysis };
-      }
-      const novaIdx = novaImages.indexOf(img);
-      if (novaIdx >= 0) return novaResults[novaIdx];
-      const fbIdx = fallbackImages.indexOf(img);
-      if (fbIdx >= 0) return fallbackResults[fbIdx];
-      return { page: undefined, analysis: emptyAnalysis };
+      return novaResults[novaIdx++] ?? { page: img.page, analysis: EMPTY_IMAGE_ANALYSIS };
     });
   }
 
   private async describeImageBatchesNovaLite(
     orgId: DbId<'Org'>,
+    dataSourceId: DbId<'DataSource'>,
+    storagePath: string,
     images: Array<{
       buffer: Buffer;
       page?: number;
@@ -185,50 +207,102 @@ export class EnrichmentService {
     const batchResults = await pMap(
       batches,
       async (batch) => {
-        const imageContent: Array<
-          { type: 'text'; text: string } | { type: 'image'; image: Uint8Array }
-        > = [];
+        try {
+          const imageContent: Array<
+            { type: 'text'; text: string } | { type: 'image'; image: Uint8Array }
+          > = [];
 
-        for (const image of batch) {
-          if (image.surroundingText) {
-            imageContent.push({ type: 'text', text: `Surrounding text: ${image.surroundingText}` });
+          for (const image of batch) {
+            if (image.surroundingText) {
+              imageContent.push({
+                type: 'text',
+                text: `Surrounding text: ${image.surroundingText}`,
+              });
+            }
+            imageContent.push({ type: 'image', image: new Uint8Array(image.buffer) });
           }
-          imageContent.push({ type: 'image', image: new Uint8Array(image.buffer) });
+
+          const pageLabel =
+            batch[0].page !== undefined ? ` (pages ${batch.map((b) => b.page).join(',')})` : '';
+
+          const aiResult = await this.aiService.generateStructuredObject(
+            batchImageAnalysisSchema,
+            {
+              model: IMAGE_VISION_LANGUAGE_MODEL,
+              system:
+                VISION_SYSTEM_PROMPT +
+                ` Return exactly ${batch.length} image analysis result(s) in the images array, one per image in order.`,
+              messages: [{ role: 'user', content: imageContent }],
+            },
+            IMAGE_VISION_MODEL,
+            AiRequestType.IMAGE_ANALYSIS,
+            {
+              orgId,
+              source: 'SYSTEM',
+              description: `Describe ${batch.length} PDF image(s)${pageLabel}`,
+            }
+          );
+
+          const { images: analyses } = aiResult;
+          return batch.map((image, idx) => ({
+            page: image.page,
+            analysis: analyses[idx] ?? EMPTY_IMAGE_ANALYSIS,
+          }));
+        } catch (batchErr) {
+          // Batch failed, retry each image individually
+          this.logger.warn(
+            `Image description batch failed (${batch.length} images), retrying individually: ${String(batchErr)}`
+          );
+          return pMap(
+            batch,
+            async (image) => {
+              try {
+                const contextLine = image.surroundingText
+                  ? `Surrounding text: ${image.surroundingText}`
+                  : '';
+                const pageLabel = image.page !== undefined ? ` (page ${image.page})` : '';
+
+                const aiResult = await this.aiService.generateStructuredObject(
+                  imageAnalysisSchema,
+                  {
+                    model: IMAGE_VISION_LANGUAGE_MODEL,
+                    system: VISION_SYSTEM_PROMPT,
+                    messages: [
+                      {
+                        role: 'user',
+                        content: [
+                          ...(contextLine ? [{ type: 'text' as const, text: contextLine }] : []),
+                          { type: 'image', image: new Uint8Array(image.buffer) },
+                        ],
+                      },
+                    ],
+                  },
+                  IMAGE_VISION_MODEL,
+                  AiRequestType.IMAGE_ANALYSIS,
+                  {
+                    orgId,
+                    source: 'SYSTEM',
+                    description: `Describe PDF image${pageLabel} (individual retry)`,
+                  }
+                );
+
+                return { page: image.page, analysis: aiResult };
+              } catch (imgErr) {
+                this.logger.warn(
+                  `Individual image description failed (page ${image.page}): ${String(imgErr)}`
+                );
+                this.notification.notifyImageDescriptionFailure(
+                  dataSourceId,
+                  storagePath,
+                  image.page !== undefined ? [image.page] : [],
+                  String(imgErr)
+                );
+                return { page: image.page, analysis: EMPTY_IMAGE_ANALYSIS };
+              }
+            },
+            { concurrency: 1 }
+          );
         }
-
-        const pageLabel =
-          batch[0].page !== undefined ? ` (pages ${batch.map((b) => b.page).join(',')})` : '';
-
-        const aiResult = await this.aiService.generateStructuredObject(
-          batchImageAnalysisSchema,
-          {
-            model: IMAGE_VISION_LANGUAGE_MODEL,
-            system:
-              VISION_SYSTEM_PROMPT +
-              ` Return exactly ${batch.length} image analysis result(s) in the images array, one per image in order.`,
-            messages: [{ role: 'user', content: imageContent }],
-          },
-          IMAGE_VISION_MODEL,
-          AiRequestType.IMAGE_ANALYSIS,
-          {
-            orgId,
-            source: 'SYSTEM',
-            description: `Describe ${batch.length} PDF image(s)${pageLabel}`,
-          }
-        );
-
-        const { images: analyses } = aiResult;
-        const emptyAnalysis: ImageAnalysis = {
-          type: 'other',
-          description: '',
-          visibleText: '',
-          dataValues: '',
-          relationships: '',
-        };
-        return batch.map((image, idx) => ({
-          page: image.page,
-          analysis: analyses[idx] ?? emptyAnalysis,
-        }));
       },
       { concurrency: IMAGE_BATCH_CONCURRENCY }
     );

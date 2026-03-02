@@ -28,6 +28,7 @@ interface AgentStreamResult {
   getFullText: () => string;
   getThinkingTexts: () => string[];
   getSources: () => ChatSource[];
+  getLastFinishReason: () => string;
 }
 
 const logger = new Logger('AgentStream');
@@ -181,7 +182,9 @@ export function processStream(
   const sources: ChatSource[] = [];
   const streamStart = Date.now();
   let textChunks = 0;
+  let rawTextDeltas = 0;
   let stepCount = 0;
+  let lastFinishReason = '';
   const previousCalls: PreviousToolCall[] = [];
   let inlineSourcesExtracted = false;
 
@@ -190,8 +193,16 @@ export function processStream(
       const elapsed = Date.now() - streamStart;
 
       if (part.type === 'text-delta') {
+        rawTextDeltas++;
         const cleaned = stripXmlTags(part.text);
-        if (!cleaned) continue;
+        if (!cleaned) {
+          if (part.text.length > 0) {
+            logger.warn(
+              `${logPrefix} Stripped XML from text-delta at +${elapsed}ms: ${part.text.slice(0, 200)}`
+            );
+          }
+          continue;
+        }
         if (textChunks === 0) {
           logger.log(`${logPrefix} First text chunk at +${elapsed}ms`);
         }
@@ -241,8 +252,11 @@ export function processStream(
         );
       } else if (part.type === 'finish-step') {
         stepCount++;
+        lastFinishReason = String(
+          (part satisfies { type: 'finish-step' }).finishReason ?? 'unknown'
+        );
         logger.log(
-          `${logPrefix} Step ${stepCount} finished at +${elapsed}ms (${textChunks} text chunks)`
+          `${logPrefix} Step ${stepCount} finished at +${elapsed}ms reason=${lastFinishReason} (${textChunks} text chunks)`
         );
       }
     }
@@ -259,9 +273,16 @@ export function processStream(
       fullText.value = cleanText;
     }
 
-    logger.log(
-      `${logPrefix} Complete at +${Date.now() - streamStart}ms, ${textChunks} text chunks total${inlineSourcesExtracted ? `, ${sources.length} inline sources` : ''}`
-    );
+    const elapsed = Date.now() - streamStart;
+    if (textChunks === 0) {
+      logger.warn(
+        `${logPrefix} Stream produced NO text at +${elapsed}ms after ${stepCount} steps, lastFinishReason=${lastFinishReason}, rawTextDeltas=${rawTextDeltas}`
+      );
+    } else {
+      logger.log(
+        `${logPrefix} Complete at +${elapsed}ms, ${textChunks} text chunks total${inlineSourcesExtracted ? `, ${sources.length} inline sources` : ''}`
+      );
+    }
   }
 
   return {
@@ -269,5 +290,6 @@ export function processStream(
     getFullText: () => fullText.value,
     getThinkingTexts: () => thinkingTexts,
     getSources: () => sources,
+    getLastFinishReason: () => lastFinishReason,
   };
 }

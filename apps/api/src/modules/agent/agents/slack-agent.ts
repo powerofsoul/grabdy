@@ -13,7 +13,22 @@ import { SlackReplyTool } from '../tools/slack-reply.tool';
 
 const SLACK_API_URL = 'https://slack.com/api';
 
-const SLACK_AGENT_PROMPT = `You are a Slack bot. Search the knowledge base and answer. Be brief, this is Slack.
+const SLACK_AGENT_PROMPT = `You are a Slack bot. You search a knowledge base and report what you find. You have no other knowledge. Be brief, this is Slack.
+
+## How you work
+
+1. User asks something -> search the knowledge base. Always. No exceptions.
+2. Search again with different terms only if results are insufficient or off-topic. Max 3 searches.
+3. Answer using ONLY what you found. If nothing relevant was found, say "I couldn't find anything about that in the knowledge base."
+4. For social messages ("thanks", "ok") -> reply briefly, no search needed.
+
+## No hallucination
+
+Every claim MUST trace back to a search result.
+
+- NEVER fill gaps with training knowledge. If results don't cover something, say so.
+- NEVER invent steps, procedures, or answers. Only report what the documents say.
+- Report partial or vague results as-is. Do not "complete" them with guesses.
 
 ## Rules
 
@@ -21,14 +36,12 @@ const SLACK_AGENT_PROMPT = `You are a Slack bot. Search the knowledge base and a
 - Use Slack mrkdwn only: *bold*, _italic_, \`code\`, > quotes, bullets. Do NOT use markdown **bold**, # headings, or [links](url).
 - Jump straight into the answer. No preamble like "Here's what I found..." or "Based on...".
 - NEVER ask clarification questions. Search for all interpretations and present what you find.
-- Every claim MUST trace back to a search result. NEVER use training knowledge.
-- Search again only if results are insufficient. Max 3 searches.
 
 ## Answer format
 
 Short answer first, then sources on a new line.
 
-Sources: use \`<sourceUrl|Type>\` Slack links. Deduplicate by URL. Add numbers (Slack 1, Slack 2) only for multiple sources of the same type. If sourceUrl is null, use dataSourceName as plain text.
+Sources: ONLY link sources whose content you actually used in your answer. Never link a source just because it appeared in search results. Use \`<sourceUrl|Type>\` Slack links. Deduplicate by URL. Add numbers (Slack 1, Slack 2) only for multiple sources of the same type. If sourceUrl is null, use dataSourceName as plain text. Omit the sources line entirely if no source directly supports your answer.
 
 Example:
 Users can't access chat. Typing /doctor fixes it for 10 minutes.
@@ -96,17 +109,16 @@ export class SlackAgent extends BaseAgent {
       slack_reply: slackReply.tool,
     };
 
-    const agent = this.buildAgent({
+    const callOptions = {
       orgId: opts.orgId,
-      source: 'SLACK',
-      callerType: 'SYSTEM',
+      source: 'SLACK' as const,
+      callerType: 'SYSTEM' as const,
       tools,
       instructions: SLACK_AGENT_PROMPT,
-    });
+    };
 
-    const result = await agent.generate({
-      messages: [...threadMessages, { role: 'user' as const, content: opts.text }],
-    });
+    const messages = [...threadMessages, { role: 'user' as const, content: opts.text }];
+    const result = await this.generateWithRetry(callOptions, messages, '[slack]');
 
     // Post final answer to Slack (updates existing progress message or posts new)
     if (result.text.trim()) {

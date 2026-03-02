@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { type DbId, dbIdSchema, packId } from '@grabdy/common';
+import { type DbId, packId } from '@grabdy/common';
 import type { DataSourceStatus, DataSourceType } from '@grabdy/contracts';
 import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
 import type { Queue } from 'bullmq';
@@ -227,6 +227,10 @@ export class DataSourcesService {
       throw new UserFacingError('Cannot reprocess a child data source');
     }
 
+    if (dataSource.status === 'PROCESSING' || dataSource.status === 'UPLOADED') {
+      throw new UserFacingError('This file is already being processed');
+    }
+
     if (dataSource.status !== 'FAILED') {
       throw new UserFacingError('Only failed data sources can be reprocessed');
     }
@@ -274,7 +278,7 @@ export class DataSourcesService {
 
     await this.db.kysely
       .updateTable('data.data_sources')
-      .set({ status: 'UPLOADED', updated_at: new Date() })
+      .set({ status: 'UPLOADED', processing_progress: 0, updated_at: new Date() })
       .where('id', '=', id)
       .where('org_id', '=', orgId)
       .execute();

@@ -45,11 +45,15 @@ export function StatusChip({ status, progress }: StatusChipProps) {
   };
 
   const config = configMap[status];
+  const chipLabel =
+    status === 'PROCESSING' && progress != null && progress > 0
+      ? `${config.label} ${Math.min(progress, 99)}%`
+      : config.label;
 
   return (
     <Box sx={{ display: 'inline-flex', flexDirection: 'column', gap: 0.5, minWidth: 80 }}>
       <Chip
-        label={config.label}
+        label={chipLabel}
         size="small"
         sx={{
           color: config.color,
@@ -65,7 +69,7 @@ export function StatusChip({ status, progress }: StatusChipProps) {
       {status === 'PROCESSING' && progress != null && progress > 0 && (
         <LinearProgress
           variant="determinate"
-          value={progress}
+          value={Math.min(progress, 100)}
           sx={{
             height: 3,
             borderRadius: 1,

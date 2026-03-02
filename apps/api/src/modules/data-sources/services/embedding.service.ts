@@ -76,7 +76,8 @@ export class EmbeddingService {
         { description: 'Embed chunks for data source' }
       );
 
-      const batchProgress = progressBase + Math.round(((batchIdx + 1) / totalBatches) * 80);
+      const batchProgress =
+        progressBase + Math.round(((batchIdx + 1) / totalBatches) * (99 - progressBase));
       await this.setProgress(dataSourceId, orgId, batchProgress);
     }
   }

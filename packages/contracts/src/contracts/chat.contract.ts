@@ -84,6 +84,7 @@ const sseDoneEventSchema = z.object({
   type: z.literal('done'),
   threadId: z.string().nullable(),
   durationMs: z.number(),
+  finishReason: z.string().optional(),
 });
 
 export const sseMetaEventSchema = z.discriminatedUnion('type', [

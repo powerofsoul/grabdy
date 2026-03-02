@@ -400,6 +400,8 @@ export class FileIngestionService {
                   const rawPages = new Map(pages.map((p) => [p.page, p.text]));
                   return this.enrichmentService.describeImages({
                     orgId,
+                    dataSourceId,
+                    storagePath: params.storagePath,
                     images: extractedImages.map((img) => ({
                       buffer: img.buffer,
                       page: img.page,

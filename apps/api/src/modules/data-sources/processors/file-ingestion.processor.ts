@@ -1,12 +1,13 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
+import { Logger, type OnModuleInit } from '@nestjs/common';
 
-import { dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
+import { type DbId, dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
 import { isUploadsMime, UPLOADS_MIME_TO_TYPE } from '@grabdy/contracts';
 import type { Job, Queue } from 'bullmq';
 
 import { DbService } from '../../../db/db.module';
 import { InjectTypedQueue } from '../../../queue/queue.decorators';
+import { NotificationService } from '../../notification/notification.service';
 import { S3FileStorage } from '../../storage/s3-file-storage';
 import { chunkEmail } from '../services/chunking/chunk-content';
 import type { EmailExtractionResult } from '../services/chunking/extractor.interface';
@@ -24,8 +25,11 @@ const EMAIL_MIMES = new Set(['message/rfc822', 'application/vnd.ms-outlook']);
 
 const PST_MIME = 'application/vnd.ms-outlook-pst';
 
+const STALE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
+const STALE_THRESHOLD_MINUTES = 30;
+
 @Processor('file-ingestion', { concurrency: 10 })
-export class FileIngestionProcessor extends WorkerHost {
+export class FileIngestionProcessor extends WorkerHost implements OnModuleInit {
   private readonly logger = new Logger(FileIngestionProcessor.name);
 
   constructor(
@@ -38,24 +42,105 @@ export class FileIngestionProcessor extends WorkerHost {
     private emailExtractor: EmailExtractor,
     private msgExtractor: MsgExtractor,
     private pstExtractor: PstExtractor,
+    private notification: NotificationService,
     @InjectTypedQueue('file-ingestion') private fileIngestionQueue: Queue
   ) {
     super();
   }
 
+  async onModuleInit(): Promise<void> {
+    await this.fileIngestionQueue.add(
+      'stale-check',
+      {},
+      {
+        repeat: { every: STALE_CHECK_INTERVAL },
+        jobId: 'stale-processing-check',
+        removeOnComplete: true,
+        removeOnFail: true,
+      }
+    );
+    this.logger.log('Registered stale processing check (hourly)');
+  }
+
   async process(job: Job): Promise<void> {
     switch (job.name) {
       case 'file':
-        await this.processFile(job.data);
+        await this.processFile(job);
+        break;
+      case 'stale-check':
+        await this.checkStaleProcessing();
         break;
       default:
         this.logger.warn(`Unknown job name: ${job.name}`);
     }
   }
 
-  private async processFile(data: FileIngestionJobData): Promise<void> {
+  private isFinalAttempt(job: Job): boolean {
+    const maxAttempts = job.opts.attempts ?? 1;
+    return job.attemptsMade >= maxAttempts - 1;
+  }
+
+  private async checkStaleProcessing(): Promise<void> {
+    // Get all active + waiting + delayed file jobs to check which data sources are still queued
+    const [activeJobs, waitingJobs, delayedJobs] = await Promise.all([
+      this.fileIngestionQueue.getJobs(['active']),
+      this.fileIngestionQueue.getJobs(['waiting']),
+      this.fileIngestionQueue.getJobs(['delayed']),
+    ]);
+
+    const queuedDataSourceIds = new Set<string>();
+    for (const job of [...activeJobs, ...waitingJobs, ...delayedJobs]) {
+      if (job.name === 'file' && job.data.dataSourceId) {
+        queuedDataSourceIds.add(job.data.dataSourceId);
+      }
+    }
+
+    // org-safe: system-level stale cleanup scans all orgs intentionally
+    const staleRows = await this.db.kysely
+      .selectFrom('data.data_sources')
+      .select(['id', 'org_id', 'title'])
+      .where('status', 'in', ['PROCESSING', 'UPLOADED'])
+      .where('updated_at', '<', new Date(Date.now() - STALE_THRESHOLD_MINUTES * 60 * 1000))
+      .execute();
+
+    const orphaned = staleRows.filter((row) => !queuedDataSourceIds.has(row.id));
+    if (orphaned.length === 0) return;
+
+    this.logger.warn(`Found ${orphaned.length} stale PROCESSING data source(s), marking as FAILED`);
+
+    // Group by org_id for tenant-scoped updates
+    const byOrg = new Map<DbId<'Org'>, DbId<'DataSource'>[]>();
+    for (const row of orphaned) {
+      const ids = byOrg.get(row.org_id) ?? [];
+      ids.push(row.id);
+      byOrg.set(row.org_id, ids);
+    }
+
+    for (const [orgId, ids] of byOrg) {
+      await this.db.kysely
+        .updateTable('data.data_sources')
+        .set({ status: 'FAILED', updated_at: new Date() })
+        .where('id', 'in', ids)
+        .where('org_id', '=', orgId)
+        .where('status', 'in', ['PROCESSING', 'UPLOADED'])
+        .execute();
+    }
+
+    const titles = orphaned.map((row) => `\`${row.id}\` (${row.title})`).join('\n');
+    this.notification.notifyStaleProcessingCleanup(orphaned.length, titles);
+  }
+
+  private async processFile(job: Job<FileIngestionJobData>): Promise<void> {
+    const data = job.data;
     const { orgId, dataSourceId, storagePath, mimeType, collectionId, filename } = data;
     const isAppendOnly = Boolean(data.appendOnly);
+
+    await this.fileIngestion.updateDataSourceStatus({
+      dataSourceId,
+      orgId,
+      status: 'PROCESSING',
+      progress: 0,
+    });
 
     try {
       if (mimeType === 'application/pdf') {
@@ -78,22 +163,13 @@ export class FileIngestionProcessor extends WorkerHost {
       }
 
       if (EMAIL_MIMES.has(mimeType)) {
-        await this.processEmail(data);
+        await this.processEmail(job);
         return;
       }
 
       if (mimeType === PST_MIME) {
-        await this.processPst(data);
+        await this.processPst(job);
         return;
-      }
-
-      if (!isAppendOnly) {
-        await this.fileIngestion.updateDataSourceStatus({
-          dataSourceId,
-          orgId,
-          status: 'PROCESSING',
-          progress: 0,
-        });
       }
 
       const {
@@ -110,6 +186,13 @@ export class FileIngestionProcessor extends WorkerHost {
         sourceUrl: data.sourceUrl,
       });
 
+      await this.fileIngestion.updateDataSourceStatus({
+        dataSourceId,
+        orgId,
+        status: 'PROCESSING',
+        progress: 5,
+      });
+
       // Process embedded images (e.g., DOCX): describe, store, weave into chunks
       if (images && images.length > 0) {
         const parsedDsId = dbIdSchema('DataSource').parse(dataSourceId);
@@ -117,6 +200,8 @@ export class FileIngestionProcessor extends WorkerHost {
 
         const imageDescriptions = await this.enrichment.describeImages({
           orgId,
+          dataSourceId: parsedDsId,
+          storagePath,
           images: images.map((img) => ({
             buffer: img.buffer,
             page: img.page,
@@ -220,6 +305,13 @@ export class FileIngestionProcessor extends WorkerHost {
         title: filename ?? '',
       });
 
+      await this.fileIngestion.updateDataSourceStatus({
+        dataSourceId,
+        orgId,
+        status: 'PROCESSING',
+        progress: 15,
+      });
+
       let chunkIndexOffset = 0;
       if (!isAppendOnly) {
         await this.fileIngestion.deleteChunks({ dataSourceId, orgId });
@@ -233,7 +325,7 @@ export class FileIngestionProcessor extends WorkerHost {
         dataSourceId,
         collectionId,
         orgId,
-        progressBase: 15,
+        progressBase: 20,
       });
 
       const totalChunks = isAppendOnly ? chunkIndexOffset + chunks.length : chunks.length;
@@ -245,26 +337,22 @@ export class FileIngestionProcessor extends WorkerHost {
         progress: 100,
       });
     } catch (error) {
-      await this.fileIngestion.updateDataSourceStatus({
-        dataSourceId,
-        orgId,
-        status: 'FAILED',
-      });
+      if (this.isFinalAttempt(job)) {
+        await this.fileIngestion.updateDataSourceStatus({
+          dataSourceId,
+          orgId,
+          status: 'FAILED',
+        });
+      }
       throw error;
     }
   }
 
-  private async processEmail(data: FileIngestionJobData): Promise<void> {
+  private async processEmail(job: Job<FileIngestionJobData>): Promise<void> {
+    const data = job.data;
     const { orgId, dataSourceId, storagePath, mimeType, collectionId, filename } = data;
 
     try {
-      await this.fileIngestion.updateDataSourceStatus({
-        dataSourceId,
-        orgId,
-        status: 'PROCESSING',
-        progress: 0,
-      });
-
       const parsedDataSourceId = dbIdSchema('DataSource').parse(dataSourceId);
       const parsedOrgId = dbIdSchema('Org').parse(orgId);
       const parsedCollectionId = collectionId ? dbIdSchema('Collection').parse(collectionId) : null;
@@ -280,10 +368,24 @@ export class FileIngestionProcessor extends WorkerHost {
       const chunks = chunkEmail(emailResult, source);
       const title = emailResult.headers.subject || filename || 'Email';
 
+      await this.fileIngestion.updateDataSourceStatus({
+        dataSourceId,
+        orgId,
+        status: 'PROCESSING',
+        progress: 5,
+      });
+
       const enrichedChunks = await this.enrichment.enrichChunks({
         orgId,
         chunks,
         title,
+      });
+
+      await this.fileIngestion.updateDataSourceStatus({
+        dataSourceId,
+        orgId,
+        status: 'PROCESSING',
+        progress: 15,
       });
 
       await this.embeddingService.embedAndStore(
@@ -292,7 +394,7 @@ export class FileIngestionProcessor extends WorkerHost {
         parsedDataSourceId,
         parsedCollectionId,
         parsedOrgId,
-        10
+        20
       );
 
       // Upload attachments to S3, create child DataSource records, enqueue child jobs
@@ -366,26 +468,22 @@ export class FileIngestionProcessor extends WorkerHost {
         progress: 100,
       });
     } catch (error) {
-      await this.fileIngestion.updateDataSourceStatus({
-        dataSourceId,
-        orgId,
-        status: 'FAILED',
-      });
+      if (this.isFinalAttempt(job)) {
+        await this.fileIngestion.updateDataSourceStatus({
+          dataSourceId,
+          orgId,
+          status: 'FAILED',
+        });
+      }
       throw error;
     }
   }
 
-  private async processPst(data: FileIngestionJobData): Promise<void> {
+  private async processPst(job: Job<FileIngestionJobData>): Promise<void> {
+    const data = job.data;
     const { orgId, dataSourceId, storagePath, collectionId } = data;
 
     try {
-      await this.fileIngestion.updateDataSourceStatus({
-        dataSourceId,
-        orgId,
-        status: 'PROCESSING',
-        progress: 0,
-      });
-
       const parsedDataSourceId = dbIdSchema('DataSource').parse(dataSourceId);
       const parsedOrgId = dbIdSchema('Org').parse(orgId);
       const parsedCollectionId = collectionId ? dbIdSchema('Collection').parse(collectionId) : null;
@@ -399,13 +497,21 @@ export class FileIngestionProcessor extends WorkerHost {
         await tempFile.cleanup();
       }
 
+      await this.fileIngestion.updateDataSourceStatus({
+        dataSourceId,
+        orgId,
+        status: 'PROCESSING',
+        progress: 10,
+      });
+
       const orgNum = extractOrgNumericId(parsedOrgId);
       const childJobs: Array<{
         name: string;
         data: FileIngestionJobData;
       }> = [];
 
-      for (const email of emails) {
+      for (let emailIdx = 0; emailIdx < emails.length; emailIdx++) {
+        const email = emails[emailIdx];
         const subject = email.headers.subject || 'Untitled email';
         const emailDsId = packId('DataSource', orgNum);
         const safeSubject = subject.replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 80);
@@ -501,6 +607,15 @@ export class FileIngestionProcessor extends WorkerHost {
             },
           });
         }
+
+        // Update progress based on emails processed (10-90% range)
+        const emailProgress = 10 + Math.round(((emailIdx + 1) / emails.length) * 80);
+        await this.fileIngestion.updateDataSourceStatus({
+          dataSourceId,
+          orgId,
+          status: 'PROCESSING',
+          progress: emailProgress,
+        });
       }
 
       if (childJobs.length > 0) {
@@ -515,11 +630,13 @@ export class FileIngestionProcessor extends WorkerHost {
         progress: 100,
       });
     } catch (error) {
-      await this.fileIngestion.updateDataSourceStatus({
-        dataSourceId,
-        orgId,
-        status: 'FAILED',
-      });
+      if (this.isFinalAttempt(job)) {
+        await this.fileIngestion.updateDataSourceStatus({
+          dataSourceId,
+          orgId,
+          status: 'FAILED',
+        });
+      }
       throw error;
     }
   }

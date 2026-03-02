@@ -35,6 +35,37 @@ export class NotificationService {
       });
   }
 
+  notifyImageDescriptionFailure(
+    dataSourceId: DbId<'DataSource'>,
+    storagePath: string,
+    pages: number[],
+    error: string
+  ): void {
+    const pageLabel = pages.length > 0 ? ` (pages ${pages.join(', ')})` : '';
+    const errorSnippet = error.length > 200 ? error.slice(0, 200) + '...' : error;
+    this.notificationQueue
+      .add('slack', {
+        orgId: null,
+        type: 'image-description-failure',
+        text: `Image description failed for DataSource \`${dataSourceId}\`${pageLabel}\nS3: \`${storagePath}\`\nError: ${errorSnippet}`,
+      })
+      .catch((err) => {
+        this.logger.error(`Failed to queue image description failure notification: ${err}`);
+      });
+  }
+
+  notifyStaleProcessingCleanup(count: number, details: string): void {
+    this.notificationQueue
+      .add('slack', {
+        orgId: null,
+        type: 'stale-processing-cleanup',
+        text: `Marked ${count} stale data source(s) as FAILED (stuck in PROCESSING with no queue job):\n${details}`,
+      })
+      .catch((err) => {
+        this.logger.error(`Failed to queue stale processing notification: ${err}`);
+      });
+  }
+
   notifyDemoRequest(name: string, company: string, email: string): void {
     this.notificationQueue
       .add('slack', {
