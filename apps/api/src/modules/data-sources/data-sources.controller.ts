@@ -212,7 +212,7 @@ export class DataSourcesController {
    */
   @Public()
   @UseGuards(DualAuthGuard)
-  @Get('orgs/:orgId/f/*')
+  @Get('orgs/:orgId/f/*path')
   async fileProxy(@Param('orgId') orgIdRaw: string, @Req() req: Request, @Res() res: Response) {
     const orgId = dbIdSchema('Org').parse(orgIdRaw);
     this.verifyOrgAccess(orgId, req, res);
