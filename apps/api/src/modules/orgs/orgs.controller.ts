@@ -184,7 +184,7 @@ export class OrgsController {
     });
   }
 
-  @OrgAccess(orgsContract.revokeInvitation, { roles: ['OWNER'], params: ['orgId'] })
+  @OrgAccess(orgsContract.revokeInvitation, { roles: ['OWNER'], params: ['orgId', 'invitationId'] })
   @TsRestHandler(orgsContract.revokeInvitation)
   async revokeInvitation() {
     return tsRestHandler(orgsContract.revokeInvitation, async ({ params }) => {

@@ -38,7 +38,10 @@ export class ChatController {
     private chatAttachmentService: ChatAttachmentService
   ) {}
 
-  @OrgAccess(chatContract.createThread, { params: ['orgId'] })
+  @OrgAccess(chatContract.createThread, {
+    params: ['orgId'],
+    body: (b) => [b.collectionId, b.botId],
+  })
   @TsRestHandler(chatContract.createThread)
   async createThread(@CurrentMembership() membership: JwtMembership) {
     return tsRestHandler(chatContract.createThread, async ({ params, body }) => {
@@ -55,7 +58,7 @@ export class ChatController {
     });
   }
 
-  @OrgAccess(chatContract.listThreads, { params: ['orgId'] })
+  @OrgAccess(chatContract.listThreads, { params: ['orgId'], query: ['botId'] })
   @TsRestHandler(chatContract.listThreads)
   async listThreads(@CurrentMembership() membership: JwtMembership) {
     return tsRestHandler(chatContract.listThreads, async ({ params, query }) => {
@@ -70,7 +73,7 @@ export class ChatController {
     });
   }
 
-  @OrgAccess(chatContract.getThread, { params: ['orgId'] })
+  @OrgAccess(chatContract.getThread, { params: ['orgId', 'threadId'] })
   @TsRestHandler(chatContract.getThread)
   async getThread() {
     return tsRestHandler(chatContract.getThread, async ({ params }) => {
@@ -83,7 +86,7 @@ export class ChatController {
     });
   }
 
-  @OrgAccess(chatContract.deleteThread, { params: ['orgId'] })
+  @OrgAccess(chatContract.deleteThread, { params: ['orgId', 'threadId'] })
   @TsRestHandler(chatContract.deleteThread)
   async deleteThread() {
     return tsRestHandler(chatContract.deleteThread, async ({ params }) => {
@@ -96,7 +99,7 @@ export class ChatController {
     });
   }
 
-  @OrgAccess(chatContract.renameThread, { params: ['orgId'] })
+  @OrgAccess(chatContract.renameThread, { params: ['orgId', 'threadId'] })
   @TsRestHandler(chatContract.renameThread)
   async renameThread() {
     return tsRestHandler(chatContract.renameThread, async ({ params, body }) => {
@@ -138,7 +141,7 @@ export class ChatController {
     return { success: true, data: { url } };
   }
 
-  @OrgAccess({ params: ['orgId'] })
+  @OrgAccess({ params: ['orgId'], body: (b) => [b.threadId, b.collectionId, b.botId] })
   @Post('/orgs/:orgId/chat/stream')
   async streamChat(
     @Param('orgId', new ZodValidationPipe(dbIdSchema('Org')))

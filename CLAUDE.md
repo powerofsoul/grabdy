@@ -91,6 +91,21 @@ SaaS that lets businesses upload data (PDF, CSV, DOCX, TXT) and retrieve it cont
 - **Use BullMQ for all background/async work.** Queue names are typed in `QueueService` (e.g., `data-source-process`, `email`, `notification`). Each module owns its `*.workers.ts` file which registers processors in `onModuleInit()`. Send jobs via `QueueService.addJob()`. Bull Board dashboard at `/admin/queues`.
 - **NEVER call AI SDK functions (`generateText`, `streamText`, `embed`, `embedMany`) directly.** Always use an injectable service that tracks usage via `AiUsageService`. The only exceptions are inside dedicated service classes (e.g., `RagSearchTool`) that inject `AiUsageService` and log usage themselves, and **BullMQ `*.workers.ts` files** which call AI functions directly and log usage via `AiUsageService`.
 
+### Org Access Guard - CRITICAL
+
+- **Every `@OrgAccess()` decorator MUST declare ALL DbId fields from params, query, and body.**
+  - `params`: list every path param that is a `dbIdSchema()` field, not just `orgId`.
+  - `query`: list every query param that is a `dbIdSchema()` field.
+  - `body`: provide a callback extracting all ID values when the body contains `dbIdSchema()` fields. For nested/array structures, map over the array to collect all IDs.
+- The `OrgAccessGuard` checks that all declared IDs belong to the same org AND the current user has membership. Omitting an ID field means it won't be validated.
+- Example with all three:
+  ```ts
+  @OrgAccess(botsContract.update, {
+    params: ['orgId', 'botId'],
+    body: (b) => extractBotSourceIds(b.dataSourceConfig ?? []),
+  })
+  ```
+
 ### API Calls (ts-rest) - CRITICAL
 
 - **NEVER use raw `fetch()` in the frontend.**

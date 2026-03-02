@@ -24,7 +24,7 @@ export class SharedChatController {
     @InjectEnv('jwtSecret') private readonly jwtSecret: string
   ) {}
 
-  @OrgAccess(sharedChatsContract.createShare, { params: ['orgId'] })
+  @OrgAccess(sharedChatsContract.createShare, { params: ['orgId', 'threadId'] })
   @TsRestHandler(sharedChatsContract.createShare)
   async createShare(@CurrentMembership() membership: JwtMembership) {
     return tsRestHandler(sharedChatsContract.createShare, async ({ params, body }) => {
@@ -60,7 +60,7 @@ export class SharedChatController {
     });
   }
 
-  @OrgAccess(sharedChatsContract.listShares, { params: ['orgId'] })
+  @OrgAccess(sharedChatsContract.listShares, { params: ['orgId', 'threadId'] })
   @TsRestHandler(sharedChatsContract.listShares)
   async listShares() {
     return tsRestHandler(sharedChatsContract.listShares, async ({ params }) => {
@@ -73,7 +73,7 @@ export class SharedChatController {
     });
   }
 
-  @OrgAccess(sharedChatsContract.revokeShare, { params: ['orgId'] })
+  @OrgAccess(sharedChatsContract.revokeShare, { params: ['orgId', 'threadId', 'shareId'] })
   @TsRestHandler(sharedChatsContract.revokeShare)
   async revokeShare() {
     return tsRestHandler(sharedChatsContract.revokeShare, async ({ params }) => {

@@ -2,7 +2,7 @@ import { Controller, NotFoundException, UploadedFile, UseInterceptors } from '@n
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { type DbId } from '@grabdy/common';
-import { botsContract } from '@grabdy/contracts';
+import { botsContract, type BotSourceConfig } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -10,11 +10,28 @@ import { OrgAccess } from '../../common/decorators/org-roles.decorator';
 
 import { BotService } from './bot.service';
 
+function extractBotSourceIds(config: BotSourceConfig): unknown[] {
+  return config.map((s) => {
+    switch (s.type) {
+      case 'COLLECTION':
+        return s.collectionId;
+      case 'DATA_SOURCE':
+        return s.dataSourceId;
+      case 'CONNECTION':
+      case 'CONNECTION_RESOURCE':
+        return s.connectionId;
+    }
+  });
+}
+
 @Controller()
 export class BotController {
   constructor(private botService: BotService) {}
 
-  @OrgAccess(botsContract.create, { params: ['orgId'] })
+  @OrgAccess(botsContract.create, {
+    params: ['orgId'],
+    body: (b) => extractBotSourceIds(b.dataSourceConfig ?? []),
+  })
   @TsRestHandler(botsContract.create)
   async create(@CurrentUser('sub') userId: DbId<'User'>) {
     return tsRestHandler(botsContract.create, async ({ params, body }) => {
@@ -60,7 +77,10 @@ export class BotController {
     });
   }
 
-  @OrgAccess(botsContract.update, { params: ['orgId', 'botId'] })
+  @OrgAccess(botsContract.update, {
+    params: ['orgId', 'botId'],
+    body: (b) => extractBotSourceIds(b.dataSourceConfig ?? []),
+  })
   @TsRestHandler(botsContract.update)
   async update() {
     return tsRestHandler(botsContract.update, async ({ params, body }) => {
