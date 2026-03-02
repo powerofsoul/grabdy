@@ -117,7 +117,7 @@ const workerLogGroup = new aws.cloudwatch.LogGroup('grabdy-worker-logs', {
 
 const workerTaskDefinition = new aws.ecs.TaskDefinition('grabdy-worker-task', {
   family: 'grabdy-worker',
-  cpu: '1024',
+  cpu: '2048',
   memory: '4096',
   networkMode: 'awsvpc',
   requiresCompatibilities: ['FARGATE'],
