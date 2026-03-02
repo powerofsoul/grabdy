@@ -50,6 +50,8 @@ WRONG: The function creates a segment 【1】. (do NOT use this)
 
 Place each marker right after the sentence or fact it supports. Reuse the same number when the same source supports multiple claims.
 
+NEVER place citation markers inside code blocks, JSON, inline \`code\`, URLs, or any structured/formatted content. Citations go in the prose text surrounding the code, not inside it. Putting citations inside code breaks parsing.
+
 After your answer, add a fenced \`sources\` code block with the full source data as a JSON array:
 
 \`\`\`sources
