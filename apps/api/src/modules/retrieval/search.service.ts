@@ -20,6 +20,7 @@ import {
   DEFAULT_SEARCH_LIMIT,
   HYDE_MAX_LENGTH,
   HYDE_TIMEOUT_MS,
+  MIN_RERANK_SCORE,
 } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import type { ConnectionResource } from '../agent/agents/search-scope';
@@ -53,8 +54,40 @@ export interface SearchResult {
   sourceUrl: string | null;
   imageUrl: string | null;
   collectionId: DbId<'Collection'> | null;
+  sourceDate: Date | null;
   contextBefore?: string;
   contextAfter?: string;
+}
+
+/**
+ * Extract the real content date from chunk metadata.
+ * Returns null for uploads (PDF, DOCX, etc.) where no meaningful source date exists.
+ */
+function extractSourceDate(meta: ChunkMeta | null): Date | null {
+  if (!meta) return null;
+
+  switch (meta.type) {
+    case 'SLACK': {
+      // slackMessageTs format: "1234567890.123456" (unix seconds with microseconds)
+      const seconds = parseFloat(meta.slackMessageTs);
+      if (Number.isFinite(seconds)) return new Date(seconds * 1000);
+      return null;
+    }
+    case 'LINEAR': {
+      if (meta.linearTimestamp) {
+        const d = new Date(meta.linearTimestamp);
+        if (!Number.isNaN(d.getTime())) return d;
+      }
+      return null;
+    }
+    case 'EMAIL': {
+      const d = new Date(meta.emailDate);
+      if (!Number.isNaN(d.getTime())) return d;
+      return null;
+    }
+    default:
+      return null;
+  }
 }
 
 export interface SearchOptions {
@@ -188,7 +221,9 @@ export class SearchService {
     const hasAnyResults = searchResults.some((list) => list.length > 0);
     if (!hasAnyResults) return [];
 
-    const fused = reciprocalRankFusion(searchResults, (item) => item.chunkId);
+    const fused = reciprocalRankFusion(searchResults, (item) => item.chunkId, undefined, {
+      getSourceDate: (item) => item.sourceDate,
+    });
 
     const results = fused.map((f) => ({
       ...f.item,
@@ -203,6 +238,7 @@ export class SearchService {
           id: r.chunkId,
           content: r.embeddingContext ? `${r.embeddingContext}\n${r.content}` : r.content,
           vectorScore: r.score,
+          createdAt: r.sourceDate ?? undefined,
         })),
         { orgId, userId: options.userId, source: options.source, callerType: options.callerType }
       );
@@ -210,6 +246,7 @@ export class SearchService {
       if (reranked) {
         const resultMap = new Map<string, SearchResult>(results.map((r) => [r.chunkId, r]));
         return reranked
+          .filter((rr) => rr.score >= MIN_RERANK_SCORE)
           .slice(0, limit)
           .map((rr) => {
             const original = resultMap.get(rr.id);
@@ -345,6 +382,7 @@ export class SearchService {
       sourceUrl: r.source_key ? storageProxyUrl(r.org_id, r.source_key) : r.source_url,
       imageUrl: r.image_id ? extractedImageUrl(r.org_id, r.image_id) : null,
       collectionId: r.collection_id,
+      sourceDate: extractSourceDate(r.metadata),
     }));
   }
 

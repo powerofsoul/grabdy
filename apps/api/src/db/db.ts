@@ -66,7 +66,12 @@ type ChunkMeta =
       emailRfcMessageRef: string | null;
     }
   | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthors: string[] }
-  | { type: 'LINEAR'; linearIssueId: string; linearCommentId: string | null }
+  | {
+      type: 'LINEAR';
+      linearIssueId: string;
+      linearCommentId: string | null;
+      linearTimestamp?: string | null;
+    }
   | {
       type: 'GITHUB';
       githubItemType: 'issue' | 'pull_request' | 'discussion';

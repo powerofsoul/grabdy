@@ -15,7 +15,7 @@ import {
 import { embed, generateObject, generateText } from 'ai';
 import { z } from 'zod';
 
-import { RERANK_MAX_DOC_LENGTH } from '../../config/constants';
+import { RECENCY_HALF_LIFE_DAYS, RERANK_MAX_DOC_LENGTH } from '../../config/constants';
 
 import { AiUsageService, type UsageContext } from './ai-usage.service';
 
@@ -42,18 +42,21 @@ interface RerankInput {
   id: string;
   content: string;
   vectorScore: number;
+  createdAt?: Date;
 }
 
 interface RerankWeights {
   semantic: number;
   vector: number;
   position: number;
+  recency: number;
 }
 
 const DEFAULT_RERANK_WEIGHTS: RerankWeights = {
-  semantic: 0.5,
-  vector: 0.3,
-  position: 0.2,
+  semantic: 0.45,
+  vector: 0.25,
+  position: 0.15,
+  recency: 0.15,
 };
 
 const RERANK_TIMEOUT_MS = 2000;
@@ -231,15 +234,25 @@ export class AiService {
         return null;
       }
 
-      // Combine scores: semantic + vector + position
+      // Combine scores: semantic + vector + position + recency
       const total = results.length;
+      const now = Date.now();
+      const decayRate = Math.LN2 / RECENCY_HALF_LIFE_DAYS;
+
       const scored = results.map((r, i) => {
         const semantic = semanticScores.get(i) ?? 0;
         const positionScore = 1 - i / total;
+        const recencyScore = r.createdAt
+          ? Math.min(
+              1,
+              Math.exp(-(Math.max(0, now - r.createdAt.getTime()) / 86_400_000) * decayRate)
+            )
+          : 0.5; // neutral score when no timestamp
         const combined =
           weights.semantic * semantic +
           weights.vector * r.vectorScore +
-          weights.position * positionScore;
+          weights.position * positionScore +
+          weights.recency * recencyScore;
 
         return { id: r.id, score: combined };
       });

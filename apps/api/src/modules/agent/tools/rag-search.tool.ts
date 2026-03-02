@@ -47,6 +47,7 @@ const ragOutputSchema = z.object({
       sourceUrl: z.string().nullable(),
       imageUrl: z.string().nullable(),
       score: z.number(),
+      daysAgo: z.number().optional(),
       pages: z.array(z.number()).optional(),
       sheet: z.string().optional(),
       row: z.number().optional(),
@@ -157,6 +158,14 @@ searchMeta.suggestion tells you if results have low relevance and you should ref
           sourceUrl: r.sourceUrl,
           imageUrl: r.imageUrl,
           score: r.score,
+          ...(r.sourceDate
+            ? {
+                daysAgo: Math.max(
+                  0,
+                  Math.floor((Date.now() - r.sourceDate.getTime()) / 86_400_000)
+                ),
+              }
+            : {}),
           ...(r.metadata && 'pages' in r.metadata ? { pages: r.metadata.pages } : {}),
           ...(r.metadata && 'sheet' in r.metadata ? { sheet: r.metadata.sheet } : {}),
           ...(r.metadata && 'row' in r.metadata ? { row: r.metadata.row } : {}),

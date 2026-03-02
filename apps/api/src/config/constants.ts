@@ -37,6 +37,8 @@ export const DEFAULT_SEARCH_LIMIT = 10;
 export const CONTEXT_PREVIEW_MAX_LENGTH = 500;
 export const RERANK_MAX_DOC_LENGTH = 4000;
 export const HYDE_MAX_LENGTH = 500;
+export const MIN_RERANK_SCORE = 0.15;
+export const RECENCY_HALF_LIFE_DAYS = 90;
 export const THREAD_TITLE_MAX_LENGTH = 100;
 
 // ── File Upload ─────────────────────────────────────────────────────
