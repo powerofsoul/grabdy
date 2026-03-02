@@ -11,6 +11,7 @@ import {
 import { tool } from 'ai';
 import { z } from 'zod';
 
+import { ProxyService } from '../../proxy/proxy.service';
 import { SearchService } from '../../retrieval/search.service';
 import type { SearchScope } from '../agents/search-scope';
 import type { Tool, ToolCallContext } from '../base-tool';
@@ -85,7 +86,10 @@ export class RagSearchTool implements Tool<RagSearchInput, RagSearchOutput> {
 - Never mention scores, metadata fields, or internal IDs in your answer.`;
   private readonly logger = new Logger(RagSearchTool.name);
 
-  constructor(private searchService: SearchService) {}
+  constructor(
+    private searchService: SearchService,
+    private proxyService: ProxyService
+  ) {}
 
   create(orgId: DbId<'Org'>, scope: SearchScope, defaultTopK = 5, userId?: DbId<'User'> | null) {
     const collectionIds = scope.type === 'scoped' ? scope.collectionIds : undefined;
@@ -101,6 +105,7 @@ export class RagSearchTool implements Tool<RagSearchInput, RagSearchOutput> {
     );
 
     const searchService = this.searchService;
+    const proxyService = this.proxyService;
 
     const metadataDesc = Object.entries(CHUNK_META_DESCRIPTIONS)
       .map(([type, shape]) => `${type}: ${shape}`)
@@ -156,7 +161,7 @@ searchMeta.suggestion tells you if results have low relevance and you should ref
           dataSourceName: r.dataSourceName,
           type: r.metadata?.type ?? 'TXT',
           sourceUrl: r.sourceUrl,
-          imageUrl: r.imageUrl,
+          imageUrl: r.imageId ? proxyService.extractedImageUrl(orgId, r.imageId) : null,
           score: r.score,
           ...(r.sourceDate
             ? {

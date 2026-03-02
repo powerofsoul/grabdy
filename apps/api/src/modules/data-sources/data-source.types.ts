@@ -1,8 +1,6 @@
 import type { DbId } from '@grabdy/common';
 import type { ChunkMeta, UploadsMime } from '@grabdy/contracts';
 
-import { env } from '../../config/env.config';
-
 export interface SyncedMessageData {
   content: string;
   metadata: ChunkMeta;
@@ -49,17 +47,4 @@ export function buildSource(data: DataSourceJobData): {
     return { sourceUrl: null, sourceKey: data.storagePath };
   }
   return { sourceUrl: null, sourceKey: null };
-}
-
-export function storageProxyUrl(orgId: DbId<'Org'>, storagePath: string): string {
-  // Use the storage path directly as URL path segments (strip orgId/ prefix since it's in the URL)
-  const prefix = `${orgId}/`;
-  const relativePath = storagePath.startsWith(prefix)
-    ? storagePath.slice(prefix.length)
-    : storagePath;
-  return `${env.apiUrl}/orgs/${orgId}/f/${relativePath}`;
-}
-
-export function extractedImageUrl(orgId: DbId<'Org'>, imageId: DbId<'ExtractedImage'>): string {
-  return `${env.apiUrl}/orgs/${orgId}/img/${imageId}`;
 }

@@ -10,10 +10,10 @@ import { getMaxFileSizeForMime } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { InjectTypedQueue } from '../../queue/queue.decorators';
 import { NotificationService } from '../notification/notification.service';
+import { ProxyService } from '../proxy/proxy.service';
 import { StorageKeys } from '../storage/file-storage.interface';
 import { S3FileStorage } from '../storage/s3-file-storage';
 
-import { storageProxyUrl } from './data-source.types';
 import { findDescendants } from './find-descendants';
 
 @Injectable()
@@ -22,6 +22,7 @@ export class DataSourcesService {
     private db: DbService,
     private storage: S3FileStorage,
     private notification: NotificationService,
+    private proxyService: ProxyService,
     @InjectTypedQueue('file-ingestion') private fileIngestionQueue: Queue,
     @InjectTypedQueue('data-source-cleanup') private cleanupQueue: Queue
   ) {}
@@ -61,7 +62,7 @@ export class DataSourcesService {
         file_size: file.size,
         storage_path: storageKey,
         type,
-        source_url: storageProxyUrl(orgId, storageKey),
+        source_url: this.proxyService.storageProxyUrl(orgId, storageKey),
         collection_id: collectionId,
         org_id: orgId,
         uploaded_by_id: userId,

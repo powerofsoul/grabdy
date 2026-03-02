@@ -11,6 +11,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { IngestionModule } from './modules/data-sources/ingestion.module';
 import { EmailModule } from './modules/email/email.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { ProxyModule } from './modules/proxy/proxy.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
 
@@ -34,6 +35,7 @@ import { RedisModule } from './redis/redis.module';
     AgentModule,
     EmailModule,
     NotificationModule,
+    ProxyModule,
     // Processor module
     IngestionModule,
   ],

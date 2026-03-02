@@ -25,7 +25,7 @@ import {
 import { DbService } from '../../db/db.module';
 import type { ConnectionResource } from '../agent/agents/search-scope';
 import { AiService } from '../ai/ai.service';
-import { extractedImageUrl, storageProxyUrl } from '../data-sources/data-source.types';
+import { ProxyService } from '../proxy/proxy.service';
 
 import { reciprocalRankFusion } from './hybrid-search';
 
@@ -52,7 +52,7 @@ export interface SearchResult {
   dataSourceName: string;
   dataSourceId: DbId<'DataSource'>;
   sourceUrl: string | null;
-  imageUrl: string | null;
+  imageId: DbId<'ExtractedImage'> | null;
   collectionId: DbId<'Collection'> | null;
   sourceDate: Date | null;
   contextBefore?: string;
@@ -161,7 +161,8 @@ export class SearchService {
 
   constructor(
     private db: DbService,
-    private aiService: AiService
+    private aiService: AiService,
+    private proxyService: ProxyService
   ) {}
 
   async search(
@@ -379,8 +380,10 @@ export class SearchService {
       metadata: r.metadata,
       dataSourceName: r.data_source_name,
       dataSourceId: r.data_source_id,
-      sourceUrl: r.source_key ? storageProxyUrl(r.org_id, r.source_key) : r.source_url,
-      imageUrl: r.image_id ? extractedImageUrl(r.org_id, r.image_id) : null,
+      sourceUrl: r.source_key
+        ? this.proxyService.storageProxyUrl(r.org_id, r.source_key)
+        : r.source_url,
+      imageId: r.image_id,
       collectionId: r.collection_id,
       sourceDate: extractSourceDate(r.metadata),
     }));

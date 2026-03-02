@@ -40,6 +40,8 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { McpModule } from './modules/mcp/mcp.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { OrgsModule } from './modules/orgs/orgs.module';
+import { ProxyModule } from './modules/proxy/proxy.module';
+import { ProxyRoutesModule } from './modules/proxy/proxy-routes.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { UsersModule } from './modules/users/users.module';
 import { QueueModule } from './queue/queue.module';
@@ -95,6 +97,8 @@ import { RedisModule } from './redis/redis.module';
     UsersModule,
     CollectionsModule,
     DataSourcesModule,
+    ProxyModule,
+    ProxyRoutesModule,
     DemoRequestModule,
     ChatModule,
     ApiKeysModule,
