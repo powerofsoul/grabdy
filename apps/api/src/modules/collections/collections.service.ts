@@ -37,8 +37,6 @@ export class CollectionsService {
   async list(orgId: DbId<'Org'>) {
     const collections = await this.db.kysely
       .selectFrom('data.collections')
-      .leftJoin('data.data_sources', 'data.data_sources.collection_id', 'data.collections.id')
-      .leftJoin('data.chunks', 'data.chunks.collection_id', 'data.collections.id')
       .select([
         'data.collections.id',
         'data.collections.name',
@@ -46,11 +44,14 @@ export class CollectionsService {
         'data.collections.org_id',
         'data.collections.created_at',
         'data.collections.updated_at',
-        sql<number>`count(distinct data.data_sources.id)`.as('source_count'),
-        sql<number>`count(distinct data.chunks.id)`.as('chunk_count'),
+        sql<number>`(select count(*) from data.data_sources where data.data_sources.collection_id = data.collections.id)`.as(
+          'source_count'
+        ),
+        sql<number>`(select count(*) from data.chunks where data.chunks.collection_id = data.collections.id)`.as(
+          'chunk_count'
+        ),
       ])
       .where('data.collections.org_id', '=', orgId)
-      .groupBy('data.collections.id')
       .execute();
 
     return collections.map((c) => ({
