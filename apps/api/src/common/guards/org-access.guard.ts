@@ -51,7 +51,9 @@ export class OrgAccessGuard implements CanActivate {
     }
 
     for (const field of metadata.query) {
-      checkId(req.query?.[field], field);
+      const value = req.query?.[field];
+      if (value == null) continue; // optional query params
+      checkId(value, field);
     }
 
     if (metadata.body) {
