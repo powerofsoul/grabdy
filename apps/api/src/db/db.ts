@@ -111,6 +111,7 @@ export interface DB {
     id: Generated<DbId<'Org'>>;
     name: string;
     numeric_id: Generated<OrgNumericId>;
+    domain: string | null;
     stripe_customer_id: string | null;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;

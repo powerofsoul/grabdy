@@ -14,13 +14,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {
-  EnvelopeIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  LockIcon,
-  UserIcon,
-} from '@phosphor-icons/react';
+import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon, UserIcon } from '@phosphor-icons/react';
 import { GoogleLogin } from '@react-oauth/google';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
@@ -28,12 +22,14 @@ import { z } from 'zod';
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { OtpInput } from '@/components/ui/OtpInput';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 
 const signupSchema = z
   .object({
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
     email: workEmailSchema,
+    orgName: z.string().optional(),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
@@ -61,6 +57,9 @@ function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+  const [domainOrgName, setDomainOrgName] = useState<string | null>(null);
+  const [checkingDomain, setCheckingDomain] = useState(false);
+  const [domainChecked, setDomainChecked] = useState(false);
 
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -94,8 +93,22 @@ function SignupPage() {
   }, [authInProgress, isLoading, user, navigate, getRedirectPath]);
 
   const onSignup = async (data: SignupFormData) => {
+    if (!domainChecked) {
+      signupForm.setError('email', { message: 'Please wait for email verification to complete' });
+      return;
+    }
+    if (!domainOrgName && !data.orgName?.trim()) {
+      signupForm.setError('orgName', { message: 'Organization name is required' });
+      return;
+    }
     try {
-      const email = await signup(data.email, data.password, data.firstName, data.lastName);
+      const email = await signup(
+        data.email,
+        data.password,
+        data.firstName,
+        data.lastName,
+        domainOrgName ? undefined : data.orgName?.trim()
+      );
       setSubmittedEmail(email);
       setStep('verify');
     } catch (err) {
@@ -144,6 +157,28 @@ function SignupPage() {
       signupForm.setError('root', {
         message: err instanceof Error ? err.message : 'Google authentication failed',
       });
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    const email = signupForm.getValues('email');
+    const result = workEmailSchema.safeParse(email);
+    if (!result.success) {
+      setDomainOrgName(null);
+      setDomainChecked(false);
+      return;
+    }
+    setCheckingDomain(true);
+    try {
+      const res = await api.auth.checkDomain({ query: { email: result.data } });
+      if (res.status === 200) {
+        setDomainOrgName(res.body.data?.orgName ?? null);
+      }
+    } catch {
+      setDomainOrgName(null);
+    } finally {
+      setCheckingDomain(false);
+      setDomainChecked(true);
     }
   };
 
@@ -227,7 +262,7 @@ function SignupPage() {
     );
   }
 
-  const signupBusy = signupForm.formState.isSubmitting || authInProgress;
+  const signupBusy = signupForm.formState.isSubmitting || authInProgress || checkingDomain;
 
   return (
     <AuthLayout title="Create an account" subtitle="Start your free trial">
@@ -285,7 +320,13 @@ function SignupPage() {
         </Box>
 
         <TextField
-          {...signupForm.register('email')}
+          {...signupForm.register('email', {
+            onBlur: handleEmailBlur,
+            onChange: () => {
+              setDomainOrgName(null);
+              setDomainChecked(false);
+            },
+          })}
           label="Work Email"
           type="email"
           placeholder="you@company.com"
@@ -302,6 +343,27 @@ function SignupPage() {
             ),
           }}
         />
+
+        {domainOrgName && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Your team at <strong>{domainOrgName}</strong> is already on Grabdy. You will be added as
+            a member when you sign up.
+          </Alert>
+        )}
+
+        {domainOrgName === null && (
+          <TextField
+            {...signupForm.register('orgName')}
+            label="Organization Name"
+            type="text"
+            placeholder="Your company name"
+            fullWidth
+            autoComplete="organization"
+            error={!!signupForm.formState.errors.orgName}
+            helperText={signupForm.formState.errors.orgName?.message}
+            sx={{ mb: 2 }}
+          />
+        )}
 
         <TextField
           {...signupForm.register('password')}

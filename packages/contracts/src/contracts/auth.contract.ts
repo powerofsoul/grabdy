@@ -33,6 +33,17 @@ const user = z.object({
 
 export const authContract = c.router(
   {
+    checkDomain: {
+      method: 'GET',
+      path: '/check-domain',
+      query: z.object({ email: workEmailSchema }),
+      responses: {
+        200: z.object({
+          success: z.literal(true),
+          data: z.object({ orgName: z.string() }).nullable(),
+        }),
+      },
+    },
     signup: {
       method: 'POST',
       path: '/signup',
@@ -41,6 +52,7 @@ export const authContract = c.router(
         password: z.string().min(8, 'Password must be at least 8 characters'),
         firstName: firstNameSchema,
         lastName: lastNameSchema,
+        orgName: z.string().min(1, 'Organization name is required').optional(),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: z.object({ email: z.string() }) }),

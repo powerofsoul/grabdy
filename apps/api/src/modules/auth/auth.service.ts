@@ -32,6 +32,7 @@ const pendingSignupSchema = z.object({
   passwordHash: z.string(),
   firstName: z.string(),
   lastName: z.string(),
+  orgName: z.string().optional(),
   otp: z.string(),
 });
 import { redisKeys } from '../../redis/redis-keys';
@@ -174,11 +175,26 @@ export class AuthService {
     };
   }
 
+  async checkDomain(email: string): Promise<{ orgName: string } | null> {
+    const domain = email.toLowerCase().split('@')[1];
+    if (!domain) return null;
+
+    const org = await this.db.kysely
+      .selectFrom('org.orgs')
+      .select(['name'])
+      .where('domain', '=', domain)
+      .executeTakeFirst();
+
+    if (!org) return null;
+    return { orgName: org.name };
+  }
+
   async register(
     email: string,
     password: string,
     firstName: string,
-    lastName: string
+    lastName: string,
+    orgName?: string
   ): Promise<{ email: string }> {
     const normalizedEmail = email.toLowerCase();
 
@@ -204,6 +220,18 @@ export class AuthService {
       );
     }
 
+    // Require orgName when no existing org matches this email domain
+    const domain = normalizedEmail.split('@')[1];
+    const existingDomainOrg = await this.db.kysely
+      .selectFrom('org.orgs')
+      .select(['id'])
+      .where('domain', '=', domain)
+      .executeTakeFirst();
+
+    if (!existingDomainOrg && !orgName?.trim()) {
+      throw new BadRequestException('Organization name is required');
+    }
+
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
     const otp = this.generateOTP();
     const ttlSeconds = OTP_EXPIRY_MINUTES * 60;
@@ -211,7 +239,7 @@ export class AuthService {
     // Store pending signup data in Redis with TTL
     await this.redis.set(
       redisKeys.pendingSignup(normalizedEmail),
-      JSON.stringify({ passwordHash, firstName, lastName, otp }),
+      JSON.stringify({ passwordHash, firstName, lastName, orgName: orgName?.trim(), otp }),
       'EX',
       ttlSeconds
     );
@@ -241,6 +269,8 @@ export class AuthService {
     }
 
     // Create user + org + membership in transaction
+    const domain = normalizedEmail.split('@')[1];
+
     const result = await this.db.kysely.transaction().execute(async (trx) => {
       const newUser = await trx
         .insertInto('auth.users')
@@ -256,10 +286,34 @@ export class AuthService {
         .returningAll()
         .executeTakeFirstOrThrow();
 
+      // Check if an org already exists for this email domain
+      const existingOrg = await trx
+        .selectFrom('org.orgs')
+        .select(['id', 'name'])
+        .where('domain', '=', domain)
+        .executeTakeFirst();
+
+      if (existingOrg) {
+        // Join existing org as MEMBER
+        await trx
+          .insertInto('org.org_memberships')
+          .values({
+            id: packId('OrgMembership', existingOrg.id),
+            user_id: newUser.id,
+            org_id: existingOrg.id,
+            roles: ['MEMBER'],
+          })
+          .execute();
+
+        return { user: newUser, org: existingOrg, isNewOrg: false };
+      }
+
+      // Create new org with domain set
       const newOrg = await trx
         .insertInto('org.orgs')
         .values({
-          name: `${pending.firstName}'s Organization`,
+          name: pending.orgName || `${pending.firstName}'s Organization`,
+          domain,
           updated_at: new Date(),
         })
         .returningAll()
@@ -275,19 +329,21 @@ export class AuthService {
         })
         .execute();
 
-      return { user: newUser, org: newOrg };
+      return { user: newUser, org: newOrg, isNewOrg: true };
     });
 
     // Clean up Redis keys
     await this.redis.del(redisKeys.pendingSignup(normalizedEmail));
     await this.redis.del(redisKeys.signupRate(normalizedEmail));
 
-    try {
-      await this.billingService.ensureStripeCustomer(result.org.id);
-    } catch (err) {
-      this.logger.warn(
-        `Failed to create Stripe customer for org ${result.org.id}: ${err instanceof Error ? err.message : 'unknown'}`
-      );
+    if (result.isNewOrg) {
+      try {
+        await this.billingService.ensureStripeCustomer(result.org.id);
+      } catch (err) {
+        this.logger.warn(
+          `Failed to create Stripe customer for org ${result.org.id}: ${err instanceof Error ? err.message : 'unknown'}`
+        );
+      }
     }
 
     const memberships = await this.getUserMemberships(result.user.id);
@@ -450,6 +506,8 @@ export class AuthService {
     }
 
     // 3. New user — create user + org + membership
+    const domain = email.split('@')[1];
+
     const result = await this.db.kysely.transaction().execute(async (trx) => {
       const newUser = await trx
         .insertInto('auth.users')
@@ -466,10 +524,34 @@ export class AuthService {
         .returningAll()
         .executeTakeFirstOrThrow();
 
+      // Check if an org already exists for this email domain
+      const existingOrg = await trx
+        .selectFrom('org.orgs')
+        .select(['id', 'name'])
+        .where('domain', '=', domain)
+        .executeTakeFirst();
+
+      if (existingOrg) {
+        // Join existing org as MEMBER
+        await trx
+          .insertInto('org.org_memberships')
+          .values({
+            id: packId('OrgMembership', existingOrg.id),
+            user_id: newUser.id,
+            org_id: existingOrg.id,
+            roles: ['MEMBER'],
+          })
+          .execute();
+
+        return { user: newUser, org: existingOrg, isNewOrg: false };
+      }
+
+      // Create new org with domain set
       const newOrg = await trx
         .insertInto('org.orgs')
         .values({
           name: `${firstName}'s Organization`,
+          domain,
           updated_at: new Date(),
         })
         .returningAll()
@@ -485,15 +567,17 @@ export class AuthService {
         })
         .execute();
 
-      return { user: newUser, org: newOrg };
+      return { user: newUser, org: newOrg, isNewOrg: true };
     });
 
-    try {
-      await this.billingService.ensureStripeCustomer(result.org.id);
-    } catch (err) {
-      this.logger.warn(
-        `Failed to create Stripe customer for org ${result.org.id}: ${err instanceof Error ? err.message : 'unknown'}`
-      );
+    if (result.isNewOrg) {
+      try {
+        await this.billingService.ensureStripeCustomer(result.org.id);
+      } catch (err) {
+        this.logger.warn(
+          `Failed to create Stripe customer for org ${result.org.id}: ${err instanceof Error ? err.message : 'unknown'}`
+        );
+      }
     }
 
     const memberships = await this.getUserMemberships(result.user.id);

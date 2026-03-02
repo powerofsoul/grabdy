@@ -39,7 +39,13 @@ interface AuthContextType {
   isOwner: boolean;
   selectOrg: (orgId: DbId<'Org'>) => void;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<string>;
+  signup: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    orgName?: string
+  ) => Promise<string>;
   verifyEmail: (email: string, otp: string) => Promise<void>;
   resendVerification: (email: string) => Promise<void>;
   googleAuth: (credential: string) => Promise<void>;
@@ -122,8 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw new Error('Login failed');
   };
 
-  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
-    const res = await api.auth.signup({ body: { email, password, firstName, lastName } });
+  const signup = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    orgName?: string
+  ) => {
+    const res = await api.auth.signup({ body: { email, password, firstName, lastName, orgName } });
 
     if (res.status === 200 && res.body.success) {
       return res.body.data.email;

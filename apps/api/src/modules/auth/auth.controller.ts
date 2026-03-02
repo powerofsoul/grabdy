@@ -34,12 +34,20 @@ export class AuthController {
     }
 
     return tsRestHandler(authContract, {
+      checkDomain: async ({ query }) => {
+        const data = await this.authService.checkDomain(query.email);
+        return {
+          status: 200 as const,
+          body: { success: true as const, data },
+        };
+      },
       signup: async ({ body }) => {
         const data = await this.authService.register(
           body.email,
           body.password,
           body.firstName,
-          body.lastName
+          body.lastName,
+          body.orgName
         );
         return {
           status: 200 as const,
