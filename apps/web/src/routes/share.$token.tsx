@@ -83,6 +83,7 @@ function SharedChatPage() {
       accentColor={data.accentColor}
       primaryColor={data.primaryColor}
       messages={data.messages}
+      shareToken={token}
     />
   );
 }

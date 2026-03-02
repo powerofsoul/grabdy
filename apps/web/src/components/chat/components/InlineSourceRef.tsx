@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react';
 
 import type { ChatSource, IntegrationProvider } from '@grabdy/contracts';
 import { alpha, Box, Popover, Typography } from '@mui/material';
-import { ArrowSquareOutIcon } from '@phosphor-icons/react';
+import { ArrowSquareOutIcon, LockIcon } from '@phosphor-icons/react';
+import { Link } from '@tanstack/react-router';
 
 import { FileIcon } from './source-chips/FileIcon';
 import { formatLocation, isIntegrationProvider } from './source-chips/helpers';
@@ -20,9 +21,10 @@ function SourceIcon({ source, size }: { source: ChatSource; size: number }) {
 interface InlineSourceRefProps {
   refNumber: number;
   source: ChatSource | undefined;
+  shareToken?: string;
 }
 
-export function InlineSourceRef({ refNumber, source }: InlineSourceRefProps) {
+export function InlineSourceRef({ refNumber, source, shareToken }: InlineSourceRefProps) {
   const openSource = useOpenSource();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -166,7 +168,8 @@ export function InlineSourceRef({ refNumber, source }: InlineSourceRefProps) {
 
           {/* Footer */}
           <Box
-            onClick={handleOpenSource}
+            component={shareToken ? Link : 'div'}
+            {...(shareToken ? { to: '/auth/login' } : { onClick: handleOpenSource })}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -181,16 +184,33 @@ export function InlineSourceRef({ refNumber, source }: InlineSourceRefProps) {
               },
             }}
           >
-            <ArrowSquareOutIcon size={11} weight="light" />
-            <Typography
-              sx={{
-                fontSize: '0.65rem',
-                color: 'primary.main',
-                fontWeight: 500,
-              }}
-            >
-              Open document
-            </Typography>
+            {shareToken ? (
+              <>
+                <LockIcon size={11} weight="light" />
+                <Typography
+                  sx={{
+                    fontSize: '0.65rem',
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                  }}
+                >
+                  Sign in to view document
+                </Typography>
+              </>
+            ) : (
+              <>
+                <ArrowSquareOutIcon size={11} weight="light" />
+                <Typography
+                  sx={{
+                    fontSize: '0.65rem',
+                    color: 'primary.main',
+                    fontWeight: 500,
+                  }}
+                >
+                  Open document
+                </Typography>
+              </>
+            )}
           </Box>
         </Popover>
       )}

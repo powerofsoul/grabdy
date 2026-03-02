@@ -24,6 +24,7 @@ interface MessageRowProps {
   message: ChatMessage;
   embedJwt?: string;
   accentColor?: string;
+  shareToken?: string;
 }
 
 /** Regex to strip the fenced ```sources ... ``` block from display text. */
@@ -63,8 +64,11 @@ function buildSourceMap(sources: ChatSource[] | undefined): Map<number, ChatSour
   return map;
 }
 
+/** Matches image proxy URLs: /orgs/<orgId>/img/<imageId>. See also IMAGE_URL_RE in shared-chat.service.ts. */
+const IMAGE_PROXY_RE = /\/orgs\/[^/]+\/img\/[0-9a-f-]+/;
+
 export const MessageRow = memo(
-  function MessageRow({ message, embedJwt, accentColor }: MessageRowProps) {
+  function MessageRow({ message, embedJwt, accentColor, shareToken }: MessageRowProps) {
     const isUser = message.role === 'user';
     const [thinkingExpanded, setThinkingExpanded] = useState(false);
     const [expandedImage, setExpandedImage] = useState<string | null>(null);
@@ -103,16 +107,22 @@ export const MessageRow = memo(
         cite({ node }) {
           const ref = Number(node?.properties?.dataRef);
           if (!ref) return null;
-          return <InlineSourceRef refNumber={ref} source={sourceMap.get(ref)} />;
+          return (
+            <InlineSourceRef refNumber={ref} source={sourceMap.get(ref)} shareToken={shareToken} />
+          );
         },
         img({ src, alt }) {
           if (!src) return null;
+          const imgSrc =
+            shareToken && IMAGE_PROXY_RE.test(src)
+              ? `${src}${src.includes('?') ? '&' : '?'}share_token=${shareToken}`
+              : src;
           return (
             <Box
               component="img"
-              src={src}
+              src={imgSrc}
               alt={alt ?? ''}
-              onClick={() => setExpandedImage(src)}
+              onClick={() => setExpandedImage(imgSrc)}
               sx={{
                 height: 100,
                 maxWidth: '100%',
@@ -137,7 +147,7 @@ export const MessageRow = memo(
           return <code className={className}>{children}</code>;
         },
       }),
-      [sourceMap]
+      [sourceMap, shareToken]
     );
 
     return (
@@ -272,6 +282,7 @@ export const MessageRow = memo(
                 key={`${source.dataSourceId}-${source.ref ?? i}`}
                 refNumber={source.ref ?? i + 1}
                 source={source}
+                shareToken={shareToken}
               />
             ))}
           </Box>
@@ -324,6 +335,7 @@ export const MessageRow = memo(
     if (prev.message.attachments !== next.message.attachments) return false;
     if (prev.embedJwt !== next.embedJwt) return false;
     if (prev.accentColor !== next.accentColor) return false;
+    if (prev.shareToken !== next.shareToken) return false;
     return true;
   }
 );

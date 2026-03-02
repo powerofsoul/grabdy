@@ -10,6 +10,7 @@ interface SharedChatViewProps {
   accentColor: string | null;
   primaryColor: string | null;
   messages: ChatMessage[];
+  shareToken?: string;
 }
 
 export function SharedChatView({
@@ -17,6 +18,7 @@ export function SharedChatView({
   accentColor,
   primaryColor,
   messages,
+  shareToken,
 }: SharedChatViewProps) {
   const baseTheme = useTheme();
   const ct = baseTheme.palette.text.primary;
@@ -83,6 +85,7 @@ export function SharedChatView({
           isLoading={false}
           isStreaming={false}
           accentColor={accentColor ?? undefined}
+          shareToken={shareToken}
         />
       </Stack>
     </Box>

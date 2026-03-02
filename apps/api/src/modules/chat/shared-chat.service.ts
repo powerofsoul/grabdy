@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
-import { type DbId, extractOrgNumericId, packId } from '@grabdy/common';
+import { type DbId, dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
 import { sharedChatSnapshotSchema } from '@grabdy/contracts';
 import { nanoid } from 'nanoid';
 
 import { DbService } from '../../db/db.module';
 import { AgentMemoryService } from '../agent/services/memory.service';
+
+/** Matches image proxy URLs like /orgs/<orgId>/img/<imageId>. See also IMAGE_PROXY_RE in MessageRow.tsx. */
+const IMAGE_URL_RE =
+  /\/orgs\/[^/]+\/img\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;
 
 const SHARE_TOKEN_LENGTH = 12;
 const MAX_TOKEN_RETRIES = 3;
@@ -54,6 +58,20 @@ export class SharedChatService {
     const snapshotJson = JSON.stringify(messagesSnapshot);
     const isPublicVal = options.isPublic ?? false;
 
+    // Extract image IDs from all message content
+    const imageIdSet = new Set<DbId<'ExtractedImage'>>();
+    for (const msg of messagesSnapshot) {
+      let match: RegExpExecArray | null;
+      IMAGE_URL_RE.lastIndex = 0;
+      while ((match = IMAGE_URL_RE.exec(msg.content)) !== null) {
+        const parsed = dbIdSchema('ExtractedImage').safeParse(match[1]);
+        if (parsed.success) {
+          imageIdSet.add(parsed.data);
+        }
+      }
+    }
+    const imageIds = [...imageIdSet];
+
     let lastError: unknown;
     for (let attempt = 0; attempt < MAX_TOKEN_RETRIES; attempt++) {
       const shareToken = nanoid(SHARE_TOKEN_LENGTH);
@@ -72,6 +90,7 @@ export class SharedChatService {
             share_token: shareToken,
             accent_color: thread.accent_color,
             primary_color: thread.primary_color,
+            image_ids: imageIds,
             is_public: isPublicVal,
           })
           .returningAll()

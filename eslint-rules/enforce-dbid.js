@@ -137,12 +137,15 @@ function containsBrandedIdArray(node) {
     return containsBrandedId(node.elementType);
   }
 
-  // Array<DbId<'X'>>
+  // Array<DbId<'X'>> or Generated<DbId<'X'>[]>
   if (node.type === 'TSTypeReference') {
     if (node.typeName?.type === 'Identifier' && node.typeName.name === 'Array') {
       const params = node.typeArguments?.params || node.typeParameters?.params;
       if (params) return params.some(containsBrandedId);
     }
+    // Check type parameters for wrappers like Generated<DbId<'X'>[]>
+    const params = node.typeArguments?.params || node.typeParameters?.params;
+    if (params) return params.some(containsBrandedIdArray);
   }
 
   // Union: DbId<'X'>[] | undefined

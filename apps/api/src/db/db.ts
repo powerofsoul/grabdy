@@ -291,6 +291,7 @@ export interface DB {
     share_token: string;
     accent_color: string | null;
     primary_color: string | null;
+    image_ids: Generated<DbId<'ExtractedImage'>[]>;
     is_public: Generated<boolean>;
     revoked: Generated<boolean>;
     created_at: Generated<Timestamp>;

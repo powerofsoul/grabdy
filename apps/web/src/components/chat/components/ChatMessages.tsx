@@ -15,6 +15,7 @@ interface ChatMessagesProps {
   isStreaming: boolean;
   embedJwt?: string;
   accentColor?: string;
+  shareToken?: string;
 }
 
 export function ChatMessages({
@@ -23,6 +24,7 @@ export function ChatMessages({
   isStreaming,
   embedJwt,
   accentColor,
+  shareToken,
 }: ChatMessagesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -113,6 +115,7 @@ export function ChatMessages({
               message={message}
               embedJwt={embedJwt}
               accentColor={accentColor}
+              shareToken={shareToken}
             />
           ))}
           {isStreaming &&
