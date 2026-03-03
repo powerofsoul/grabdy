@@ -1,10 +1,10 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 
 import type { ChatSource } from '@grabdy/contracts';
-import { alpha, Backdrop, Box, Collapse, Typography } from '@mui/material';
-import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react';
+import { alpha, Backdrop, Box, Collapse, IconButton, Typography } from '@mui/material';
+import { CaretDownIcon, CaretRightIcon, CheckIcon, CopyIcon } from '@phosphor-icons/react';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
@@ -84,6 +84,25 @@ export const MessageRow = memo(
     const sources = message.sources;
 
     const sourceMap = useMemo(() => buildSourceMap(sources), [sources]);
+
+    const [copied, setCopied] = useState(false);
+    const [copyY, setCopyY] = useState<number | null>(null);
+    const bubbleRef = useRef<HTMLDivElement>(null);
+
+    const handleCopy = useCallback(() => {
+      navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }, [message.content]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+      if (!bubbleRef.current) return;
+      const rect = bubbleRef.current.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      setCopyY((prev) => (prev === null || Math.abs(y - prev) > 50 ? y : prev));
+    }, []);
+
+    const handleMouseLeave = useCallback(() => setCopyY(null), []);
 
     const hasThinking = thinkingTexts && thinkingTexts.length > 0;
     const showThinkingSection = !isUser && (message.isStreaming || hasThinking);
@@ -229,7 +248,7 @@ export const MessageRow = memo(
           </Box>
         )}
 
-        {/* Message bubble -- hidden when there's no content yet (e.g. only thinking blocks so far) */}
+        {/* Message bubble */}
         {(isUser || displayContent) && (
           <Box
             sx={{
@@ -238,10 +257,14 @@ export const MessageRow = memo(
             }}
           >
             <Box
+              ref={isUser ? undefined : bubbleRef}
+              onMouseMove={isUser ? undefined : handleMouseMove}
+              onMouseLeave={isUser ? undefined : handleMouseLeave}
               sx={{
                 px: 2,
                 py: 1.25,
                 maxWidth: '85%',
+                position: 'relative',
                 ...(isUser
                   ? {
                       bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
@@ -269,6 +292,28 @@ export const MessageRow = memo(
                     {displayContent}
                   </ReactMarkdown>
                 </Box>
+              )}
+              {/* Floating copy button */}
+              {!isUser && !message.isStreaming && copyY !== null && (
+                <IconButton
+                  size="small"
+                  onClick={handleCopy}
+                  sx={{
+                    position: 'absolute',
+                    right: 4,
+                    top: copyY - 12,
+                    p: 0.25,
+                    bgcolor: 'background.paper',
+                    boxShadow: 1,
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  {copied ? (
+                    <CheckIcon size={14} weight="bold" color="var(--mui-palette-success-main)" />
+                  ) : (
+                    <CopyIcon size={14} weight="light" />
+                  )}
+                </IconButton>
               )}
             </Box>
           </Box>
