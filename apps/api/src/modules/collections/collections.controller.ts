@@ -15,7 +15,11 @@ function toISOString(date: Date): string {
 export class CollectionsController {
   constructor(private collectionsService: CollectionsService) {}
 
-  @OrgAccess(collectionsContract.create, { params: ['orgId'] })
+  @OrgAccess(collectionsContract.create, {
+    roles: ['OWNER', 'ADMIN'],
+    params: ['orgId'],
+    body: (b) => [b.parentId],
+  })
   @TsRestHandler(collectionsContract.create)
   async create() {
     return tsRestHandler(collectionsContract.create, async ({ params, body }) => {
@@ -34,11 +38,13 @@ export class CollectionsController {
     });
   }
 
-  @OrgAccess(collectionsContract.list, { params: ['orgId'] })
+  @OrgAccess(collectionsContract.list, { params: ['orgId'], query: ['parentId'] })
   @TsRestHandler(collectionsContract.list)
   async list() {
-    return tsRestHandler(collectionsContract.list, async ({ params }) => {
-      const collections = await this.collectionsService.list(params.orgId);
+    return tsRestHandler(collectionsContract.list, async ({ params, query }) => {
+      const collections = await this.collectionsService.list(params.orgId, {
+        parentId: query.parentId,
+      });
       return {
         status: 200 as const,
         body: {
@@ -72,7 +78,11 @@ export class CollectionsController {
     });
   }
 
-  @OrgAccess(collectionsContract.update, { params: ['orgId', 'collectionId'] })
+  @OrgAccess(collectionsContract.update, {
+    roles: ['OWNER', 'ADMIN'],
+    params: ['orgId', 'collectionId'],
+    body: (b) => [b.parentId],
+  })
   @TsRestHandler(collectionsContract.update)
   async update() {
     return tsRestHandler(collectionsContract.update, async ({ params, body }) => {
@@ -95,7 +105,10 @@ export class CollectionsController {
     });
   }
 
-  @OrgAccess(collectionsContract.delete, { params: ['orgId', 'collectionId'] })
+  @OrgAccess(collectionsContract.delete, {
+    roles: ['OWNER', 'ADMIN'],
+    params: ['orgId', 'collectionId'],
+  })
   @TsRestHandler(collectionsContract.delete)
   async delete() {
     return tsRestHandler(collectionsContract.delete, async ({ params }) => {

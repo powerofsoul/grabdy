@@ -12,13 +12,6 @@ interface ModelInfo {
 }
 
 export const MODEL_INFO = {
-  'openai/gpt-4o-mini': {
-    label: 'GPT-4o Mini',
-    provider: 'OpenAI',
-    contextWindow: 128000,
-    maxOutput: 16384,
-    pricing: { inputPerMillion: 0.15, outputPerMillion: 0.6 },
-  },
   'openai/text-embedding-3-small': {
     label: 'Embedding 3 Small',
     provider: 'OpenAI',

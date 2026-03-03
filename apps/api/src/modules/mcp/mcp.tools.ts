@@ -107,6 +107,7 @@ export class McpTools {
               id: c.id,
               name: c.name,
               description: c.description,
+              parentId: c.parentId,
               sourceCount: c.sourceCount,
               chunkCount: c.chunkCount,
             })),

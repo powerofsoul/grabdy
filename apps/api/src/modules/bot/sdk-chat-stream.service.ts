@@ -8,6 +8,7 @@ import { DbService } from '../../db/db.module';
 import { SdkChatAgent } from '../agent/agents/sdk-chat-agent';
 import type { ConnectionResource, SearchScope } from '../agent/agents/search-scope';
 import type { AttachmentContext } from '../agent/base-agent';
+import { CollectionsService } from '../collections/collections.service';
 
 function hasErrorCode(err: unknown): err is Error & { code: string } {
   if (!(err instanceof Error) || !('code' in err)) return false;
@@ -19,7 +20,8 @@ function hasErrorCode(err: unknown): err is Error & { code: string } {
 export class SdkChatStreamService {
   constructor(
     private db: DbService,
-    private sdkChatAgent: SdkChatAgent
+    private sdkChatAgent: SdkChatAgent,
+    private collectionsService: CollectionsService
   ) {}
 
   async findThread(
@@ -169,13 +171,26 @@ export class SdkChatStreamService {
       )
       .map((s) => ({ connectionId: s.connectionId, githubRepo: s.githubRepo }));
 
+    // Expand collection IDs to include all descendant folders
+    const descendants = await this.collectionsService.getDescendantIdsForMultiple(
+      sdkAuth.orgId,
+      collectionIds
+    );
+    const expandedCollectionIds = [...collectionIds, ...descendants];
+
     // SDK is always scoped or none. Never 'all', since external widget users must not access unselected org data.
     const searchScope: SearchScope =
-      collectionIds.length > 0 ||
+      expandedCollectionIds.length > 0 ||
       dataSourceIds.length > 0 ||
       connectionIds.length > 0 ||
       connectionResources.length > 0
-        ? { type: 'scoped', collectionIds, dataSourceIds, connectionIds, connectionResources }
+        ? {
+            type: 'scoped',
+            collectionIds: expandedCollectionIds,
+            dataSourceIds,
+            connectionIds,
+            connectionResources,
+          }
         : { type: 'none' };
 
     const ctx = this.sdkChatAgent.create({

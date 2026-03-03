@@ -103,6 +103,21 @@ export const dataSourcesContract = c.router(
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
+    move: {
+      method: 'PATCH',
+      path: '/orgs/:orgId/data-sources/:id/move',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+        id: dbIdSchema('DataSource'),
+      }),
+      body: z.object({
+        collectionId: dbIdSchema('Collection').nullable(),
+      }),
+      responses: {
+        200: z.object({ success: z.literal(true) }),
+        404: z.object({ success: z.literal(false), error: z.string() }),
+      },
+    },
     previewUrl: {
       method: 'GET',
       path: '/orgs/:orgId/data-sources/:id/preview-url',

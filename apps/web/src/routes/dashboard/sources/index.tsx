@@ -1,92 +1,25 @@
-import { useEffect, useState } from 'react';
-
-import {
-  alpha,
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { Box, Button } from '@mui/material';
 import { FolderOpenIcon, PlusIcon } from '@phosphor-icons/react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
+import { createFileRoute } from '@tanstack/react-router';
+
+import { CreateFolderDrawer, FolderCard, RenameFolderDrawer, SourcesTreePanel } from './components';
+import { useFolderContents } from './hooks';
 
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageLoader } from '@/components/ui/PageLoader';
-import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
-import { FONT_MONO } from '@/theme';
-
-interface Collection {
-  id: string;
-  name: string;
-  description: string | null;
-  sourceCount: number;
-  chunkCount: number;
-  createdAt: string;
-}
+import { useDrawer } from '@/context/DrawerContext';
 
 export const Route = createFileRoute('/dashboard/sources/')({
-  component: CollectionsPage,
+  component: SourcesIndexPage,
 });
 
-function CollectionsPage() {
-  const { selectedOrgId } = useAuth();
-  const navigate = useNavigate();
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+function SourcesIndexPage() {
+  const { pushDrawer } = useDrawer();
+  const { folders, isLoading } = useFolderContents(null);
 
-  const fetchCollections = async () => {
-    if (!selectedOrgId) return;
-    setIsLoading(true);
-    try {
-      const res = await api.collections.list({ params: { orgId: selectedOrgId } });
-      if (res.status === 200) {
-        setCollections(res.body.data);
-      }
-    } catch {
-      toast.error('Failed to load sources');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCollections();
-  }, [selectedOrgId]);
-
-  const handleCreate = async () => {
-    if (!selectedOrgId || !name.trim()) return;
-    setIsCreating(true);
-    try {
-      const res = await api.collections.create({
-        params: { orgId: selectedOrgId },
-        body: { name: name.trim(), description: description.trim() || undefined },
-      });
-      if (res.status === 200) {
-        toast.success('Source created');
-        setDialogOpen(false);
-        setName('');
-        setDescription('');
-        fetchCollections();
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create source');
-    } finally {
-      setIsCreating(false);
-    }
+  const handleCreateFolder = () => {
+    pushDrawer((onClose) => <CreateFolderDrawer onClose={onClose} />, { title: 'New Folder' });
   };
 
   if (isLoading) {
@@ -95,124 +28,70 @@ function CollectionsPage() {
 
   return (
     <DashboardPage
-      title="Sources"
+      title="Files"
+      noPadding
+      maxWidth={false}
       actions={
         <Button
           variant="contained"
           startIcon={<PlusIcon size={18} weight="light" color="currentColor" />}
-          onClick={() => setDialogOpen(true)}
+          onClick={handleCreateFolder}
         >
-          New Source
+          New Folder
         </Button>
       }
     >
-      {collections.length === 0 ? (
-        <EmptyState
-          icon={<FolderOpenIcon size={48} weight="light" color="currentColor" />}
-          message="No sources yet"
-          description="Create a source to organize your data."
-          actionLabel="Create Source"
-          onAction={() => setDialogOpen(true)}
-        />
-      ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          {collections.map((collection, index) => (
+      <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <SourcesTreePanel />
+        <Box
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            px: { xs: 2, md: 2.5 },
+            pb: { xs: 2, md: 2.5 },
+            pt: { xs: 1, md: 1.5 },
+          }}
+        >
+          {folders.length === 0 ? (
+            <EmptyState
+              icon={<FolderOpenIcon size={48} weight="light" color="currentColor" />}
+              message="No folders yet"
+              description="Create a folder to organize your files."
+              actionLabel="Create Folder"
+              onAction={handleCreateFolder}
+            />
+          ) : (
             <Box
-              key={collection.id}
-              onClick={() =>
-                navigate({
-                  to: '/dashboard/sources/$collectionId',
-                  params: { collectionId: collection.id },
-                })
-              }
               sx={{
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: 2,
-                py: 1.5,
-                px: 1,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                cursor: 'pointer',
-                transition: 'background-color 0.12s',
-                '&:hover': { bgcolor: alpha(ct, 0.02) },
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: 1.5,
               }}
             >
-              {/* Number */}
-              <Typography
-                sx={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '0.85rem',
-                  color: 'text.secondary',
-                  minWidth: 28,
-                  textAlign: 'right',
-                }}
-              >
-                {String(index + 1).padStart(2, '0')}.
-              </Typography>
-
-              {/* Name */}
-              <Typography
-                sx={{
-                  fontWeight: 500,
-                  fontSize: '0.9rem',
-                  flexShrink: 0,
-                }}
-              >
-                {collection.name}
-              </Typography>
-
-              {/* Dotted leader */}
-              <Box
-                sx={{
-                  flex: 1,
-                  borderBottom: `1px dashed ${alpha(ct, 0.2)}`,
-                  mb: '0.3em',
-                  minWidth: 40,
-                }}
-              />
-              <Typography
-                sx={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '0.8rem',
-                  color: 'text.secondary',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {collection.sourceCount} sources &middot; {collection.chunkCount} chunks
-              </Typography>
+              {folders.map((folder) => (
+                <FolderCard
+                  key={folder.id}
+                  id={folder.id}
+                  name={folder.name}
+                  sourceCount={folder.sourceCount}
+                  onRename={(folderId, folderName) => {
+                    pushDrawer(
+                      (onClose) => (
+                        <RenameFolderDrawer
+                          onClose={onClose}
+                          collectionId={folderId}
+                          currentName={folderName}
+                        />
+                      ),
+                      { title: 'Rename Folder' }
+                    );
+                  }}
+                />
+              ))}
             </Box>
-          ))}
+          )}
         </Box>
-      )}
-
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create Source</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Name"
-            fullWidth
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            sx={{ mt: 1, mb: 2 }}
-            required
-          />
-          <TextField
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleCreate} disabled={isCreating || !name.trim()}>
-            {isCreating ? 'Creating...' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      </Box>
     </DashboardPage>
   );
 }

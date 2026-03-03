@@ -1,16 +1,19 @@
 import type { DbId } from '@grabdy/common';
 import type { IntegrationProvider } from '@grabdy/contracts';
 
+import type { TreeNode } from '@/components/ui/Sidebar/helpers';
+
 export interface DataSourceItem {
   id: DbId<'DataSource'>;
   title: string;
 }
 
-export interface CollectionOption {
+export type CollectionOption = TreeNode<{
   id: DbId<'Collection'>;
   name: string;
-  dataSources: DataSourceItem[];
-}
+  parentId: DbId<'Collection'> | null;
+  sourceCount: number;
+}>;
 
 export interface ResourceItem {
   id: string;

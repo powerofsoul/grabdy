@@ -139,6 +139,7 @@ export class PublicApiController {
               id: c.id,
               name: c.name,
               description: c.description,
+              parentId: c.parentId,
               sourceCount: c.sourceCount,
               chunkCount: c.chunkCount,
               createdAt: new Date(c.createdAt).toISOString(),

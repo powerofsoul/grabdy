@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { ChatModule } from '../chat/chat.module';
+import { CollectionsModule } from '../collections/collections.module';
 import { DataSourcesModule } from '../data-sources/data-sources.module';
 import { StorageModule } from '../storage/storage.module';
 
@@ -10,7 +11,7 @@ import { SdkChatStreamController } from './sdk-chat-stream.controller';
 import { SdkChatStreamService } from './sdk-chat-stream.service';
 
 @Module({
-  imports: [DataSourcesModule, ChatModule, StorageModule],
+  imports: [DataSourcesModule, ChatModule, StorageModule, CollectionsModule],
   controllers: [BotController, SdkChatStreamController],
   providers: [BotService, SdkChatStreamService],
   exports: [BotService],

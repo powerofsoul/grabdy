@@ -3,28 +3,16 @@ import type { IntegrationProvider } from '@grabdy/contracts';
 import { useQuery } from '@tanstack/react-query';
 
 import { type IndividuallySelectableProvider, isIndividuallySelectable } from '../constants';
-import type { CollectionOption, DataSourceItem, IntegrationSection } from '../types';
+import type { IntegrationSection } from '../types';
 
+import { buildTree } from '@/components/ui/Sidebar/helpers';
 import { api } from '@/lib/api';
 
 export function usePickerData(orgId: DbId<'Org'>) {
   const collectionsQuery = useQuery({
     queryKey: ['collections', orgId],
     queryFn: async () => {
-      const res = await api.collections.list({ params: { orgId } });
-      if (res.status === 200) return res.body.data;
-      return [];
-    },
-  });
-
-  // Fetch only data sources that belong to a collection (excludes integration DS)
-  const allDsQuery = useQuery({
-    queryKey: ['dataSources', orgId, 'withCollection'],
-    queryFn: async () => {
-      const res = await api.dataSources.list({
-        params: { orgId },
-        query: { hasCollection: true },
-      });
+      const res = await api.collections.list({ params: { orgId }, query: {} });
       if (res.status === 200) return res.body.data;
       return [];
     },
@@ -74,29 +62,18 @@ export function usePickerData(orgId: DbId<'Org'>) {
 
   const isLoading =
     collectionsQuery.isLoading ||
-    allDsQuery.isLoading ||
     connectionsQuery.isLoading ||
     slackDsQuery.isLoading ||
     notionDsQuery.isLoading;
 
-  // Group data sources by collectionId
-  const dsByCollection = new Map<string, DataSourceItem[]>();
-  for (const ds of allDsQuery.data ?? []) {
-    if (!ds.collectionId) continue;
-    const list = dsByCollection.get(ds.collectionId);
-    const item: DataSourceItem = { id: ds.id, title: ds.title };
-    if (list) {
-      list.push(item);
-    } else {
-      dsByCollection.set(ds.collectionId, [item]);
-    }
-  }
-
-  const collections: CollectionOption[] = (collectionsQuery.data ?? []).map((c) => ({
-    id: c.id,
-    name: c.name,
-    dataSources: dsByCollection.get(c.id) ?? [],
-  }));
+  const collections = buildTree(
+    (collectionsQuery.data ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      parentId: c.parentId,
+      sourceCount: c.sourceCount,
+    }))
+  );
 
   const integrationSections: IntegrationSection[] = (connectionsQuery.data ?? [])
     .filter((c) => c.status === 'ACTIVE')

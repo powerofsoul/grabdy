@@ -6,11 +6,19 @@ import { UploadSimpleIcon } from '@phosphor-icons/react';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
+  onFilesSelect?: (files: File[]) => void;
+  multiple?: boolean;
   disabled?: boolean;
   uploadProgress?: number | null;
 }
 
-export function FileUpload({ onFileSelect, disabled, uploadProgress }: FileUploadProps) {
+export function FileUpload({
+  onFileSelect,
+  onFilesSelect,
+  multiple,
+  disabled,
+  uploadProgress,
+}: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDrop = useCallback(
@@ -19,12 +27,23 @@ export function FileUpload({ onFileSelect, disabled, uploadProgress }: FileUploa
       setIsDragOver(false);
       if (disabled) return;
 
-      const file = e.dataTransfer.files[0];
-      if (file && UPLOADS_MIMES.has(file.type)) {
-        onFileSelect(file);
+      if (multiple && onFilesSelect && e.dataTransfer.files.length > 0) {
+        const files: File[] = [];
+        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+          const f = e.dataTransfer.files[i];
+          if (f && UPLOADS_MIMES.has(f.type)) {
+            files.push(f);
+          }
+        }
+        if (files.length > 0) onFilesSelect(files);
+      } else {
+        const file = e.dataTransfer.files[0];
+        if (file && UPLOADS_MIMES.has(file.type)) {
+          onFileSelect(file);
+        }
       }
     },
-    [onFileSelect, disabled]
+    [onFileSelect, onFilesSelect, multiple, disabled]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -38,13 +57,22 @@ export function FileUpload({ onFileSelect, disabled, uploadProgress }: FileUploa
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        onFileSelect(file);
+      if (multiple && onFilesSelect && e.target.files && e.target.files.length > 0) {
+        const files: File[] = [];
+        for (let i = 0; i < e.target.files.length; i++) {
+          const f = e.target.files[i];
+          if (f) files.push(f);
+        }
+        if (files.length > 0) onFilesSelect(files);
+      } else {
+        const file = e.target.files?.[0];
+        if (file) {
+          onFileSelect(file);
+        }
       }
       e.target.value = '';
     },
-    [onFileSelect]
+    [onFileSelect, onFilesSelect, multiple]
   );
 
   return (
@@ -73,13 +101,14 @@ export function FileUpload({ onFileSelect, disabled, uploadProgress }: FileUploa
         accept={UPLOADS_EXTENSIONS}
         onChange={handleFileInput}
         disabled={disabled}
+        multiple={multiple}
         style={{ display: 'none' }}
       />
       <Box sx={{ color: 'grey.400', mb: 1 }}>
         <UploadSimpleIcon size={32} weight="light" color="currentColor" />
       </Box>
       <Typography variant="body1" fontWeight={500}>
-        Drop a file here or click to browse
+        {multiple ? 'Drop files here or click to browse' : 'Drop a file here or click to browse'}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
         {UPLOADS_LABELS}

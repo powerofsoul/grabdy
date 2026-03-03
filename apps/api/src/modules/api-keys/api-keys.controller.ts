@@ -39,7 +39,7 @@ export class ApiKeysController {
     });
   }
 
-  @OrgAccess(apiKeysContract.list, { params: ['orgId'] })
+  @OrgAccess(apiKeysContract.list, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
   @TsRestHandler(apiKeysContract.list)
   async list() {
     return tsRestHandler(apiKeysContract.list, async ({ params, query }) => {

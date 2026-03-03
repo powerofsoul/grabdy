@@ -29,6 +29,7 @@ export class BotController {
   constructor(private botService: BotService) {}
 
   @OrgAccess(botsContract.create, {
+    roles: ['OWNER', 'ADMIN'],
     params: ['orgId'],
     body: (b) => extractBotSourceIds(b.dataSourceConfig ?? []),
   })
@@ -78,6 +79,7 @@ export class BotController {
   }
 
   @OrgAccess(botsContract.update, {
+    roles: ['OWNER', 'ADMIN'],
     params: ['orgId', 'botId'],
     body: (b) => extractBotSourceIds(b.dataSourceConfig ?? []),
   })
@@ -102,7 +104,7 @@ export class BotController {
     });
   }
 
-  @OrgAccess(botsContract.delete, { params: ['orgId', 'botId'] })
+  @OrgAccess(botsContract.delete, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'botId'] })
   @TsRestHandler(botsContract.delete)
   async delete() {
     return tsRestHandler(botsContract.delete, async ({ params }) => {
@@ -124,7 +126,7 @@ export class BotController {
     });
   }
 
-  @OrgAccess(botsContract.uploadImage, { params: ['orgId', 'botId'] })
+  @OrgAccess(botsContract.uploadImage, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'botId'] })
   @TsRestHandler(botsContract.uploadImage)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
@@ -145,7 +147,7 @@ export class BotController {
     });
   }
 
-  @OrgAccess(botsContract.deleteImage, { params: ['orgId', 'botId'] })
+  @OrgAccess(botsContract.deleteImage, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'botId'] })
   @TsRestHandler(botsContract.deleteImage)
   async deleteImage() {
     return tsRestHandler(botsContract.deleteImage, async ({ params }) => {

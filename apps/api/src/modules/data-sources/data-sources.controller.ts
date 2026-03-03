@@ -24,6 +24,7 @@ export class DataSourcesController {
   constructor(private dataSourcesService: DataSourcesService) {}
 
   @OrgAccess(dataSourcesContract.upload, {
+    roles: ['OWNER', 'ADMIN'],
     params: ['orgId'],
     body: (b) => [
       typeof b.collectionId === 'string' ? stripMultipartQuotes(b.collectionId) : b.collectionId,
@@ -107,7 +108,7 @@ export class DataSourcesController {
     });
   }
 
-  @OrgAccess(dataSourcesContract.delete, { params: ['orgId', 'id'] })
+  @OrgAccess(dataSourcesContract.delete, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'id'] })
   @TsRestHandler(dataSourcesContract.delete)
   async delete() {
     return tsRestHandler(dataSourcesContract.delete, async ({ params }) => {
@@ -119,7 +120,7 @@ export class DataSourcesController {
     });
   }
 
-  @OrgAccess(dataSourcesContract.reprocess, { params: ['orgId', 'id'] })
+  @OrgAccess(dataSourcesContract.reprocess, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'id'] })
   @TsRestHandler(dataSourcesContract.reprocess)
   async reprocess() {
     return tsRestHandler(dataSourcesContract.reprocess, async ({ params }) => {
@@ -138,7 +139,7 @@ export class DataSourcesController {
     });
   }
 
-  @OrgAccess(dataSourcesContract.rename, { params: ['orgId', 'id'] })
+  @OrgAccess(dataSourcesContract.rename, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'id'] })
   @TsRestHandler(dataSourcesContract.rename)
   async rename() {
     return tsRestHandler(dataSourcesContract.rename, async ({ params, body }) => {
@@ -153,6 +154,22 @@ export class DataSourcesController {
             updatedAt: toISOString(dataSource.updatedAt),
           },
         },
+      };
+    });
+  }
+
+  @OrgAccess(dataSourcesContract.move, {
+    roles: ['OWNER', 'ADMIN'],
+    params: ['orgId', 'id'],
+    body: (b) => (b.collectionId ? [b.collectionId] : []),
+  })
+  @TsRestHandler(dataSourcesContract.move)
+  async move() {
+    return tsRestHandler(dataSourcesContract.move, async ({ params, body }) => {
+      await this.dataSourcesService.move(params.orgId, params.id, body.collectionId);
+      return {
+        status: 200 as const,
+        body: { success: true as const },
       };
     });
   }

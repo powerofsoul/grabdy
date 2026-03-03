@@ -296,6 +296,40 @@ export class DataSourcesService {
     return this.toResponse({ ...dataSource, status: 'UPLOADED' });
   }
 
+  async move(orgId: DbId<'Org'>, id: DbId<'DataSource'>, collectionId: DbId<'Collection'> | null) {
+    await this.db.kysely.transaction().execute(async (tx) => {
+      if (collectionId !== null) {
+        const target = await tx
+          .selectFrom('data.collections')
+          .select('id')
+          .where('id', '=', collectionId)
+          .where('org_id', '=', orgId)
+          .executeTakeFirst();
+        if (!target) {
+          throw new NotFoundException('Target folder not found');
+        }
+      }
+
+      const result = await tx
+        .updateTable('data.data_sources')
+        .set({ collection_id: collectionId, updated_at: new Date() })
+        .where('id', '=', id)
+        .where('org_id', '=', orgId)
+        .executeTakeFirst();
+
+      if (Number(result.numUpdatedRows) === 0) {
+        throw new NotFoundException('Data source not found');
+      }
+
+      await tx
+        .updateTable('data.chunks')
+        .set({ collection_id: collectionId })
+        .where('data_source_id', '=', id)
+        .where('org_id', '=', orgId)
+        .execute();
+    });
+  }
+
   private toResponse(ds: {
     id: DbId<'DataSource'>;
     title: string;

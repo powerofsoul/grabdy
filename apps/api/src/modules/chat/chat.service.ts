@@ -11,6 +11,7 @@ import { DataAgent } from '../agent/agents/data-agent';
 import type { ConnectionResource, SearchScope } from '../agent/agents/search-scope';
 import type { AttachmentContext } from '../agent/base-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
+import { CollectionsService } from '../collections/collections.service';
 
 const sourcesArraySchema = z.array(chatSourceSchema);
 
@@ -21,7 +22,8 @@ export class ChatService {
   constructor(
     private db: DbService,
     private dataAgent: DataAgent,
-    private agentMemory: AgentMemoryService
+    private agentMemory: AgentMemoryService,
+    private collectionsService: CollectionsService
   ) {}
 
   private async getBotConfig(
@@ -66,9 +68,16 @@ export class ChatService {
       }
     }
 
+    // Expand collection IDs to include all descendant folders
+    const descendants = await this.collectionsService.getDescendantIdsForMultiple(
+      orgId,
+      collectionIds
+    );
+    const expandedCollectionIds = [...collectionIds, ...descendants];
+
     return {
       systemPrompt: row.system_prompt,
-      collectionIds,
+      collectionIds: expandedCollectionIds,
       dataSourceIds,
       connectionIds,
       connectionResources,
@@ -153,9 +162,13 @@ export class ChatService {
       }
       if (botConfig.systemPrompt) instructions = botConfig.systemPrompt;
     } else if (options.collectionId) {
+      const descendants = await this.collectionsService.getDescendantIds(
+        orgId,
+        options.collectionId
+      );
       searchScope = {
         type: 'scoped',
-        collectionIds: [options.collectionId],
+        collectionIds: [options.collectionId, ...descendants],
         dataSourceIds: [],
         connectionIds: [],
         connectionResources: [],

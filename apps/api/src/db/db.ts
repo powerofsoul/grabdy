@@ -138,6 +138,7 @@ export interface DB {
   'data.collections': {
     id: Generated<DbId<'Collection'>>;
     org_id: DbId<'Org'>;
+    parent_id: DbId<'Collection'> | null;
     name: string;
     description: string | null;
     created_at: Generated<Timestamp>;

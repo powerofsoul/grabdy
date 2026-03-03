@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 
 import { dbIdSchema } from '@grabdy/common';
-import { dataSourcesContract, type DataSourceStatus } from '@grabdy/contracts';
+import { collectionsContract } from '@grabdy/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, TextField } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,27 +12,20 @@ import { useAuth } from '@/context/AuthContext';
 import type { DrawerProps } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
 
-export interface RenameDataSource {
-  id: string;
-  title: string;
-  type: string;
-  mimeType: string;
-  status: DataSourceStatus;
-  fileSize: number;
-  pageCount: number | null;
-  processingProgress: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+const formSchema = collectionsContract.update.body.pick({ name: true }).required();
 
-const formSchema = dataSourcesContract.rename.body;
 type FormData = z.infer<typeof formSchema>;
 
-interface RenameDrawerProps extends DrawerProps {
-  dataSource: RenameDataSource;
+interface RenameFolderDrawerProps extends DrawerProps {
+  collectionId: string;
+  currentName: string;
 }
 
-export function RenameDrawer({ onClose, dataSource }: RenameDrawerProps) {
+export function RenameFolderDrawer({
+  onClose,
+  collectionId,
+  currentName,
+}: RenameFolderDrawerProps) {
   const { selectedOrgId } = useAuth();
   const queryClient = useQueryClient();
 
@@ -43,30 +36,28 @@ export function RenameDrawer({ onClose, dataSource }: RenameDrawerProps) {
     setError,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { title: dataSource.title },
+    defaultValues: { name: currentName },
     mode: 'onBlur',
   });
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (!selectedOrgId) throw new Error('No org selected');
-      const parsed = dbIdSchema('DataSource').safeParse(dataSource.id);
-      if (!parsed.success) throw new Error('Invalid data source ID');
-      const res = await api.dataSources.rename({
-        params: { orgId: selectedOrgId, id: parsed.data },
-        body: { title: data.title.trim() },
+      const parsedId = dbIdSchema('Collection').parse(collectionId);
+      const res = await api.collections.update({
+        params: { orgId: selectedOrgId, collectionId: parsedId },
+        body: { name: data.name },
       });
-      if (res.status !== 200) throw new Error('Failed to rename');
+      if (res.status !== 200) throw new Error('Failed to rename folder');
       return res.body.data;
     },
     onSuccess: () => {
-      toast.success('File renamed');
-      queryClient.invalidateQueries({ queryKey: ['dataSources'] });
+      toast.success('Folder renamed');
       queryClient.invalidateQueries({ queryKey: ['collections'] });
       onClose();
     },
     onError: (err) => {
-      setError('root', { message: err instanceof Error ? err.message : 'Failed to rename' });
+      setError('root', { message: err instanceof Error ? err.message : 'Failed to rename folder' });
     },
   });
 
@@ -79,13 +70,19 @@ export function RenameDrawer({ onClose, dataSource }: RenameDrawerProps) {
       sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}
     >
       <TextField
-        label="Title"
-        {...register('title')}
-        error={!!errors.title}
-        helperText={errors.title?.message}
+        label="Name"
+        {...register('name')}
+        error={!!errors.name}
+        helperText={errors.name?.message}
         fullWidth
         autoFocus
         size="small"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}
       />
       {errors.root && <Box sx={{ color: 'error.main', fontSize: 13 }}>{errors.root.message}</Box>}
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>

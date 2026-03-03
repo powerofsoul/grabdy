@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 
 import { dbIdSchema } from '@grabdy/common';
-import { dataSourcesContract, type DataSourceStatus } from '@grabdy/contracts';
+import { collectionsContract } from '@grabdy/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, TextField } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,27 +12,15 @@ import { useAuth } from '@/context/AuthContext';
 import type { DrawerProps } from '@/context/DrawerContext';
 import { api } from '@/lib/api';
 
-export interface RenameDataSource {
-  id: string;
-  title: string;
-  type: string;
-  mimeType: string;
-  status: DataSourceStatus;
-  fileSize: number;
-  pageCount: number | null;
-  processingProgress: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+const formSchema = collectionsContract.create.body.pick({ name: true, description: true });
 
-const formSchema = dataSourcesContract.rename.body;
 type FormData = z.infer<typeof formSchema>;
 
-interface RenameDrawerProps extends DrawerProps {
-  dataSource: RenameDataSource;
+interface CreateFolderDrawerProps extends DrawerProps {
+  parentId?: string;
 }
 
-export function RenameDrawer({ onClose, dataSource }: RenameDrawerProps) {
+export function CreateFolderDrawer({ onClose, parentId }: CreateFolderDrawerProps) {
   const { selectedOrgId } = useAuth();
   const queryClient = useQueryClient();
 
@@ -43,30 +31,35 @@ export function RenameDrawer({ onClose, dataSource }: RenameDrawerProps) {
     setError,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { title: dataSource.title },
+    defaultValues: {
+      name: '',
+      description: undefined,
+    },
     mode: 'onBlur',
   });
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (!selectedOrgId) throw new Error('No org selected');
-      const parsed = dbIdSchema('DataSource').safeParse(dataSource.id);
-      if (!parsed.success) throw new Error('Invalid data source ID');
-      const res = await api.dataSources.rename({
-        params: { orgId: selectedOrgId, id: parsed.data },
-        body: { title: data.title.trim() },
+      const parsedParentId = parentId ? dbIdSchema('Collection').parse(parentId) : undefined;
+      const res = await api.collections.create({
+        params: { orgId: selectedOrgId },
+        body: {
+          name: data.name,
+          description: data.description,
+          parentId: parsedParentId,
+        },
       });
-      if (res.status !== 200) throw new Error('Failed to rename');
+      if (res.status !== 200) throw new Error('Failed to create folder');
       return res.body.data;
     },
     onSuccess: () => {
-      toast.success('File renamed');
-      queryClient.invalidateQueries({ queryKey: ['dataSources'] });
+      toast.success('Folder created');
       queryClient.invalidateQueries({ queryKey: ['collections'] });
       onClose();
     },
     onError: (err) => {
-      setError('root', { message: err instanceof Error ? err.message : 'Failed to rename' });
+      setError('root', { message: err instanceof Error ? err.message : 'Failed to create folder' });
     },
   });
 
@@ -79,12 +72,20 @@ export function RenameDrawer({ onClose, dataSource }: RenameDrawerProps) {
       sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}
     >
       <TextField
-        label="Title"
-        {...register('title')}
-        error={!!errors.title}
-        helperText={errors.title?.message}
+        label="Name"
+        {...register('name')}
+        error={!!errors.name}
+        helperText={errors.name?.message}
         fullWidth
         autoFocus
+        size="small"
+      />
+      <TextField
+        label="Description (optional)"
+        {...register('description')}
+        fullWidth
+        multiline
+        rows={3}
         size="small"
       />
       {errors.root && <Box sx={{ color: 'error.main', fontSize: 13 }}>{errors.root.message}</Box>}
@@ -93,7 +94,7 @@ export function RenameDrawer({ onClose, dataSource }: RenameDrawerProps) {
           Cancel
         </Button>
         <Button variant="contained" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save'}
+          {isSubmitting ? 'Creating...' : 'Create'}
         </Button>
       </Box>
     </Box>

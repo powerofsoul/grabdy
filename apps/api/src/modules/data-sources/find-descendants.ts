@@ -19,7 +19,7 @@ export async function findDescendants(
         .select(['id', 'storage_path'])
         .where('parent_data_source_id', '=', parentId)
         .where('org_id', '=', orgId)
-        .unionAll(
+        .union(
           qb
             .selectFrom('data.data_sources')
             .select(['data.data_sources.id', 'data.data_sources.storage_path'])

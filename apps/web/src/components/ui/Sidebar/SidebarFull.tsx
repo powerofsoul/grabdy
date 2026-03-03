@@ -36,7 +36,6 @@ import {
 } from '@phosphor-icons/react';
 import { Link, useNavigate } from '@tanstack/react-router';
 
-import { CountBadge } from './CountBadge';
 import { NavItem } from './NavItem';
 import { SectionHeader } from './SectionHeader';
 import { useSidebarSources } from './useSidebarSources';
@@ -49,7 +48,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
   const { user, logout, isAdmin, selectedOrgId, selectOrg } = useAuth();
   const { preference, setPreference } = useThemeMode();
-  const { collections, connections, bots } = useSidebarSources();
+  const { connections, bots } = useSidebarSources();
   const navigate = useNavigate();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
@@ -125,7 +124,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
                 mt: '12px',
                 mb: '4px',
                 cursor: 'pointer',
-                borderRadius: 1,
+                borderRadius: 0,
                 transition: 'all 120ms ease',
                 '&:hover': { bgcolor: alpha(ct, 0.04) },
               }}
@@ -189,7 +188,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
               >
                 {m.orgName}
                 {m.orgId === selectedOrgId && (
-                  <CheckIcon size={14} weight="bold" color="currentColor" />
+                  <CheckIcon size={14} weight="light" color="currentColor" />
                 )}
               </MenuItem>
             ))}
@@ -213,42 +212,14 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           />
         </Box>
 
-        {/* Collections */}
+        {/* Files */}
         <Box>
-          <SectionHeader label="Collections" />
+          <SectionHeader label="Files" />
           <NavItem
             to="/dashboard/sources"
-            label="All collections"
-            exact
+            label="All files"
             icon={<FolderIcon size={15} weight="light" color="currentColor" />}
-            trailing={
-              <Tooltip title="New collection">
-                <Box
-                  component={Link}
-                  to="/dashboard/sources"
-                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    color: alpha(ct, 0.25),
-                    '&:hover': { color: 'text.primary' },
-                  }}
-                >
-                  <PlusIcon size={14} weight="light" color="currentColor" />
-                </Box>
-              </Tooltip>
-            }
           />
-          {collections.map((c) => (
-            <NavItem
-              key={c.id}
-              to={`/dashboard/sources/${c.id}`}
-              label={c.name}
-              icon={<FolderIcon size={15} weight="light" color="currentColor" />}
-              trailing={<CountBadge count={c.sourceCount} />}
-              indent
-            />
-          ))}
         </Box>
 
         {/* Bots */}

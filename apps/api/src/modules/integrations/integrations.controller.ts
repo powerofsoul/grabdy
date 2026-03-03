@@ -90,7 +90,7 @@ export class IntegrationsController {
     });
   }
 
-  @OrgAccess(integrationsContract.connect, { params: ['orgId'] })
+  @OrgAccess(integrationsContract.connect, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
   @TsRestHandler(integrationsContract.connect)
   async connect(@CurrentUser() user: JwtPayload) {
     return tsRestHandler(integrationsContract.connect, async ({ params }) => {
@@ -132,7 +132,7 @@ export class IntegrationsController {
     });
   }
 
-  @OrgAccess(integrationsContract.disconnect, { params: ['orgId'] })
+  @OrgAccess(integrationsContract.disconnect, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
   @TsRestHandler(integrationsContract.disconnect)
   async disconnect() {
     return tsRestHandler(integrationsContract.disconnect, async ({ params }) => {
@@ -152,7 +152,10 @@ export class IntegrationsController {
     });
   }
 
-  @OrgAccess(integrationsContract.deleteConnection, { params: ['orgId'] })
+  @OrgAccess(integrationsContract.deleteConnection, {
+    roles: ['OWNER', 'ADMIN'],
+    params: ['orgId'],
+  })
   @TsRestHandler(integrationsContract.deleteConnection)
   async deleteConnection() {
     return tsRestHandler(integrationsContract.deleteConnection, async ({ params }) => {
@@ -211,7 +214,7 @@ export class IntegrationsController {
     });
   }
 
-  @OrgAccess(integrationsContract.updateConfig, { params: ['orgId'] })
+  @OrgAccess(integrationsContract.updateConfig, { roles: ['OWNER', 'ADMIN'], params: ['orgId'] })
   @TsRestHandler(integrationsContract.updateConfig)
   async updateConfig() {
     return tsRestHandler(integrationsContract.updateConfig, async ({ params, body }) => {

@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { dbIdSchema } from '@grabdy/common';
 import { Box, Button, IconButton, Tooltip, Typography } from '@mui/material';
 import {
   ArrowsClockwiseIcon,
+  ArrowsOutSimpleIcon,
   DatabaseIcon,
   DownloadSimpleIcon,
   EyeIcon,
+  FolderPlusIcon,
   PencilSimpleIcon,
   TrashIcon,
 } from '@phosphor-icons/react';
@@ -14,6 +16,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 
+import {
+  CreateFolderDrawer,
+  FolderBreadcrumb,
+  FolderCard,
+  MoveToDrawer,
+  RenameFolderDrawer,
+  SourcesTreePanel,
+  UploadProgressList,
+} from './components';
+import { useBulkUpload, useFolderContents } from './hooks';
 import { type RenameDataSource, RenameDrawer } from './RenameDrawer';
 
 import { canPreview, DocumentPreviewDrawer } from '@/components/chat/components/document-preview';
@@ -27,7 +39,7 @@ import { PageLoader } from '@/components/ui/PageLoader';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
-import { api, uploadDataSource } from '@/lib/api';
+import { api } from '@/lib/api';
 import { relativeDate } from '@/lib/date';
 
 type DataSource = RenameDataSource;
@@ -51,15 +63,16 @@ const headerNames = {
   actions: '',
 } as const;
 
-// ── Main Page ──────────────────────────────────────────────────────
-
 function CollectionDetailPage() {
   const { collectionId } = Route.useParams();
   const { selectedOrgId } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { pushDrawer } = useDrawer();
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const { uploads, startUpload, dismissUploads, isUploading } = useBulkUpload(
+    selectedOrgId,
+    collectionId
+  );
   const [deleteCollectionConfirm, setDeleteCollectionConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DataSource | null>(null);
 
@@ -76,28 +89,20 @@ function CollectionDetailPage() {
     enabled: !!selectedOrgId,
   });
 
-  const { data: dataSources = [], isLoading: isSourcesLoading } = useQuery({
-    queryKey: ['dataSources', collectionId, selectedOrgId],
-    queryFn: async () => {
-      if (!selectedOrgId) return [];
-      const res = await api.dataSources.list({
-        params: { orgId: selectedOrgId },
-        query: { collectionId },
-      });
-      if (res.status === 200) return res.body.data;
-      return [];
-    },
-    enabled: !!selectedOrgId,
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (data?.some((ds) => ds.status === 'DELETING' || ds.status === 'PROCESSING')) return 3000;
-      return false;
-    },
-  });
+  const parsedCollectionId = useMemo(() => {
+    const result = dbIdSchema('Collection').safeParse(collectionId);
+    return result.success ? result.data : null;
+  }, [collectionId]);
+
+  const {
+    folders,
+    sources: dataSources,
+    isLoading: isContentsLoading,
+  } = useFolderContents(parsedCollectionId);
 
   const invalidateSources = () => {
-    queryClient.invalidateQueries({ queryKey: ['dataSources', collectionId] });
-    queryClient.invalidateQueries({ queryKey: ['collections', collectionId] });
+    queryClient.invalidateQueries({ queryKey: ['dataSources'] });
+    queryClient.invalidateQueries({ queryKey: ['collections'] });
   };
 
   const deleteCollectionMutation = useMutation({
@@ -110,8 +115,17 @@ function CollectionDetailPage() {
       if (res.status !== 200) throw new Error('Delete failed');
     },
     onSuccess: () => {
-      toast.success('Source deleted');
-      navigate({ to: '/dashboard/sources' });
+      toast.success('Folder deleted');
+      invalidateSources();
+      const parentId = collection?.parentId;
+      if (parentId) {
+        navigate({
+          to: '/dashboard/sources/$collectionId',
+          params: { collectionId: parentId },
+        });
+      } else {
+        navigate({ to: '/dashboard/sources' });
+      }
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Delete failed');
@@ -156,21 +170,12 @@ function CollectionDetailPage() {
     onError: () => toast.error('Failed to reprocess'),
   });
 
-  const handleUpload = async (file: File) => {
-    if (!selectedOrgId) return;
-    setUploadProgress(0);
-    try {
-      const res = await uploadDataSource(selectedOrgId, file, collectionId, setUploadProgress);
+  const handleUpload = (file: File) => {
+    startUpload([file]);
+  };
 
-      if (res.status === 200) {
-        toast.success('File uploaded');
-        invalidateSources();
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploadProgress(null);
-    }
+  const handleFilesUpload = (files: File[]) => {
+    startUpload(files);
   };
 
   const handlePreview = (ds: DataSource) => {
@@ -202,13 +207,47 @@ function CollectionDetailPage() {
   };
 
   const handleRename = (ds: DataSource) => {
+    pushDrawer((onClose) => <RenameDrawer onClose={onClose} dataSource={ds} />, {
+      title: 'Rename File',
+    });
+  };
+
+  const handleMove = (ds: DataSource) => {
+    const parsed = dbIdSchema('DataSource').safeParse(ds.id);
+    if (!parsed.success) return;
     pushDrawer(
-      (onClose) => <RenameDrawer onClose={onClose} dataSource={ds} onRenamed={invalidateSources} />,
-      { title: 'Rename File' }
+      (onClose) => (
+        <MoveToDrawer
+          onClose={onClose}
+          dataSourceId={parsed.data}
+          currentCollectionId={collectionId}
+        />
+      ),
+      { title: 'Move File' }
     );
   };
 
-  const isLoading = isCollectionLoading || isSourcesLoading;
+  const handleRenameFolder = () => {
+    if (!collection) return;
+    pushDrawer(
+      (onClose) => (
+        <RenameFolderDrawer
+          onClose={onClose}
+          collectionId={collectionId}
+          currentName={collection.name}
+        />
+      ),
+      { title: 'Rename Folder' }
+    );
+  };
+
+  const handleCreateFolder = () => {
+    pushDrawer((onClose) => <CreateFolderDrawer onClose={onClose} parentId={collectionId} />, {
+      title: 'New Folder',
+    });
+  };
+
+  const isLoading = isCollectionLoading || isContentsLoading;
 
   if (isLoading) {
     return <PageLoader />;
@@ -221,168 +260,250 @@ function CollectionDetailPage() {
   return (
     <DashboardPage
       showBack
+      noPadding
+      maxWidth={false}
       title={collection.name}
+      subtitle={<FolderBreadcrumb collectionId={collectionId} />}
       actions={
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<TrashIcon size={16} weight="light" color="currentColor" />}
-          onClick={() => setDeleteCollectionConfirm(true)}
-        >
-          Delete Collection
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PencilSimpleIcon size={16} weight="light" color="currentColor" />}
+            onClick={handleRenameFolder}
+          >
+            Rename
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<FolderPlusIcon size={16} weight="light" color="currentColor" />}
+            onClick={handleCreateFolder}
+          >
+            New Folder
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            color="error"
+            startIcon={<TrashIcon size={16} weight="light" color="currentColor" />}
+            onClick={() => setDeleteCollectionConfirm(true)}
+          >
+            Delete
+          </Button>
+        </Box>
       }
     >
-      {collection.description && (
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          {collection.description}
-        </Typography>
-      )}
-
-      <Box sx={{ mb: 3 }}>
-        <FileUpload
-          onFileSelect={handleUpload}
-          disabled={uploadProgress !== null}
-          uploadProgress={uploadProgress}
-        />
-      </Box>
-
-      {dataSources.length === 0 ? (
-        <EmptyState
-          icon={<DatabaseIcon size={48} weight="light" color="currentColor" />}
-          message="No files"
-          description="Upload a file to get started."
-        />
-      ) : (
-        <MainTable<DataSource, typeof headerNames>
-          data={dataSources}
-          headerNames={headerNames}
-          columnWidths={{
-            name: '1fr',
-            type: 70,
-            status: 100,
-            size: 90,
-            uploaded: 130,
-            actions: 130,
+      <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <SourcesTreePanel />
+        <Box
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            px: { xs: 2, md: 2.5 },
+            pb: { xs: 2, md: 2.5 },
+            pt: { xs: 1, md: 1.5 },
           }}
-          noWrap={['name', 'uploaded', 'size']}
-          keyExtractor={(ds) => ds.id}
-          rowTitle={(ds) => ds.title}
-          sorting={{
-            sortableColumns: ['name', 'uploaded', 'size'] as const,
-            defaultSort: 'uploaded',
-            defaultDirection: 'desc',
-            getSortValue: (item, col) => {
-              switch (col) {
-                case 'name':
-                  return item.title.toLowerCase();
-                case 'uploaded':
-                  return new Date(item.createdAt).getTime();
-                case 'size':
-                  return item.fileSize;
-                default:
-                  return '';
-              }
-            },
-          }}
-          renderItems={{
-            name: (ds) => {
-              const Icon = getFileIcon(ds.title);
-              return (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-                  <Icon size={18} weight="light" style={{ flexShrink: 0 }} />
-                  <Box sx={{ minWidth: 0, maxWidth: 300 }}>
-                    <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
-                      {ds.title}
-                    </Typography>
+        >
+          {collection.description && (
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {collection.description}
+            </Typography>
+          )}
+
+          {folders.length > 0 && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: 1.5,
+                mb: 3,
+              }}
+            >
+              {folders.map((folder) => (
+                <FolderCard
+                  key={folder.id}
+                  id={folder.id}
+                  name={folder.name}
+                  sourceCount={folder.sourceCount}
+                  onRename={(folderId, folderName) => {
+                    pushDrawer(
+                      (onClose) => (
+                        <RenameFolderDrawer
+                          onClose={onClose}
+                          collectionId={folderId}
+                          currentName={folderName}
+                        />
+                      ),
+                      { title: 'Rename Folder' }
+                    );
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+
+          <Box sx={{ mb: 3 }}>
+            <FileUpload
+              onFileSelect={handleUpload}
+              onFilesSelect={handleFilesUpload}
+              multiple
+              disabled={isUploading}
+            />
+          </Box>
+
+          <UploadProgressList uploads={uploads} onDismiss={dismissUploads} />
+
+          {dataSources.length === 0 && folders.length === 0 ? (
+            <EmptyState
+              icon={<DatabaseIcon size={48} weight="light" color="currentColor" />}
+              message="No files"
+              description="Upload a file or create a subfolder to get started."
+            />
+          ) : dataSources.length > 0 ? (
+            <MainTable<DataSource, typeof headerNames>
+              data={dataSources}
+              headerNames={headerNames}
+              columnWidths={{
+                name: '1fr',
+                type: 70,
+                status: 100,
+                size: 90,
+                uploaded: 130,
+                actions: 192,
+              }}
+              noWrap={['name', 'uploaded', 'size']}
+              keyExtractor={(ds) => ds.id}
+              rowTitle={(ds) => ds.title}
+              sorting={{
+                sortableColumns: ['name', 'uploaded', 'size'] as const,
+                defaultSort: 'uploaded',
+                defaultDirection: 'desc',
+                getSortValue: (item, col) => {
+                  switch (col) {
+                    case 'name':
+                      return item.title.toLowerCase();
+                    case 'uploaded':
+                      return new Date(item.createdAt).getTime();
+                    case 'size':
+                      return item.fileSize;
+                    default:
+                      return '';
+                  }
+                },
+              }}
+              renderItems={{
+                name: (ds) => {
+                  const Icon = getFileIcon(ds.title);
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                      <Icon size={18} weight="light" style={{ flexShrink: 0 }} />
+                      <Box sx={{ minWidth: 0, maxWidth: 200 }}>
+                        <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+                          {ds.title}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                },
+                type: (ds) => (
+                  <Typography variant="caption" color="text.secondary">
+                    {ds.type}
+                  </Typography>
+                ),
+                status: (ds) => (
+                  <StatusChip status={ds.status} progress={ds.processingProgress ?? undefined} />
+                ),
+                size: (ds) => formatFileSize(ds.fileSize),
+                uploaded: (ds) => relativeDate(ds.createdAt),
+                actions: (ds) => (
+                  <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'flex-end' }}>
+                    {canPreview(ds.mimeType) ? (
+                      <Tooltip title="Preview">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePreview(ds);
+                          }}
+                        >
+                          <EyeIcon size={16} weight="light" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Download">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(ds);
+                          }}
+                        >
+                          <DownloadSimpleIcon size={16} weight="light" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Rename">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRename(ds);
+                        }}
+                      >
+                        <PencilSimpleIcon size={16} weight="light" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Move to">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMove(ds);
+                        }}
+                      >
+                        <ArrowsOutSimpleIcon size={16} weight="light" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Reprocess">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          reprocessMutation.mutate(ds);
+                        }}
+                        disabled={ds.status !== 'FAILED'}
+                      >
+                        <ArrowsClockwiseIcon size={16} weight="light" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(ds);
+                        }}
+                        sx={{ color: 'error.main' }}
+                        disabled={ds.status !== 'READY' && ds.status !== 'FAILED'}
+                      >
+                        <TrashIcon size={16} weight="light" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
-                </Box>
-              );
-            },
-            type: (ds) => (
-              <Typography variant="caption" color="text.secondary">
-                {ds.type}
-              </Typography>
-            ),
-            status: (ds) => (
-              <StatusChip status={ds.status} progress={ds.processingProgress ?? undefined} />
-            ),
-            size: (ds) => formatFileSize(ds.fileSize),
-            uploaded: (ds) => relativeDate(ds.createdAt),
-            actions: (ds) => (
-              <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'flex-end' }}>
-                {canPreview(ds.mimeType) ? (
-                  <Tooltip title="Preview">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePreview(ds);
-                      }}
-                    >
-                      <EyeIcon size={16} weight="light" />
-                    </IconButton>
-                  </Tooltip>
-                ) : (
-                  <Tooltip title="Download">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownload(ds);
-                      }}
-                    >
-                      <DownloadSimpleIcon size={16} weight="light" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                <Tooltip title="Rename">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRename(ds);
-                    }}
-                  >
-                    <PencilSimpleIcon size={16} weight="light" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Reprocess">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      reprocessMutation.mutate(ds);
-                    }}
-                    disabled={ds.status !== 'FAILED'}
-                  >
-                    <ArrowsClockwiseIcon size={16} weight="light" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteTarget(ds);
-                    }}
-                    sx={{ color: 'error.main' }}
-                    disabled={ds.status !== 'READY' && ds.status !== 'FAILED'}
-                  >
-                    <TrashIcon size={16} weight="light" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            ),
-          }}
-        />
-      )}
+                ),
+              }}
+            />
+          ) : null}
+        </Box>
+      </Box>
 
       <ConfirmDialog
         open={deleteCollectionConfirm}
-        title="Delete Collection"
-        message="Are you sure you want to delete this collection? All files and indexed content will be permanently removed."
+        title="Delete Folder"
+        message="This will permanently delete this folder, all subfolders, and all files inside them. This action cannot be undone."
         confirmLabel="Delete"
+        confirmText={collection.name}
         onConfirm={() => deleteCollectionMutation.mutate()}
         onCancel={() => setDeleteCollectionConfirm(false)}
         isLoading={deleteCollectionMutation.isPending}

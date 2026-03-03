@@ -22,6 +22,7 @@ export const publicCollectionSchema = z.object({
   id: z.string().describe('Collection ID'),
   name: z.string().describe('Collection name'),
   description: z.string().nullable().describe('Collection description'),
+  parentId: z.string().nullable().describe('Parent collection ID, null if root'),
   sourceCount: z.number().describe('Number of data sources in this collection'),
   chunkCount: z.number().describe('Number of indexed chunks'),
   createdAt: z.string().describe('ISO 8601 timestamp'),
@@ -52,7 +53,9 @@ export const searchBodySchema = z.object({
   hyde: z
     .boolean()
     .optional()
-    .describe('Enable HyDE (Hypothetical Document Embeddings) for better semantic matching (default: false for search)'),
+    .describe(
+      'Enable HyDE (Hypothetical Document Embeddings) for better semantic matching (default: false for search)'
+    ),
   expandContext: z
     .boolean()
     .optional()

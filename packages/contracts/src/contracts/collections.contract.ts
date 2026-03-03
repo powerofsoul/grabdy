@@ -8,6 +8,7 @@ const collectionSchema = z.object({
   id: dbIdSchema('Collection'),
   name: z.string(),
   description: z.string().nullable(),
+  parentId: dbIdSchema('Collection').nullable(),
   orgId: dbIdSchema('Org'),
   sourceCount: z.number(),
   chunkCount: z.number(),
@@ -24,6 +25,7 @@ export const collectionsContract = c.router(
       body: z.object({
         name: z.string().min(1),
         description: z.string().optional(),
+        parentId: dbIdSchema('Collection').optional(),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: collectionSchema }),
@@ -34,6 +36,9 @@ export const collectionsContract = c.router(
       method: 'GET',
       path: '/orgs/:orgId/collections',
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
+      query: z.object({
+        parentId: dbIdSchema('Collection').optional(),
+      }),
       responses: {
         200: z.object({ success: z.literal(true), data: z.array(collectionSchema) }),
       },
@@ -60,6 +65,7 @@ export const collectionsContract = c.router(
       body: z.object({
         name: z.string().min(1).optional(),
         description: z.string().nullable().optional(),
+        parentId: dbIdSchema('Collection').nullable().optional(),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: collectionSchema }),

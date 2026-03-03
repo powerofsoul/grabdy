@@ -379,7 +379,7 @@ function DashboardIndex() {
       if (!selectedOrgId) return { collections: 0, apiKeys: 0, connections: 0 };
 
       const [collectionsRes, keysRes, connectionsRes] = await Promise.all([
-        api.collections.list({ params: { orgId: selectedOrgId } }),
+        api.collections.list({ params: { orgId: selectedOrgId }, query: {} }),
         api.apiKeys.list({ params: { orgId: selectedOrgId } }),
         api.integrations.listConnections({ params: { orgId: selectedOrgId } }),
       ]);

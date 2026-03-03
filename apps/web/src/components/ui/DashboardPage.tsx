@@ -16,7 +16,7 @@ import { useMobileSidebar } from '@/components/ui/Sidebar';
 
 interface DashboardPageProps {
   title?: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   icon?: ReactNode;
   actions?: ReactNode;
   maxWidth?: number | false;
@@ -53,16 +53,14 @@ export function DashboardPage({
         flexDirection: 'column',
       }}
     >
-      {/* Header — on mobile, only show if there's a title (pages without titles handle their own header) */}
+      {/* Header, on mobile only show if there's a title (pages without titles handle their own header) */}
       {title && (
         <Box
           sx={{
-            px: { xs: 2, md: '32px' },
             pt: { xs: 2, md: '28px' },
-            pb: { xs: 1.5, md: '20px' },
           }}
         >
-          <Box sx={{ maxWidth: contentMaxWidth, mx: 'auto', width: '100%' }}>
+          <Box sx={{ maxWidth: contentMaxWidth, mx: 'auto', width: '100%', px: 1 }}>
             {/* Title row: title left, hamburger right on mobile */}
             <Box
               sx={{
@@ -105,11 +103,15 @@ export function DashboardPage({
                     <Typography variant="h3" noWrap>
                       {title}
                     </Typography>
-                    {subtitle && !isMobile && (
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        {subtitle}
-                      </Typography>
-                    )}
+                    {subtitle &&
+                      !isMobile &&
+                      (typeof subtitle === 'string' ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                          {subtitle}
+                        </Typography>
+                      ) : (
+                        <Box sx={{ mt: 0.5 }}>{subtitle}</Box>
+                      ))}
                   </Box>
                 )}
               </Box>
@@ -121,7 +123,7 @@ export function DashboardPage({
                   size="small"
                   sx={{ flexShrink: 0, color: 'text.primary' }}
                 >
-                  <ListIcon size={22} weight="regular" />
+                  <ListIcon size={22} weight="light" />
                 </IconButton>
               ) : (
                 actions && (
@@ -133,11 +135,16 @@ export function DashboardPage({
             </Box>
 
             {/* Mobile subtitle below title row */}
-            {isMobile && subtitle && title && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {subtitle}
-              </Typography>
-            )}
+            {isMobile &&
+              subtitle &&
+              title &&
+              (typeof subtitle === 'string' ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {subtitle}
+                </Typography>
+              ) : (
+                <Box sx={{ mt: 0.5 }}>{subtitle}</Box>
+              ))}
 
             {/* Mobile actions row below */}
             {isMobile && actions && (
