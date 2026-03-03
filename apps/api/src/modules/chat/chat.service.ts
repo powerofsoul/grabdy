@@ -1,7 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import { botSourceConfigSchema, type ChatAttachment, chatSourceSchema } from '@grabdy/contracts';
+import {
+  type BotSourceConfig,
+  botSourceConfigSchema,
+  type ChatAttachment,
+  chatSourceSchema,
+} from '@grabdy/contracts';
 import { sql } from 'kysely';
 import { z } from 'zod';
 
@@ -26,28 +31,18 @@ export class ChatService {
     private collectionsService: CollectionsService
   ) {}
 
-  private async getBotConfig(
+  /**
+   * Resolve a BotSourceConfig array into expanded IDs for building a SearchScope.
+   */
+  private async resolveSourceConfig(
     orgId: DbId<'Org'>,
-    botId: DbId<'Bot'>
+    config: BotSourceConfig
   ): Promise<{
-    systemPrompt: string | null;
     collectionIds: DbId<'Collection'>[];
     dataSourceIds: DbId<'DataSource'>[];
     connectionIds: DbId<'Connection'>[];
     connectionResources: ConnectionResource[];
   }> {
-    const row = await this.db.kysely
-      .selectFrom('sdk.bots')
-      .select(['data_source_config', 'system_prompt'])
-      .where('id', '=', botId)
-      .where('org_id', '=', orgId)
-      .executeTakeFirst();
-
-    if (!row) {
-      throw new NotFoundException('Bot not found');
-    }
-
-    const config = botSourceConfigSchema.parse(row.data_source_config);
     const collectionIds: DbId<'Collection'>[] = [];
     const dataSourceIds: DbId<'DataSource'>[] = [];
     const connectionIds: DbId<'Connection'>[] = [];
@@ -76,11 +71,40 @@ export class ChatService {
     const expandedCollectionIds = [...collectionIds, ...descendants];
 
     return {
-      systemPrompt: row.system_prompt,
       collectionIds: expandedCollectionIds,
       dataSourceIds,
       connectionIds,
       connectionResources,
+    };
+  }
+
+  private async getBotConfig(
+    orgId: DbId<'Org'>,
+    botId: DbId<'Bot'>
+  ): Promise<{
+    systemPrompt: string | null;
+    collectionIds: DbId<'Collection'>[];
+    dataSourceIds: DbId<'DataSource'>[];
+    connectionIds: DbId<'Connection'>[];
+    connectionResources: ConnectionResource[];
+  }> {
+    const row = await this.db.kysely
+      .selectFrom('sdk.bots')
+      .select(['data_source_config', 'system_prompt'])
+      .where('id', '=', botId)
+      .where('org_id', '=', orgId)
+      .executeTakeFirst();
+
+    if (!row) {
+      throw new NotFoundException('Bot not found');
+    }
+
+    const config = botSourceConfigSchema.parse(row.data_source_config);
+    const resolved = await this.resolveSourceConfig(orgId, config);
+
+    return {
+      systemPrompt: row.system_prompt,
+      ...resolved,
     };
   }
 
@@ -90,7 +114,6 @@ export class ChatService {
     message: string,
     options: {
       threadId?: DbId<'ChatThread'>;
-      collectionId?: DbId<'Collection'>;
       botId?: DbId<'Bot'>;
     }
   ): Promise<DbId<'ChatThread'>> {
@@ -112,7 +135,6 @@ export class ChatService {
       .values({
         id: packId('ChatThread', orgId),
         title: message.slice(0, THREAD_TITLE_MAX_LENGTH),
-        collection_id: options.collectionId ?? null,
         bot_id: options.botId ?? null,
         org_id: orgId,
         membership_id: membershipId,
@@ -131,7 +153,7 @@ export class ChatService {
     message: string,
     options: {
       threadId?: DbId<'ChatThread'>;
-      collectionId?: DbId<'Collection'>;
+      dataSourceConfig?: BotSourceConfig;
       botId?: DbId<'Bot'>;
       attachments?: ChatAttachment[];
       attachmentContext?: AttachmentContext;
@@ -161,17 +183,11 @@ export class ChatService {
         searchScope = { type: 'none' };
       }
       if (botConfig.systemPrompt) instructions = botConfig.systemPrompt;
-    } else if (options.collectionId) {
-      const descendants = await this.collectionsService.getDescendantIds(
-        orgId,
-        options.collectionId
-      );
+    } else if (options.dataSourceConfig && options.dataSourceConfig.length > 0) {
+      const resolved = await this.resolveSourceConfig(orgId, options.dataSourceConfig);
       searchScope = {
         type: 'scoped',
-        collectionIds: [options.collectionId, ...descendants],
-        dataSourceIds: [],
-        connectionIds: [],
-        connectionResources: [],
+        ...resolved,
       };
     }
 
@@ -196,7 +212,6 @@ export class ChatService {
     membershipId: DbId<'OrgMembership'>,
     options: {
       title?: string;
-      collectionId?: DbId<'Collection'>;
       botId?: DbId<'Bot'>;
     }
   ) {
@@ -205,7 +220,6 @@ export class ChatService {
       .values({
         id: packId('ChatThread', orgId),
         title: options.title ?? null,
-        collection_id: options.collectionId ?? null,
         bot_id: options.botId ?? null,
         org_id: orgId,
         membership_id: membershipId,
@@ -217,7 +231,6 @@ export class ChatService {
     return {
       id: thread.id,
       title: thread.title,
-      collectionId: thread.collection_id,
       botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
@@ -231,7 +244,7 @@ export class ChatService {
   ) {
     let query = this.db.kysely
       .selectFrom('data.chat_threads')
-      .select(['id', 'title', 'collection_id', 'bot_id', 'created_at', 'updated_at'])
+      .select(['id', 'title', 'bot_id', 'created_at', 'updated_at'])
       .where('org_id', '=', orgId)
       .where('membership_id', '=', membershipId);
 
@@ -246,7 +259,6 @@ export class ChatService {
     return threads.map((t) => ({
       id: t.id,
       title: t.title,
-      collectionId: t.collection_id,
       botId: t.bot_id,
       createdAt: new Date(t.created_at).toISOString(),
       updatedAt: new Date(t.updated_at).toISOString(),
@@ -270,7 +282,6 @@ export class ChatService {
     return {
       id: thread.id,
       title: thread.title,
-      collectionId: thread.collection_id,
       botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
@@ -319,7 +330,6 @@ export class ChatService {
     return {
       id: thread.id,
       title: thread.title,
-      collectionId: thread.collection_id,
       botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),

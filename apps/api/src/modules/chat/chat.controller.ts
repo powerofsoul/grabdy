@@ -13,12 +13,15 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
-import { chatContract, streamChatBodySchema } from '@grabdy/contracts';
+import {
+  type BotSourceConfig,
+  botSourceConfigSchema,
+  chatContract,
+  streamChatBodySchema,
+} from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
 import { Response } from 'express';
 import { z } from 'zod';
-
-type StreamChatBody = z.infer<typeof streamChatBodySchema>;
 
 import {
   CurrentMembership,
@@ -31,6 +34,22 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { ChatService } from './chat.service';
 import { ChatAttachmentService } from './chat-attachment.service';
 
+type StreamChatBody = z.infer<typeof streamChatBodySchema>;
+
+function extractSourceConfigIds(config: BotSourceConfig): unknown[] {
+  return config.map((s) => {
+    switch (s.type) {
+      case 'COLLECTION':
+        return s.collectionId;
+      case 'DATA_SOURCE':
+        return s.dataSourceId;
+      case 'CONNECTION':
+      case 'CONNECTION_RESOURCE':
+        return s.connectionId;
+    }
+  });
+}
+
 @Controller()
 export class ChatController {
   constructor(
@@ -40,14 +59,13 @@ export class ChatController {
 
   @OrgAccess(chatContract.createThread, {
     params: ['orgId'],
-    body: (b) => [b.collectionId, b.botId],
+    body: (b) => [b.botId],
   })
   @TsRestHandler(chatContract.createThread)
   async createThread(@CurrentMembership() membership: JwtMembership) {
     return tsRestHandler(chatContract.createThread, async ({ params, body }) => {
       const thread = await this.chatService.createThread(params.orgId, membership.id, {
         title: body.title,
-        collectionId: body.collectionId,
         botId: body.botId,
       });
 
@@ -141,7 +159,14 @@ export class ChatController {
     return { success: true, data: { url } };
   }
 
-  @OrgAccess({ params: ['orgId'], body: (b) => [b.threadId, b.collectionId, b.botId] })
+  @OrgAccess({
+    params: ['orgId'],
+    body: (b) => {
+      const parsed = botSourceConfigSchema.safeParse(b.dataSourceConfig);
+      const configIds = parsed.success ? extractSourceConfigIds(parsed.data) : [];
+      return [b.threadId, b.botId, ...configIds];
+    },
+  })
   @Post('/orgs/:orgId/chat/stream')
   async streamChat(
     @Param('orgId', new ZodValidationPipe(dbIdSchema('Org')))
@@ -171,7 +196,7 @@ export class ChatController {
         body.message,
         {
           threadId: body.threadId,
-          collectionId: body.collectionId,
+          dataSourceConfig: body.dataSourceConfig,
           botId: body.botId,
           attachments: body.attachments,
           attachmentContext,

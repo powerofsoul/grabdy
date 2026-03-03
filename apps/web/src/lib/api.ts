@@ -1,4 +1,5 @@
 import {
+  type BotSourceConfig,
   type ChatAttachment,
   chatAttachmentSchema,
   type ChatSource,
@@ -249,7 +250,7 @@ export async function streamChat(
   body: {
     message: string;
     threadId?: string;
-    collectionId?: string;
+    dataSourceConfig?: BotSourceConfig;
     botId?: string;
     attachments?: ChatAttachment[];
   },

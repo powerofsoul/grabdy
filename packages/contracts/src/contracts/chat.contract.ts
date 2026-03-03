@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import type { DataSourceType } from '../enums/data-source.js';
 import { chatAttachmentSchema, MAX_CHAT_ATTACHMENTS } from '../schemas/chat-attachment.js';
+import { botSourceConfigSchema } from './bots.contract.js';
 
 const c = initContract();
 
@@ -122,7 +123,6 @@ const chatMessageSchema = z.object({
 const threadSchema = z.object({
   id: dbIdSchema('ChatThread'),
   title: z.string().nullable(),
-  collectionId: dbIdSchema('Collection').nullable(),
   botId: dbIdSchema('Bot').nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -140,7 +140,6 @@ export const chatContract = c.router(
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
       body: z.object({
         title: z.string().optional(),
-        collectionId: dbIdSchema('Collection').optional(),
         botId: dbIdSchema('Bot').optional(),
       }),
       responses: {
@@ -209,7 +208,7 @@ export const chatContract = c.router(
 export const streamChatBodySchema = z.object({
   message: z.string().min(1),
   threadId: dbIdSchema('ChatThread').optional(),
-  collectionId: dbIdSchema('Collection').optional(),
+  dataSourceConfig: botSourceConfigSchema.optional(),
   botId: dbIdSchema('Bot').optional(),
   attachments: z.array(chatAttachmentSchema).max(MAX_CHAT_ATTACHMENTS).optional(),
 });

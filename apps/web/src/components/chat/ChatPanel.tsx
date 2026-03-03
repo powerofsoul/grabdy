@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
 import {
@@ -28,12 +28,15 @@ import { ChatEmptyState } from './components/ChatEmptyState';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessages } from './components/ChatMessages';
 import { ShareButton } from './components/share';
+import { useBotSourceConfig } from './hooks/useBotSourceConfig';
+import { useChatSourceConfig } from './hooks/useChatSourceConfig';
 import { useChatStream } from './hooks/useChatStream';
 import { useThreadManager } from './hooks/useThreadManager';
 import type { ChatMessage } from './types';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useMobileSidebar } from '@/components/ui/Sidebar';
+import { useAuth } from '@/context/AuthContext';
 
 interface ChatPanelProps {
   headerSlot?: ReactNode;
@@ -71,9 +74,14 @@ export function ChatPanel({
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const isMobile = useMediaQuery('(max-width:767px)');
+  const { selectedOrgId } = useAuth();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [threadPanelOpen, setThreadPanelOpen] = useState(false);
+
+  // Source config: editable for general chat, readonly for bot chat
+  const generalSourceConfig = useChatSourceConfig();
+  const botSourceConfig = useBotSourceConfig(selectedOrgId, botId);
 
   const threadManager = useThreadManager({
     initialThreadId,
@@ -86,16 +94,47 @@ export function ChatPanel({
     }, []),
   });
 
+  const activeDataSourceConfig = botId ? botSourceConfig.config : generalSourceConfig.config;
+
   const chatStream = useChatStream({
     ensureThread: threadManager.ensureThread,
     setActiveThreadId: threadManager.setActiveThreadId,
     setMessages,
     fetchThreads: threadManager.fetchThreads,
     botId,
+    dataSourceConfig: activeDataSourceConfig.length > 0 ? activeDataSourceConfig : undefined,
   });
 
   const isEmpty = messages.length === 0 && !chatStream.isStreaming;
   const activeThread = threadManager.threads.find((t) => t.id === threadManager.activeThreadId);
+
+  const sourceConfigProp = useMemo(
+    () =>
+      botId
+        ? botSourceConfig.config.length > 0
+          ? ({
+              mode: 'readonly',
+              config: botSourceConfig.config,
+              summary: botSourceConfig.summary,
+            } as const)
+          : undefined
+        : ({
+            mode: 'editable',
+            config: generalSourceConfig.config,
+            onChange: generalSourceConfig.setConfig,
+            onClear: generalSourceConfig.reset,
+            summary: generalSourceConfig.summary,
+          } as const),
+    [
+      botId,
+      botSourceConfig.config,
+      botSourceConfig.summary,
+      generalSourceConfig.config,
+      generalSourceConfig.setConfig,
+      generalSourceConfig.reset,
+      generalSourceConfig.summary,
+    ]
+  );
 
   const chatContent =
     isEmpty && !threadManager.isLoadingMessages ? (
@@ -122,6 +161,7 @@ export function ChatPanel({
             elevated
             placeholder={botPlaceholder}
             accentColor={botAccentColor}
+            sourceConfig={sourceConfigProp}
           />
         </Box>
       </Stack>
@@ -138,6 +178,7 @@ export function ChatPanel({
           isStreaming={chatStream.isStreaming}
           placeholder={botPlaceholder}
           accentColor={botAccentColor}
+          sourceConfig={sourceConfigProp}
         />
       </Stack>
     );

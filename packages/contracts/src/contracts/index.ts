@@ -55,6 +55,7 @@ export {
   type BotSource,
   type BotSourceConfig,
   botSourceConfigSchema,
+  botSourceSchema,
   type SdkStreamBody,
   sdkStreamBodySchema,
 } from './bots.contract.js';

@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import type { BotSourceConfig } from '@grabdy/contracts';
 import { MAX_CHAT_ATTACHMENTS, UPLOADS_EXTENSIONS, UPLOADS_MIMES } from '@grabdy/contracts';
-import { alpha, Box, IconButton, Typography, useTheme } from '@mui/material';
-import { ArrowUpIcon, PaperclipIcon, XIcon } from '@phosphor-icons/react';
+import { alpha, Box, Collapse, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import { ArrowUpIcon, FunnelIcon, PaperclipIcon, XIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+
+import { DataSourcePicker } from '@/components/data-source-picker/DataSourcePicker';
+import { useAuth } from '@/context/AuthContext';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -41,6 +45,20 @@ function validateFiles(files: File[], currentCount: number): { valid: File[]; er
   return { valid, errors };
 }
 
+interface SourceConfigEditable {
+  mode: 'editable';
+  config: BotSourceConfig;
+  onChange: (config: BotSourceConfig) => void;
+  onClear: () => void;
+  summary: string;
+}
+
+interface SourceConfigReadonly {
+  mode: 'readonly';
+  config: BotSourceConfig;
+  summary: string;
+}
+
 interface ChatInputProps {
   onSend: (message: string, files?: File[]) => void | Promise<void>;
   isStreaming: boolean;
@@ -48,6 +66,7 @@ interface ChatInputProps {
   placeholder?: string;
   elevated?: boolean;
   accentColor?: string;
+  sourceConfig?: SourceConfigEditable | SourceConfigReadonly;
 }
 
 export function ChatInput({
@@ -57,18 +76,22 @@ export function ChatInput({
   placeholder = 'Ask anything about your documents...',
   elevated = false,
   accentColor,
+  sourceConfig,
 }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [focused, setFocused] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const dragCounterRef = useRef(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const theme = useTheme();
   const ct = theme.palette.text.primary;
+  const { selectedOrgId } = useAuth();
 
   const atLimit = pendingFiles.length >= MAX_CHAT_ATTACHMENTS;
+  const hasActiveFilter = sourceConfig && sourceConfig.summary !== 'all sources';
 
   useEffect(() => {
     if (!isStreaming && !disabled) {
@@ -76,6 +99,8 @@ export function ChatInput({
       return () => clearTimeout(timer);
     }
   }, [isStreaming, disabled]);
+
+  const isPickerOpen = pickerOpen && !isStreaming;
 
   useEffect(() => {
     const el = inputRef.current;
@@ -248,6 +273,103 @@ export function ChatInput({
               </Typography>
             </Box>
           )}
+          {/* Source scope header + picker */}
+          {sourceConfig?.mode === 'editable' && selectedOrgId && !isStreaming && (
+            <>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  mb: isPickerOpen ? 0 : 0.5,
+                }}
+              >
+                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                  {hasActiveFilter ? `Searching ${sourceConfig.summary}` : 'Searching all sources'}
+                </Typography>
+                {hasActiveFilter && (
+                  <Typography
+                    onClick={() => {
+                      sourceConfig.onClear();
+                      setPickerOpen(false);
+                    }}
+                    sx={{
+                      fontSize: 11,
+                      color: 'text.secondary',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      px: 0.75,
+                      py: 0.25,
+                      border: '1px solid',
+                      borderColor: alpha(ct, 0.15),
+                      borderRadius: 0,
+                      '&:hover': { color: 'text.primary', borderColor: alpha(ct, 0.3) },
+                    }}
+                  >
+                    Clear
+                  </Typography>
+                )}
+              </Box>
+              <Collapse in={isPickerOpen}>
+                <Box
+                  sx={{
+                    maxHeight: 240,
+                    overflowY: 'auto',
+                    pb: 1,
+                    mb: 0.5,
+                    borderBottom: '1px solid',
+                    borderColor: alpha(ct, 0.08),
+                  }}
+                >
+                  <DataSourcePicker
+                    value={sourceConfig.config}
+                    onChange={sourceConfig.onChange}
+                    orgId={selectedOrgId}
+                  />
+                </Box>
+              </Collapse>
+            </>
+          )}
+          {sourceConfig?.mode === 'readonly' && !isStreaming && (
+            <>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: isPickerOpen ? 0 : 0.5,
+                }}
+              >
+                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                  Searching {sourceConfig.summary}
+                </Typography>
+              </Box>
+              <Collapse in={isPickerOpen}>
+                <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1, mt: 0.5 }}>
+                  This bot's sources are configured in bot settings and cannot be changed here.
+                </Typography>
+                {selectedOrgId && (
+                  <Box
+                    sx={{
+                      maxHeight: 240,
+                      overflowY: 'auto',
+                      pb: 1,
+                      mb: 0.5,
+                      borderBottom: '1px solid',
+                      borderColor: alpha(ct, 0.08),
+                      pointerEvents: 'none',
+                      opacity: 0.6,
+                    }}
+                  >
+                    <DataSourcePicker
+                      value={sourceConfig.config}
+                      onChange={() => {}}
+                      orgId={selectedOrgId}
+                    />
+                  </Box>
+                )}
+              </Collapse>
+            </>
+          )}
           {/* Pending file chips */}
           {pendingFiles.length > 0 && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
@@ -346,6 +468,26 @@ export function ChatInput({
               onChange={handleFileChange}
               style={{ display: 'none' }}
             />
+            {sourceConfig && (
+              <Tooltip title={`Searching ${sourceConfig.summary}`}>
+                <IconButton
+                  onClick={() => setPickerOpen((prev) => !prev)}
+                  size="small"
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    color: hasActiveFilter ? 'text.primary' : alpha(ct, 0.35),
+                    bgcolor: hasActiveFilter ? alpha(ct, 0.08) : 'transparent',
+                    '&:hover': {
+                      color: alpha(ct, 0.7),
+                      bgcolor: alpha(ct, 0.08),
+                    },
+                  }}
+                >
+                  <FunnelIcon size={16} weight={hasActiveFilter ? 'fill' : 'light'} />
+                </IconButton>
+              </Tooltip>
+            )}
             <IconButton
               onClick={() => fileInputRef.current?.click()}
               disabled={isStreaming || disabled || atLimit}

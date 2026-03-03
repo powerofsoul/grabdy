@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { assertIdsInOrg, type DbId } from '@grabdy/common';
+import { assertIdsInOrg, type DbId, dbIdSchema } from '@grabdy/common';
 import type { StreamChunk } from '@grabdy/contracts';
 import {
   AiCallerType,
@@ -42,7 +42,7 @@ const ragOutputSchema = z.object({
   results: z.array(
     z.object({
       content: z.string(),
-      dataSourceId: z.string(),
+      dataSourceId: dbIdSchema('DataSource'),
       dataSourceName: z.string(),
       type: z.string(),
       sourceUrl: z.string().nullable(),

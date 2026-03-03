@@ -9,6 +9,7 @@ import { type AgentContext, BaseAgent } from '../base-agent';
 import type { Tool } from '../base-tool';
 import { AgentMemoryService } from '../services/memory.service';
 import { ImageAnalysisTool } from '../tools/image-analysis.tool';
+import { ListSourcesTool } from '../tools/list-sources.tool';
 import { RagSearchTool } from '../tools/rag-search.tool';
 import { ThinkTool } from '../tools/think.tool';
 
@@ -77,7 +78,8 @@ export class DataAgent extends BaseAgent {
     agentMemory: AgentMemoryService,
     private ragSearchTool: RagSearchTool,
     private imageAnalysisTool: ImageAnalysisTool,
-    private thinkTool: ThinkTool
+    private thinkTool: ThinkTool,
+    private listSourcesTool: ListSourcesTool
   ) {
     super(aiUsageService, agentMemory);
   }
@@ -126,6 +128,12 @@ export class DataAgent extends BaseAgent {
         opts.userId
       );
       hooks[this.ragSearchTool.toolName] = this.ragSearchTool;
+
+      tools[this.listSourcesTool.toolName] = this.listSourcesTool.create(
+        opts.orgId,
+        opts.searchScope
+      );
+      hooks[this.listSourcesTool.toolName] = this.listSourcesTool;
     }
 
     return {

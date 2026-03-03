@@ -214,7 +214,6 @@ export interface DB {
     id: Generated<DbId<'ChatThread'>>;
     org_id: DbId<'Org'>;
     title: string | null;
-    collection_id: DbId<'Collection'> | null;
     membership_id: DbId<'OrgMembership'> | null;
     source: Generated<'dashboard' | 'sdk' | 'api'>;
     bot_id: DbId<'Bot'> | null;
