@@ -326,6 +326,7 @@ function CollectionDetailPage() {
                   id={folder.id}
                   name={folder.name}
                   sourceCount={folder.sourceCount}
+                  childCount={folder.childCount}
                   onRename={(folderId, folderName) => {
                     pushDrawer(
                       (onClose) => (

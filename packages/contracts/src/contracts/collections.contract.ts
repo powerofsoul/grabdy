@@ -11,6 +11,7 @@ const collectionSchema = z.object({
   parentId: dbIdSchema('Collection').nullable(),
   orgId: dbIdSchema('Org'),
   sourceCount: z.number(),
+  childCount: z.number(),
   chunkCount: z.number(),
   createdAt: z.string(),
   updatedAt: z.string(),

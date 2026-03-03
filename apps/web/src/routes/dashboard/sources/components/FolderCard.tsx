@@ -6,10 +6,11 @@ interface FolderCardProps {
   id: string;
   name: string;
   sourceCount: number;
+  childCount: number;
   onRename?: (id: string, name: string) => void;
 }
 
-export function FolderCard({ id, name, sourceCount, onRename }: FolderCardProps) {
+export function FolderCard({ id, name, sourceCount, childCount, onRename }: FolderCardProps) {
   const navigate = useNavigate();
   const theme = useTheme();
   const ct = theme.palette.text.primary;
@@ -47,7 +48,12 @@ export function FolderCard({ id, name, sourceCount, onRename }: FolderCardProps)
           {name}
         </Typography>
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-          {sourceCount} {sourceCount === 1 ? 'file' : 'files'}
+          {[
+            childCount > 0 ? `${childCount} ${childCount === 1 ? 'folder' : 'folders'}` : null,
+            `${sourceCount} ${sourceCount === 1 ? 'file' : 'files'}`,
+          ]
+            .filter(Boolean)
+            .join(', ')}
         </Typography>
       </Box>
       {onRename && (

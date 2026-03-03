@@ -51,6 +51,7 @@ export class CollectionsService {
       parentId: collection.parent_id,
       orgId: collection.org_id,
       sourceCount: 0,
+      childCount: 0,
       chunkCount: 0,
       createdAt: collection.created_at,
       updatedAt: collection.updated_at,
@@ -71,6 +72,9 @@ export class CollectionsService {
         sql<number>`(select count(*) from data.data_sources where data.data_sources.collection_id = data.collections.id)`.as(
           'source_count'
         ),
+        sql<number>`(select count(*) from data.collections c2 where c2.parent_id = data.collections.id)`.as(
+          'child_count'
+        ),
         sql<number>`(select count(*) from data.chunks where data.chunks.collection_id = data.collections.id)`.as(
           'chunk_count'
         ),
@@ -90,6 +94,7 @@ export class CollectionsService {
       parentId: c.parent_id,
       orgId: c.org_id,
       sourceCount: Number(c.source_count),
+      childCount: Number(c.child_count),
       chunkCount: Number(c.chunk_count),
       createdAt: c.created_at,
       updatedAt: c.updated_at,
@@ -111,6 +116,9 @@ export class CollectionsService {
         sql<number>`(select count(*) from data.data_sources where data.data_sources.collection_id = data.collections.id)`.as(
           'source_count'
         ),
+        sql<number>`(select count(*) from data.collections c2 where c2.parent_id = data.collections.id)`.as(
+          'child_count'
+        ),
         sql<number>`(select count(*) from data.chunks where data.chunks.collection_id = data.collections.id)`.as(
           'chunk_count'
         ),
@@ -130,6 +138,7 @@ export class CollectionsService {
       parentId: result.parent_id,
       orgId: result.org_id,
       sourceCount: Number(result.source_count),
+      childCount: Number(result.child_count),
       chunkCount: Number(result.chunk_count),
       createdAt: result.created_at,
       updatedAt: result.updated_at,
