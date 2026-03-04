@@ -48,7 +48,7 @@ export function DashboardPage({
     <Box
       sx={{
         bgcolor: 'background.default',
-        minHeight: '100%',
+        ...(noPadding ? { height: '100%', overflow: 'hidden' } : { minHeight: '100%' }),
         display: 'flex',
         flexDirection: 'column',
       }}
