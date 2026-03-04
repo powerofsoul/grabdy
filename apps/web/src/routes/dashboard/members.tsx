@@ -313,7 +313,7 @@ function MembersPage() {
               ),
               actions: (inv) => (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Tooltip title="CopyIcon invite link">
+                  <Tooltip title="Copy invite link">
                     <IconButton
                       size="small"
                       onClick={(e) => {
