@@ -13,7 +13,15 @@ interface FolderItem {
   parentId: string | null;
 }
 
-export function SourcesTreeNode({ node, depth }: { node: TreeNode<FolderItem>; depth: number }) {
+export function SourcesTreeNode({
+  node,
+  depth,
+  expandedIds,
+}: {
+  node: TreeNode<FolderItem>;
+  depth: number;
+  expandedIds: Set<string>;
+}) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const location = useLocation();
@@ -21,12 +29,13 @@ export function SourcesTreeNode({ node, depth }: { node: TreeNode<FolderItem>; d
   const isActive = location.pathname === `/dashboard/sources/${node.id}`;
   const hasChildren = node.children.length > 0;
 
-  const [expanded, setExpanded] = useState(false);
+  const [manualExpanded, setManualExpanded] = useState<boolean | null>(null);
+  const expanded = manualExpanded ?? expandedIds.has(node.id);
 
   const toggleExpand = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setExpanded((prev) => !prev);
+    setManualExpanded((prev) => !(prev ?? expandedIds.has(node.id)));
   };
 
   return (
@@ -96,7 +105,12 @@ export function SourcesTreeNode({ node, depth }: { node: TreeNode<FolderItem>; d
       </Link>
       {expanded &&
         node.children.map((child) => (
-          <SourcesTreeNode key={child.id} node={child} depth={depth + 1} />
+          <SourcesTreeNode
+            key={child.id}
+            node={child}
+            depth={depth + 1}
+            expandedIds={expandedIds}
+          />
         ))}
     </>
   );

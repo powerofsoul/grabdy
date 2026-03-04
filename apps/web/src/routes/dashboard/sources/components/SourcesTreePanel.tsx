@@ -11,6 +11,24 @@ import { buildTree } from '@/components/ui/Sidebar/helpers';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
+function getAncestorIds(
+  collections: { id: string; parentId: string | null }[],
+  activeId: string | null
+): Set<string> {
+  if (!activeId) return new Set();
+  const parentMap = new Map<string, string | null>();
+  for (const c of collections) {
+    parentMap.set(c.id, c.parentId);
+  }
+  const ancestors = new Set<string>();
+  let current = parentMap.get(activeId) ?? null;
+  while (current) {
+    ancestors.add(current);
+    current = parentMap.get(current) ?? null;
+  }
+  return ancestors;
+}
+
 export function SourcesTreePanel() {
   const { selectedOrgId } = useAuth();
   const theme = useTheme();
@@ -43,6 +61,13 @@ export function SourcesTreePanel() {
 
   const isRootActive =
     location.pathname === '/dashboard/sources' || location.pathname === '/dashboard/sources/';
+
+  const activeCollectionId = location.pathname.match(/^\/dashboard\/sources\/([^/]+)/)?.[1] ?? null;
+
+  const expandedIds = useMemo(
+    () => getAncestorIds(collections, activeCollectionId),
+    [collections, activeCollectionId]
+  );
 
   return (
     <Box
@@ -103,7 +128,7 @@ export function SourcesTreePanel() {
       </Link>
 
       {tree.map((node) => (
-        <SourcesTreeNode key={node.id} node={node} depth={0} />
+        <SourcesTreeNode key={node.id} node={node} depth={0} expandedIds={expandedIds} />
       ))}
     </Box>
   );
