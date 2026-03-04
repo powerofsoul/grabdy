@@ -60,6 +60,23 @@ export class SharedChatController {
     });
   }
 
+  @OrgAccess(sharedChatsContract.listAllShares, { params: ['orgId'] })
+  @TsRestHandler(sharedChatsContract.listAllShares)
+  async listAllShares() {
+    return tsRestHandler(sharedChatsContract.listAllShares, async ({ params, query }) => {
+      const result = await this.sharedChatService.listAllShares(
+        params.orgId,
+        query.limit,
+        query.offset
+      );
+
+      return {
+        status: 200 as const,
+        body: { success: true as const, data: result.items, total: result.total },
+      };
+    });
+  }
+
   @OrgAccess(sharedChatsContract.listShares, { params: ['orgId', 'threadId'] })
   @TsRestHandler(sharedChatsContract.listShares)
   async listShares() {

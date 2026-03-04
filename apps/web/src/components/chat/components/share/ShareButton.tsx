@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 
 import type { DbId } from '@grabdy/common';
 import { alpha, Badge, IconButton, Tooltip, useTheme } from '@mui/material';
 import { ShareNetworkIcon } from '@phosphor-icons/react';
 
 import { ShareDrawerContent } from './ShareDrawerContent';
+import { useThreadShares } from './useThreadShares';
 
-import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
-import { api } from '@/lib/api';
 
 interface ShareButtonProps {
   threadId: DbId<'ChatThread'>;
@@ -18,20 +17,9 @@ export function ShareButton({ threadId }: ShareButtonProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const { pushDrawer } = useDrawer();
-  const { selectedOrgId } = useAuth();
-  const [activeCount, setActiveCount] = useState(0);
 
-  useEffect(() => {
-    if (!selectedOrgId) return;
-    api.sharedChats
-      .listShares({ params: { orgId: selectedOrgId, threadId } })
-      .then((res) => {
-        if (res.status === 200) {
-          setActiveCount(res.body.data.filter((s) => !s.revoked).length);
-        }
-      })
-      .catch(() => {});
-  }, [selectedOrgId, threadId]);
+  const { data: shares = [] } = useThreadShares(threadId);
+  const activeCount = shares.filter((s) => !s.revoked).length;
 
   const handleClick = useCallback(() => {
     pushDrawer(() => <ShareDrawerContent threadId={threadId} />, { title: 'Share conversation' });

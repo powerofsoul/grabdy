@@ -165,6 +165,33 @@ export class SharedChatService {
     });
   }
 
+  async listAllShares(orgId: DbId<'Org'>, limit: number, offset: number) {
+    const baseQuery = this.db.kysely.selectFrom('data.shared_chats').where('org_id', '=', orgId);
+
+    const [rows, countResult] = await Promise.all([
+      baseQuery
+        .select(['id', 'thread_id', 'title', 'share_token', 'is_public', 'revoked', 'created_at'])
+        .orderBy('created_at', 'desc')
+        .limit(limit)
+        .offset(offset)
+        .execute(),
+      baseQuery.select(({ fn }) => fn.countAll<number>().as('count')).executeTakeFirstOrThrow(),
+    ]);
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        threadId: row.thread_id,
+        title: row.title,
+        shareToken: row.share_token,
+        isPublic: row.is_public,
+        revoked: row.revoked,
+        createdAt: new Date(row.created_at).toISOString(),
+      })),
+      total: Number(countResult.count),
+    };
+  }
+
   async listShares(orgId: DbId<'Org'>, threadId: DbId<'ChatThread'>) {
     const rows = await this.db.kysely
       .selectFrom('data.shared_chats')

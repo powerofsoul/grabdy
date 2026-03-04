@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
-import { sharedChatSchema } from '@grabdy/contracts';
 import {
   alpha,
   Box,
@@ -17,12 +16,12 @@ import {
   useTheme,
 } from '@mui/material';
 import { CheckIcon, CopyIcon, GlobeIcon, LinkBreakIcon, LockIcon } from '@phosphor-icons/react';
-import { z } from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useThreadShares } from './useThreadShares';
 
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-
-type SharedChat = z.infer<typeof sharedChatSchema>;
 
 interface ShareDrawerContentProps {
   threadId: DbId<'ChatThread'>;
@@ -32,71 +31,53 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const { selectedOrgId } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [shares, setShares] = useState<SharedChat[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  const fetchShares = useCallback(async () => {
-    if (!selectedOrgId) return;
-    try {
-      const res = await api.sharedChats.listShares({
-        params: { orgId: selectedOrgId, threadId },
-      });
-      if (res.status === 200) {
-        setShares(res.body.data);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedOrgId, threadId]);
+  const { data: shares = [], isLoading } = useThreadShares(threadId);
 
-  useEffect(() => {
-    fetchShares();
-  }, [fetchShares]);
-
-  const handleCreate = useCallback(async () => {
-    if (!selectedOrgId) return;
-    setIsCreating(true);
-    try {
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrgId) return;
       const res = await api.sharedChats.createShare({
         params: { orgId: selectedOrgId, threadId },
         body: { isPublic },
       });
       if (res.status === 200) {
-        setShares((prev) => [res.body.data, ...prev]);
         const url = `${window.location.origin}/share/${res.body.data.shareToken}`;
         navigator.clipboard.writeText(url);
         setCopiedToken(res.body.data.shareToken);
         setTimeout(() => setCopiedToken(null), 2000);
       }
-    } finally {
-      setIsCreating(false);
-    }
-  }, [selectedOrgId, threadId, isPublic]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['threadShares', selectedOrgId, threadId] });
+      queryClient.invalidateQueries({ queryKey: ['sharedLinks', selectedOrgId] });
+    },
+  });
 
-  const handleCopy = useCallback((token: string) => {
+  const revokeMutation = useMutation({
+    mutationFn: async (shareId: DbId<'SharedChat'>) => {
+      if (!selectedOrgId) return;
+      await api.sharedChats.revokeShare({
+        params: { orgId: selectedOrgId, threadId, shareId },
+        body: {},
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['threadShares', selectedOrgId, threadId] });
+      queryClient.invalidateQueries({ queryKey: ['sharedLinks', selectedOrgId] });
+    },
+  });
+
+  const handleCopy = (token: string) => {
     const url = `${window.location.origin}/share/${token}`;
     navigator.clipboard.writeText(url);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
-  }, []);
-
-  const handleRevoke = useCallback(
-    async (shareId: DbId<'SharedChat'>) => {
-      if (!selectedOrgId) return;
-      const res = await api.sharedChats.revokeShare({
-        params: { orgId: selectedOrgId, threadId, shareId },
-        body: {},
-      });
-      if (res.status === 200) {
-        setShares((prev) => prev.map((s) => (s.id === shareId ? { ...s, revoked: true } : s)));
-      }
-    },
-    [selectedOrgId, threadId]
-  );
+  };
 
   const activeCount = shares.filter((s) => !s.revoked).length;
 
@@ -120,12 +101,14 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
           />
           <Button
             variant="contained"
-            onClick={handleCreate}
-            disabled={isCreating}
+            onClick={() => createMutation.mutate()}
+            disabled={createMutation.isPending}
             fullWidth
             sx={{ fontWeight: 600, fontSize: 13 }}
           >
-            {isCreating ? <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} /> : null}
+            {createMutation.isPending ? (
+              <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
+            ) : null}
             Create share link
           </Button>
         </Box>
@@ -145,7 +128,7 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
                 letterSpacing: '0.05em',
               }}
             >
-              Existing shares ({activeCount} active)
+              Current thread shares ({activeCount} active)
             </Typography>
             {shares.map((share) => (
               <Box
@@ -219,7 +202,7 @@ export function ShareDrawerContent({ threadId }: ShareDrawerContentProps) {
                     <Tooltip title="Revoke link">
                       <IconButton
                         size="small"
-                        onClick={() => handleRevoke(share.id)}
+                        onClick={() => revokeMutation.mutate(share.id)}
                         sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'error.main' } }}
                       >
                         <LinkBreakIcon size={14} weight="light" color="currentColor" />

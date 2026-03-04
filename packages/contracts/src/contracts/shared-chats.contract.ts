@@ -85,6 +85,24 @@ export const sharedChatsContract = c.router(
         }),
       },
     },
+    listAllShares: {
+      method: 'GET',
+      path: '/orgs/:orgId/chat/shares',
+      pathParams: z.object({
+        orgId: dbIdSchema('Org'),
+      }),
+      query: z.object({
+        limit: z.coerce.number().int().min(1).max(100).default(50),
+        offset: z.coerce.number().int().min(0).default(0),
+      }),
+      responses: {
+        200: z.object({
+          success: z.literal(true),
+          data: z.array(sharedChatSchema),
+          total: z.number(),
+        }),
+      },
+    },
     revokeShare: {
       method: 'PATCH',
       path: '/orgs/:orgId/chat/threads/:threadId/shares/:shareId',

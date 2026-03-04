@@ -20,6 +20,7 @@ import {
   ListIcon,
   PencilSimpleIcon,
   PlusIcon,
+  ShareNetworkIcon,
   TrashIcon,
   XIcon,
 } from '@phosphor-icons/react';
@@ -27,7 +28,7 @@ import {
 import { ChatEmptyState } from './components/ChatEmptyState';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessages } from './components/ChatMessages';
-import { ShareButton } from './components/share';
+import { ShareButton, SharedLinksList, ShareDrawerContent } from './components/share';
 import { useBotSourceConfig } from './hooks/useBotSourceConfig';
 import { useChatSourceConfig } from './hooks/useChatSourceConfig';
 import { useChatStream } from './hooks/useChatStream';
@@ -77,7 +78,8 @@ export function ChatPanel({
   const { selectedOrgId } = useAuth();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [threadPanelOpen, setThreadPanelOpen] = useState(false);
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [sharedDrawerOpen, setSharedDrawerOpen] = useState(false);
 
   // Source config: editable for general chat, readonly for bot chat
   const generalSourceConfig = useChatSourceConfig();
@@ -90,7 +92,7 @@ export function ChatPanel({
     onLoadMessages: setMessages,
     onClearState: useCallback(() => {
       setMessages([]);
-      setThreadPanelOpen(false);
+      setHistoryDrawerOpen(false);
     }, []),
   });
 
@@ -183,22 +185,22 @@ export function ChatPanel({
       </Stack>
     );
 
-  const threadDrawer = (
+  const drawerPaperSx = {
+    width: isMobile ? '85vw' : 400,
+    maxWidth: 400,
+    boxSizing: 'border-box',
+    bgcolor: 'background.default',
+    borderLeft: '1px solid',
+    borderColor: alpha(ct, 0.08),
+  } as const;
+
+  const historyDrawer = (
     <Drawer
       anchor="right"
-      open={threadPanelOpen}
-      onClose={() => setThreadPanelOpen(false)}
+      open={historyDrawerOpen}
+      onClose={() => setHistoryDrawerOpen(false)}
       variant="temporary"
-      sx={{
-        '& .MuiDrawer-paper': {
-          width: isMobile ? '85vw' : 320,
-          maxWidth: 320,
-          boxSizing: 'border-box',
-          bgcolor: 'background.default',
-          borderLeft: '1px solid',
-          borderColor: alpha(ct, 0.08),
-        },
-      }}
+      sx={{ '& .MuiDrawer-paper': drawerPaperSx }}
     >
       <Box
         sx={{
@@ -225,7 +227,7 @@ export function ChatPanel({
           </Tooltip>
           <IconButton
             size="small"
-            onClick={() => setThreadPanelOpen(false)}
+            onClick={() => setHistoryDrawerOpen(false)}
             sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
           >
             <XIcon size={16} weight="light" color="currentColor" />
@@ -251,7 +253,7 @@ export function ChatPanel({
                 key={thread.id}
                 onClick={() => {
                   threadManager.loadThread(thread.id);
-                  setThreadPanelOpen(false);
+                  setHistoryDrawerOpen(false);
                 }}
                 sx={{
                   display: 'flex',
@@ -350,6 +352,65 @@ export function ChatPanel({
     </Drawer>
   );
 
+  const sharedDrawer = (
+    <Drawer
+      anchor="right"
+      open={sharedDrawerOpen}
+      onClose={() => setSharedDrawerOpen(false)}
+      variant="temporary"
+      sx={{ '& .MuiDrawer-paper': drawerPaperSx }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          height: 56,
+          borderBottom: '1px solid',
+          borderColor: alpha(ct, 0.08),
+          flexShrink: 0,
+        }}
+      >
+        <Typography variant="subtitle1">Share</Typography>
+        <IconButton
+          size="small"
+          onClick={() => setSharedDrawerOpen(false)}
+          sx={{ color: alpha(ct, 0.4), '&:hover': { color: 'text.primary' } }}
+        >
+          <XIcon size={16} weight="light" color="currentColor" />
+        </IconButton>
+      </Box>
+
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
+        {threadManager.activeThreadId && (
+          <ShareDrawerContent threadId={threadManager.activeThreadId} />
+        )}
+
+        <Box sx={{ px: 2.5, py: 1 }}>
+          <Typography
+            sx={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: alpha(ct, 0.4),
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              mb: 1,
+            }}
+          >
+            All shared links
+          </Typography>
+          <SharedLinksList
+            onOpenThread={(threadId) => {
+              threadManager.loadThread(threadId);
+              setSharedDrawerOpen(false);
+            }}
+          />
+        </Box>
+      </Box>
+    </Drawer>
+  );
+
   const { toggle: toggleMobileSidebar } = useMobileSidebar();
 
   return (
@@ -377,7 +438,7 @@ export function ChatPanel({
           )}
         </Box>
       ) : (
-        (headerSlot || activeThread || trailingSlot) && (
+        headerSlot && (
           <Box
             sx={{
               display: 'flex',
@@ -391,33 +452,16 @@ export function ChatPanel({
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-              {!activeThread && headerSlot}
-              {activeThread && (
-                <>
-                  {headerSlot && (
-                    <Box
-                      sx={{ width: '1px', height: 20, bgcolor: alpha(ct, 0.1), flexShrink: 0 }}
-                    />
-                  )}
-                  <Typography
-                    sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 500 }}
-                    noWrap
-                  >
-                    {activeThread.title ?? 'Untitled'}
-                  </Typography>
-                </>
-              )}
+              {headerSlot}
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              {threadManager.activeThreadId && (
-                <ShareButton threadId={threadManager.activeThreadId} />
-              )}
-              {trailingSlot}
-            </Box>
+            {trailingSlot && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>{trailingSlot}</Box>
+            )}
           </Box>
         )
       )}
 
+      {/* Tabs row with actions */}
       <Box
         sx={{
           display: 'flex',
@@ -471,7 +515,7 @@ export function ChatPanel({
             <Typography sx={{ fontSize: 14, fontWeight: 500 }}>New</Typography>
           </Box>
           <Box
-            onClick={() => setThreadPanelOpen(true)}
+            onClick={() => setHistoryDrawerOpen(true)}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -488,10 +532,77 @@ export function ChatPanel({
             <ClockCounterClockwiseIcon size={18} weight="light" color="currentColor" />
             <Typography sx={{ fontSize: 14, fontWeight: 500 }}>History</Typography>
           </Box>
+          <Box
+            onClick={() => setSharedDrawerOpen(true)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1.25,
+              py: 0.75,
+              borderRadius: 1,
+              cursor: 'pointer',
+              color: alpha(ct, 0.5),
+              transition: 'all 120ms ease',
+              '&:hover': { color: 'text.primary', bgcolor: alpha(ct, 0.04) },
+            }}
+          >
+            <ShareNetworkIcon size={18} weight="light" color="currentColor" />
+            <Typography sx={{ fontSize: 14, fontWeight: 500 }}>Share</Typography>
+          </Box>
         </Box>
       </Box>
 
-      {threadDrawer}
+      {/* Thread title bar (only when in a thread, desktop only) */}
+      {!isMobile && activeThread && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            px: 2,
+            height: 36,
+            flexShrink: 0,
+            borderBottom: '1px solid',
+            borderColor: alpha(ct, 0.08),
+          }}
+        >
+          {threadManager.renamingThreadId === activeThread.id ? (
+            <TextField
+              size="small"
+              value={threadManager.renameValue}
+              onChange={(e) => threadManager.setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') threadManager.handleRename(activeThread.id);
+                if (e.key === 'Escape') threadManager.setRenamingThreadId(null);
+              }}
+              onBlur={() => threadManager.handleRename(activeThread.id)}
+              autoFocus
+              sx={{ flex: 1 }}
+              slotProps={{ htmlInput: { style: { fontSize: 13, padding: '4px 8px' } } }}
+            />
+          ) : (
+            <Typography
+              onClick={() => {
+                threadManager.setRenamingThreadId(activeThread.id);
+                threadManager.setRenameValue(activeThread.title ?? '');
+              }}
+              sx={{
+                fontSize: 13,
+                color: 'text.secondary',
+                fontWeight: 500,
+                cursor: 'pointer',
+                '&:hover': { color: 'text.primary' },
+              }}
+              noWrap
+            >
+              {activeThread.title ?? 'Untitled'}
+            </Typography>
+          )}
+        </Box>
+      )}
+
+      {historyDrawer}
+      {sharedDrawer}
 
       {/* Main content */}
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
