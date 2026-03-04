@@ -254,13 +254,15 @@ export async function streamChat(
     botId?: string;
     attachments?: ChatAttachment[];
   },
-  callbacks: StreamCallbacks
+  callbacks: StreamCallbacks,
+  signal?: AbortSignal
 ): Promise<void> {
   const response = await fetch(`${baseUrl}/orgs/${orgId}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify(body),
+    signal,
   });
 
   if (!response.ok) {

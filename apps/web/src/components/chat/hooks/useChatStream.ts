@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction, useCallback, useState } from 'react';
+import { type Dispatch, type SetStateAction, useCallback, useRef, useState } from 'react';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import type { BotSourceConfig, ChatAttachment } from '@grabdy/contracts';
@@ -29,6 +29,13 @@ export function useChatStream({
   const { selectedOrgId } = useAuth();
 
   const [isStreaming, setIsStreaming] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const abort = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsStreaming(false);
+  }, []);
 
   const handleSend = useCallback(
     async (userMessage: string, files?: File[]) => {
@@ -50,6 +57,9 @@ export function useChatStream({
 
       setMessages((prev) => [...prev, { role: 'user', content: userMessage, attachments }]);
       setIsStreaming(true);
+
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       try {
         const threadId = await ensureThread();
@@ -133,11 +143,14 @@ export function useChatStream({
                 setMessages((prev) => prev.slice(0, -1));
               }
             },
-          }
+          },
+          controller.signal
         );
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         toast.error(err instanceof Error ? err.message : 'Failed to send message');
       } finally {
+        abortRef.current = null;
         setIsStreaming(false);
       }
     },
@@ -156,5 +169,6 @@ export function useChatStream({
   return {
     isStreaming,
     handleSend,
+    abort,
   };
 }

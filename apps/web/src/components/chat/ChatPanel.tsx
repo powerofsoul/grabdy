@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
 import {
@@ -85,12 +85,15 @@ export function ChatPanel({
   const generalSourceConfig = useChatSourceConfig();
   const botSourceConfig = useBotSourceConfig(selectedOrgId, botId);
 
+  const abortStreamRef = useRef<(() => void) | null>(null);
+
   const threadManager = useThreadManager({
     initialThreadId,
     botId,
     onThreadChange,
     onLoadMessages: setMessages,
     onClearState: useCallback(() => {
+      abortStreamRef.current?.();
       setMessages([]);
       setHistoryDrawerOpen(false);
     }, []),
@@ -106,6 +109,10 @@ export function ChatPanel({
     botId,
     dataSourceConfig: activeDataSourceConfig.length > 0 ? activeDataSourceConfig : undefined,
   });
+
+  useEffect(() => {
+    abortStreamRef.current = chatStream.abort;
+  }, [chatStream.abort]);
 
   const isEmpty = messages.length === 0 && !chatStream.isStreaming;
   const activeThread = threadManager.threads.find((t) => t.id === threadManager.activeThreadId);
