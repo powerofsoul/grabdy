@@ -57,6 +57,7 @@ export function useChatStream({
 
         const updateLastAssistant = (updater: (msg: ChatMessage) => ChatMessage) => {
           setMessages((prev) => {
+            if (prev.length === 0) return prev;
             const updated = [...prev];
             const last = updated[updated.length - 1];
             if (last.role === 'assistant') {
