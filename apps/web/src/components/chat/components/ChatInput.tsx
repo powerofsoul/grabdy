@@ -472,6 +472,7 @@ export function ChatInput({
               <Tooltip title={`Searching ${sourceConfig.summary}`}>
                 <IconButton
                   onClick={() => setPickerOpen((prev) => !prev)}
+                  disabled={isStreaming || disabled}
                   size="small"
                   sx={{
                     width: 28,
@@ -481,6 +482,9 @@ export function ChatInput({
                     '&:hover': {
                       color: alpha(ct, 0.7),
                       bgcolor: alpha(ct, 0.08),
+                    },
+                    '&.Mui-disabled': {
+                      color: alpha(ct, 0.15),
                     },
                   }}
                 >
