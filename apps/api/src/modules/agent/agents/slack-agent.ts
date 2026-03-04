@@ -135,7 +135,7 @@ export class SlackAgent extends BaseAgent {
     };
 
     const messages = [...threadMessages, { role: 'user' as const, content: opts.text }];
-    const result = await this.generateWithRetry(callOptions, messages, '[slack]');
+    const result = await this.runGenerate(callOptions, messages);
 
     // Post final answer to Slack (updates existing progress message or posts new)
     if (result.text.trim()) {

@@ -111,7 +111,15 @@ function sseMeta(data: SseMetaEvent): string {
   return `8:${JSON.stringify(data)}\n`;
 }
 
-const MAX_EMPTY_RETRIES = 2;
+/** Max retries when GPT-OSS produces empty output after tool results. */
+const MAX_RETRIES = 10;
+
+function retryMessage(attempt: number): CoreMessage {
+  return {
+    role: 'user',
+    content: `[System: your previous response produced no text output (attempt ${attempt}/${MAX_RETRIES}). You MUST produce a text response based on the tool results above. Do not call any tools, just answer the question.]`,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Base agent
@@ -127,7 +135,7 @@ export abstract class BaseAgent {
     protected readonly agentMemory: AgentMemoryService
   ) {}
 
-  protected buildAgent(opts: AgentCallOptions, hooks?: Record<string, Tool>): ToolLoopAgent {
+  protected createAgent(opts: AgentCallOptions, hooks?: Record<string, Tool>): ToolLoopAgent {
     const modelKey: ModelKey = CHAT_MODEL;
 
     // Collect systemPrompt sections from tool hooks and append to instructions
@@ -153,6 +161,9 @@ export abstract class BaseAgent {
         metadata: { orgId: opts.orgId },
       },
       onStepFinish: async ({ usage, finishReason }) => {
+        this.logger.log(
+          `Step finished: reason=${finishReason}, input=${usage.inputTokens ?? 0}, output=${usage.outputTokens ?? 0}`
+        );
         if (finishReason === 'length') {
           this.logger.warn(`Agent step hit token limit (finishReason=length)`);
         }
@@ -186,26 +197,17 @@ export abstract class BaseAgent {
     return buildUserContent(input.message, input.attachmentContext, imageFileNames);
   }
 
-  /**
-   * Run generate() with automatic retry when the model produces empty text.
-   * Used by both stream/generate and directly by SlackAgent.
-   */
-  protected async generateWithRetry(
+  /** Run a non-streaming generation from raw messages (used by SlackAgent). */
+  protected async runGenerate(
     opts: AgentCallOptions,
-    messages: CoreMessage[],
-    logPrefix = '[generate]'
+    messages: CoreMessage[]
   ): Promise<{ text: string }> {
-    for (let attempt = 0; attempt < MAX_EMPTY_RETRIES; attempt++) {
-      const agent = this.buildAgent(opts);
-      const result = await agent.generate({ messages });
-
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const input = attempt === 1 ? messages : [...messages, retryMessage(attempt)];
+      const result = await this.createAgent(opts).generate({ messages: input });
       if (result.text.trim()) return result;
-
-      this.logger.warn(
-        `${logPrefix} Empty response on attempt ${attempt + 1}, finishReason=${result.finishReason}${attempt < MAX_EMPTY_RETRIES - 1 ? ', retrying' : ', giving up'}`
-      );
+      this.logger.warn(`Empty response on attempt ${attempt}/${MAX_RETRIES}, retrying`);
     }
-
     return { text: '' };
   }
 
@@ -226,10 +228,9 @@ export abstract class BaseAgent {
     }
 
     const agentMemory = this.agentMemory;
-    const { threadId } = input;
-    // Capture references for the generator (arrow generators not supported)
-    const buildAgent = this.buildAgent.bind(this);
     const logger = this.logger;
+    const { threadId } = input;
+    const createAgent = this.createAgent.bind(this);
 
     async function* generateSSE(): AsyncIterable<string> {
       const streamStart = Date.now();
@@ -238,34 +239,20 @@ export abstract class BaseAgent {
       let sources: ChatSource[] = [];
       let finishReason = '';
 
-      for (let attempt = 0; attempt < MAX_EMPTY_RETRIES; attempt++) {
-        const agent = buildAgent(ctx.callOptions, ctx.hooks);
-        const streamResult = await agent.stream({ messages });
-        const prefix = attempt === 0 ? ctx.logPrefix : `${ctx.logPrefix ?? '[stream]'} retry`;
+      // GPT-OSS on Bedrock sometimes produces empty output after tool results
+      // (output tokens but 0 text-delta chunks). Retry with a nudge message.
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const prefix = attempt === 1 ? ctx.logPrefix : `${ctx.logPrefix ?? '[stream]'} retry`;
+        const input = attempt === 1 ? messages : [...messages, retryMessage(attempt)];
+        const agent = createAgent(ctx.callOptions, ctx.hooks);
+        const streamResult = await agent.stream({ messages: input });
         const processed = processStream(streamResult.fullStream, ctx.hooks, prefix);
-
-        // Buffer sources so we don't send duplicates on retry.
-        // Thinking chunks stream immediately for real-time UX.
-        const bufferedSources: string[] = [];
-        let hasText = false;
 
         for await (const chunk of processed.chunks) {
           if (chunk.type === 'text') {
-            if (!hasText) {
-              for (const b of bufferedSources) yield b;
-              bufferedSources.length = 0;
-              hasText = true;
-            }
             yield sseText(chunk.text);
-          } else if (chunk.type === 'thinking') {
-            yield sseMeta(chunk);
           } else {
-            const encoded = sseMeta(chunk);
-            if (hasText) {
-              yield encoded;
-            } else {
-              bufferedSources.push(encoded);
-            }
+            yield sseMeta(chunk);
           }
         }
 
@@ -274,12 +261,10 @@ export abstract class BaseAgent {
         sources = processed.getSources();
         finishReason = processed.getLastFinishReason();
 
-        if (fullText.trim()) {
-          break;
-        }
+        if (fullText.trim()) break;
 
         logger.warn(
-          `${ctx.logPrefix ?? '[stream]'} Empty response on attempt ${attempt + 1} (finishReason=${finishReason})${attempt < MAX_EMPTY_RETRIES - 1 ? ', retrying' : ', giving up'}`
+          `${ctx.logPrefix ?? '[stream]'} Empty response on attempt ${attempt}/${MAX_RETRIES}, retrying`
         );
       }
 
@@ -319,21 +304,14 @@ export abstract class BaseAgent {
 
     const userContent = this.prepareInput(ctx, input);
     const messages: CoreMessage[] = [...history, { role: 'user' as const, content: userContent }];
-    const logPrefix = ctx.logPrefix ?? '[generate]';
 
-    let result = await this.buildAgent(ctx.callOptions, ctx.hooks).generate({ messages });
-
-    for (let attempt = 1; attempt < MAX_EMPTY_RETRIES && !result.text.trim(); attempt++) {
+    let result = await this.createAgent(ctx.callOptions, ctx.hooks).generate({ messages });
+    for (let attempt = 2; attempt <= MAX_RETRIES && !result.text.trim(); attempt++) {
       this.logger.warn(
-        `${logPrefix} Empty response on attempt ${attempt}, finishReason=${result.finishReason}, retrying`
+        `${ctx.logPrefix ?? '[generate]'} Empty response on attempt ${attempt - 1}/${MAX_RETRIES}, retrying`
       );
-      result = await this.buildAgent(ctx.callOptions, ctx.hooks).generate({ messages });
-    }
-
-    if (!result.text.trim()) {
-      this.logger.warn(
-        `${logPrefix} Empty response after ${MAX_EMPTY_RETRIES} attempts, giving up`
-      );
+      const input = [...messages, retryMessage(attempt)];
+      result = await this.createAgent(ctx.callOptions, ctx.hooks).generate({ messages: input });
     }
 
     if (input.threadId) {
