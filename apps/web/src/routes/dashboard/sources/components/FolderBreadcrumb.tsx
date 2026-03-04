@@ -2,12 +2,12 @@ import { alpha, Box, Typography, useTheme } from '@mui/material';
 import { CaretRightIcon } from '@phosphor-icons/react';
 import { Link } from '@tanstack/react-router';
 
-import { useFolderBreadcrumb } from '../hooks';
+import { useBreadcrumb } from '../hooks/useCollections';
 
 export function FolderBreadcrumb({ collectionId }: { collectionId: string }) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
-  const crumbs = useFolderBreadcrumb(collectionId);
+  const crumbs = useBreadcrumb(collectionId);
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

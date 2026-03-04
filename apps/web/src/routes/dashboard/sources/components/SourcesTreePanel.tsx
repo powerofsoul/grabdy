@@ -2,14 +2,13 @@ import { useMemo } from 'react';
 
 import { alpha, Box, Typography, useTheme } from '@mui/material';
 import { HouseIcon } from '@phosphor-icons/react';
-import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
+
+import { useCollections } from '../hooks/useCollections';
 
 import { SourcesTreeNode } from './SourcesTreeNode';
 
 import { buildTree } from '@/components/ui/Sidebar/helpers';
-import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
 
 function getAncestorIds(
   collections: { id: string; parentId: string | null }[],
@@ -30,21 +29,10 @@ function getAncestorIds(
 }
 
 export function SourcesTreePanel() {
-  const { selectedOrgId } = useAuth();
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const location = useLocation();
-
-  const { data: collections = [] } = useQuery({
-    queryKey: ['collections', selectedOrgId],
-    queryFn: async () => {
-      if (!selectedOrgId) return [];
-      const res = await api.collections.list({ params: { orgId: selectedOrgId }, query: {} });
-      if (res.status === 200) return res.body.data;
-      return [];
-    },
-    enabled: !!selectedOrgId,
-  });
+  const { collections } = useCollections();
 
   const tree = useMemo(
     () =>

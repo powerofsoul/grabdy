@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 
@@ -86,23 +86,12 @@ export const MessageRow = memo(
     const sourceMap = useMemo(() => buildSourceMap(sources), [sources]);
 
     const [copied, setCopied] = useState(false);
-    const [copyY, setCopyY] = useState<number | null>(null);
-    const bubbleRef = useRef<HTMLDivElement>(null);
 
     const handleCopy = useCallback(() => {
       navigator.clipboard.writeText(message.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     }, [message.content]);
-
-    const handleMouseMove = useCallback((e: React.MouseEvent) => {
-      if (!bubbleRef.current) return;
-      const rect = bubbleRef.current.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-      setCopyY((prev) => (prev === null || Math.abs(y - prev) > 50 ? y : prev));
-    }, []);
-
-    const handleMouseLeave = useCallback(() => setCopyY(null), []);
 
     const hasThinking = thinkingTexts && thinkingTexts.length > 0;
     const showThinkingSection = !isUser && (message.isStreaming || hasThinking);
@@ -257,9 +246,6 @@ export const MessageRow = memo(
             }}
           >
             <Box
-              ref={isUser ? undefined : bubbleRef}
-              onMouseMove={isUser ? undefined : handleMouseMove}
-              onMouseLeave={isUser ? undefined : handleMouseLeave}
               sx={{
                 px: 2,
                 py: 1.25,
@@ -293,19 +279,21 @@ export const MessageRow = memo(
                   </ReactMarkdown>
                 </Box>
               )}
-              {/* Floating copy button */}
-              {!isUser && !message.isStreaming && copyY !== null && (
+              {/* Copy button - sticky top right */}
+              {!isUser && !message.isStreaming && (
                 <IconButton
                   size="small"
                   onClick={handleCopy}
                   sx={{
-                    position: 'absolute',
-                    right: 4,
-                    top: copyY - 12,
-                    p: 0.25,
-                    bgcolor: 'background.paper',
-                    boxShadow: 1,
-                    '&:hover': { bgcolor: 'action.hover' },
+                    position: 'sticky',
+                    top: 8,
+                    float: 'right',
+                    mt: -3.5,
+                    mr: -1,
+                    p: 0.5,
+                    opacity: 0.4,
+                    transition: 'opacity 150ms ease',
+                    '&:hover': { opacity: 1 },
                   }}
                 >
                   {copied ? (

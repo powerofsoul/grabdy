@@ -12,10 +12,11 @@ import {
   PencilSimpleIcon,
   TrashIcon,
 } from '@phosphor-icons/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 
+import { useCollection } from './hooks/useCollections';
 import {
   CreateFolderDrawer,
   FolderBreadcrumb,
@@ -76,18 +77,7 @@ function CollectionDetailPage() {
   const [deleteCollectionConfirm, setDeleteCollectionConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DataSource | null>(null);
 
-  const { data: collection, isLoading: isCollectionLoading } = useQuery({
-    queryKey: ['collections', collectionId, selectedOrgId],
-    queryFn: async () => {
-      if (!selectedOrgId) return null;
-      const res = await api.collections.get({
-        params: { orgId: selectedOrgId, collectionId },
-      });
-      if (res.status === 200) return res.body.data;
-      return null;
-    },
-    enabled: !!selectedOrgId,
-  });
+  const { collection, isLoading: isCollectionLoading } = useCollection(collectionId);
 
   const parsedCollectionId = useMemo(() => {
     const result = dbIdSchema('Collection').safeParse(collectionId);
