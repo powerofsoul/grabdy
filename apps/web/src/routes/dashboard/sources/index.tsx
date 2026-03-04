@@ -22,10 +22,6 @@ function SourcesIndexPage() {
     pushDrawer((onClose) => <CreateFolderDrawer onClose={onClose} />, { title: 'New Folder' });
   };
 
-  if (isLoading) {
-    return <PageLoader />;
-  }
-
   return (
     <DashboardPage
       title="Files"
@@ -52,7 +48,9 @@ function SourcesIndexPage() {
             pt: { xs: 1, md: 1.5 },
           }}
         >
-          {folders.length === 0 ? (
+          {isLoading ? (
+            <PageLoader />
+          ) : folders.length === 0 ? (
             <EmptyState
               icon={<FolderOpenIcon size={48} weight="light" color="currentColor" />}
               message="No folders yet"
