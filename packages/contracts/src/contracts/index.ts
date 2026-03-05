@@ -5,6 +5,7 @@ import { authContract } from './auth.contract.js';
 import { billingContract } from './billing.contract.js';
 import { chatContract, streamChatBodySchema } from './chat.contract.js';
 import { collectionsContract } from './collections.contract.js';
+import { contractsContract } from './contracts.contract.js';
 import { dataSourcesContract } from './data-sources.contract.js';
 import { demoRequestContract } from './demo-request.contract.js';
 import { orgsContract } from './orgs.contract.js';
@@ -19,6 +20,7 @@ export const contract = c.router({
   billing: billingContract,
   orgs: orgsContract,
   collections: collectionsContract,
+  contracts: contractsContract,
   dataSources: dataSourcesContract,
   demoRequest: demoRequestContract,
   chat: chatContract,
@@ -32,6 +34,7 @@ export {
   billingContract,
   chatContract,
   collectionsContract,
+  contractsContract,
   dataSourcesContract,
   demoRequestContract,
   orgsContract,

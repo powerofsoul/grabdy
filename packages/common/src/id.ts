@@ -17,6 +17,7 @@ export type TableIdName =
   | 'DataSource'
   | 'Chunk'
   | 'ExtractedImage'
+  | 'Contract'
   | 'ApiKey'
   | 'UsageLog'
   | 'ChatThread'
@@ -46,6 +47,7 @@ export const ENTITY_TYPE_MAP = {
   DataSource: 0x11,
   Chunk: 0x12,
   ExtractedImage: 0x13,
+  Contract: 0x14,
   // API
   ApiKey: 0x20,
   UsageLog: 0x21,

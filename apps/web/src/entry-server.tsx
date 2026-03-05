@@ -15,11 +15,14 @@ import {
 
 import { CTASection } from './components/landing/CTASection';
 import { FAQSection } from './components/landing/faq';
-import { FeaturesScrollSection } from './components/landing/features-scroll';
+import { FeaturesSection } from './components/landing/FeaturesSection';
 import { Footer } from './components/landing/Footer';
 import { HeroSection } from './components/landing/hero';
+import { HowItWorksSection } from './components/landing/HowItWorksSection';
 import { LandingNav } from './components/landing/LandingNav';
 import { PricingSection } from './components/landing/PricingSection';
+import { SecuritySection } from './components/landing/security';
+import { WhyGrabdySection } from './components/landing/WhyGrabdySection';
 import { DrawerContext } from './context/DrawerContext';
 import { ThemeContext } from './context/ThemeContext';
 import { createAppTheme } from './theme';
@@ -32,8 +35,11 @@ function LandingSSR() {
     <Box sx={{ position: 'relative', zIndex: 1 }}>
       <LandingNav />
       <HeroSection />
-      <FeaturesScrollSection />
+      <FeaturesSection />
+      <HowItWorksSection />
+      <WhyGrabdySection />
       <PricingSection />
+      <SecuritySection />
       <FAQSection />
       <CTASection />
       <Footer />

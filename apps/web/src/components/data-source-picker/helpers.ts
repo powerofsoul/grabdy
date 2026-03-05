@@ -5,6 +5,32 @@ import type { CollectionOption, DataSourceItem } from './types';
 
 export type DataSourceGetter = (collectionId: DbId<'Collection'>) => DataSourceItem[];
 
+/** Check if `query` characters appear in `text` in order (fuzzy subsequence match). */
+export function fuzzyMatch(text: string, query: string): boolean {
+  let qi = 0;
+  const lowerText = text.toLowerCase();
+  for (let i = 0; i < lowerText.length && qi < query.length; i++) {
+    if (lowerText[i] === query[qi]) qi++;
+  }
+  return qi === query.length;
+}
+
+/** Recursively filter collections, keeping a node if its name matches or any descendant matches. */
+export function filterCollections(
+  nodes: CollectionOption[],
+  lowerFilter: string
+): CollectionOption[] {
+  const result: CollectionOption[] = [];
+  for (const node of nodes) {
+    const nameMatches = fuzzyMatch(node.name, lowerFilter);
+    const filteredChildren = filterCollections(node.children, lowerFilter);
+    if (nameMatches || filteredChildren.length > 0) {
+      result.push({ ...node, children: nameMatches ? node.children : filteredChildren });
+    }
+  }
+  return result;
+}
+
 /** Check if any descendant data source or child folder is individually selected. */
 export function hasDescendantSelection(
   node: CollectionOption,

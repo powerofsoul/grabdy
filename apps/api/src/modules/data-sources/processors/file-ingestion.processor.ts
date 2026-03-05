@@ -19,9 +19,17 @@ import { MsgExtractor } from '../sources/file/extractors/msg.extractor';
 import { PstExtractor } from '../sources/file/extractors/pst.extractor';
 import { FileIngestionService } from '../sources/file/file-ingestion.service';
 
-import type { FileIngestionJobData } from './job-data.types';
+import type { ContractAnalysisJobData, FileIngestionJobData } from './job-data.types';
 
 const EMAIL_MIMES = new Set(['message/rfc822', 'application/vnd.ms-outlook']);
+
+/** MIME types eligible for AI contract metadata extraction. */
+const CONTRACT_ELIGIBLE_MIMES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'text/plain',
+]);
 
 const PST_MIME = 'application/vnd.ms-outlook-pst';
 
@@ -43,7 +51,8 @@ export class FileIngestionProcessor extends WorkerHost implements OnModuleInit {
     private msgExtractor: MsgExtractor,
     private pstExtractor: PstExtractor,
     private notification: NotificationService,
-    @InjectTypedQueue('file-ingestion') private fileIngestionQueue: Queue
+    @InjectTypedQueue('file-ingestion') private fileIngestionQueue: Queue,
+    @InjectTypedQueue('contract-analysis') private contractAnalysisQueue: Queue
   ) {
     super();
   }
@@ -159,6 +168,7 @@ export class FileIngestionProcessor extends WorkerHost implements OnModuleInit {
           status: 'READY',
           progress: 100,
         });
+        await this.enqueueContractAnalysis({ orgId, dataSourceId }, mimeType);
         return;
       }
 
@@ -336,6 +346,7 @@ export class FileIngestionProcessor extends WorkerHost implements OnModuleInit {
         pageCount: pageCount ?? totalChunks,
         progress: 100,
       });
+      await this.enqueueContractAnalysis({ orgId, dataSourceId }, mimeType);
     } catch (error) {
       if (this.isFinalAttempt(job)) {
         await this.fileIngestion.updateDataSourceStatus({
@@ -465,6 +476,7 @@ export class FileIngestionProcessor extends WorkerHost implements OnModuleInit {
         pageCount: enrichedChunks.length,
         progress: 100,
       });
+      await this.enqueueContractAnalysis({ orgId, dataSourceId }, mimeType);
     } catch (error) {
       if (this.isFinalAttempt(job)) {
         await this.fileIngestion.updateDataSourceStatus({
@@ -633,6 +645,14 @@ export class FileIngestionProcessor extends WorkerHost implements OnModuleInit {
       }
       throw error;
     }
+  }
+
+  private async enqueueContractAnalysis(
+    data: ContractAnalysisJobData,
+    mimeType: string
+  ): Promise<void> {
+    if (!CONTRACT_ELIGIBLE_MIMES.has(mimeType)) return;
+    await this.contractAnalysisQueue.add('analyze', data);
   }
 
   @OnWorkerEvent('failed')

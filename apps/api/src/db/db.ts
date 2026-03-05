@@ -125,6 +125,49 @@ export interface DB {
     updated_at: Timestamp;
   };
 
+  'data.contracts': {
+    id: Generated<DbId<'Contract'>>;
+    org_id: DbId<'Org'>;
+    data_source_id: DbId<'DataSource'>;
+    title: string;
+    counterparty: string | null;
+    contract_type: string | null;
+    governing_law: string | null;
+    jurisdiction: string | null;
+    effective_date: string | null;
+    expiration_date: string | null;
+    execution_date: string | null;
+    renewal_type: string | null;
+    renewal_date: string | null;
+    renewal_term_months: number | null;
+    notice_period_days: number | null;
+    notice_by_date: string | null;
+    total_value: string | null;
+    currency: string | null;
+    payment_terms: string | null;
+    payment_frequency: string | null;
+    liability_cap_amount: string | null;
+    liability_cap_type: string | null;
+    indemnification_type: string | null;
+    termination_for_cause: boolean | null;
+    termination_for_convenience: boolean | null;
+    termination_notice_days: number | null;
+    ip_ownership: string | null;
+    work_for_hire: boolean | null;
+    confidentiality_term_months: number | null;
+    non_compete: boolean | null;
+    non_compete_term_months: number | null;
+    non_solicitation: boolean | null;
+    insurance_required: boolean | null;
+    insurance_minimum_amount: string | null;
+    dispute_mechanism: string | null;
+    dispute_venue: string | null;
+    extraction_confidence: number | null;
+    extracted_at: Timestamp | null;
+    created_at: Generated<Timestamp>;
+    updated_at: Timestamp;
+  };
+
   'data.extracted_images': {
     id: Generated<DbId<'ExtractedImage'>>;
     data_source_id: DbId<'DataSource'>;
@@ -180,7 +223,8 @@ export interface DB {
       | 'SUMMARY'
       | 'CLASSIFICATION'
       | 'ENRICHMENT'
-      | 'IMAGE_ANALYSIS';
+      | 'IMAGE_ANALYSIS'
+      | 'CONTRACT_ANALYSIS';
     description: string | null;
     source: 'WEB' | 'SYSTEM';
     input_tokens: Generated<number>;

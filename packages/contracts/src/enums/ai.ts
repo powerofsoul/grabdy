@@ -13,6 +13,7 @@ export const AiRequestType = {
   CLASSIFICATION: 'CLASSIFICATION',
   ENRICHMENT: 'ENRICHMENT',
   IMAGE_ANALYSIS: 'IMAGE_ANALYSIS',
+  CONTRACT_ANALYSIS: 'CONTRACT_ANALYSIS',
 } as const;
 export type AiRequestType = (typeof AiRequestType)[keyof typeof AiRequestType];
 

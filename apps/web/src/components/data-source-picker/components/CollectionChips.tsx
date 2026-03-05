@@ -11,9 +11,16 @@ interface CollectionChipsProps {
   value: DataSourceConfig;
   onChange: (config: DataSourceConfig) => void;
   orgId: DbId<'Org'>;
+  search?: string;
 }
 
-export function CollectionChips({ collections, value, onChange, orgId }: CollectionChipsProps) {
+export function CollectionChips({
+  collections,
+  value,
+  onChange,
+  orgId,
+  search,
+}: CollectionChipsProps) {
   if (collections.length === 0) return null;
 
   return (
@@ -27,6 +34,7 @@ export function CollectionChips({ collections, value, onChange, orgId }: Collect
           orgId={orgId}
           depth={0}
           ancestorSelected={false}
+          search={search}
         />
       ))}
     </Box>

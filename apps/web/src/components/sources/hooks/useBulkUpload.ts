@@ -95,6 +95,7 @@ export function useBulkUpload(orgId: string | undefined, collectionId: string) {
 
       queryClient.invalidateQueries({ queryKey: ['dataSources'] });
       queryClient.invalidateQueries({ queryKey: ['collections'] });
+      queryClient.invalidateQueries({ queryKey: ['deadlines'] });
     },
     [processFile, queryClient]
   );

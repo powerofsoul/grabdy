@@ -20,6 +20,7 @@ import {
   CheckIcon,
   CreditCardIcon,
   EyeIcon,
+  FileTextIcon,
   FolderIcon,
   GearIcon,
   MoonIcon,
@@ -205,13 +206,18 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
           />
         </Box>
 
-        {/* Files */}
+        {/* Data */}
         <Box>
-          <SectionHeader label="Files" />
+          <SectionHeader label="Data" />
+          <NavItem
+            to="/dashboard/contracts"
+            label="Contracts"
+            icon={<FileTextIcon size={16} weight="light" color="currentColor" />}
+          />
           <NavItem
             to="/dashboard/sources"
-            label="All files"
-            icon={<FolderIcon size={15} weight="light" color="currentColor" />}
+            label="Sources"
+            icon={<FolderIcon size={16} weight="light" color="currentColor" />}
           />
         </Box>
 

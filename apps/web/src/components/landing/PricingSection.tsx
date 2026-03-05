@@ -6,8 +6,6 @@ import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import { GoogleDriveLogo } from './IntegrationLogos';
-
 gsap.registerPlugin(ScrollTrigger);
 
 interface Tier {
@@ -33,7 +31,7 @@ const TIERS = [
   {
     name: 'Business',
     price: 'Custom',
-    description: 'Higher document limits, priority support, and CLM integrations.',
+    description: 'Higher document limits, priority support, and advanced analytics.',
     cta: 'Get started',
     ctaVariant: 'outlined',
     comingSoon: true,
@@ -42,7 +40,7 @@ const TIERS = [
   {
     name: 'Enterprise',
     price: 'Custom',
-    description: 'Dedicated infrastructure, SSO, custom integrations, and SLA.',
+    description: 'Dedicated infrastructure, SSO, and SLA.',
     cta: 'Talk to us',
     ctaVariant: 'outlined',
     comingSoon: true,
@@ -52,22 +50,18 @@ const TIERS = [
 
 interface FeatureRow {
   label: string;
-  icon?: 'drive';
   values: [string | true, string | true, string | true];
 }
 
 const FEATURES = [
   { label: 'Team members', values: ['Up to 3', 'Up to 15', 'Unlimited'] },
-  { label: 'Collections', values: ['Unlimited', 'Unlimited', 'Unlimited'] },
-  { label: 'Documents', values: ['100', '500', 'Unlimited'] },
-  { label: 'File size', values: ['150 MB', '500 MB', 'Custom'] },
-  { label: 'Storage', values: ['5 GB', '25 GB', 'Custom'] },
-  { label: 'API calls / mo', values: ['10,000', '50,000', 'Custom'] },
-  { label: 'Contract search', values: [true, true, true] },
-  { label: 'Deadline alerts', values: [true, true, true] },
-  { label: 'Cloud sync', icon: 'drive', values: [true, true, true] },
-  { label: 'Integrations', values: ['Up to 5', 'All', 'Custom'] },
-  { label: 'Audit log', values: ['Basic', 'Advanced', 'Advanced'] },
+  { label: 'Contract uploads', values: ['100', '500', 'Unlimited'] },
+  { label: 'File size limit', values: ['200 MB', '200 MB', 'Custom'] },
+  { label: 'AI extraction', values: [true, true, true] },
+  { label: 'Deadline tracking', values: [true, true, true] },
+  { label: 'Auto-renewal alerts', values: [true, true, true] },
+  { label: 'Portfolio analytics', values: ['Basic', 'Advanced', 'Advanced'] },
+  { label: 'Contract Q&A', values: [true, true, true] },
   { label: 'Support', values: ['Email', 'Priority', 'Dedicated + SLA'] },
 ] satisfies ReadonlyArray<FeatureRow>;
 
@@ -99,12 +93,9 @@ function CellValue({ value, muted }: { value: string | true; muted: boolean }) {
 
 function FeatureLabel({ row }: { row: FeatureRow }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      {row.icon === 'drive' && <GoogleDriveLogo size={14} />}
-      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
-        {row.label}
-      </Typography>
-    </Box>
+    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+      {row.label}
+    </Typography>
   );
 }
 
@@ -424,7 +415,7 @@ export function PricingSection() {
           className="pricing-note"
           sx={{ textAlign: 'center', fontSize: '0.8rem', color: 'text.secondary', mb: 1 }}
         >
-          Need more API calls? Additional requests billed at usage-based rates.
+          Need more contracts or API calls? Additional usage billed at simple per-unit rates.
         </Typography>
       </Container>
     </Box>

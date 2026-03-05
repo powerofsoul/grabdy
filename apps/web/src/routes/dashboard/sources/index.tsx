@@ -1,17 +1,16 @@
 import { Box, Button } from '@mui/material';
-import { FolderOpenIcon, PlusIcon } from '@phosphor-icons/react';
+import { FolderPlusIcon } from '@phosphor-icons/react';
 import { createFileRoute } from '@tanstack/react-router';
 
 import {
   CreateFolderDrawer,
-  FolderCard,
-  RenameFolderDrawer,
+  FileListingPanel,
   SourcesTreePanel,
 } from '@/components/sources/components';
-import { useFolderContents } from '@/components/sources/hooks';
+import { useBulkUpload, useFolderContents } from '@/components/sources/hooks';
 import { DashboardPage } from '@/components/ui/DashboardPage';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { PageLoader } from '@/components/ui/PageLoader';
+import { useAuth } from '@/context/AuthContext';
 import { useDrawer } from '@/context/DrawerContext';
 
 export const Route = createFileRoute('/dashboard/sources/')({
@@ -20,7 +19,9 @@ export const Route = createFileRoute('/dashboard/sources/')({
 
 function SourcesIndexPage() {
   const { pushDrawer } = useDrawer();
-  const { folders, isLoading } = useFolderContents(null);
+  const { selectedOrgId } = useAuth();
+  const { folders, sources: dataSources, isLoading } = useFolderContents(null);
+  const { uploads, startUpload, dismissUploads, isUploading } = useBulkUpload(selectedOrgId, '');
 
   const handleCreateFolder = () => {
     pushDrawer((onClose) => <CreateFolderDrawer onClose={onClose} />, { title: 'New Folder' });
@@ -28,13 +29,14 @@ function SourcesIndexPage() {
 
   return (
     <DashboardPage
-      title="Files"
+      title="Sources"
       noPadding
       maxWidth={false}
       actions={
         <Button
-          variant="contained"
-          startIcon={<PlusIcon size={18} weight="light" color="currentColor" />}
+          variant="outlined"
+          size="small"
+          startIcon={<FolderPlusIcon size={16} weight="light" color="currentColor" />}
           onClick={handleCreateFolder}
         >
           New Folder
@@ -54,44 +56,16 @@ function SourcesIndexPage() {
         >
           {isLoading ? (
             <PageLoader />
-          ) : folders.length === 0 ? (
-            <EmptyState
-              icon={<FolderOpenIcon size={48} weight="light" color="currentColor" />}
-              message="No folders yet"
-              description="Create a folder to organize your files."
-              actionLabel="Create Folder"
-              onAction={handleCreateFolder}
-            />
           ) : (
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: 1.5,
-              }}
-            >
-              {folders.map((folder) => (
-                <FolderCard
-                  key={folder.id}
-                  id={folder.id}
-                  name={folder.name}
-                  sourceCount={folder.sourceCount}
-                  childCount={folder.childCount}
-                  onRename={(folderId, folderName) => {
-                    pushDrawer(
-                      (onClose) => (
-                        <RenameFolderDrawer
-                          onClose={onClose}
-                          collectionId={folderId}
-                          currentName={folderName}
-                        />
-                      ),
-                      { title: 'Rename Folder' }
-                    );
-                  }}
-                />
-              ))}
-            </Box>
+            <FileListingPanel
+              collectionId={null}
+              folders={folders}
+              dataSources={dataSources}
+              uploads={uploads}
+              startUpload={startUpload}
+              dismissUploads={dismissUploads}
+              isUploading={isUploading}
+            />
           )}
         </Box>
       </Box>

@@ -23,18 +23,6 @@ export class NotificationService {
       });
   }
 
-  notifyS3CleanupFailure(dataSourceId: DbId<'DataSource'>, failureCount: number): void {
-    this.notificationQueue
-      .add('slack', {
-        orgId: null,
-        type: 's3-cleanup-failure',
-        text: `S3 cleanup failed during reprocess of DataSource ${dataSourceId}: ${failureCount} file(s) could not be deleted`,
-      })
-      .catch((err) => {
-        this.logger.error(`Failed to queue S3 cleanup failure notification: ${err}`);
-      });
-  }
-
   notifyImageDescriptionFailure(
     dataSourceId: DbId<'DataSource'>,
     storagePath: string,

@@ -74,6 +74,8 @@ export class DataSourcesController {
         collectionId: query.collectionId,
         type: query.type,
         hasCollection: query.hasCollection,
+        rootOnly: query.rootOnly,
+        search: query.search,
       });
       return {
         status: 200 as const,
@@ -116,25 +118,6 @@ export class DataSourcesController {
       return {
         status: 200 as const,
         body: { success: true as const },
-      };
-    });
-  }
-
-  @OrgAccess(dataSourcesContract.reprocess, { roles: ['OWNER', 'ADMIN'], params: ['orgId', 'id'] })
-  @TsRestHandler(dataSourcesContract.reprocess)
-  async reprocess() {
-    return tsRestHandler(dataSourcesContract.reprocess, async ({ params }) => {
-      const dataSource = await this.dataSourcesService.reprocess(params.orgId, params.id);
-      return {
-        status: 200 as const,
-        body: {
-          success: true as const,
-          data: {
-            ...dataSource,
-            createdAt: toISOString(dataSource.createdAt),
-            updatedAt: toISOString(dataSource.updatedAt),
-          },
-        },
       };
     });
   }

@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 
 import {
   alpha,
@@ -19,6 +19,7 @@ import {
   CheckIcon,
   CreditCardIcon,
   EyeIcon,
+  FileTextIcon,
   FolderIcon,
   GearIcon,
   MoonIcon,
@@ -27,60 +28,12 @@ import {
   SunIcon,
   UsersIcon,
 } from '@phosphor-icons/react';
-import { Link, useLocation, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
+
+import { StripIcon } from './StripIcon';
 
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
-
-function StripIcon({
-  to,
-  label,
-  icon,
-  exact,
-  activePrefix,
-}: {
-  to: string;
-  label: string;
-  icon: ReactNode;
-  exact?: boolean;
-  activePrefix?: string;
-}) {
-  const location = useLocation();
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
-  const matchPath = activePrefix ?? to;
-  const isActive = exact
-    ? location.pathname === matchPath
-    : location.pathname.startsWith(matchPath);
-
-  return (
-    <Tooltip title={label} placement="right">
-      <Link to={to} style={{ textDecoration: 'none' }}>
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-
-            cursor: 'pointer',
-            color: isActive ? 'text.primary' : alpha(ct, 0.4),
-            borderLeft: isActive ? `2px solid ${ct}` : '2px solid transparent',
-            bgcolor: 'transparent',
-            transition: 'all 120ms ease',
-            '&:hover': {
-              bgcolor: alpha(ct, 0.03),
-              color: 'text.primary',
-            },
-          }}
-        >
-          {icon}
-        </Box>
-      </Link>
-    </Tooltip>
-  );
-}
 
 export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
   const theme = useTheme();
@@ -216,6 +169,11 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
         to="/dashboard/chat"
         label="Chat"
         icon={<ChatCircleIcon size={18} weight="light" color="currentColor" />}
+      />
+      <StripIcon
+        to="/dashboard/contracts"
+        label="Contracts"
+        icon={<FileTextIcon size={18} weight="light" color="currentColor" />}
       />
       <StripIcon
         to="/dashboard/sources"

@@ -27,6 +27,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CollectionsModule } from './modules/collections/collections.module';
+import { ContractsModule } from './modules/contracts/contracts.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
 import { IngestionModule } from './modules/data-sources/ingestion.module';
 import { DemoRequestModule } from './modules/demo-request/demo-request.module';
@@ -87,6 +88,7 @@ import { RedisModule } from './redis/redis.module';
     OrgsModule,
     UsersModule,
     CollectionsModule,
+    ContractsModule,
     DataSourcesModule,
     ProxyModule,
     ProxyRoutesModule,

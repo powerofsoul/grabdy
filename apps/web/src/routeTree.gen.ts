@@ -27,8 +27,10 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthCompleteAccountRouteImport } from './routes/auth/complete-account'
 import { Route as DashboardSourcesIndexRouteImport } from './routes/dashboard/sources/index'
+import { Route as DashboardContractsIndexRouteImport } from './routes/dashboard/contracts/index'
 import { Route as DashboardChatIndexRouteImport } from './routes/dashboard/chat.index'
 import { Route as DashboardSourcesCollectionIdRouteImport } from './routes/dashboard/sources/$collectionId'
+import { Route as DashboardContractsContractIdRouteImport } from './routes/dashboard/contracts/$contractId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -120,6 +122,11 @@ const DashboardSourcesIndexRoute = DashboardSourcesIndexRouteImport.update({
   path: '/sources/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardContractsIndexRoute = DashboardContractsIndexRouteImport.update({
+  id: '/contracts/',
+  path: '/contracts/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardChatIndexRoute = DashboardChatIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -129,6 +136,12 @@ const DashboardSourcesCollectionIdRoute =
   DashboardSourcesCollectionIdRouteImport.update({
     id: '/sources/$collectionId',
     path: '/sources/$collectionId',
+    getParentRoute: () => DashboardRoute,
+  } as any)
+const DashboardContractsContractIdRoute =
+  DashboardContractsContractIdRouteImport.update({
+    id: '/contracts/$contractId',
+    path: '/contracts/$contractId',
     getParentRoute: () => DashboardRoute,
   } as any)
 
@@ -150,8 +163,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/usage': typeof DashboardUsageRoute
   '/share/$token': typeof ShareTokenRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/contracts/$contractId': typeof DashboardContractsContractIdRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
   '/dashboard/chat/': typeof DashboardChatIndexRoute
+  '/dashboard/contracts/': typeof DashboardContractsIndexRoute
   '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -170,8 +185,10 @@ export interface FileRoutesByTo {
   '/dashboard/usage': typeof DashboardUsageRoute
   '/share/$token': typeof ShareTokenRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/contracts/$contractId': typeof DashboardContractsContractIdRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
   '/dashboard/chat': typeof DashboardChatIndexRoute
+  '/dashboard/contracts': typeof DashboardContractsIndexRoute
   '/dashboard/sources': typeof DashboardSourcesIndexRoute
 }
 export interface FileRoutesById {
@@ -193,8 +210,10 @@ export interface FileRoutesById {
   '/dashboard/usage': typeof DashboardUsageRoute
   '/share/$token': typeof ShareTokenRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/contracts/$contractId': typeof DashboardContractsContractIdRoute
   '/dashboard/sources/$collectionId': typeof DashboardSourcesCollectionIdRoute
   '/dashboard/chat/': typeof DashboardChatIndexRoute
+  '/dashboard/contracts/': typeof DashboardContractsIndexRoute
   '/dashboard/sources/': typeof DashboardSourcesIndexRoute
 }
 export interface FileRouteTypes {
@@ -217,8 +236,10 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/share/$token'
     | '/dashboard/'
+    | '/dashboard/contracts/$contractId'
     | '/dashboard/sources/$collectionId'
     | '/dashboard/chat/'
+    | '/dashboard/contracts/'
     | '/dashboard/sources/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -237,8 +258,10 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/share/$token'
     | '/dashboard'
+    | '/dashboard/contracts/$contractId'
     | '/dashboard/sources/$collectionId'
     | '/dashboard/chat'
+    | '/dashboard/contracts'
     | '/dashboard/sources'
   id:
     | '__root__'
@@ -259,8 +282,10 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/share/$token'
     | '/dashboard/'
+    | '/dashboard/contracts/$contractId'
     | '/dashboard/sources/$collectionId'
     | '/dashboard/chat/'
+    | '/dashboard/contracts/'
     | '/dashboard/sources/'
   fileRoutesById: FileRoutesById
 }
@@ -402,6 +427,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSourcesIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/contracts/': {
+      id: '/dashboard/contracts/'
+      path: '/contracts'
+      fullPath: '/dashboard/contracts/'
+      preLoaderRoute: typeof DashboardContractsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/chat/': {
       id: '/dashboard/chat/'
       path: '/'
@@ -414,6 +446,13 @@ declare module '@tanstack/react-router' {
       path: '/sources/$collectionId'
       fullPath: '/dashboard/sources/$collectionId'
       preLoaderRoute: typeof DashboardSourcesCollectionIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/contracts/$contractId': {
+      id: '/dashboard/contracts/$contractId'
+      path: '/contracts/$contractId'
+      fullPath: '/dashboard/contracts/$contractId'
+      preLoaderRoute: typeof DashboardContractsContractIdRouteImport
       parentRoute: typeof DashboardRoute
     }
   }
@@ -454,7 +493,9 @@ interface DashboardRouteChildren {
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardUsageRoute: typeof DashboardUsageRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardContractsContractIdRoute: typeof DashboardContractsContractIdRoute
   DashboardSourcesCollectionIdRoute: typeof DashboardSourcesCollectionIdRoute
+  DashboardContractsIndexRoute: typeof DashboardContractsIndexRoute
   DashboardSourcesIndexRoute: typeof DashboardSourcesIndexRoute
 }
 
@@ -465,7 +506,9 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardUsageRoute: DashboardUsageRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardContractsContractIdRoute: DashboardContractsContractIdRoute,
   DashboardSourcesCollectionIdRoute: DashboardSourcesCollectionIdRoute,
+  DashboardContractsIndexRoute: DashboardContractsIndexRoute,
   DashboardSourcesIndexRoute: DashboardSourcesIndexRoute,
 }
 

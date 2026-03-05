@@ -15,3 +15,9 @@ export interface FileIngestionJobData {
   appendOnly?: boolean;
   filename?: string;
 }
+
+// contract-analysis queue
+export interface ContractAnalysisJobData {
+  orgId: DbId<'Org'>;
+  dataSourceId: DbId<'DataSource'>;
+}

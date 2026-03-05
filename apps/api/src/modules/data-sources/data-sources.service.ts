@@ -9,19 +9,15 @@ import { UserFacingError } from '../../common/errors/user-facing.error';
 import { getMaxFileSizeForMime } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { InjectTypedQueue } from '../../queue/queue.decorators';
-import { NotificationService } from '../notification/notification.service';
 import { ProxyService } from '../proxy/proxy.service';
 import { StorageKeys } from '../storage/file-storage.interface';
 import { S3FileStorage } from '../storage/s3-file-storage';
-
-import { findDescendants } from './find-descendants';
 
 @Injectable()
 export class DataSourcesService {
   constructor(
     private db: DbService,
     private storage: S3FileStorage,
-    private notification: NotificationService,
     private proxyService: ProxyService,
     @InjectTypedQueue('file-ingestion') private fileIngestionQueue: Queue,
     @InjectTypedQueue('data-source-cleanup') private cleanupQueue: Queue
@@ -85,36 +81,55 @@ export class DataSourcesService {
 
   async list(
     orgId: DbId<'Org'>,
-    options?: { collectionId?: DbId<'Collection'>; type?: DataSourceType; hasCollection?: boolean }
+    options?: {
+      collectionId?: DbId<'Collection'>;
+      type?: DataSourceType;
+      hasCollection?: boolean;
+      rootOnly?: boolean;
+      search?: string;
+    }
   ) {
     let query = this.db.kysely
       .selectFrom('data.data_sources')
-      .selectAll()
-      .where('org_id', '=', orgId)
-      .where('parent_data_source_id', 'is', null);
+      .leftJoin('data.contracts', 'data.contracts.data_source_id', 'data.data_sources.id')
+      .selectAll('data.data_sources')
+      .select('data.contracts.id as contract_id')
+      .where('data.data_sources.org_id', '=', orgId)
+      .where('data.data_sources.parent_data_source_id', 'is', null);
 
     if (options?.collectionId) {
-      query = query.where('collection_id', '=', options.collectionId);
+      query = query.where('data.data_sources.collection_id', '=', options.collectionId);
     }
 
     if (options?.type) {
-      query = query.where('type', '=', options.type);
+      query = query.where('data.data_sources.type', '=', options.type);
     }
 
     if (options?.hasCollection) {
-      query = query.where('collection_id', 'is not', null);
+      query = query.where('data.data_sources.collection_id', 'is not', null);
     }
 
-    const dataSources = await query.orderBy('created_at', 'desc').execute();
-    return dataSources.map(this.toResponse);
+    if (options?.rootOnly) {
+      query = query.where('data.data_sources.collection_id', 'is', null);
+    }
+
+    if (options?.search) {
+      const escaped = options.search.replace(/[%_]/g, '\\$&');
+      query = query.where('data.data_sources.title', 'ilike', `%${escaped}%`);
+    }
+
+    const dataSources = await query.orderBy('data.data_sources.created_at', 'desc').execute();
+    return dataSources.map((ds) => this.toResponse(ds));
   }
 
   async findById(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
     const dataSource = await this.db.kysely
       .selectFrom('data.data_sources')
-      .selectAll()
-      .where('id', '=', id)
-      .where('org_id', '=', orgId)
+      .leftJoin('data.contracts', 'data.contracts.data_source_id', 'data.data_sources.id')
+      .selectAll('data.data_sources')
+      .select('data.contracts.id as contract_id')
+      .where('data.data_sources.id', '=', id)
+      .where('data.data_sources.org_id', '=', orgId)
       .executeTakeFirst();
 
     if (!dataSource) {
@@ -161,19 +176,18 @@ export class DataSourcesService {
   }
 
   async rename(orgId: DbId<'Org'>, id: DbId<'DataSource'>, title: string) {
-    const dataSource = await this.db.kysely
+    const updated = await this.db.kysely
       .updateTable('data.data_sources')
       .set({ title, updated_at: new Date() })
       .where('id', '=', id)
       .where('org_id', '=', orgId)
-      .returningAll()
       .executeTakeFirst();
 
-    if (!dataSource) {
+    if (updated.numUpdatedRows === 0n) {
       throw new NotFoundException('Data source not found');
     }
 
-    return this.toResponse(dataSource);
+    return this.findById(orgId, id);
   }
 
   async getExtractedImageUrl(orgId: DbId<'Org'>, imageId: DbId<'ExtractedImage'>) {
@@ -210,90 +224,6 @@ export class DataSourcesService {
       mimeType: dataSource.mime_type,
       title: dataSource.title,
     };
-  }
-
-  async reprocess(orgId: DbId<'Org'>, id: DbId<'DataSource'>) {
-    const dataSource = await this.db.kysely
-      .selectFrom('data.data_sources')
-      .selectAll()
-      .where('id', '=', id)
-      .where('org_id', '=', orgId)
-      .executeTakeFirst();
-
-    if (!dataSource) {
-      throw new NotFoundException('Data source not found');
-    }
-
-    if (dataSource.parent_data_source_id) {
-      throw new UserFacingError('Cannot reprocess a child data source');
-    }
-
-    if (dataSource.status === 'PROCESSING' || dataSource.status === 'UPLOADED') {
-      throw new UserFacingError('This file is already being processed');
-    }
-
-    if (dataSource.status !== 'FAILED') {
-      throw new UserFacingError('Only failed data sources can be reprocessed');
-    }
-
-    if (!isUploadsMime(dataSource.mime_type)) {
-      throw new UserFacingError(`Unsupported file type: ${dataSource.mime_type}`);
-    }
-
-    // Collect all descendants (Email/PST create child data sources)
-    const descendants = await findDescendants(this.db.kysely, orgId, id);
-
-    // Clean up S3 files for children + extracted images for parent and children
-    const s3Deletes: Promise<void>[] = [];
-    s3Deletes.push(this.storage.deletePrefix(`${orgId}/extracted-images/${id}/`));
-    for (const child of descendants) {
-      if (child.storage_path) s3Deletes.push(this.storage.delete(child.storage_path));
-      s3Deletes.push(this.storage.deletePrefix(`${orgId}/extracted-images/${child.id}/`));
-    }
-    const results = await Promise.allSettled(s3Deletes);
-    const failures = results.filter((r) => r.status === 'rejected');
-    if (failures.length > 0) {
-      this.notification.notifyS3CleanupFailure(id, failures.length);
-    }
-
-    // Delete chunks and children from DB, then reset parent status
-    if (descendants.length > 0) {
-      const ids = descendants.map((c) => c.id);
-      await this.db.kysely
-        .deleteFrom('data.chunks')
-        .where('data_source_id', 'in', ids)
-        .where('org_id', '=', orgId)
-        .execute();
-      await this.db.kysely
-        .deleteFrom('data.data_sources')
-        .where('id', 'in', ids)
-        .where('org_id', '=', orgId)
-        .execute();
-    }
-
-    await this.db.kysely
-      .deleteFrom('data.chunks')
-      .where('data_source_id', '=', id)
-      .where('org_id', '=', orgId)
-      .execute();
-
-    await this.db.kysely
-      .updateTable('data.data_sources')
-      .set({ status: 'UPLOADED', processing_progress: 0, updated_at: new Date() })
-      .where('id', '=', id)
-      .where('org_id', '=', orgId)
-      .execute();
-
-    await this.fileIngestionQueue.add('file', {
-      orgId,
-      dataSourceId: dataSource.id,
-      storagePath: dataSource.storage_path,
-      mimeType: dataSource.mime_type,
-      collectionId: dataSource.collection_id,
-      filename: dataSource.title,
-    });
-
-    return this.toResponse({ ...dataSource, status: 'UPLOADED' });
   }
 
   async move(orgId: DbId<'Org'>, id: DbId<'DataSource'>, collectionId: DbId<'Collection'> | null) {
@@ -342,6 +272,7 @@ export class DataSourcesService {
     collection_id: DbId<'Collection'> | null;
     org_id: DbId<'Org'>;
     uploaded_by_id: DbId<'User'> | null;
+    contract_id?: DbId<'Contract'> | null;
     created_at: Date;
     updated_at: Date;
   }) {
@@ -357,6 +288,7 @@ export class DataSourcesService {
       collectionId: ds.collection_id,
       orgId: ds.org_id,
       uploadedById: ds.uploaded_by_id,
+      contractId: ds.contract_id ?? null,
       createdAt: ds.created_at,
       updatedAt: ds.updated_at,
     };

@@ -16,7 +16,7 @@ import { api } from '@/lib/api';
 
 interface MoveToDrawerProps extends DrawerProps {
   dataSourceId: DbId<'DataSource'>;
-  currentCollectionId: string;
+  currentCollectionId: string | null;
 }
 
 export function MoveToDrawer({ onClose, dataSourceId, currentCollectionId }: MoveToDrawerProps) {

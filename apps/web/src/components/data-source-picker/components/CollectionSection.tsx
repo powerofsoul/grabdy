@@ -26,6 +26,7 @@ interface CollectionSectionProps {
   ancestorSelected: boolean;
   /** Called when a child wants to deselect itself while under a selected ancestor. */
   onDeselectInherited?: (excludeId: string, isDataSource: boolean) => void;
+  search?: string;
 }
 
 /** Query key for lazily-loaded folder data sources in the picker. */
@@ -41,6 +42,7 @@ export function CollectionSection({
   depth,
   ancestorSelected,
   onDeselectInherited,
+  search,
 }: CollectionSectionProps) {
   const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
@@ -49,11 +51,11 @@ export function CollectionSection({
 
   // Lazy-load data sources for this folder when expanded
   const { data: folderDataSources = [], isLoading: isDsLoading } = useQuery({
-    queryKey: pickerDsKey(orgId, collection.id),
+    queryKey: [...pickerDsKey(orgId, collection.id), search ?? ''],
     queryFn: async () => {
       const res = await api.dataSources.list({
         params: { orgId },
-        query: { collectionId: collection.id },
+        query: { collectionId: collection.id, search: search || undefined },
       });
       if (res.status === 200) {
         return res.body.data.map((ds): DataSourceItem => ({ id: ds.id, title: ds.title }));
@@ -271,6 +273,7 @@ export function CollectionSection({
               depth={depth + 1}
               ancestorSelected={isChecked}
               onDeselectInherited={childDeselectCallback}
+              search={search}
             />
           ))}
         </>

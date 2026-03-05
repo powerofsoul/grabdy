@@ -13,15 +13,23 @@ export function useFolderContents(collectionId: DbId<'Collection'> | null) {
   const sourcesQuery = useQuery({
     queryKey: ['dataSources', selectedOrgId, 'inFolder', collectionId],
     queryFn: async () => {
-      if (!selectedOrgId || !collectionId) return [];
-      const res = await api.dataSources.list({
-        params: { orgId: selectedOrgId },
-        query: { collectionId },
-      });
-      if (res.status === 200) return res.body.data;
+      if (!selectedOrgId) return [];
+      if (collectionId) {
+        const res = await api.dataSources.list({
+          params: { orgId: selectedOrgId },
+          query: { collectionId },
+        });
+        if (res.status === 200) return res.body.data;
+      } else {
+        const res = await api.dataSources.list({
+          params: { orgId: selectedOrgId },
+          query: { rootOnly: true },
+        });
+        if (res.status === 200) return res.body.data;
+      }
       return [];
     },
-    enabled: !!selectedOrgId && !!collectionId,
+    enabled: !!selectedOrgId,
     refetchInterval: (query) => {
       const data = query.state.data;
       if (data?.some((ds) => ds.status === 'DELETING' || ds.status === 'PROCESSING')) return 3000;

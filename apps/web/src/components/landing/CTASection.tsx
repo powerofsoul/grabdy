@@ -167,7 +167,7 @@ export function CTASection() {
             fontSize: { xs: '2rem', md: '2.75rem' },
           }}
         >
-          Stop digging through contracts. Start getting answers.
+          Your contracts hold the answers. Grabdy finds them.
         </Typography>
         <Typography
           className="cta-subtitle"
@@ -179,7 +179,8 @@ export function CTASection() {
           className="cta-subtitle"
           sx={{ mb: 5, color: 'text.secondary', fontSize: '0.85rem' }}
         >
-          Legal teams at growing companies already use Grabdy.
+          Legal teams use Grabdy to track deadlines, prevent auto-renewals, and search contracts
+          instantly.
         </Typography>
 
         <Box

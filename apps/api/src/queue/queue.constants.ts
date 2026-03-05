@@ -4,6 +4,7 @@ export const QUEUE_NAMES = [
   'notification',
   'ai-usage',
   'file-ingestion',
+  'contract-analysis',
 ] as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[number];

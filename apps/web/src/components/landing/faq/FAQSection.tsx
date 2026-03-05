@@ -18,34 +18,34 @@ gsap.registerPlugin(ScrollTrigger);
 
 const FAQ_ITEMS = [
   {
-    question: 'What document types does Grabdy support?',
+    question: 'What file types do you support?',
     answer:
-      'Grabdy supports PDF, DOCX, DOC, XLSX, XLS, CSV, TXT, JSON, images (PNG, JPEG, WebP, GIF), and email files (EML, MSG, PST). Upload contracts, NDAs, BAAs, compliance filings, and policy documents directly or sync from Google Drive, Gmail, and Notion.',
+      'Grabdy supports PDF, DOCX, DOC, XLSX, XLS, CSV, TXT, and more. Upload contracts, NDAs, BAAs, compliance filings, and policy documents directly from your computer.',
   },
   {
-    question: 'Is my data secure enough for legal documents?',
+    question: 'How does auto-renewal detection work?',
     answer:
-      'Your data is encrypted at rest (AES-256) and in transit (TLS 1.3). Each organization is fully isolated with its own data silo. We never use your data to train models, and you can delete your data at any time. Grabdy is built to handle sensitive legal documents.',
+      'When you upload a contract, Grabdy reads every page and extracts renewal terms, notice periods, and expiration dates. If a contract has an auto-renewal clause, you will get an alert before the notice deadline so you can decide whether to renew or terminate.',
   },
   {
-    question: 'Can Grabdy integrate with our CLM or billing systems?',
+    question: 'How accurate is the AI extraction?',
     answer:
-      'Yes. The REST API lets you push deadline data to billing systems, sync contract terms to your CLM, and trigger alerts in your existing workflow tools. We also integrate with Google Drive, Gmail, Notion, and Confluence.',
+      'Grabdy uses large language models to extract dates, counterparties, contract types, and values. Every extraction links back to the source page so you can verify. Accuracy improves as you upload more documents and the system learns your contract patterns.',
   },
   {
-    question: 'What happens after the free trial?',
+    question: 'Can I share dashboards with my team?',
     answer:
-      'All documents and configurations you create during the trial carry over to your paid plan. We provide advance notice before any changes take effect.',
+      'Yes. Grabdy supports multi-user organizations. Invite team members, and everyone sees the same portfolio dashboard, deadline alerts, and contract library. Organization-level access controls keep sensitive documents visible only to authorized users.',
   },
   {
-    question: 'How accurate are the cited answers?',
+    question: 'How is my data secured?',
     answer:
-      'Every answer includes citations pointing to the exact document and section. Grabdy uses vector search to find the most relevant clauses, then generates answers grounded in your actual contract language. You can always click through to verify the source.',
+      'Your data is encrypted at rest (AES-256) and in transit (TLS 1.3). Each organization is fully isolated with its own data silo. We never use your data to train models, and you can delete your data at any time.',
   },
   {
-    question: 'Can I control who on my team can access specific documents?',
+    question: 'What happens when a contract expires?',
     answer:
-      'Yes. Grabdy supports organization-level access controls. You can manage team members, set permissions, and ensure that sensitive documents are only visible to authorized users.',
+      'Expired contracts remain in your library for reference. The dashboard shows an expired count badge, and expired contracts are clearly marked in the contract list. You can filter and search expired contracts just like active ones.',
   },
 ];
 

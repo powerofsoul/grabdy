@@ -3,7 +3,6 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
 import { dataSourceStatusEnum, dataSourceTypeEnum } from '../enums/index.js';
-
 const c = initContract();
 
 const dataSourceSchema = z.object({
@@ -18,6 +17,7 @@ const dataSourceSchema = z.object({
   collectionId: dbIdSchema('Collection').nullable(),
   orgId: dbIdSchema('Org'),
   uploadedById: dbIdSchema('User').nullable(),
+  contractId: dbIdSchema('Contract').nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -47,6 +47,8 @@ export const dataSourcesContract = c.router(
         collectionId: dbIdSchema('Collection').optional(),
         type: dataSourceTypeEnum.optional(),
         hasCollection: z.coerce.boolean().optional(),
+        rootOnly: z.coerce.boolean().optional(),
+        search: z.string().optional(),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: z.array(dataSourceSchema) }),
@@ -74,19 +76,6 @@ export const dataSourcesContract = c.router(
       body: z.object({}),
       responses: {
         200: z.object({ success: z.literal(true) }),
-        404: z.object({ success: z.literal(false), error: z.string() }),
-      },
-    },
-    reprocess: {
-      method: 'POST',
-      path: '/orgs/:orgId/data-sources/:id/reprocess',
-      pathParams: z.object({
-        orgId: dbIdSchema('Org'),
-        id: dbIdSchema('DataSource'),
-      }),
-      body: z.object({}),
-      responses: {
-        200: z.object({ success: z.literal(true), data: dataSourceSchema }),
         404: z.object({ success: z.literal(false), error: z.string() }),
       },
     },
