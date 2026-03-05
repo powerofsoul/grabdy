@@ -80,7 +80,7 @@ export class ProxyController {
    * The AI embeds these URLs in markdown so they must not expire.
    * The file path is passed directly as URL path segments for short URLs.
    *
-   * Accepts both dashboard cookie auth and SDK Bearer auth.
+   * Accepts dashboard cookie auth.
    */
   @Public()
   @UseGuards(DualAuthGuard)
@@ -158,11 +158,6 @@ export class ProxyController {
       const orgNum = extractOrgNumericId(orgId);
       const hasMembership = req.user.memberships.some((m) => extractOrgNumericId(m.id) === orgNum);
       if (!hasMembership) {
-        res.status(403).json({ error: 'Forbidden' });
-        return;
-      }
-    } else if (req.sdkAuth) {
-      if (req.sdkAuth.orgId !== orgId) {
         res.status(403).json({ error: 'Forbidden' });
         return;
       }

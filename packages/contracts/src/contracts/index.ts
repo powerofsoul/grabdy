@@ -1,17 +1,13 @@
 import { initContract } from '@ts-rest/core';
 
 import { analyticsContract } from './analytics.contract.js';
-import { apiKeysContract } from './api-keys.contract.js';
 import { authContract } from './auth.contract.js';
 import { billingContract } from './billing.contract.js';
-import { botsContract } from './bots.contract.js';
 import { chatContract, streamChatBodySchema } from './chat.contract.js';
 import { collectionsContract } from './collections.contract.js';
 import { dataSourcesContract } from './data-sources.contract.js';
 import { demoRequestContract } from './demo-request.contract.js';
-import { integrationsContract } from './integrations.contract.js';
 import { orgsContract } from './orgs.contract.js';
-import { publicApiContract } from './public-api.contract.js';
 import { sharedChatsContract } from './shared-chats.contract.js';
 import { usersContract } from './users.contract.js';
 
@@ -25,49 +21,32 @@ export const contract = c.router({
   collections: collectionsContract,
   dataSources: dataSourcesContract,
   demoRequest: demoRequestContract,
-  integrations: integrationsContract,
   chat: chatContract,
   sharedChats: sharedChatsContract,
-  apiKeys: apiKeysContract,
-  bots: botsContract,
   users: usersContract,
 });
 
 export {
   analyticsContract,
-  apiKeysContract,
   authContract,
   billingContract,
-  botsContract,
   chatContract,
   collectionsContract,
   dataSourcesContract,
   demoRequestContract,
-  integrationsContract,
   orgsContract,
-  publicApiContract,
   sharedChatsContract,
   streamChatBodySchema,
   usersContract,
 };
 
 export {
-  type BotSource,
-  type BotSourceConfig,
-  botSourceConfigSchema,
-  botSourceSchema,
-  type SdkStreamBody,
-  sdkStreamBodySchema,
-} from './bots.contract.js';
+  type DataSourceConfig,
+  type DataSourceConfigEntry,
+  dataSourceConfigEntrySchema,
+  dataSourceConfigSchema,
+} from './chat.contract.js';
 export { type ChatSource, chatSourceSchema } from './chat.contract.js';
 export { type SseMetaEvent, sseMetaEventSchema, type StreamChunk } from './chat.contract.js';
 export { demoRequestBodySchema } from './demo-request.contract.js';
-export {
-  listCollectionsResponseSchema,
-  publicApiErrorSchema,
-  queryBodySchema,
-  queryResponseSchema,
-  searchBodySchema,
-  searchResponseSchema,
-} from './public-api.contract.js';
 export { sharedChatSchema, sharedChatSnapshotSchema } from './shared-chats.contract.js';

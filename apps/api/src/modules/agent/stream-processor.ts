@@ -111,14 +111,6 @@ function buildChatSource(raw: RawInlineSource): ChatSource | null {
       return { ...base, type: 'IMAGE' };
     case 'EMAIL':
       return { ...base, type: 'EMAIL' };
-    case 'SLACK':
-      return { ...base, type: 'SLACK' };
-    case 'LINEAR':
-      return { ...base, type: 'LINEAR' };
-    case 'GITHUB':
-      return { ...base, type: 'GITHUB' };
-    case 'NOTION':
-      return { ...base, type: 'NOTION' };
     default:
       return null;
   }

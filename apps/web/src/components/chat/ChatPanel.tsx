@@ -1,6 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { DbId } from '@grabdy/common';
 import {
   alpha,
   Box,
@@ -29,7 +28,6 @@ import { ChatEmptyState } from './components/ChatEmptyState';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessages } from './components/ChatMessages';
 import { ShareButton, SharedLinksList, ShareDrawerContent } from './components/share';
-import { useBotSourceConfig } from './hooks/useBotSourceConfig';
 import { useChatSourceConfig } from './hooks/useChatSourceConfig';
 import { useChatStream } from './hooks/useChatStream';
 import { useThreadManager } from './hooks/useThreadManager';
@@ -37,7 +35,6 @@ import type { ChatMessage } from './types';
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useMobileSidebar } from '@/components/ui/Sidebar';
-import { useAuth } from '@/context/AuthContext';
 
 interface ChatPanelProps {
   headerSlot?: ReactNode;
@@ -45,15 +42,8 @@ interface ChatPanelProps {
   trailingSlot?: ReactNode;
   headerHeight?: number;
   initialThreadId?: string;
-  botId?: DbId<'Bot'>;
   onThreadChange?: (threadId: string | undefined) => void;
   showMobileSidebar?: boolean;
-  botTitle?: string;
-  botSubtitle?: string;
-  botPlaceholder?: string;
-  botImageUrl?: string;
-  botAccentColor?: string;
-  botPrimaryColor?: string;
 }
 
 export function ChatPanel({
@@ -62,34 +52,23 @@ export function ChatPanel({
   trailingSlot,
   headerHeight = 48,
   initialThreadId,
-  botId,
   onThreadChange,
   showMobileSidebar = true,
-  botTitle,
-  botSubtitle,
-  botPlaceholder,
-  botImageUrl,
-  botAccentColor,
-  botPrimaryColor,
 }: ChatPanelProps) {
   const theme = useTheme();
   const ct = theme.palette.text.primary;
   const isMobile = useMediaQuery('(max-width:767px)');
-  const { selectedOrgId } = useAuth();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [sharedDrawerOpen, setSharedDrawerOpen] = useState(false);
 
-  // Source config: editable for general chat, readonly for bot chat
-  const generalSourceConfig = useChatSourceConfig();
-  const botSourceConfig = useBotSourceConfig(selectedOrgId, botId);
+  const sourceConfig = useChatSourceConfig();
 
   const abortStreamRef = useRef<(() => void) | null>(null);
 
   const threadManager = useThreadManager({
     initialThreadId,
-    botId,
     onThreadChange,
     onLoadMessages: setMessages,
     onClearState: useCallback(() => {
@@ -99,15 +78,12 @@ export function ChatPanel({
     }, []),
   });
 
-  const activeDataSourceConfig = botId ? botSourceConfig.config : generalSourceConfig.config;
-
   const chatStream = useChatStream({
     ensureThread: threadManager.ensureThread,
     setActiveThreadId: threadManager.setActiveThreadId,
     setMessages,
     fetchThreads: threadManager.fetchThreads,
-    botId,
-    dataSourceConfig: activeDataSourceConfig.length > 0 ? activeDataSourceConfig : undefined,
+    dataSourceConfig: sourceConfig.config.length > 0 ? sourceConfig.config : undefined,
   });
 
   useEffect(() => {
@@ -119,30 +95,14 @@ export function ChatPanel({
 
   const sourceConfigProp = useMemo(
     () =>
-      botId
-        ? botSourceConfig.config.length > 0
-          ? ({
-              mode: 'readonly',
-              config: botSourceConfig.config,
-              summary: botSourceConfig.summary,
-            } as const)
-          : undefined
-        : ({
-            mode: 'editable',
-            config: generalSourceConfig.config,
-            onChange: generalSourceConfig.setConfig,
-            onClear: generalSourceConfig.reset,
-            summary: generalSourceConfig.summary,
-          } as const),
-    [
-      botId,
-      botSourceConfig.config,
-      botSourceConfig.summary,
-      generalSourceConfig.config,
-      generalSourceConfig.setConfig,
-      generalSourceConfig.reset,
-      generalSourceConfig.summary,
-    ]
+      ({
+        mode: 'editable',
+        config: sourceConfig.config,
+        onChange: sourceConfig.setConfig,
+        onClear: sourceConfig.reset,
+        summary: sourceConfig.summary,
+      }) as const,
+    [sourceConfig.config, sourceConfig.setConfig, sourceConfig.reset, sourceConfig.summary]
   );
 
   const chatContent =
@@ -157,19 +117,12 @@ export function ChatPanel({
           pb: 8,
         }}
       >
-        <ChatEmptyState
-          title={botTitle}
-          subtitle={botSubtitle}
-          imageUrl={botImageUrl}
-          primaryColor={botPrimaryColor}
-        />
+        <ChatEmptyState />
         <Box sx={{ width: '100%', maxWidth: 680 }}>
           <ChatInput
             onSend={chatStream.handleSend}
             isStreaming={chatStream.isStreaming}
             elevated
-            placeholder={botPlaceholder}
-            accentColor={botAccentColor}
             sourceConfig={sourceConfigProp}
           />
         </Box>
@@ -180,13 +133,10 @@ export function ChatPanel({
           messages={messages}
           isLoading={threadManager.isLoadingMessages}
           isStreaming={chatStream.isStreaming}
-          accentColor={botAccentColor}
         />
         <ChatInput
           onSend={chatStream.handleSend}
           isStreaming={chatStream.isStreaming}
-          placeholder={botPlaceholder}
-          accentColor={botAccentColor}
           sourceConfig={sourceConfigProp}
         />
       </Stack>

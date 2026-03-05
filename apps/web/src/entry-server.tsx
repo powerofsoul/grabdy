@@ -52,9 +52,6 @@ const stubRoutes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/auth/login' }),
   createRoute({ getParentRoute: () => rootRoute, path: '/auth/signup' }),
   createRoute({ getParentRoute: () => rootRoute, path: '/dashboard' }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/dashboard/api/docs' }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/dashboard/api/mcp' }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/docs' }),
   createRoute({ getParentRoute: () => rootRoute, path: '/privacy' }),
   createRoute({ getParentRoute: () => rootRoute, path: '/terms' }),
 ];

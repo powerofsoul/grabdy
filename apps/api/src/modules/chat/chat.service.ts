@@ -1,19 +1,14 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { type DbId, packId } from '@grabdy/common';
-import {
-  type BotSourceConfig,
-  botSourceConfigSchema,
-  type ChatAttachment,
-  chatSourceSchema,
-} from '@grabdy/contracts';
+import { type ChatAttachment, chatSourceSchema, type DataSourceConfig } from '@grabdy/contracts';
 import { sql } from 'kysely';
 import { z } from 'zod';
 
 import { THREAD_TITLE_MAX_LENGTH } from '../../config/constants';
 import { DbService } from '../../db/db.module';
 import { DataAgent } from '../agent/agents/data-agent';
-import type { ConnectionResource, SearchScope } from '../agent/agents/search-scope';
+import type { SearchScope } from '../agent/agents/search-scope';
 import type { AttachmentContext } from '../agent/base-agent';
 import { AgentMemoryService } from '../agent/services/memory.service';
 import { CollectionsService } from '../collections/collections.service';
@@ -32,34 +27,23 @@ export class ChatService {
   ) {}
 
   /**
-   * Resolve a BotSourceConfig array into expanded IDs for building a SearchScope.
+   * Resolve a DataSourceConfig array into expanded IDs for building a SearchScope.
    */
   private async resolveSourceConfig(
     orgId: DbId<'Org'>,
-    config: BotSourceConfig
+    config: DataSourceConfig
   ): Promise<{
     collectionIds: DbId<'Collection'>[];
     dataSourceIds: DbId<'DataSource'>[];
-    connectionIds: DbId<'Connection'>[];
-    connectionResources: ConnectionResource[];
   }> {
     const collectionIds: DbId<'Collection'>[] = [];
     const dataSourceIds: DbId<'DataSource'>[] = [];
-    const connectionIds: DbId<'Connection'>[] = [];
-    const connectionResources: ConnectionResource[] = [];
 
     for (const entry of config) {
       if (entry.type === 'COLLECTION') {
         collectionIds.push(entry.collectionId);
       } else if (entry.type === 'DATA_SOURCE') {
         dataSourceIds.push(entry.dataSourceId);
-      } else if (entry.type === 'CONNECTION') {
-        connectionIds.push(entry.connectionId);
-      } else if (entry.type === 'CONNECTION_RESOURCE') {
-        connectionResources.push({
-          connectionId: entry.connectionId,
-          githubRepo: entry.githubRepo,
-        });
       }
     }
 
@@ -73,38 +57,6 @@ export class ChatService {
     return {
       collectionIds: expandedCollectionIds,
       dataSourceIds,
-      connectionIds,
-      connectionResources,
-    };
-  }
-
-  private async getBotConfig(
-    orgId: DbId<'Org'>,
-    botId: DbId<'Bot'>
-  ): Promise<{
-    systemPrompt: string | null;
-    collectionIds: DbId<'Collection'>[];
-    dataSourceIds: DbId<'DataSource'>[];
-    connectionIds: DbId<'Connection'>[];
-    connectionResources: ConnectionResource[];
-  }> {
-    const row = await this.db.kysely
-      .selectFrom('sdk.bots')
-      .select(['data_source_config', 'system_prompt'])
-      .where('id', '=', botId)
-      .where('org_id', '=', orgId)
-      .executeTakeFirst();
-
-    if (!row) {
-      throw new NotFoundException('Bot not found');
-    }
-
-    const config = botSourceConfigSchema.parse(row.data_source_config);
-    const resolved = await this.resolveSourceConfig(orgId, config);
-
-    return {
-      systemPrompt: row.system_prompt,
-      ...resolved,
     };
   }
 
@@ -112,22 +64,19 @@ export class ChatService {
     orgId: DbId<'Org'>,
     membershipId: DbId<'OrgMembership'>,
     message: string,
-    options: {
-      threadId?: DbId<'ChatThread'>;
-      botId?: DbId<'Bot'>;
-    }
+    threadId?: DbId<'ChatThread'>
   ): Promise<DbId<'ChatThread'>> {
-    if (options.threadId) {
+    if (threadId) {
       await this.db.kysely
         .updateTable('data.chat_threads')
         .set({
           title: sql`COALESCE(title, ${message.slice(0, THREAD_TITLE_MAX_LENGTH)})`,
           updated_at: new Date(),
         })
-        .where('id', '=', options.threadId)
+        .where('id', '=', threadId)
         .where('org_id', '=', orgId)
         .execute();
-      return options.threadId;
+      return threadId;
     }
 
     const thread = await this.db.kysely
@@ -135,7 +84,6 @@ export class ChatService {
       .values({
         id: packId('ChatThread', orgId),
         title: message.slice(0, THREAD_TITLE_MAX_LENGTH),
-        bot_id: options.botId ?? null,
         org_id: orgId,
         membership_id: membershipId,
         updated_at: new Date(),
@@ -153,37 +101,16 @@ export class ChatService {
     message: string,
     options: {
       threadId?: DbId<'ChatThread'>;
-      dataSourceConfig?: BotSourceConfig;
-      botId?: DbId<'Bot'>;
+      dataSourceConfig?: DataSourceConfig;
       attachments?: ChatAttachment[];
       attachmentContext?: AttachmentContext;
     }
   ) {
-    const threadId = await this.ensureThread(orgId, membershipId, message, options);
+    const threadId = await this.ensureThread(orgId, membershipId, message, options.threadId);
 
     let searchScope: SearchScope = { type: 'all' };
-    let instructions: string | undefined;
 
-    if (options.botId) {
-      const botConfig = await this.getBotConfig(orgId, options.botId);
-      if (
-        botConfig.collectionIds.length > 0 ||
-        botConfig.dataSourceIds.length > 0 ||
-        botConfig.connectionIds.length > 0 ||
-        botConfig.connectionResources.length > 0
-      ) {
-        searchScope = {
-          type: 'scoped',
-          collectionIds: botConfig.collectionIds,
-          dataSourceIds: botConfig.dataSourceIds,
-          connectionIds: botConfig.connectionIds,
-          connectionResources: botConfig.connectionResources,
-        };
-      } else {
-        searchScope = { type: 'none' };
-      }
-      if (botConfig.systemPrompt) instructions = botConfig.systemPrompt;
-    } else if (options.dataSourceConfig && options.dataSourceConfig.length > 0) {
+    if (options.dataSourceConfig && options.dataSourceConfig.length > 0) {
       const resolved = await this.resolveSourceConfig(orgId, options.dataSourceConfig);
       searchScope = {
         type: 'scoped',
@@ -196,7 +123,6 @@ export class ChatService {
       userId,
       source: 'WEB',
       searchScope,
-      instructions,
     });
 
     return this.dataAgent.stream(ctx, {
@@ -212,7 +138,6 @@ export class ChatService {
     membershipId: DbId<'OrgMembership'>,
     options: {
       title?: string;
-      botId?: DbId<'Bot'>;
     }
   ) {
     const thread = await this.db.kysely
@@ -220,7 +145,6 @@ export class ChatService {
       .values({
         id: packId('ChatThread', orgId),
         title: options.title ?? null,
-        bot_id: options.botId ?? null,
         org_id: orgId,
         membership_id: membershipId,
         updated_at: new Date(),
@@ -231,35 +155,23 @@ export class ChatService {
     return {
       id: thread.id,
       title: thread.title,
-      botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
     };
   }
 
-  async listThreads(
-    orgId: DbId<'Org'>,
-    membershipId: DbId<'OrgMembership'>,
-    options?: { botId?: DbId<'Bot'> }
-  ) {
-    let query = this.db.kysely
+  async listThreads(orgId: DbId<'Org'>, membershipId: DbId<'OrgMembership'>) {
+    const threads = await this.db.kysely
       .selectFrom('data.chat_threads')
-      .select(['id', 'title', 'bot_id', 'created_at', 'updated_at'])
+      .select(['id', 'title', 'created_at', 'updated_at'])
       .where('org_id', '=', orgId)
-      .where('membership_id', '=', membershipId);
-
-    if (options?.botId) {
-      query = query.where('bot_id', '=', options.botId);
-    } else {
-      query = query.where('bot_id', 'is', null);
-    }
-
-    const threads = await query.orderBy('updated_at', 'desc').execute();
+      .where('membership_id', '=', membershipId)
+      .orderBy('updated_at', 'desc')
+      .execute();
 
     return threads.map((t) => ({
       id: t.id,
       title: t.title,
-      botId: t.bot_id,
       createdAt: new Date(t.created_at).toISOString(),
       updatedAt: new Date(t.updated_at).toISOString(),
     }));
@@ -282,7 +194,6 @@ export class ChatService {
     return {
       id: thread.id,
       title: thread.title,
-      botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
       messages: messages.map((m) => ({
@@ -330,7 +241,6 @@ export class ChatService {
     return {
       id: thread.id,
       title: thread.title,
-      botId: thread.bot_id,
       createdAt: new Date(thread.created_at).toISOString(),
       updatedAt: new Date(thread.updated_at).toISOString(),
     };

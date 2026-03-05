@@ -2,14 +2,14 @@ import { alpha, Box, Typography, useTheme } from '@mui/material';
 
 import { FONT_MONO } from '@/theme';
 
-const MCP_CONFIG = `{
-  "mcpServers": {
-    "grabdy": {
-      "url": "https://mcp.grabdy.com/sse",
-      "headers": {
-        "Authorization": "Bearer gbd_sk_..."
-      }
-    }
+const SECURITY_CONFIG = `{
+  "encryption": {
+    "atRest": "AES-256-GCM",
+    "inTransit": "TLS 1.3"
+  },
+  "dataRetention": {
+    "documents": "customer-controlled",
+    "aiTraining": "never"
   }
 }`;
 
@@ -70,7 +70,7 @@ export function McpPanel() {
           }}
         >
           <Typography sx={{ fontFamily: FONT_MONO, fontSize: '0.7rem', color: codeTextDim }}>
-            claude_desktop_config.json
+            security-policy.json
           </Typography>
         </Box>
         <pre
@@ -83,7 +83,7 @@ export function McpPanel() {
             flex: 1,
           }}
         >
-          {renderJson(MCP_CONFIG, syntaxColors)}
+          {renderJson(SECURITY_CONFIG, syntaxColors)}
         </pre>
       </Box>
 
@@ -112,7 +112,7 @@ export function McpPanel() {
           }}
         >
           <Typography sx={{ fontFamily: FONT_MONO, fontSize: '0.7rem', color: codeTextDim }}>
-            Terminal
+            Audit log
           </Typography>
         </Box>
         <Box sx={{ p: '16px', flex: 1 }}>
@@ -124,7 +124,7 @@ export function McpPanel() {
               {'>'}
             </span>
             <span style={{ ...monoStyle, color: syntaxColors.text }}>
-              What&apos;s our refund policy?
+              Who accessed the Acme NDA this week?
             </span>
           </Box>
 
@@ -133,25 +133,25 @@ export function McpPanel() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
               <span style={{ ...monoStyle, color: syntaxColors.number }}>{'⟳'}</span>
               <span style={{ ...monoStyle, fontSize: '0.72rem', color: codeTextDim }}>
-                grabdy_search(&quot;refund policy&quot;)
+                audit_log(&quot;acme-nda&quot;)
               </span>
             </Box>
             <span style={{ ...monoStyle, fontSize: '0.72rem', color: codeTextMuted }}>
-              {'  '}Found 3 sources
+              {'  '}Found 4 access events
             </span>
           </Box>
 
           {/* Answer */}
           <Box sx={{ pl: '18px', mb: 2 }}>
             <span style={{ ...monoStyle, color: syntaxColors.text, display: 'block' }}>
-              Full refund within <span style={{ color: syntaxColors.key }}>30 days</span>.
+              <span style={{ color: syntaxColors.key }}>J. Martinez</span> viewed on Mar 3
             </span>
             <span style={{ ...monoStyle, color: syntaxColors.text, display: 'block' }}>
-              After that, <span style={{ color: syntaxColors.key }}>prorated</span> minus 5% fee.
+              <span style={{ color: syntaxColors.key }}>S. Park</span> downloaded on Mar 1
             </span>
           </Box>
 
-          {/* Sources */}
+          {/* Details */}
           <Box sx={{ pl: '18px', borderTop: '1px solid', borderColor: codeBorderSubtle, pt: 1.5 }}>
             <span
               style={{
@@ -162,11 +162,11 @@ export function McpPanel() {
                 marginBottom: 4,
               }}
             >
-              Sources
+              Documents
             </span>
             {[
-              { icon: '\uD83D\uDCC4', name: 'handbook.pdf', detail: 'page 12' },
-              { icon: '\uD83D\uDCAC', name: '#legal-updates', detail: 'Mar 14' },
+              { icon: '\uD83D\uDD12', name: 'acme-nda-2024.pdf', detail: 'encrypted' },
+              { icon: '\uD83D\uDCCB', name: 'access-log.csv', detail: '4 events' },
             ].map((s) => (
               <Box key={s.name} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
                 <span style={{ fontSize: '0.7rem' }}>{s.icon}</span>

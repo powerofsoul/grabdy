@@ -1,7 +1,7 @@
 import { type Dispatch, type SetStateAction, useCallback, useRef, useState } from 'react';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
-import type { BotSourceConfig, ChatAttachment } from '@grabdy/contracts';
+import type { ChatAttachment, DataSourceConfig } from '@grabdy/contracts';
 import { toast } from 'sonner';
 
 import type { ChatMessage } from '../types';
@@ -14,8 +14,7 @@ interface UseChatStreamParams {
   setActiveThreadId: (id: DbId<'ChatThread'> | undefined) => void;
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   fetchThreads: () => Promise<void>;
-  botId?: DbId<'Bot'>;
-  dataSourceConfig?: BotSourceConfig;
+  dataSourceConfig?: DataSourceConfig;
 }
 
 export function useChatStream({
@@ -23,7 +22,6 @@ export function useChatStream({
   setActiveThreadId,
   setMessages,
   fetchThreads,
-  botId,
   dataSourceConfig,
 }: UseChatStreamParams) {
   const { selectedOrgId } = useAuth();
@@ -83,7 +81,6 @@ export function useChatStream({
             message: userMessage,
             threadId,
             attachments,
-            botId,
             dataSourceConfig,
           },
           {
@@ -161,7 +158,6 @@ export function useChatStream({
       setActiveThreadId,
       setMessages,
       ensureThread,
-      botId,
       dataSourceConfig,
     ]
   );

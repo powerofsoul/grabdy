@@ -31,11 +31,7 @@ const ragInputSchema = z.object({
   sourceTypes: z
     .array(chunkMetaTypeEnum)
     .optional()
-    .describe('Filter by source type: PDF, DOCX, SLACK, LINEAR, GITHUB, NOTION, etc.'),
-  slackAuthor: z
-    .string()
-    .optional()
-    .describe('Filter Slack messages by author name (matches any author in the chunk)'),
+    .describe('Filter by source type (PDF, DOCX, EMAIL, etc.)'),
 });
 
 const ragOutputSchema = z.object({
@@ -94,15 +90,7 @@ export class RagSearchTool implements Tool<RagSearchInput, RagSearchOutput> {
   create(orgId: DbId<'Org'>, scope: SearchScope, defaultTopK = 5, userId?: DbId<'User'> | null) {
     const collectionIds = scope.type === 'scoped' ? scope.collectionIds : undefined;
     const dataSourceIds = scope.type === 'scoped' ? scope.dataSourceIds : undefined;
-    const connectionIds = scope.type === 'scoped' ? scope.connectionIds : undefined;
-    const connectionResources = scope.type === 'scoped' ? scope.connectionResources : undefined;
-    assertIdsInOrg(
-      orgId,
-      ...(collectionIds ?? []),
-      ...(dataSourceIds ?? []),
-      ...(connectionIds ?? []),
-      ...(connectionResources ?? []).map((cr) => cr.connectionId)
-    );
+    assertIdsInOrg(orgId, ...(collectionIds ?? []), ...(dataSourceIds ?? []));
 
     const searchService = this.searchService;
     const proxyService = this.proxyService;
@@ -114,7 +102,7 @@ export class RagSearchTool implements Tool<RagSearchInput, RagSearchOutput> {
     return tool({
       description: `Search the knowledge base. Each result includes content, contextBefore/contextAfter, dataSourceName, type, sourceUrl, imageUrl, score, and metadata (${metadataDesc}).
 NEVER write source names, file names, or URLs in your text output (except imageUrl for inline images).
-Filter by source type (PDF, SLACK, LINEAR, etc.) or Slack author name.
+Filter by source type (PDF, DOCX, EMAIL, etc.).
 searchMeta.suggestion tells you if results have low relevance and you should refine your query.`,
       inputSchema: ragInputSchema.extend({
         topK: ragInputSchema.shape.topK.default(defaultTopK),
@@ -130,15 +118,9 @@ searchMeta.suggestion tells you if results have low relevance and you should ref
             filters.push({ field: 'type', operator: 'in', value: input.sourceTypes });
           }
         }
-        if (input.slackAuthor) {
-          filters.push({ field: 'slackAuthors', operator: 'eq', value: input.slackAuthor });
-        }
-
         const { results, queryTimeMs } = await searchService.search(orgId, input.query, {
           collectionIds,
           dataSourceIds,
-          connectionIds,
-          connectionResources,
           limit: input.topK,
           filters: filters.length > 0 ? filters : undefined,
           callerType: AiCallerType.SYSTEM,

@@ -14,29 +14,6 @@ const typeInFilter = z.object({
   value: z.array(chunkMetaTypeEnum),
 });
 
-export const metadataFilterSchema = z.union([
-  typeEqFilter,
-  typeInFilter,
-  z.object({
-    field: z.literal('slackChannelId'),
-    operator: z.literal('eq'),
-    value: z.string(),
-  }),
-  z.object({
-    field: z.literal('slackAuthors'),
-    operator: z.literal('eq'),
-    value: z.string(),
-  }),
-  z.object({
-    field: z.literal('notionPageId'),
-    operator: z.literal('eq'),
-    value: z.string(),
-  }),
-  z.object({
-    field: z.literal('linearIssueId'),
-    operator: z.literal('eq'),
-    value: z.string(),
-  }),
-]);
+export const metadataFilterSchema = z.union([typeEqFilter, typeInFilter]);
 
 export type MetadataFilter = z.infer<typeof metadataFilterSchema>;

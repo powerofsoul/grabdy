@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import type { DbId } from '@grabdy/common';
-import type { BotSourceConfig } from '@grabdy/contracts';
+import type { DataSourceConfig } from '@grabdy/contracts';
 import { alpha, Box, Checkbox, CircularProgress, Typography, useTheme } from '@mui/material';
 import { CaretDownIcon, CaretRightIcon, FileIcon, FolderIcon } from '@phosphor-icons/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -19,8 +19,8 @@ import { api } from '@/lib/api';
 
 interface CollectionSectionProps {
   collection: CollectionOption;
-  value: BotSourceConfig;
-  onChange: (config: BotSourceConfig) => void;
+  value: DataSourceConfig;
+  onChange: (config: DataSourceConfig) => void;
   orgId: DbId<'Org'>;
   depth: number;
   ancestorSelected: boolean;
@@ -129,7 +129,7 @@ export function CollectionSection({
   const selectedDsIds = new Set(
     value
       .filter(
-        (s): s is Extract<BotSourceConfig[number], { type: 'DATA_SOURCE' }> =>
+        (s): s is Extract<DataSourceConfig[number], { type: 'DATA_SOURCE' }> =>
           s.type === 'DATA_SOURCE'
       )
       .map((s) => s.dataSourceId)

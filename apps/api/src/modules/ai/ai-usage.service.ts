@@ -17,8 +17,6 @@ export interface UsageContext {
   orgId: DbId<'Org'>;
   userId?: DbId<'User'> | null;
   source: AiRequestSource;
-  botId?: DbId<'Bot'> | null;
-  externalUser?: string | null;
 }
 
 interface UsageExtras {
@@ -62,8 +60,6 @@ export class AiUsageService {
         durationMs: extras?.durationMs ?? null,
         finishReason: extras?.finishReason ?? null,
         streaming: extras?.streaming ?? false,
-        botId: context.botId ?? null,
-        externalUser: context.externalUser ?? null,
         description: extras?.description ?? null,
       });
     } catch (error) {

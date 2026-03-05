@@ -515,19 +515,6 @@ function buildMetadataHeader(meta: ChunkMeta, title: string): string[] {
       if (meta.emailTo.length > 0) lines.push(`To: ${meta.emailTo.join(', ')}`);
       lines.push(`Date: ${meta.emailDate}`);
       break;
-    case 'SLACK':
-      lines.push(`Channel: ${title}`);
-      if (meta.slackAuthors.length > 0) lines.push(`Authors: ${meta.slackAuthors.join(', ')}`);
-      break;
-    case 'NOTION':
-      lines.push(`Page: ${title}`);
-      break;
-    case 'GITHUB':
-      lines.push(`${meta.githubItemType}: ${title}`);
-      break;
-    case 'LINEAR':
-      lines.push(`Issue: ${title}`);
-      break;
     case 'TXT':
     case 'JSON':
     case 'IMAGE':
@@ -542,19 +529,11 @@ function sourceTypeQuestionGuidance(sourceType?: ChunkMeta['type']): string {
   switch (sourceType) {
     case 'IMAGE':
       return 'Focus on what the image shows, data values, diagram content, or visual elements, e.g. "chart showing [metric]" or "diagram of [process]"';
-    case 'SLACK':
-      return 'Focus on who said what and the topic discussed, e.g. "what did [person] say about [topic]?"';
     case 'CSV':
     case 'XLSX':
       return 'Reference column names as dimensions, e.g. "what is the [column] for [entity]?" or "which [entity] has the highest [column]?"';
     case 'EMAIL':
       return 'Reference sender, recipients, or subject, e.g. "email from [person] about [topic]"';
-    case 'LINEAR':
-      return 'Reference the issue topic, status, or assignee, e.g. "what is the status of [feature]?" or "issues assigned to [person]"';
-    case 'GITHUB':
-      return 'Reference the issue/PR topic, labels, or author, e.g. "PRs related to [topic]" or "bugs labeled [label]"';
-    case 'NOTION':
-      return 'Reference the page topic or content, e.g. "how does [process] work?" or "what is the policy on [topic]?"';
     default:
       return 'Be specific, not generic.';
   }

@@ -20,11 +20,11 @@ gsap.registerPlugin(ScrollTrigger);
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      { title: 'Grabdy - Turn your documents into answers' },
+      { title: 'Grabdy - Contract intelligence for legal teams' },
       {
         name: 'description',
         content:
-          'Upload PDFs, spreadsheets, and docs. Connect Slack, Notion, and GitHub. Get AI-powered answers with cited sources. Embed a chatbot or use the REST API.',
+          'Upload contracts, NDAs, and compliance docs. Ask questions in plain English, get cited answers with exact clauses. Track renewal deadlines, spot deviations in vendor terms, and search your entire contract library in seconds.',
       },
     ],
   }),

@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import type { BotSourceConfig } from '@grabdy/contracts';
+import type { DataSourceConfig } from '@grabdy/contracts';
 
 import { formatSourceConfigSummary } from './formatSourceConfigSummary';
 
 export function useChatSourceConfig() {
-  const [config, setConfig] = useState<BotSourceConfig>([]);
+  const [config, setConfig] = useState<DataSourceConfig>([]);
 
   const isEmpty = config.length === 0;
   const summary = useMemo(() => formatSourceConfigSummary(config), [config]);

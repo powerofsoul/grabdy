@@ -4,7 +4,7 @@ import { FONT_MONO } from '@/theme';
 
 const CURL_SNIPPET = `curl -X POST https://api.grabdy.com/query \\
   -H "Authorization: Bearer gbd_sk_live_..." \\
-  -d '{"query": "refund policy?"}'`;
+  -d '{"query": "termination clause Acme MSA"}'`;
 
 export function ApiPanel() {
   const theme = useTheme();

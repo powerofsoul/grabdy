@@ -52,30 +52,9 @@ export const env = {
 
   adminApiKey: required('ADMIN_API_KEY'),
 
-  // Integration encryption (local dev only — prod uses KMS)
+  // Encryption (local dev only, prod uses KMS)
   integrationEncryptionKey:
     process.env.INTEGRATION_ENCRYPTION_KEY || 'dev-encryption-key-32chars-paddd',
-
-  // Slack
-  slackClientId: requiredInProd('SLACK_CLIENT_ID', ''),
-  slackClientSecret: requiredInProd('SLACK_CLIENT_SECRET', ''),
-  slackSigningSecret: requiredInProd('SLACK_SIGNING_SECRET', ''),
-
-  // Linear
-  linearClientId: requiredInProd('LINEAR_CLIENT_ID', ''),
-  linearClientSecret: requiredInProd('LINEAR_CLIENT_SECRET', ''),
-  linearWebhookSecret: requiredInProd('LINEAR_WEBHOOK_SECRET', ''),
-
-  // GitHub App
-  githubAppId: requiredInProd('GITHUB_APP_ID', ''),
-  githubAppSlug: requiredInProd('GITHUB_APP_SLUG', ''),
-  githubPrivateKey: requiredInProd('GITHUB_PRIVATE_KEY', ''),
-  githubWebhookSecret: requiredInProd('GITHUB_WEBHOOK_SECRET', ''),
-
-  // Notion
-  notionClientId: requiredInProd('NOTION_CLIENT_ID', ''),
-  notionClientSecret: requiredInProd('NOTION_CLIENT_SECRET', ''),
-  notionWebhookSecret: requiredInProd('NOTION_WEBHOOK_SECRET', ''),
 
   // Google OAuth
   googleClientId: requiredInProd('GOOGLE_CLIENT_ID', ''),

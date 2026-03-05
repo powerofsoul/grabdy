@@ -12,7 +12,6 @@ import {
   useTheme,
 } from '@mui/material';
 import {
-  BookOpenIcon,
   BuildingsIcon,
   CaretDoubleRightIcon,
   ChartBarIcon,
@@ -22,11 +21,7 @@ import {
   EyeIcon,
   FolderIcon,
   GearIcon,
-  GitForkIcon,
-  KeyIcon,
   MoonIcon,
-  PlugIcon,
-  RobotIcon,
   SignOutIcon,
   SquaresFourIcon,
   SunIcon,
@@ -223,35 +218,9 @@ export function SidebarStrip({ onExpand }: { onExpand?: () => void }) {
         icon={<ChatCircleIcon size={18} weight="light" color="currentColor" />}
       />
       <StripIcon
-        to="/dashboard/bots"
-        label="Bots"
-        icon={<RobotIcon size={18} weight="light" color="currentColor" />}
-        activePrefix="/dashboard/bots"
-      />
-      <StripIcon
         to="/dashboard/sources"
         label="Sources"
         icon={<FolderIcon size={18} weight="light" color="currentColor" />}
-      />
-      <StripIcon
-        to="/dashboard/integrations"
-        label="Integrations"
-        icon={<PlugIcon size={18} weight="light" color="currentColor" />}
-      />
-      <StripIcon
-        to="/dashboard/api/keys"
-        label="Keys"
-        icon={<KeyIcon size={18} weight="light" color="currentColor" />}
-      />
-      <StripIcon
-        to="/dashboard/api/docs"
-        label="Docs"
-        icon={<BookOpenIcon size={18} weight="light" color="currentColor" />}
-      />
-      <StripIcon
-        to="/dashboard/api/mcp"
-        label="MCP"
-        icon={<GitForkIcon size={18} weight="light" color="currentColor" />}
       />
       <StripIcon
         to="/dashboard/members"

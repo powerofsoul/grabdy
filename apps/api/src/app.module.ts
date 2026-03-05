@@ -6,10 +6,8 @@ import { LoggerModule } from 'nestjs-pino';
 
 import { EncryptionModule } from './common/encryption/encryption.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
-import { ApiKeyModule } from './common/guards/api-key.module';
 import { AuthGuard } from './common/guards/auth.guard';
 import { OrgAccessGuard } from './common/guards/org-access.guard';
-import { SdkJwtModule } from './common/guards/sdk-jwt.module';
 import { TokenRefreshInterceptor } from './common/interceptors/token-refresh.interceptor';
 import {
   THROTTLE_LONG_LIMIT,
@@ -25,10 +23,8 @@ import { AdminModule } from './modules/admin/admin.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingModule } from './modules/billing/billing.module';
-import { BotModule } from './modules/bot/bot.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { DataSourcesModule } from './modules/data-sources/data-sources.module';
@@ -36,13 +32,10 @@ import { IngestionModule } from './modules/data-sources/ingestion.module';
 import { DemoRequestModule } from './modules/demo-request/demo-request.module';
 import { EmailModule } from './modules/email/email.module';
 import { HealthModule } from './modules/health/health.module';
-import { IntegrationsModule } from './modules/integrations/integrations.module';
-import { McpModule } from './modules/mcp/mcp.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { OrgsModule } from './modules/orgs/orgs.module';
 import { ProxyModule } from './modules/proxy/proxy.module';
 import { ProxyRoutesModule } from './modules/proxy/proxy-routes.module';
-import { PublicApiModule } from './modules/public-api/public-api.module';
 import { UsersModule } from './modules/users/users.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
@@ -61,8 +54,6 @@ import { RedisModule } from './redis/redis.module';
     DbModule,
     RedisModule,
     EncryptionModule,
-    ApiKeyModule,
-    SdkJwtModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',
@@ -101,11 +92,6 @@ import { RedisModule } from './redis/redis.module';
     ProxyRoutesModule,
     DemoRequestModule,
     ChatModule,
-    ApiKeysModule,
-    IntegrationsModule,
-    PublicApiModule,
-    McpModule,
-    BotModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

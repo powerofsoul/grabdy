@@ -1,22 +1,13 @@
 import { useCallback, useState } from 'react';
 
-import type { ChatSource, IntegrationProvider } from '@grabdy/contracts';
+import type { ChatSource } from '@grabdy/contracts';
 import { alpha, Box, Popover, Typography } from '@mui/material';
 import { ArrowSquareOutIcon, LockIcon } from '@phosphor-icons/react';
 import { Link } from '@tanstack/react-router';
 
 import { FileIcon } from './source-chips/FileIcon';
-import { formatLocation, isIntegrationProvider } from './source-chips/helpers';
+import { formatLocation } from './source-chips/helpers';
 import { useOpenSource } from './source-chips/useOpenSource';
-
-import { ProviderIcon } from '@/components/integrations/ProviderIcon';
-
-function SourceIcon({ source, size }: { source: ChatSource; size: number }) {
-  if (isIntegrationProvider(source.type)) {
-    return <ProviderIcon provider={source.type satisfies IntegrationProvider} size={size} />;
-  }
-  return <FileIcon name={source.dataSourceName} size={size} />;
-}
 
 interface InlineSourceRefProps {
   refNumber: number;
@@ -74,7 +65,7 @@ export function InlineSourceRef({ refNumber, source, shareToken }: InlineSourceR
             component="span"
             sx={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}
           >
-            <SourceIcon source={source} size={14} />
+            <FileIcon name={source.dataSourceName} size={14} />
           </Box>
         )}
         <Box
@@ -120,7 +111,7 @@ export function InlineSourceRef({ refNumber, source, shareToken }: InlineSourceR
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <SourceIcon source={source} size={14} />
+              <FileIcon name={source.dataSourceName} size={14} />
             </Box>
             <Typography
               noWrap

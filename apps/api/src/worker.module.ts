@@ -3,7 +3,6 @@ import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 
 import { EncryptionModule } from './common/encryption/encryption.module';
-import { SdkJwtModule } from './common/guards/sdk-jwt.module';
 import { EnvModule } from './config/env.config';
 import { DbModule } from './db/db.module';
 import { AgentModule } from './modules/agent/agent.module';
@@ -28,7 +27,6 @@ import { RedisModule } from './redis/redis.module';
     DbModule,
     RedisModule,
     EncryptionModule,
-    SdkJwtModule,
     QueueModule,
     // Global modules (provide services to all processor modules)
     AiModule,

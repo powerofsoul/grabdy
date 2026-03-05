@@ -21,33 +21,6 @@ type Timestamp = ColumnType<Date, Date | string, Date | string>;
 // JSONB column types (opaque at DB level — consumers parse with Zod schemas)
 // ---------------------------------------------------------------------------
 
-/** Provider-specific connection data — discriminated union keyed on `provider`. */
-type ConnectionProviderData =
-  | {
-      provider: 'SLACK';
-      slackBotUserId?: string;
-      teamDomain?: string;
-      channelTimestamps: Record<string, string>;
-    }
-  | {
-      provider: 'LINEAR';
-      workspaceSlug?: string;
-      lastIssueSyncedAt: string | null;
-    }
-  | {
-      provider: 'GITHUB';
-      githubInstallationId: number;
-      installationOwner?: string;
-      selectedRepos?: string[];
-      lastSyncedAt: string | null;
-    }
-  | {
-      provider: 'NOTION';
-      workspaceName?: string;
-      notionWorkspaceId?: string;
-      lastSyncedAt: string | null;
-    };
-
 /** Chunk metadata — discriminated union keyed on `type`. */
 type ChunkMeta =
   | { type: 'PDF'; pages: number[] }
@@ -64,20 +37,7 @@ type ChunkMeta =
       emailSubject: string;
       emailDate: string;
       emailRfcMessageRef: string | null;
-    }
-  | { type: 'SLACK'; slackChannelId: string; slackMessageTs: string; slackAuthors: string[] }
-  | {
-      type: 'LINEAR';
-      linearIssueId: string;
-      linearCommentId: string | null;
-      linearTimestamp?: string | null;
-    }
-  | {
-      type: 'GITHUB';
-      githubItemType: 'issue' | 'pull_request' | 'discussion';
-      githubCommentId: string | null;
-    }
-  | { type: 'NOTION'; notionPageId: string; notionBlockId: string | null };
+    };
 
 // ---------------------------------------------------------------------------
 // Database interface — maps schema.table names to their column types
@@ -152,24 +112,10 @@ export interface DB {
     mime_type: string;
     file_size: number;
     storage_path: string;
-    type:
-      | 'PDF'
-      | 'CSV'
-      | 'DOCX'
-      | 'TXT'
-      | 'JSON'
-      | 'XLSX'
-      | 'IMAGE'
-      | 'EMAIL'
-      | 'SLACK'
-      | 'LINEAR'
-      | 'GITHUB'
-      | 'NOTION';
+    type: 'PDF' | 'CSV' | 'DOCX' | 'TXT' | 'JSON' | 'XLSX' | 'IMAGE' | 'EMAIL';
     status: Generated<'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED' | 'DELETING'>;
     page_count: number | null;
     collection_id: DbId<'Collection'> | null;
-    connection_id: DbId<'Connection'> | null;
-    external_id: string | null;
     processing_progress: Generated<number>;
     source_url: string;
     parent_data_source_id: DbId<'DataSource'> | null;
@@ -215,41 +161,9 @@ export interface DB {
     org_id: DbId<'Org'>;
     title: string | null;
     membership_id: DbId<'OrgMembership'> | null;
-    source: Generated<'dashboard' | 'sdk' | 'api'>;
-    bot_id: DbId<'Bot'> | null;
-    external_user_id: string | null;
+    source: Generated<'dashboard'>;
     created_at: Generated<Timestamp>;
     updated_at: Timestamp;
-  };
-
-  'integration.connections': {
-    id: Generated<DbId<'Connection'>>;
-    org_id: DbId<'Org'>;
-    provider: 'SLACK' | 'LINEAR' | 'GITHUB' | 'NOTION';
-    status: Generated<'ACTIVE' | 'PAUSED' | 'ERROR' | 'DISCONNECTED'>;
-    access_token: string;
-    refresh_token: string | null;
-    token_expires_at: Timestamp | null;
-    scopes: string[] | null;
-    external_account_id: string | null;
-    external_account_name: string | null;
-    last_synced_at: Timestamp | null;
-    provider_data: Generated<ConnectionProviderData>;
-    created_by_id: DbId<'User'>;
-    created_at: Generated<Timestamp>;
-    updated_at: Timestamp;
-  };
-
-  'api.api_keys': {
-    id: Generated<DbId<'ApiKey'>>;
-    org_id: DbId<'Org'>;
-    name: string;
-    key_hash: string;
-    key_prefix: string;
-    created_by_id: DbId<'User'>;
-    last_used_at: Timestamp | null;
-    revoked_at: Timestamp | null;
-    created_at: Generated<Timestamp>;
   };
 
   'analytics.ai_usage_logs': {
@@ -257,7 +171,7 @@ export interface DB {
     org_id: DbId<'Org'>;
     model: string;
     provider: string;
-    caller_type: 'MEMBER' | 'SYSTEM' | 'API_KEY' | 'SDK_JWT';
+    caller_type: 'MEMBER' | 'SYSTEM';
     request_type:
       | 'CHAT'
       | 'EMBEDDING'
@@ -268,7 +182,7 @@ export interface DB {
       | 'ENRICHMENT'
       | 'IMAGE_ANALYSIS';
     description: string | null;
-    source: 'WEB' | 'SLACK' | 'API' | 'MCP' | 'SYSTEM' | 'SDK';
+    source: 'WEB' | 'SYSTEM';
     input_tokens: Generated<number>;
     output_tokens: Generated<number>;
     total_tokens: Generated<number>;
@@ -277,8 +191,6 @@ export interface DB {
     finish_reason: string | null;
     streaming: Generated<boolean>;
     user_id: DbId<'User'> | null;
-    bot_id: DbId<'Bot'> | null;
-    external_user_id: string | null;
     created_at: Generated<Timestamp>;
   };
 
@@ -295,40 +207,6 @@ export interface DB {
     image_ids: Generated<DbId<'ExtractedImage'>[]>;
     is_public: Generated<boolean>;
     revoked: Generated<boolean>;
-    created_at: Generated<Timestamp>;
-  };
-
-  'sdk.bots': {
-    id: Generated<DbId<'Bot'>>;
-    org_id: DbId<'Org'>;
-    name: string;
-    data_source_config: Array<
-      | { type: 'COLLECTION'; collectionId: DbId<'Collection'> }
-      | { type: 'DATA_SOURCE'; dataSourceId: DbId<'DataSource'> }
-      | { type: 'CONNECTION'; connectionId: DbId<'Connection'> }
-      | { type: 'CONNECTION_RESOURCE'; connectionId: DbId<'Connection'>; githubRepo: string }
-    >;
-    system_prompt: string | null;
-    title: string | null;
-    subtitle: string | null;
-    placeholder: string | null;
-    image_key: string | null;
-    accent_color: string | null;
-    primary_color: string | null;
-    created_by_id: DbId<'User'>;
-    created_at: Generated<Timestamp>;
-    updated_at: Timestamp;
-  };
-
-  'sdk.bot_signing_keys': {
-    id: Generated<DbId<'BotSigningKey'>>;
-    bot_id: DbId<'Bot'>;
-    org_id: DbId<'Org'>;
-    name: string;
-    public_key: string;
-    key_fingerprint: string;
-    revoked_at: Timestamp | null;
-    created_by_id: DbId<'User'>;
     created_at: Generated<Timestamp>;
   };
 

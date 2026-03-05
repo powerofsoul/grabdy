@@ -13,7 +13,6 @@ interface ChatMessagesProps {
   messages: ChatMessage[];
   isLoading: boolean;
   isStreaming: boolean;
-  embedJwt?: string;
   accentColor?: string;
   shareToken?: string;
 }
@@ -22,7 +21,6 @@ export function ChatMessages({
   messages,
   isLoading,
   isStreaming,
-  embedJwt,
   accentColor,
   shareToken,
 }: ChatMessagesProps) {
@@ -120,7 +118,6 @@ export function ChatMessages({
             <MessageRow
               key={message.id ?? index}
               message={message}
-              embedJwt={embedJwt}
               accentColor={accentColor}
               shareToken={shareToken}
             />

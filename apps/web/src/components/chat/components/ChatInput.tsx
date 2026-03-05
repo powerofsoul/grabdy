@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { BotSourceConfig } from '@grabdy/contracts';
+import type { DataSourceConfig } from '@grabdy/contracts';
 import { MAX_CHAT_ATTACHMENTS, UPLOADS_EXTENSIONS, UPLOADS_MIMES } from '@grabdy/contracts';
 import { alpha, Box, Collapse, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
 import { ArrowUpIcon, FunnelIcon, PaperclipIcon, XIcon } from '@phosphor-icons/react';
@@ -47,15 +47,15 @@ function validateFiles(files: File[], currentCount: number): { valid: File[]; er
 
 interface SourceConfigEditable {
   mode: 'editable';
-  config: BotSourceConfig;
-  onChange: (config: BotSourceConfig) => void;
+  config: DataSourceConfig;
+  onChange: (config: DataSourceConfig) => void;
   onClear: () => void;
   summary: string;
 }
 
 interface SourceConfigReadonly {
   mode: 'readonly';
-  config: BotSourceConfig;
+  config: DataSourceConfig;
   summary: string;
 }
 
@@ -345,7 +345,7 @@ export function ChatInput({
               </Box>
               <Collapse in={isPickerOpen}>
                 <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1, mt: 0.5 }}>
-                  This bot's sources are configured in bot settings and cannot be changed here.
+                  Sources are pre-configured and cannot be changed here.
                 </Typography>
                 {selectedOrgId && (
                   <Box

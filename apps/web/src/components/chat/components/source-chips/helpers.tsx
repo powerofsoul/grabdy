@@ -1,10 +1,8 @@
-import type { ChatSource, IntegrationProvider, UploadsExt } from '@grabdy/contracts';
+import type { ChatSource, UploadsExt } from '@grabdy/contracts';
 import { FileTextIcon } from '@phosphor-icons/react';
 
-import { FILE_EXTS, ICON_BY_EXT, INTEGRATION_SOURCE_TYPES, SOURCE_NOUN } from './constants';
-import type { IconComponent, SourceGroup, SourceGroupType } from './types';
-
-import { getProviderLabel, ProviderIcon } from '@/components/integrations/ProviderIcon';
+import { FILE_EXTS, ICON_BY_EXT } from './constants';
+import type { IconComponent, SourceGroup } from './types';
 
 function pluralize(count: number, noun: string): string {
   return count === 1 ? `${count} ${noun}` : `${count} ${noun}s`;
@@ -17,10 +15,6 @@ export function formatLocation(source: ChatSource): string {
   if ('rows' in source && source.rows.length > 0) parts.push(`row ${source.rows.join(', ')}`);
   if ('columns' in source && source.columns.length > 0) parts.push(source.columns.join(', '));
   return parts.length > 0 ? ` ${parts.join(', ')}` : '';
-}
-
-export function isIntegrationProvider(type: string): type is IntegrationProvider {
-  return INTEGRATION_SOURCE_TYPES.has(type);
 }
 
 export function isFileExt(ext: string): ext is UploadsExt {
@@ -54,61 +48,23 @@ export function groupSources(
   sources: ChatSource[],
   FileIcon: React.ComponentType<{ name: string; size: number }>
 ): SourceGroup[] {
-  const groups = new Map<SourceGroupType, ChatSource[]>();
+  const icon =
+    sources.length === 1 ? (
+      <FileIcon name={sources[0].dataSourceName} size={12} />
+    ) : (
+      <FileTextIcon size={12} weight="light" style={{ flexShrink: 0, opacity: 0.5 }} />
+    );
 
-  for (const source of sources) {
-    const type = isIntegrationProvider(source.type) ? source.type : 'UPLOAD';
-    const existing = groups.get(type);
-    if (existing) {
-      existing.push(source);
-    } else {
-      groups.set(type, [source]);
-    }
-  }
-
-  const result: SourceGroup[] = [];
-
-  for (const [type, items] of groups) {
-    if (type === 'UPLOAD') {
-      const icon =
-        items.length === 1 ? (
-          <FileIcon name={items[0].dataSourceName} size={12} />
-        ) : (
-          <FileTextIcon size={12} weight="light" style={{ flexShrink: 0, opacity: 0.5 }} />
-        );
-
-      result.push({
-        type: 'UPLOAD',
-        label:
-          items.length === 1
-            ? `${items[0].dataSourceName}${formatLocation(items[0])}`
-            : pluralize(items.length, 'document'),
-        icon,
-        count: items.length,
-        sources: items,
-      });
-    } else if (isIntegrationProvider(type)) {
-      result.push({
-        type,
-        label:
-          items.length === 1
-            ? items[0].dataSourceName
-            : `${getProviderLabel(type)} (${pluralize(items.length, SOURCE_NOUN[type])})`,
-        icon: <ProviderIcon provider={type} size={13} />,
-        count: items.length,
-        sources: items,
-      });
-    } else {
-      // Unknown external source type fallback
-      result.push({
-        type,
-        label: items.length === 1 ? items[0].dataSourceName : pluralize(items.length, 'source'),
-        icon: <FileTextIcon size={12} weight="light" style={{ flexShrink: 0, opacity: 0.5 }} />,
-        count: items.length,
-        sources: items,
-      });
-    }
-  }
-
-  return result;
+  return [
+    {
+      type: 'UPLOAD',
+      label:
+        sources.length === 1
+          ? `${sources[0].dataSourceName}${formatLocation(sources[0])}`
+          : pluralize(sources.length, 'document'),
+      icon,
+      count: sources.length,
+      sources,
+    },
+  ];
 }

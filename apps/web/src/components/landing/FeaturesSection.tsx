@@ -4,17 +4,11 @@ import { alpha, Box, Container, Typography, useTheme } from '@mui/material';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import {
-  GmailLogo,
-  GoogleDriveLogo,
-  LinearLogo,
-  NotionLogo,
-  SlackLogo,
-} from './IntegrationLogos';
+import { GmailLogo, GoogleDriveLogo, NotionLogo } from './IntegrationLogos';
 
 gsap.registerPlugin(ScrollTrigger);
 
-type LogoComponent = typeof SlackLogo;
+type LogoComponent = typeof GoogleDriveLogo;
 
 interface UseCase {
   emoji: string;
@@ -26,47 +20,44 @@ interface UseCase {
 
 const USE_CASES = [
   {
-    emoji: '\uD83D\uDCC9',
-    role: 'Sales',
-    question: 'What discount did we give Acme Corp last time?',
+    emoji: '\uD83D\uDCC5',
+    role: 'Renewal deadlines',
+    question: 'When does the Acme MSA auto-renew, and what is the notice period?',
     answer:
-      '15% multi-year discount on Enterprise, approved by VP Sales on March 12. Price-lock through 2026.',
+      'Auto-renews on Sept 15, 2026. 90-day written notice required to terminate. Current term is 3 years from execution date.',
     sources: [
-      { Logo: GoogleDriveLogo, label: 'acme-renewal.pdf' },
-      { Logo: SlackLogo, label: '#sales-deals' },
+      { Logo: GoogleDriveLogo, label: 'acme-msa-2023.pdf' },
+      { Logo: NotionLogo, label: 'Vendor Tracker' },
     ],
   },
   {
-    emoji: '\uD83D\uDEE0\uFE0F',
-    role: 'Engineering',
-    question: 'How do we validate JWT tokens?',
+    emoji: '\uD83D\uDCCB',
+    role: 'Compliance tracking',
+    question: 'Which vendor BAAs expire this quarter?',
     answer:
-      'AuthGuard extracts the Bearer token, verifies with RS256 via JWKS endpoint, attaches decoded user to request context.',
+      'Three BAAs expire before June 30: Datadog (May 12), Snowflake (June 1), and AWS (June 28). All require 30-day renewal notice.',
     sources: [
-      { Logo: NotionLogo, label: 'Auth Architecture' },
-      { Logo: SlackLogo, label: '#backend' },
+      { Logo: GoogleDriveLogo, label: 'vendor-baas/' },
+      { Logo: GmailLogo, label: 'Compliance inbox' },
     ],
   },
   {
-    emoji: '\uD83D\uDC4B',
-    role: 'New hires',
-    question: 'How do I deploy to production?',
+    emoji: '\uD83D\uDD0D',
+    role: 'Clause lookup',
+    question: 'What is the indemnification cap in the Contoso deal?',
     answer:
-      'Merge to main triggers CI. Deploy captain approves Vercel preview, then promotes to prod. Rollback via git revert.',
-    sources: [
-      { Logo: GoogleDriveLogo, label: 'deploy-runbook.md' },
-      { Logo: LinearLogo, label: 'ENG-102' },
-    ],
+      'Mutual indemnification capped at 2x annual fees. Carve-outs for IP infringement and data breach are uncapped per Section 9.3.',
+    sources: [{ Logo: GoogleDriveLogo, label: 'contoso-saas-agreement.pdf' }],
   },
   {
-    emoji: '\uD83D\uDCAC',
-    role: 'Support',
-    question: 'What are customers saying about the new dashboard?',
+    emoji: '\uD83D\uDD04',
+    role: 'Term comparison',
+    question: 'Did the new AWS terms change anything material from last year?',
     answer:
-      'Top requests: faster load times (14x), exportable charts (9x), dark mode (7x). NPS dropped 3 points post-rollout.',
+      'Liability cap reduced from 12 months to 6 months of fees. New arbitration clause added in Section 11. Data residency terms unchanged.',
     sources: [
-      { Logo: GmailLogo, label: 'Q1 feedback' },
-      { Logo: SlackLogo, label: '#customer-feedback' },
+      { Logo: GoogleDriveLogo, label: 'aws-enterprise-2025.pdf' },
+      { Logo: GoogleDriveLogo, label: 'aws-enterprise-2024.pdf' },
     ],
   },
 ] satisfies ReadonlyArray<UseCase>;
@@ -224,7 +215,7 @@ export function FeaturesSection() {
               fontWeight: 600,
             }}
           >
-            One question. Cited answer.
+            Ask your contracts anything.
           </Typography>
           <Typography
             className="features-subtitle"
@@ -236,8 +227,8 @@ export function FeaturesSection() {
               mx: 'auto',
             }}
           >
-            Every team asks questions across scattered tools. Grabdy finds the answer and shows you
-            exactly where it came from.
+            General counsel ask complex questions across hundreds of agreements. Grabdy finds the
+            answer and cites the exact clause.
           </Typography>
         </Box>
 

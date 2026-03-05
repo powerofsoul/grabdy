@@ -110,7 +110,7 @@ export function HeroSection() {
               letterSpacing: '-0.04em',
             }}
           >
-            Your data has answers. Just ask.
+            That renewal deadline is buried on page 47.
           </Typography>
 
           <Typography
@@ -125,7 +125,8 @@ export function HeroSection() {
               mx: 'auto',
             }}
           >
-            Turn scattered files and conversations into a knowledge base you can talk to.
+            Upload contracts, NDAs, compliance filings, and regulatory docs. Ask questions in plain
+            English. Get cited answers in seconds.
           </Typography>
 
           <Box

@@ -46,7 +46,7 @@ function formatCurrency(amount: number, currency: string) {
 const FREE_FEATURES = [
   { icon: CloudArrowUpIcon, label: 'Unlimited data sources' },
   { icon: CodeIcon, label: 'REST API and MCP access' },
-  { icon: CubeIcon, label: 'Embeddable chatbot widget' },
+  { icon: CubeIcon, label: 'Contract search and chat' },
   { icon: PlugIcon, label: 'All integrations' },
 ] as const;
 

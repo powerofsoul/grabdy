@@ -6,19 +6,12 @@ import * as jwt from 'jsonwebtoken';
 import { InjectEnv } from '../../config/env.config';
 
 import { parseJwtPayload } from './auth.guard';
-import { SdkJwtGuard } from './sdk-jwt.guard';
 
 /**
- * Try cookie auth then SDK Bearer auth. Populates req.user / req.sdkAuth
- * when credentials are valid. Returns true if authenticated, false otherwise.
- * Never throws.
+ * Try cookie auth. Populates req.user when credentials are valid.
+ * Returns true if authenticated, false otherwise. Never throws.
  */
-async function tryAuthenticate(
-  request: Request,
-  jwtSecret: string,
-  sdkJwtGuard: SdkJwtGuard,
-  context: ExecutionContext
-): Promise<boolean> {
+function tryAuthenticate(request: Request, jwtSecret: string): boolean {
   const cookieToken = request.cookies?.['auth_token'];
   if (typeof cookieToken === 'string') {
     try {
@@ -29,16 +22,7 @@ async function tryAuthenticate(
         return true;
       }
     } catch {
-      // Cookie invalid, fall through to SDK auth
-    }
-  }
-
-  const authHeader = request.headers['authorization'];
-  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-    try {
-      return await sdkJwtGuard.canActivate(context);
-    } catch {
-      // SDK auth invalid, fall through
+      // Cookie invalid
     }
   }
 
@@ -46,19 +30,16 @@ async function tryAuthenticate(
 }
 
 /**
- * Guard that accepts either dashboard cookie auth or SDK Bearer auth.
- * Throws 401 if neither is present.
+ * Guard that accepts dashboard cookie auth.
+ * Throws 401 if not authenticated.
  */
 @Injectable()
 export class DualAuthGuard implements CanActivate {
-  constructor(
-    @InjectEnv('jwtSecret') private jwtSecret: string,
-    private sdkJwtGuard: SdkJwtGuard
-  ) {}
+  constructor(@InjectEnv('jwtSecret') private jwtSecret: string) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    if (await tryAuthenticate(request, this.jwtSecret, this.sdkJwtGuard, context)) {
+    if (tryAuthenticate(request, this.jwtSecret)) {
       return true;
     }
     throw new UnauthorizedException('Not authenticated');
@@ -67,19 +48,16 @@ export class DualAuthGuard implements CanActivate {
 
 /**
  * Like DualAuthGuard but allows unauthenticated requests through.
- * Populates req.user / req.sdkAuth when credentials are present
+ * Populates req.user when credentials are present
  * so the controller can apply its own access logic (e.g. share_token).
  */
 @Injectable()
 export class OptionalDualAuthGuard implements CanActivate {
-  constructor(
-    @InjectEnv('jwtSecret') private jwtSecret: string,
-    private sdkJwtGuard: SdkJwtGuard
-  ) {}
+  constructor(@InjectEnv('jwtSecret') private jwtSecret: string) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    await tryAuthenticate(request, this.jwtSecret, this.sdkJwtGuard, context);
+    tryAuthenticate(request, this.jwtSecret);
     return true;
   }
 }

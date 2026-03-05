@@ -1,8 +1,5 @@
-import type { IntegrationProvider, UploadsExt } from '@grabdy/contracts';
-import {
-  IntegrationProvider as IntegrationProviderEnum,
-  UPLOADS_FILE_TYPES,
-} from '@grabdy/contracts';
+import type { UploadsExt } from '@grabdy/contracts';
+import { UPLOADS_FILE_TYPES } from '@grabdy/contracts';
 import {
   EnvelopeIcon,
   FileCsvIcon,
@@ -14,19 +11,6 @@ import {
 } from '@phosphor-icons/react';
 
 import type { IconComponent } from './types';
-
-/** Noun used when grouping sources by provider */
-export const SOURCE_NOUN: Record<IntegrationProvider, string> = {
-  SLACK: 'channel',
-  LINEAR: 'issue',
-  GITHUB: 'item',
-  NOTION: 'page',
-};
-
-/** Integration providers (everything except UPLOAD) -- derived from the enum */
-export const INTEGRATION_SOURCE_TYPES: ReadonlySet<string> = new Set(
-  Object.values(IntegrationProviderEnum)
-);
 
 export const FILE_EXTS: ReadonlySet<string> = new Set(UPLOADS_FILE_TYPES.map((f) => f.ext));
 

@@ -1,5 +1,5 @@
 import type { DbId } from '@grabdy/common';
-import type { BotSourceConfig } from '@grabdy/contracts';
+import type { DataSourceConfig } from '@grabdy/contracts';
 
 import type { CollectionOption, DataSourceItem } from './types';
 
@@ -8,13 +8,13 @@ export type DataSourceGetter = (collectionId: DbId<'Collection'>) => DataSourceI
 /** Check if any descendant data source or child folder is individually selected. */
 export function hasDescendantSelection(
   node: CollectionOption,
-  value: BotSourceConfig,
+  value: DataSourceConfig,
   getDataSources: DataSourceGetter
 ): boolean {
   const selectedDsIds = new Set(
     value
       .filter(
-        (s): s is Extract<BotSourceConfig[number], { type: 'DATA_SOURCE' }> =>
+        (s): s is Extract<DataSourceConfig[number], { type: 'DATA_SOURCE' }> =>
           s.type === 'DATA_SOURCE'
       )
       .map((s) => s.dataSourceId)
@@ -74,8 +74,8 @@ export function explodeFolderExcluding(
   excludeId: string,
   isDataSource: boolean,
   getDataSources: DataSourceGetter
-): BotSourceConfig {
-  const entries: BotSourceConfig = [];
+): DataSourceConfig {
+  const entries: DataSourceConfig = [];
 
   for (const ds of getDataSources(folder.id)) {
     if (isDataSource && ds.id === excludeId) continue;

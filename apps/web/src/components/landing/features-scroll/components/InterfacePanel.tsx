@@ -1,24 +1,24 @@
 import { alpha, Box, Typography, useTheme } from '@mui/material';
-import { HashIcon } from '@phosphor-icons/react';
+import { EnvelopeSimpleIcon } from '@phosphor-icons/react';
 
-import { SlackLogo } from '../../IntegrationLogos';
+import { GmailLogo } from '../../IntegrationLogos';
 
 import botLogo from '@/assets/grabdy-logo.jpg';
 
-const FONT_SLACK = '"Lato", "Helvetica Neue", Helvetica, sans-serif';
+const FONT_PANEL = '"Lato", "Helvetica Neue", Helvetica, sans-serif';
 
-const QUESTION = 'What was decided about the Q2 pricing changes?';
+const QUESTION = 'Which contracts auto-renew in the next 90 days?';
 
 const APP_ANSWER =
-  'Enterprise tier pricing increases from $89/seat to $99/seat effective July 1st. Existing annual contracts are grandfathered. A 15% volume discount now applies to teams over 200 seats.';
+  'Three contracts auto-renew before June 30: Acme MSA (May 15, 90-day notice), Contoso SaaS Agreement (June 1, 60-day notice), and Northwind NDA (June 28, 30-day notice).';
 
-const SLACK_ANSWER =
-  'Based on the Q2 Pricing Review: enterprise tier pricing will increase from $89/seat to $99/seat, effective July 1st. Annual contracts are grandfathered.';
+const EMAIL_ANSWER =
+  'Renewal alert: Acme MSA auto-renews on May 15. 90-day written notice required to terminate. Current annual value is $240,000. Action needed by Feb 14.';
 
 const SOURCES = [
-  { icon: '\uD83D\uDCC4', name: 'Q2-pricing-review.pdf', detail: 'page 3' },
-  { icon: '\uD83D\uDCAC', name: '#pricing-team', detail: 'discussion' },
-  { icon: '\uD83D\uDCCB', name: 'PROD-892', detail: 'Linear' },
+  { icon: '\uD83D\uDCC4', name: 'acme-msa-2023.pdf', detail: 'Section 12.1' },
+  { icon: '\uD83D\uDCC5', name: 'contoso-agreement.pdf', detail: 'Section 8.4' },
+  { icon: '\uD83D\uDCC4', name: 'northwind-nda.pdf', detail: 'Section 5.2' },
 ] as const;
 
 export function InterfacePanel() {
@@ -31,7 +31,7 @@ export function InterfacePanel() {
         alignItems: 'flex-start',
       }}
     >
-      {/* Web App view */}
+      {/* Dashboard view */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography
           sx={{
@@ -43,12 +43,12 @@ export function InterfacePanel() {
             mb: 1,
           }}
         >
-          Web App
+          Dashboard
         </Typography>
         <AppView />
       </Box>
 
-      {/* Slack view */}
+      {/* Email alert view */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography
           sx={{
@@ -60,9 +60,9 @@ export function InterfacePanel() {
             mb: 1,
           }}
         >
-          Slack
+          Email alert
         </Typography>
-        <SlackView />
+        <EmailAlertView />
       </Box>
     </Box>
   );
@@ -105,7 +105,7 @@ function AppView() {
         </Box>
         <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
           <Typography sx={{ color: alpha(ct, 0.4), fontSize: '0.65rem', fontWeight: 600 }}>
-            Chat
+            Contract Search
           </Typography>
         </Box>
       </Box>
@@ -167,7 +167,7 @@ function AppView() {
   );
 }
 
-function SlackView() {
+function EmailAlertView() {
   const theme = useTheme();
   const codeText = theme.palette.kindle.codeBlockText;
   const syntaxKey = theme.palette.kindle.syntaxKey;
@@ -176,23 +176,21 @@ function SlackView() {
   const border = alpha(codeText, 0.1);
   const borderSubtle = alpha(codeText, 0.06);
   const textDim = alpha(codeText, 0.5);
-  const mentionBg = alpha(syntaxKey, 0.12);
-  const mentionColor = syntaxKey;
   const linkColor = syntaxNumber;
-  const channelBg = theme.palette.kindle.codeBlockBg;
+  const emailBg = theme.palette.kindle.codeBlockBg;
 
   return (
     <Box
       sx={{
         borderRadius: 2,
         overflow: 'hidden',
-        bgcolor: channelBg,
+        bgcolor: emailBg,
         border: '1px solid',
         borderColor: border,
         boxShadow: theme.shadows[2],
       }}
     >
-      {/* Channel header */}
+      {/* Email header */}
       <Box
         sx={{
           px: 1.5,
@@ -204,104 +202,39 @@ function SlackView() {
           gap: 0.5,
         }}
       >
-        <SlackLogo size={14} />
-        <HashIcon size={12} weight="bold" color={codeText} />
+        <GmailLogo size={14} />
+        <EnvelopeSimpleIcon size={12} weight="bold" color={codeText} />
         <Typography
           sx={{
-            fontFamily: FONT_SLACK,
+            fontFamily: FONT_PANEL,
             fontSize: '0.72rem',
             fontWeight: 700,
             color: codeText,
           }}
         >
-          product-team
+          Renewal Alert
         </Typography>
       </Box>
 
       <Box sx={{ px: 1.5, py: 1.5 }}>
-        {/* User message */}
+        {/* Email metadata */}
         <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start', mb: 1.5 }}>
           <Box
             sx={{
               width: 24,
               height: 24,
               borderRadius: '4px',
-              bgcolor: alpha(syntaxNumber, 0.25),
+              bgcolor: alpha(syntaxKey, 0.25),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <Typography
-              sx={{
-                fontFamily: FONT_SLACK,
-                fontSize: '0.52rem',
-                fontWeight: 700,
-                color: codeText,
-              }}
-            >
-              SC
-            </Typography>
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.4, mb: 0.2 }}>
-              <Typography
-                sx={{
-                  fontFamily: FONT_SLACK,
-                  fontSize: '0.7rem',
-                  fontWeight: 800,
-                  color: codeText,
-                }}
-              >
-                Sarah Chen
-              </Typography>
-              <Typography sx={{ fontFamily: FONT_SLACK, fontSize: '0.58rem', color: textDim }}>
-                2:42 PM
-              </Typography>
-            </Box>
-            <Typography
-              sx={{
-                fontFamily: FONT_SLACK,
-                fontSize: '0.7rem',
-                lineHeight: 1.6,
-                color: codeText,
-              }}
-            >
-              <Box
-                component="span"
-                sx={{
-                  bgcolor: mentionBg,
-                  color: mentionColor,
-                  borderRadius: '3px',
-                  px: 0.3,
-                  fontWeight: 600,
-                }}
-              >
-                @Grabdy
-              </Box>{' '}
-              {QUESTION}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Bot response */}
-        <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
-          <Box
-            sx={{
-              width: 24,
-              height: 24,
-              borderRadius: '4px',
-              bgcolor: 'common.white',
-              flexShrink: 0,
-              overflow: 'hidden',
-              p: '2px',
-            }}
-          >
             <Box
               component="img"
               src={botLogo}
-              alt="Grabdy bot"
+              alt="Grabdy"
               sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </Box>
@@ -309,58 +242,68 @@ function SlackView() {
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.4, mb: 0.2 }}>
               <Typography
                 sx={{
-                  fontFamily: FONT_SLACK,
+                  fontFamily: FONT_PANEL,
                   fontSize: '0.7rem',
                   fontWeight: 800,
                   color: codeText,
                 }}
               >
-                Grabdy
+                Grabdy Alerts
               </Typography>
-              <Box
-                sx={{
-                  px: 0.3,
-                  py: 0.1,
-                  borderRadius: '3px',
-                  bgcolor: alpha(codeText, 0.12),
-                  lineHeight: 1,
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontFamily: FONT_SLACK,
-                    fontSize: '0.48rem',
-                    fontWeight: 700,
-                    color: textDim,
-                    letterSpacing: '0.03em',
-                  }}
-                >
-                  APP
-                </Typography>
-              </Box>
+              <Typography sx={{ fontFamily: FONT_PANEL, fontSize: '0.58rem', color: textDim }}>
+                8:00 AM
+              </Typography>
             </Box>
             <Typography
               sx={{
-                fontFamily: FONT_SLACK,
+                fontFamily: FONT_PANEL,
+                fontSize: '0.62rem',
+                lineHeight: 1.4,
+                color: textDim,
+                mb: 0.5,
+              }}
+            >
+              To: legal@yourcompany.com
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Email body */}
+        <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'flex-start' }}>
+          <Box sx={{ width: 24, flexShrink: 0 }} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontFamily: FONT_PANEL,
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                color: codeText,
+                mb: 0.5,
+              }}
+            >
+              Upcoming auto-renewal: Acme MSA
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: FONT_PANEL,
                 fontSize: '0.7rem',
                 lineHeight: 1.6,
                 color: codeText,
                 mb: 0.75,
               }}
             >
-              {SLACK_ANSWER}
+              {EMAIL_ANSWER}
             </Typography>
             {SOURCES.map((s) => (
               <Typography
                 key={s.name}
                 sx={{
-                  fontFamily: FONT_SLACK,
+                  fontFamily: FONT_PANEL,
                   fontSize: '0.62rem',
                   lineHeight: 1.5,
                   color: textDim,
                 }}
               >
-                {'— '}
                 <Box component="span" sx={{ color: linkColor }}>
                   {s.name}
                 </Box>{' '}

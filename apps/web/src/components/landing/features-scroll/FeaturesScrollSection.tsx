@@ -7,11 +7,11 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import { ApiPanel } from './components/ApiPanel';
+import { DeviationPanel } from './components/DeviationPanel';
 import { IntegrationsPanel } from './components/IntegrationsPanel';
 import { InterfacePanel } from './components/InterfacePanel';
 import { McpPanel } from './components/McpPanel';
 import { SearchPanel } from './components/SearchPanel';
-import { WidgetPanel } from './components/WidgetPanel';
 import { FEATURE_TABS } from './constants';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -20,7 +20,7 @@ const PANELS = [
   SearchPanel,
   InterfacePanel,
   IntegrationsPanel,
-  WidgetPanel,
+  DeviationPanel,
   ApiPanel,
   McpPanel,
 ] as const;

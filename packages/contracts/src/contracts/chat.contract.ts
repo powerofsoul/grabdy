@@ -4,7 +4,19 @@ import { z } from 'zod';
 
 import type { DataSourceType } from '../enums/data-source.js';
 import { chatAttachmentSchema, MAX_CHAT_ATTACHMENTS } from '../schemas/chat-attachment.js';
-import { botSourceConfigSchema } from './bots.contract.js';
+
+// ── Data source config (for scoping chat to specific sources) ────────────
+
+export const dataSourceConfigEntrySchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('COLLECTION'), collectionId: dbIdSchema('Collection') }),
+  z.object({ type: z.literal('DATA_SOURCE'), dataSourceId: dbIdSchema('DataSource') }),
+]);
+
+export type DataSourceConfigEntry = z.infer<typeof dataSourceConfigEntrySchema>;
+
+export const dataSourceConfigSchema = z.array(dataSourceConfigEntrySchema);
+
+export type DataSourceConfig = z.infer<typeof dataSourceConfigSchema>;
 
 const c = initContract();
 
@@ -46,10 +58,6 @@ export const chatSourceSchema = z.discriminatedUnion('type', [
   z.object({ ...chatSourceBase, type: z.literal('JSON') }),
   z.object({ ...chatSourceBase, type: z.literal('IMAGE') }),
   z.object({ ...chatSourceBase, type: z.literal('EMAIL') }),
-  z.object({ ...chatSourceBase, type: z.literal('SLACK') }),
-  z.object({ ...chatSourceBase, type: z.literal('LINEAR') }),
-  z.object({ ...chatSourceBase, type: z.literal('GITHUB') }),
-  z.object({ ...chatSourceBase, type: z.literal('NOTION') }),
 ]);
 
 export type ChatSource = z.infer<typeof chatSourceSchema>;
@@ -123,7 +131,6 @@ const chatMessageSchema = z.object({
 const threadSchema = z.object({
   id: dbIdSchema('ChatThread'),
   title: z.string().nullable(),
-  botId: dbIdSchema('Bot').nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -140,7 +147,6 @@ export const chatContract = c.router(
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
       body: z.object({
         title: z.string().optional(),
-        botId: dbIdSchema('Bot').optional(),
       }),
       responses: {
         200: z.object({ success: z.literal(true), data: threadSchema }),
@@ -151,9 +157,7 @@ export const chatContract = c.router(
       method: 'GET',
       path: '/orgs/:orgId/chat/threads',
       pathParams: z.object({ orgId: dbIdSchema('Org') }),
-      query: z.object({
-        botId: dbIdSchema('Bot').optional(),
-      }),
+      query: z.object({}),
       responses: {
         200: z.object({ success: z.literal(true), data: z.array(threadSchema) }),
       },
@@ -208,7 +212,6 @@ export const chatContract = c.router(
 export const streamChatBodySchema = z.object({
   message: z.string().min(1),
   threadId: dbIdSchema('ChatThread').optional(),
-  dataSourceConfig: botSourceConfigSchema.optional(),
-  botId: dbIdSchema('Bot').optional(),
+  dataSourceConfig: dataSourceConfigSchema.optional(),
   attachments: z.array(chatAttachmentSchema).max(MAX_CHAT_ATTACHMENTS).optional(),
 });

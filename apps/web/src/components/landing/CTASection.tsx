@@ -102,7 +102,7 @@ export function CTASection() {
         overflow: 'hidden',
       }}
     >
-      {/* Floating illustration — crystals */}
+      {/* Floating illustration, crystals */}
       <Box
         component="img"
         src={illustCrystals}
@@ -167,7 +167,7 @@ export function CTASection() {
             fontSize: { xs: '2rem', md: '2.75rem' },
           }}
         >
-          Your team&apos;s knowledge, one question away.
+          Stop digging through contracts. Start getting answers.
         </Typography>
         <Typography
           className="cta-subtitle"
@@ -179,7 +179,7 @@ export function CTASection() {
           className="cta-subtitle"
           sx={{ mb: 5, color: 'text.secondary', fontSize: '0.85rem' }}
         >
-          Teams from startups to enterprises already use Grabdy.
+          Legal teams at growing companies already use Grabdy.
         </Typography>
 
         <Box

@@ -12,7 +12,6 @@ import {
   useTheme,
 } from '@mui/material';
 import {
-  BookOpenIcon,
   BuildingsIcon,
   CaretDoubleLeftIcon,
   CaretUpDownIcon,
@@ -23,12 +22,7 @@ import {
   EyeIcon,
   FolderIcon,
   GearIcon,
-  GitForkIcon,
-  KeyIcon,
   MoonIcon,
-  PlugIcon,
-  PlusIcon,
-  RobotIcon,
   SignOutIcon,
   SquaresFourIcon,
   SunIcon,
@@ -40,7 +34,6 @@ import { NavItem } from './NavItem';
 import { SectionHeader } from './SectionHeader';
 import { useSidebarSources } from './useSidebarSources';
 
-import { getProviderLabel, ProviderIcon } from '@/components/integrations';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeMode } from '@/context/ThemeContext';
 
@@ -48,7 +41,7 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
   const theme = useTheme();
   const { user, logout, isAdmin, selectedOrgId, selectOrg } = useAuth();
   const { preference, setPreference } = useThemeMode();
-  const { connections, bots } = useSidebarSources();
+  useSidebarSources();
   const navigate = useNavigate();
   const isDark = preference === 'dark';
   const ct = theme.palette.text.primary;
@@ -219,105 +212,6 @@ export function SidebarFull({ onCollapse }: { onCollapse?: () => void }) {
             to="/dashboard/sources"
             label="All files"
             icon={<FolderIcon size={15} weight="light" color="currentColor" />}
-          />
-        </Box>
-
-        {/* Bots */}
-        <Box>
-          <SectionHeader label="Bots" />
-          <NavItem
-            to="/dashboard/bots"
-            label="All bots"
-            exact
-            icon={<RobotIcon size={15} weight="light" color="currentColor" />}
-            trailing={
-              <Tooltip title="New bot">
-                <Box
-                  component={Link}
-                  to="/dashboard/bots"
-                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    color: alpha(ct, 0.25),
-                    '&:hover': { color: 'text.primary' },
-                  }}
-                >
-                  <PlusIcon size={14} weight="light" color="currentColor" />
-                </Box>
-              </Tooltip>
-            }
-          />
-          {bots.map((bot) => (
-            <NavItem
-              key={bot.id}
-              to={`/dashboard/bots/${bot.id}`}
-              label={bot.name}
-              icon={<RobotIcon size={15} weight="light" color="currentColor" />}
-              indent
-            />
-          ))}
-        </Box>
-
-        {/* Integrations */}
-        <Box>
-          <SectionHeader label="Integrations" />
-          <NavItem
-            to="/dashboard/integrations"
-            label="All integrations"
-            exact
-            icon={<PlugIcon size={15} weight="light" color="currentColor" />}
-            trailing={
-              <Tooltip title="Add integration">
-                <Box
-                  component={Link}
-                  to="/dashboard/integrations"
-                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    color: alpha(ct, 0.25),
-                    '&:hover': { color: 'text.primary' },
-                  }}
-                >
-                  <PlusIcon size={14} weight="light" color="currentColor" />
-                </Box>
-              </Tooltip>
-            }
-          />
-          {connections.map((conn) => (
-            <NavItem
-              key={conn.id}
-              to={`/dashboard/integrations/${conn.provider.toLowerCase()}`}
-              label={getProviderLabel(conn.provider)}
-              icon={<ProviderIcon provider={conn.provider} size={15} />}
-              indent
-            />
-          ))}
-        </Box>
-
-        {/* Developer */}
-        <Box>
-          <SectionHeader label="Developer" />
-          <NavItem
-            to="/dashboard/sdk-developer"
-            label="SDK"
-            icon={<BookOpenIcon size={16} weight="light" color="currentColor" />}
-          />
-          <NavItem
-            to="/dashboard/api/keys"
-            label="Keys"
-            icon={<KeyIcon size={16} weight="light" color="currentColor" />}
-          />
-          <NavItem
-            to="/dashboard/api/mcp"
-            label="MCP"
-            icon={<GitForkIcon size={16} weight="light" color="currentColor" />}
-          />
-          <NavItem
-            to="/dashboard/api/docs"
-            label="Docs"
-            icon={<BookOpenIcon size={16} weight="light" color="currentColor" />}
           />
         </Box>
 

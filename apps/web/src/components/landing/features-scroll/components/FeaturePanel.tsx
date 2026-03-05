@@ -3,17 +3,17 @@ import { Box, Typography } from '@mui/material';
 import { FEATURE_TABS, TAB_COUNT } from '../constants';
 
 import { ApiPanel } from './ApiPanel';
+import { DeviationPanel } from './DeviationPanel';
 import { IntegrationsPanel } from './IntegrationsPanel';
 import { InterfacePanel } from './InterfacePanel';
 import { McpPanel } from './McpPanel';
 import { SearchPanel } from './SearchPanel';
-import { WidgetPanel } from './WidgetPanel';
 
 const PANELS = [
-  InterfacePanel,
   SearchPanel,
+  InterfacePanel,
   IntegrationsPanel,
-  WidgetPanel,
+  DeviationPanel,
   ApiPanel,
   McpPanel,
 ] as const;

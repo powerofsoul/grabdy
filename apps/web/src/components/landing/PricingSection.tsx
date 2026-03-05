@@ -6,7 +6,7 @@ import { Link } from '@tanstack/react-router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import { SlackLogo } from './IntegrationLogos';
+import { GoogleDriveLogo } from './IntegrationLogos';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -24,7 +24,7 @@ const TIERS = [
   {
     name: 'Pro',
     price: 'Free',
-    description: 'Everything you need to get started. No credit card required.',
+    description: 'Everything your legal team needs to get started. No credit card required.',
     cta: 'Get started',
     ctaVariant: 'contained',
     comingSoon: false,
@@ -33,7 +33,7 @@ const TIERS = [
   {
     name: 'Business',
     price: 'Custom',
-    description: 'Higher limits, priority support, and advanced integrations.',
+    description: 'Higher document limits, priority support, and CLM integrations.',
     cta: 'Get started',
     ctaVariant: 'outlined',
     comingSoon: true,
@@ -42,7 +42,7 @@ const TIERS = [
   {
     name: 'Enterprise',
     price: 'Custom',
-    description: 'Dedicated infrastructure, custom integrations, and SLA.',
+    description: 'Dedicated infrastructure, SSO, custom integrations, and SLA.',
     cta: 'Talk to us',
     ctaVariant: 'outlined',
     comingSoon: true,
@@ -52,22 +52,22 @@ const TIERS = [
 
 interface FeatureRow {
   label: string;
-  icon?: 'slack';
+  icon?: 'drive';
   values: [string | true, string | true, string | true];
 }
 
 const FEATURES = [
   { label: 'Team members', values: ['Up to 3', 'Up to 15', 'Unlimited'] },
   { label: 'Collections', values: ['Unlimited', 'Unlimited', 'Unlimited'] },
-  { label: 'Data sources', values: ['100', '500', 'Unlimited'] },
+  { label: 'Documents', values: ['100', '500', 'Unlimited'] },
   { label: 'File size', values: ['150 MB', '500 MB', 'Custom'] },
   { label: 'Storage', values: ['5 GB', '25 GB', 'Custom'] },
   { label: 'API calls / mo', values: ['10,000', '50,000', 'Custom'] },
-  { label: 'REST API + Chat', values: [true, true, true] },
-  { label: 'MCP server', values: [true, true, true] },
-  { label: 'Slack bot', icon: 'slack', values: [true, true, true] },
+  { label: 'Contract search', values: [true, true, true] },
+  { label: 'Deadline alerts', values: [true, true, true] },
+  { label: 'Cloud sync', icon: 'drive', values: [true, true, true] },
   { label: 'Integrations', values: ['Up to 5', 'All', 'Custom'] },
-  { label: 'Analytics', values: ['Basic', 'Advanced', 'Advanced'] },
+  { label: 'Audit log', values: ['Basic', 'Advanced', 'Advanced'] },
   { label: 'Support', values: ['Email', 'Priority', 'Dedicated + SLA'] },
 ] satisfies ReadonlyArray<FeatureRow>;
 
@@ -100,7 +100,7 @@ function CellValue({ value, muted }: { value: string | true; muted: boolean }) {
 function FeatureLabel({ row }: { row: FeatureRow }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      {row.icon === 'slack' && <SlackLogo size={14} />}
+      {row.icon === 'drive' && <GoogleDriveLogo size={14} />}
       <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
         {row.label}
       </Typography>
@@ -280,7 +280,7 @@ export function PricingSection() {
               backgroundSize: '16px 16px',
             }}
           >
-            {/* Empty label column — logo/branding */}
+            {/* Empty label column, logo/branding */}
             <Box
               sx={{
                 display: 'flex',
@@ -313,7 +313,7 @@ export function PricingSection() {
                   }),
                 }}
               >
-                {/* Badge area — fixed height so content below aligns */}
+                {/* Badge area, fixed height so content below aligns */}
                 <Box sx={{ minHeight: 22, mb: 1, display: 'flex', alignItems: 'center' }}>
                   {tier.highlighted && (
                     <Typography

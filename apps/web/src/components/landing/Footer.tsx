@@ -1,6 +1,5 @@
 import { alpha, Box, Container, IconButton, Typography, useTheme } from '@mui/material';
 import { LinkedinLogo as LinkedinLogoIcon, XLogo as XLogoIcon } from '@phosphor-icons/react';
-import { Link } from '@tanstack/react-router';
 
 import { Logo } from '../ui/Logo';
 
@@ -39,7 +38,7 @@ export function Footer() {
             <Typography
               sx={{ mt: 0.75, fontSize: '0.78rem', color: 'text.secondary', maxWidth: 280 }}
             >
-              Smart document retrieval for teams that move fast.
+              AI-powered contract intelligence for legal teams.
             </Typography>
           </Box>
 
@@ -55,17 +54,8 @@ export function Footer() {
               <Typography component="a" href="#features" sx={linkSx}>
                 Features
               </Typography>
-              <Typography component="a" href="#integrations" sx={linkSx}>
-                Integrations
-              </Typography>
-              <Typography component="a" href="#developers" sx={linkSx}>
-                Developers
-              </Typography>
-              <Typography component={Link} to="/docs" sx={linkSx}>
-                API Docs
-              </Typography>
-              <Typography component={Link} to="/dashboard/api/mcp" sx={linkSx}>
-                MCP
+              <Typography component="a" href="mailto:hello@grabdy.com" sx={linkSx}>
+                Enterprise
               </Typography>
             </Box>
           </Box>

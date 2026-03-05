@@ -10,8 +10,6 @@ import { FONT_MONO } from '@/theme';
 
 interface Stats {
   collections: number;
-  apiKeys: number;
-  connections: number;
 }
 
 export const Route = createFileRoute('/dashboard/')({
@@ -169,29 +167,12 @@ function StatItem({
 }
 
 function StatsBar({ stats, isLoading }: { stats: Stats; isLoading: boolean }) {
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
-
   return (
     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 4, mb: 5 }}>
       <StatItem
         value={stats.collections}
         label="Sources"
         to="/dashboard/sources"
-        isLoading={isLoading}
-      />
-      <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
-      <StatItem
-        value={stats.connections}
-        label="Integrations"
-        to="/dashboard/integrations"
-        isLoading={isLoading}
-      />
-      <Box sx={{ width: '1px', height: 40, bgcolor: alpha(ct, 0.15) }} />
-      <StatItem
-        value={stats.apiKeys}
-        label="API Keys"
-        to="/dashboard/api/keys"
         isLoading={isLoading}
       />
     </Box>
@@ -212,9 +193,6 @@ function HowItWorksStep({ title, description }: { title: string; description: st
 }
 
 function HowItWorks() {
-  const theme = useTheme();
-  const ct = theme.palette.text.primary;
-
   return (
     <Box sx={{ mt: 5 }}>
       <Typography
@@ -239,7 +217,7 @@ function HowItWorks() {
       >
         <HowItWorksStep
           title="Add your data"
-          description="Upload files or connect integrations like Slack and GitHub."
+          description="Upload contracts, NDAs, compliance filings, and other documents."
         />
         <Typography
           sx={{
@@ -267,30 +245,8 @@ function HowItWorks() {
         </Typography>
         <HowItWorksStep
           title="Query your data"
-          description="Ask questions via chat, REST API, or MCP server."
+          description="Ask questions via chat or embed a chatbot on your site."
         />
-      </Box>
-      <Box sx={{ mt: 2 }}>
-        <Link to="/dashboard/api/docs" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <Box
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.5,
-              py: 0.25,
-              cursor: 'pointer',
-              borderBottom: '1px solid',
-              borderColor: alpha(ct, 0.2),
-              transition: 'border-color 0.15s',
-              '&:hover': { borderColor: ct },
-            }}
-          >
-            <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-              Read the docs
-            </Typography>
-            <ArrowRightIcon size={12} weight="light" />
-          </Box>
-        </Link>
       </Box>
     </Box>
   );
@@ -302,14 +258,11 @@ function GettingStarted({ stats, isLoading }: { stats: Stats; isLoading: boolean
       <StatsBar stats={stats} isLoading={isLoading} />
       <StepRow
         number={1}
-        title="Connect your data"
-        description="Link an integration or upload files."
-        completed={stats.connections > 0}
-        completedLabel={`${stats.connections} integration${stats.connections === 1 ? '' : 's'} connected`}
-        actions={[
-          { label: 'Connect integration', to: '/dashboard/integrations' },
-          { label: 'Upload files', to: '/dashboard/sources' },
-        ]}
+        title="Upload your documents"
+        description="Upload contracts, NDAs, and other legal documents."
+        completed={stats.collections > 0}
+        completedLabel={`${stats.collections} source${stats.collections === 1 ? '' : 's'} created`}
+        actions={[{ label: 'Upload files', to: '/dashboard/sources' }]}
       />
       <Divider />
       <StepRow
@@ -323,17 +276,8 @@ function GettingStarted({ stats, isLoading }: { stats: Stats; isLoading: boolean
       <Divider />
       <StepRow
         number={3}
-        title="Generate an API key"
-        description="Access your data via REST API or MCP."
-        completed={stats.apiKeys > 0}
-        completedLabel={`${stats.apiKeys} API key${stats.apiKeys === 1 ? '' : 's'} created`}
-        actions={[{ label: 'Generate key', to: '/dashboard/api/keys' }]}
-      />
-      <Divider />
-      <StepRow
-        number={4}
         title="Ask your first question"
-        description="Chat with your knowledge base."
+        description="Chat with your contract library."
         completed={false}
         actions={[{ label: 'Open chat', to: '/dashboard/chat' }]}
       />
@@ -362,8 +306,6 @@ function Overview({ stats, isLoading }: { stats: Stats; isLoading: boolean }) {
       </Typography>
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
         <QuickAction label="Create a source" to="/dashboard/sources" />
-        <QuickAction label="Connect integration" to="/dashboard/integrations" />
-        <QuickAction label="Generate an API key" to="/dashboard/api/keys" />
         <QuickAction label="Ask a question" to="/dashboard/chat" />
       </Box>
     </>
@@ -376,25 +318,22 @@ function DashboardIndex() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['dashboard-stats', selectedOrgId],
     queryFn: async () => {
-      if (!selectedOrgId) return { collections: 0, apiKeys: 0, connections: 0 };
+      if (!selectedOrgId) return { collections: 0 };
 
-      const [collectionsRes, keysRes, connectionsRes] = await Promise.all([
-        api.collections.list({ params: { orgId: selectedOrgId }, query: {} }),
-        api.apiKeys.list({ params: { orgId: selectedOrgId } }),
-        api.integrations.listConnections({ params: { orgId: selectedOrgId } }),
-      ]);
+      const collectionsRes = await api.collections.list({
+        params: { orgId: selectedOrgId },
+        query: {},
+      });
 
       return {
         collections: collectionsRes.status === 200 ? collectionsRes.body.data.length : 0,
-        apiKeys: keysRes.status === 200 ? keysRes.body.data.length : 0,
-        connections: connectionsRes.status === 200 ? connectionsRes.body.data.length : 0,
       };
     },
     enabled: !!selectedOrgId,
   });
 
-  const resolved = stats ?? { collections: 0, apiKeys: 0, connections: 0 };
-  const isSetupComplete = !isLoading && resolved.collections > 0 && resolved.apiKeys > 0;
+  const resolved = stats ?? { collections: 0 };
+  const isSetupComplete = !isLoading && resolved.collections > 0;
 
   return (
     <DashboardPage

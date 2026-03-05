@@ -1,13 +1,13 @@
 import { alpha, Box, Typography, useTheme } from '@mui/material';
 
-import { GoogleDriveLogo, SlackLogo } from '../../IntegrationLogos';
+import { GoogleDriveLogo, NotionLogo } from '../../IntegrationLogos';
 
-const QUERY = 'What was decided about the pricing change?';
+const QUERY = "What's the indemnification cap in the Acme MSA?";
 const ANSWER =
-  'The team agreed on a 15% increase for Pro plans, effective March 1. Decision in #product on Jan 12.';
+  'Mutual indemnification capped at 2x annual fees per Section 9.3. Carve-outs for IP infringement and data breach are uncapped.';
 const SOURCES = [
-  { Logo: SlackLogo, name: 'Slack' },
-  { Logo: GoogleDriveLogo, name: 'Google Drive' },
+  { Logo: GoogleDriveLogo, name: 'acme-msa-2023.pdf' },
+  { Logo: NotionLogo, name: 'Vendor Tracker' },
 ] as const;
 
 export function SearchPanel() {

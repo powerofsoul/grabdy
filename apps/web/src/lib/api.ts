@@ -1,10 +1,9 @@
 import {
-  type BotSourceConfig,
   type ChatAttachment,
   chatAttachmentSchema,
   type ChatSource,
-  chatSourceSchema,
   contract,
+  type DataSourceConfig,
   sseMetaEventSchema,
 } from '@grabdy/contracts';
 import { ApiFetcherArgs, initClient } from '@ts-rest/core';
@@ -111,26 +110,6 @@ export async function uploadChatAttachment(orgId: string, file: File): Promise<C
   return parsed.data;
 }
 
-export async function uploadSdkChatAttachment(jwt: string, file: File): Promise<ChatAttachment> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await fetch(`${baseUrl}/sdk/chat/attachments`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${jwt}` },
-    body: formData,
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new SdkApiError(
-      data?.error ?? `Upload failed with status ${response.status}`,
-      response.status
-    );
-  }
-  const json: unknown = await response.json();
-  const parsed = z.object({ success: z.literal(true), data: chatAttachmentSchema }).parse(json);
-  return parsed.data;
-}
-
 export async function getChatAttachmentUrl(orgId: string, storageKey: string): Promise<string> {
   const response = await fetch(
     `${baseUrl}/orgs/${orgId}/chat/attachments/url?storageKey=${encodeURIComponent(storageKey)}`,
@@ -139,22 +118,6 @@ export async function getChatAttachmentUrl(orgId: string, storageKey: string): P
   if (!response.ok) {
     const data = await response.json().catch(() => null);
     throw new ApiError(response.status, data || {});
-  }
-  const json: unknown = await response.json();
-  const parsed = z
-    .object({ success: z.literal(true), data: z.object({ url: z.string() }) })
-    .parse(json);
-  return parsed.data.url;
-}
-
-export async function getSdkChatAttachmentUrl(jwt: string, storageKey: string): Promise<string> {
-  const response = await fetch(
-    `${baseUrl}/sdk/chat/attachments/url?storageKey=${encodeURIComponent(storageKey)}`,
-    { headers: { Authorization: `Bearer ${jwt}` } }
-  );
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new SdkApiError(data?.error ?? `Failed to get URL: ${response.status}`, response.status);
   }
   const json: unknown = await response.json();
   const parsed = z
@@ -250,8 +213,7 @@ export async function streamChat(
   body: {
     message: string;
     threadId?: string;
-    dataSourceConfig?: BotSourceConfig;
-    botId?: string;
+    dataSourceConfig?: DataSourceConfig;
     attachments?: ChatAttachment[];
   },
   callbacks: StreamCallbacks,
@@ -269,107 +231,6 @@ export async function streamChat(
     const data = await response.json().catch(() => null);
     const msg = data?.error ?? `Stream failed with status ${response.status}`;
     callbacks.onError?.(new Error(msg));
-    return;
-  }
-
-  await readStream(response, callbacks);
-}
-
-const sdkHistoryResponseSchema = z.object({
-  success: z.boolean(),
-  data: z.object({
-    messages: z.array(
-      z.object({
-        id: z.string(),
-        role: z.enum(['user', 'assistant']),
-        content: z.string(),
-        createdAt: z.string().nullable(),
-        sources: z.array(chatSourceSchema).nullable().optional(),
-        thinkingTexts: z.array(z.string()).nullable().optional(),
-        durationMs: z.number().nullable().optional(),
-        attachments: z.array(chatAttachmentSchema).nullable().optional(),
-      })
-    ),
-    threadId: z.string().nullable(),
-  }),
-});
-
-export class SdkApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number
-  ) {
-    super(message);
-    this.name = 'SdkApiError';
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
-}
-
-export interface SdkChatConfig {
-  title: string | null;
-  subtitle: string | null;
-  placeholder: string | null;
-  primaryColor: string | null;
-  accentColor: string | null;
-  logoUrl: string | null;
-}
-
-const sdkConfigResponseSchema = z.object({
-  success: z.boolean(),
-  data: z.object({
-    title: z.string().nullable(),
-    subtitle: z.string().nullable(),
-    placeholder: z.string().nullable(),
-    primaryColor: z.string().nullable(),
-    accentColor: z.string().nullable(),
-    logoUrl: z.string().nullable(),
-  }),
-});
-
-// Note: uses raw fetch because this is a public endpoint called from the SDK iframe context without cookies or ts-rest client
-export async function fetchSdkConfig(chatId: string): Promise<SdkChatConfig> {
-  const response = await fetch(`${baseUrl}/sdk/chat/${encodeURIComponent(chatId)}/config`);
-  if (!response.ok) {
-    throw new SdkApiError(`Failed to fetch config: ${response.status}`, response.status);
-  }
-  const json: unknown = await response.json();
-  const parsed = sdkConfigResponseSchema.parse(json);
-  return parsed.data;
-}
-
-// Note: uses raw fetch because SDK endpoints use Bearer JWT auth, not cookie-based ts-rest client
-export async function fetchSdkHistory(
-  jwt: string
-): Promise<z.infer<typeof sdkHistoryResponseSchema>> {
-  const response = await fetch(`${baseUrl}/sdk/chat/history`, {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
-  if (!response.ok) {
-    throw new SdkApiError(`Failed to fetch history: ${response.status}`, response.status);
-  }
-  const json: unknown = await response.json();
-  return sdkHistoryResponseSchema.parse(json);
-}
-
-// Note: uses raw fetch because SDK endpoints use Bearer JWT auth, not cookie-based ts-rest client
-export async function streamSdkChat(
-  jwt: string,
-  body: { message: string; threadId?: string; attachments?: ChatAttachment[] },
-  callbacks: StreamCallbacks
-): Promise<void> {
-  const response = await fetch(`${baseUrl}/sdk/chat/stream`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${jwt}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    const msg = data?.error ?? `Stream failed with status ${response.status}`;
-    callbacks.onError?.(new SdkApiError(msg, response.status));
     return;
   }
 

@@ -29,15 +29,9 @@ export class SharedChatService {
   ) {
     const thread = await this.db.kysely
       .selectFrom('data.chat_threads')
-      .leftJoin('sdk.bots', 'sdk.bots.id', 'data.chat_threads.bot_id')
-      .select([
-        'data.chat_threads.id',
-        'data.chat_threads.title',
-        'sdk.bots.accent_color',
-        'sdk.bots.primary_color',
-      ])
-      .where('data.chat_threads.id', '=', threadId)
-      .where('data.chat_threads.org_id', '=', orgId)
+      .select(['id', 'title'])
+      .where('id', '=', threadId)
+      .where('org_id', '=', orgId)
       .executeTakeFirst();
 
     if (!thread) {
@@ -88,8 +82,8 @@ export class SharedChatService {
             title: thread.title,
             messages_snapshot: snapshotJson,
             share_token: shareToken,
-            accent_color: thread.accent_color,
-            primary_color: thread.primary_color,
+            accent_color: null,
+            primary_color: null,
             image_ids: imageIds,
             is_public: isPublicVal,
           })

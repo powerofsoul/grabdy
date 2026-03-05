@@ -83,19 +83,6 @@ export class ListSourcesTool implements Tool<Input, Output> {
             if (scope.dataSourceIds.length > 0) {
               parts.push(eb('id', 'in', scope.dataSourceIds));
             }
-            if (scope.connectionIds.length > 0) {
-              parts.push(eb('connection_id', 'in', scope.connectionIds));
-            }
-            for (const cr of scope.connectionResources) {
-              const escaped = cr.githubRepo.replace(/[%_\\]/g, '\\$&');
-              parts.push(
-                eb.and([
-                  eb('connection_id', '=', cr.connectionId),
-                  eb('external_id', 'like', `${escaped}#%`),
-                ])
-              );
-            }
-
             if (parts.length === 0) {
               return eb('id', 'is', null);
             }

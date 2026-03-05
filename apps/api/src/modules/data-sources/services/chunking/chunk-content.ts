@@ -36,36 +36,8 @@ export function chunkPlainText(
 }
 
 /**
- * Check if two ChunkMeta objects represent the same grouping context.
- * Messages with the same context can be grouped into a single chunk.
- * For Slack, messages from the same channel are grouped regardless of author
- * — all unique authors are collected into the chunk's `slackAuthors` array.
- */
-function isSameGroupingContext(a: ChunkMeta, b: ChunkMeta): boolean {
-  if (a.type !== b.type) return false;
-  if (a.type === 'SLACK' && b.type === 'SLACK') {
-    return a.slackChannelId === b.slackChannelId;
-  }
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
-/**
- * Merge authors from a message into a SLACK chunk's metadata.
- * Collects unique authors across all grouped messages.
- */
-function mergeSlackAuthors(chunkMeta: ChunkMeta, messageMeta: ChunkMeta): ChunkMeta {
-  if (chunkMeta.type !== 'SLACK' || messageMeta.type !== 'SLACK') return chunkMeta;
-  const existing = new Set(chunkMeta.slackAuthors);
-  for (const author of messageMeta.slackAuthors) {
-    existing.add(author);
-  }
-  return { ...chunkMeta, slackAuthors: [...existing] };
-}
-
-/**
  * Group consecutive messages into conversation-window chunks up to CHUNK_SIZE_TOKENS.
- * Messages from the same context (e.g., same Slack channel) are grouped together,
- * collecting all unique authors into the chunk's metadata.
+ * Messages with the same metadata context are grouped together.
  * Oversized individual messages are split using the recursive text splitter.
  */
 export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
@@ -78,7 +50,7 @@ export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
   let anchorUrl: string = msgs[0].sourceUrl;
 
   for (const msg of msgs) {
-    const contextChanged = !isSameGroupingContext(chunkMeta, msg.metadata);
+    const contextChanged = JSON.stringify(chunkMeta) !== JSON.stringify(msg.metadata);
     const separator = buffer.length > 0 ? '\n' : '';
     const candidateTokens = countTokens(separator + msg.content);
 
@@ -92,9 +64,6 @@ export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
       bufferTokens = 0;
       chunkMeta = msg.metadata;
       anchorUrl = msg.sourceUrl;
-    } else {
-      // Merge authors from this message into the chunk metadata
-      chunkMeta = mergeSlackAuthors(chunkMeta, msg.metadata);
     }
 
     buffer += separator + msg.content;
@@ -114,12 +83,11 @@ export function groupMessages(msgs: SyncedMessageData[]): ChunkWithMeta[] {
     if (bufferTokens >= MIN_CHUNK_SIZE_TOKENS) {
       chunks.push({ content: buffer, metadata: chunkMeta, sourceUrl: anchorUrl, sourceKey: null });
     } else if (chunks.length > 0) {
-      // Append undersized tail to the last chunk and merge authors
+      // Append undersized tail to the last chunk
       const last = chunks[chunks.length - 1];
       chunks[chunks.length - 1] = {
         ...last,
         content: last.content + '\n' + buffer,
-        metadata: mergeSlackAuthors(last.metadata, chunkMeta),
       };
     } else {
       // Only chunk — keep it regardless of size

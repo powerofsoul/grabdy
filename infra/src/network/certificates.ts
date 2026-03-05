@@ -25,37 +25,8 @@ const apiCertWaiter = new aws.acm.CertificateValidation('grabdy-api-cert-wait', 
 });
 
 
-// ACM cert for CloudFront (sdk.grabdy.com) — MUST be us-east-1
-const usEast1 = new aws.Provider('us-east-1', { region: 'us-east-1' });
-
-const sdkCert = new aws.acm.Certificate(
-  'grabdy-sdk-cert',
-  {
-    domainName: Env.sdkDomain,
-    validationMethod: 'DNS',
-  },
-  { provider: usEast1 }
-);
-
-const sdkCertValidation = new aws.route53.Record('grabdy-sdk-cert-validation', {
-  zoneId: zone.then((z) => z.zoneId),
-  name: sdkCert.domainValidationOptions[0].resourceRecordName,
-  type: sdkCert.domainValidationOptions[0].resourceRecordType,
-  records: [sdkCert.domainValidationOptions[0].resourceRecordValue],
-  ttl: 60,
-  allowOverwrite: true,
-});
-
-const sdkCertWaiter = new aws.acm.CertificateValidation(
-  'grabdy-sdk-cert-wait',
-  {
-    certificateArn: sdkCert.arn,
-    validationRecordFqdns: [sdkCertValidation.fqdn],
-  },
-  { provider: usEast1 }
-);
-
 // ACM cert for CloudFront (grabdy.com + www)
+const usEast1 = new aws.Provider('us-east-1', { region: 'us-east-1' });
 
 const frontendCert = new aws.acm.Certificate(
   'grabdy-frontend-cert',
@@ -106,4 +77,3 @@ const frontendCertWaiter = new aws.acm.CertificateValidation(
 
 export const apiCertArn = apiCertWaiter.certificateArn;
 export const frontendCertArn = frontendCertWaiter.certificateArn;
-export const sdkCertArn = sdkCertWaiter.certificateArn;

@@ -51,8 +51,6 @@ export interface AgentCallOptions {
   callerType?: AiCallerType;
   requestType?: AiRequestType;
   userId?: DbId<'User'>;
-  botId?: DbId<'Bot'>;
-  externalUser?: string;
   tools: ToolSet;
   instructions: string;
   maxSteps?: number;
@@ -178,8 +176,6 @@ export abstract class BaseAgent {
               orgId: opts.orgId,
               userId: opts.userId,
               source: opts.source,
-              botId: opts.botId,
-              externalUser: opts.externalUser,
             },
             { description: 'Agent chat step' }
           )
@@ -197,7 +193,7 @@ export abstract class BaseAgent {
     return buildUserContent(input.message, input.attachmentContext, imageFileNames);
   }
 
-  /** Run a non-streaming generation from raw messages (used by SlackAgent). */
+  /** Run a non-streaming generation from raw messages. */
   protected async runGenerate(
     opts: AgentCallOptions,
     messages: CoreMessage[]

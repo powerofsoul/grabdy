@@ -11,7 +11,6 @@ COPY package.json yarn.lock .yarnrc.yml ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/common/package.json packages/common/
-COPY apps/sdk/package.json apps/sdk/
 COPY packages/contracts/package.json packages/contracts/
 
 RUN yarn install --immutable

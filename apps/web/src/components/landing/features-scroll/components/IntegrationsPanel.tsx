@@ -11,7 +11,6 @@ import {
   ConfluenceLogo,
   GmailLogo,
   GoogleDriveLogo,
-  LinearLogo,
   NotionLogo,
   SlackLogo,
 } from '../../IntegrationLogos';
@@ -25,19 +24,19 @@ const FILE_TYPES = [
 ] as const;
 
 const CURRENT_INTEGRATIONS = [
-  { name: 'Slack', Logo: SlackLogo },
-  { name: 'GitHub', Logo: GitHubLogo },
+  { name: 'Google Drive', Logo: GoogleDriveLogo },
+  { name: 'Gmail', Logo: GmailLogo },
   { name: 'Notion', Logo: NotionLogo },
-  { name: 'Linear', Logo: LinearLogo },
+  { name: 'Confluence', Logo: ConfluenceLogo },
 ] as const;
 
 const UPCOMING_INTEGRATIONS = [
-  { name: 'Google Drive', Logo: GoogleDriveLogo },
-  { name: 'Gmail', Logo: GmailLogo },
-  { name: 'Confluence', Logo: ConfluenceLogo },
+  { name: 'SharePoint', Logo: SharePointLogo },
+  { name: 'Box', Logo: BoxLogo },
+  { name: 'Slack', Logo: SlackLogo },
   { name: 'Jira', Logo: JiraLogo },
-  { name: 'Figma', Logo: FigmaLogo },
-  { name: 'Trello', Logo: TrelloLogo },
+  { name: 'DocuSign', Logo: DocuSignLogo },
+  { name: 'Dropbox', Logo: DropboxLogo },
 ] as const;
 
 export function IntegrationsPanel() {
@@ -156,14 +155,6 @@ function IntegrationTile({
 
 /* Inline logo components for providers not in IntegrationLogos */
 
-function GitHubLogo({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" opacity={0.85}>
-      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-    </svg>
-  );
-}
-
 function JiraLogo({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="#2684FF">
@@ -172,33 +163,36 @@ function JiraLogo({ size = 24 }: { size?: number }) {
   );
 }
 
-function FigmaLogo({ size = 24 }: { size?: number }) {
+function SharePointLogo({ size = 24 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-      <path
-        d="M33.33 100a16.67 16.67 0 0 0 16.67-16.67V66.67H33.33a16.67 16.67 0 0 0 0 33.33z"
-        fill="#0ACF83"
-      />
-      <path
-        d="M16.67 50a16.67 16.67 0 0 1 16.67-16.67H50V66.67H33.33A16.67 16.67 0 0 1 16.67 50z"
-        fill="#A259FF"
-      />
-      <path
-        d="M16.67 16.67A16.67 16.67 0 0 1 33.33 0H50v33.33H33.33A16.67 16.67 0 0 1 16.67 16.67z"
-        fill="#F24E1E"
-      />
-      <path d="M50 0h16.67a16.67 16.67 0 0 1 0 33.33H50V0z" fill="#FF7262" />
-      <path d="M83.33 50A16.67 16.67 0 1 1 50 50a16.67 16.67 0 0 1 33.33 0z" fill="#1ABCFE" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="7" fill="#038387" />
+      <circle cx="7" cy="15" r="5.5" fill="#37A0A4" />
+      <circle cx="14" cy="18" r="4" fill="#7DCBCF" />
     </svg>
   );
 }
 
-function TrelloLogo({ size = 24 }: { size?: number }) {
+function BoxLogo({ size = 24 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="3.6" fill="#0079BF" />
-      <rect x="3.6" y="3.6" width="7.2" height="16.8" rx="1.2" fill="#fff" />
-      <rect x="13.2" y="3.6" width="7.2" height="10.8" rx="1.2" fill="#fff" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#0061D5">
+      <path d="M2.5 8.4L12 14.4l9.5-6L12 2.4 2.5 8.4zm0 2.4v4.8L12 21.6l9.5-6V10.8L12 16.8 2.5 10.8z" />
+    </svg>
+  );
+}
+
+function DocuSignLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#FFCD00">
+      <path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm3 3h6v2H9V9zm0 4h4v2H9v-2z" />
+    </svg>
+  );
+}
+
+function DropboxLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#0061FF">
+      <path d="M7.1 2L1 6l5.1 4L12 6 7.1 2zM17 2l-5 4 6.1 4L23 6l-6-4zM1 14l6.1 4L12 14l-5.9-4L1 14zm16.9-4L12 14l5.1 4L23 14l-5.1-4zM12 15.4L6.1 19.4l1 .6 4.9-3.2 4.9 3.2 1-.6L12 15.4z" />
     </svg>
   );
 }

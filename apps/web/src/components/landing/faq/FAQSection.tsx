@@ -18,34 +18,34 @@ gsap.registerPlugin(ScrollTrigger);
 
 const FAQ_ITEMS = [
   {
-    question: 'What file types does Grabdy support?',
+    question: 'What document types does Grabdy support?',
     answer:
-      'Grabdy supports PDF, CSV, DOCX, DOC, XLSX, XLS, TXT, JSON, images (PNG, JPEG, WebP, GIF), and email files (EML, MSG, PST). You can also connect integrations like Slack, Notion, GitHub, Google Drive, and Gmail.',
+      'Grabdy supports PDF, DOCX, DOC, XLSX, XLS, CSV, TXT, JSON, images (PNG, JPEG, WebP, GIF), and email files (EML, MSG, PST). Upload contracts, NDAs, BAAs, compliance filings, and policy documents directly or sync from Google Drive, Gmail, and Notion.',
   },
   {
-    question: 'Is my data secure?',
+    question: 'Is my data secure enough for legal documents?',
     answer:
-      'Your data is encrypted at rest and in transit. Each organization is fully isolated with its own data silo. We never use your data to train models, and you can delete your data at any time.',
+      'Your data is encrypted at rest (AES-256) and in transit (TLS 1.3). Each organization is fully isolated with its own data silo. We never use your data to train models, and you can delete your data at any time. Grabdy is built to handle sensitive legal documents.',
   },
   {
-    question: 'Can I use Grabdy with my existing tools?',
+    question: 'Can Grabdy integrate with our CLM or billing systems?',
     answer:
-      'Yes. Grabdy integrates with Slack, Notion, GitHub, Google Drive, Gmail, and more. You can also use the REST API or MCP server to connect with any custom workflow.',
+      'Yes. The REST API lets you push deadline data to billing systems, sync contract terms to your CLM, and trigger alerts in your existing workflow tools. We also integrate with Google Drive, Gmail, Notion, and Confluence.',
   },
   {
     question: 'What happens after the free trial?',
     answer:
-      'All data and configurations you create during the trial will carry over. We will provide advance notice before any pricing changes take effect.',
+      'All documents and configurations you create during the trial carry over to your paid plan. We provide advance notice before any changes take effect.',
   },
   {
-    question: 'How does the API work?',
+    question: 'How accurate are the cited answers?',
     answer:
-      'The REST API lets you search your knowledge base, manage collections, and upload documents programmatically. Authenticate with a simple API key and start querying in minutes.',
+      'Every answer includes citations pointing to the exact document and section. Grabdy uses vector search to find the most relevant clauses, then generates answers grounded in your actual contract language. You can always click through to verify the source.',
   },
   {
-    question: 'Can I embed a chatbot on my website?',
+    question: 'Can I control who on my team can access specific documents?',
     answer:
-      'Yes. Grabdy provides an embeddable chat widget that you can add to any website with a single script tag. It connects to your knowledge base and answers visitor questions with cited sources.',
+      'Yes. Grabdy supports organization-level access controls. You can manage team members, set permissions, and ensure that sensitive documents are only visible to authorized users.',
   },
 ];
 

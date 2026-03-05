@@ -40,33 +40,6 @@ const emailChunkMetaSchema = z.object({
   emailRfcMessageRef: z.string().nullable(),
 });
 
-// Integration types — location within external system
-const slackChunkMetaSchema = z.object({
-  type: z.literal('SLACK'),
-  slackChannelId: z.string(),
-  slackMessageTs: z.string(),
-  slackAuthors: z.array(z.string()),
-});
-
-const linearChunkMetaSchema = z.object({
-  type: z.literal('LINEAR'),
-  linearIssueId: z.string(),
-  linearCommentId: z.string().nullable(),
-  linearTimestamp: z.string().nullable().optional(),
-});
-
-const githubChunkMetaSchema = z.object({
-  type: z.literal('GITHUB'),
-  githubItemType: z.enum(['issue', 'pull_request', 'discussion']),
-  githubCommentId: z.string().nullable(),
-});
-
-const notionChunkMetaSchema = z.object({
-  type: z.literal('NOTION'),
-  notionPageId: z.string(),
-  notionBlockId: z.string().nullable(),
-});
-
 export const chunkMetaSchema = z.discriminatedUnion('type', [
   pdfChunkMetaSchema,
   docxChunkMetaSchema,
@@ -76,10 +49,6 @@ export const chunkMetaSchema = z.discriminatedUnion('type', [
   jsonChunkMetaSchema,
   imageChunkMetaSchema,
   emailChunkMetaSchema,
-  slackChunkMetaSchema,
-  linearChunkMetaSchema,
-  githubChunkMetaSchema,
-  notionChunkMetaSchema,
 ]);
 
 export type ChunkMeta = z.infer<typeof chunkMetaSchema>;
@@ -111,8 +80,4 @@ export const CHUNK_META_DESCRIPTIONS: Record<DataSourceType, string> = {
   JSON: '{ type }',
   IMAGE: '{ type }',
   EMAIL: '{ type, emailFrom, emailTo[], emailSubject, emailDate, emailRfcMessageRef }',
-  SLACK: '{ type, slackAuthors[] }',
-  LINEAR: '{ type }',
-  GITHUB: '{ type, githubItemType (issue|pull_request|discussion) }',
-  NOTION: '{ type }',
 };

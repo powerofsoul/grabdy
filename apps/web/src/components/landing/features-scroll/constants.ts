@@ -1,44 +1,45 @@
 export const FEATURE_TABS = [
   {
     number: '01',
-    title: 'Search',
-    heading: 'Ask anything, get answers',
+    title: 'Contract search',
+    heading: 'Ask about any clause, any contract',
     description:
-      'Ask questions in plain English. Grabdy finds the answer across all your data with cited sources.',
+      'Search across your entire contract library in plain English. Find indemnification caps, termination rights, or payment terms in seconds, with cited page numbers.',
   },
   {
     number: '02',
-    title: 'Interface',
-    heading: 'Search from anywhere',
+    title: 'Deadline alerts',
+    heading: 'Never miss a renewal or compliance date',
     description:
-      'Use the web dashboard or ask directly in Slack. Grabdy meets your team where they already work.',
+      'Get notified before auto-renewals, option windows, and compliance deadlines expire. No more spreadsheet tracking.',
   },
   {
     number: '03',
-    title: 'Integrations',
-    heading: 'Connect your tools and files',
+    title: 'Document upload',
+    heading: 'All your legal docs in one place',
     description:
-      'Upload PDFs, Excel, Word, and text files. Sync Slack, GitHub, Notion, and more. All your data in one place.',
+      'Upload contracts, NDAs, BAAs, compliance filings, and policy documents. Supports PDF, Word, CSV, and plain text.',
   },
   {
     number: '04',
-    title: 'Chat widget',
-    heading: 'Embed on your site',
+    title: 'Deviation detection',
+    heading: 'Spot what changed in new terms',
     description:
-      'Add an AI chatbot to your website in minutes. It answers from your data, styled to your brand.',
+      'Compare incoming vendor contracts against your standard terms. Surface material deviations before you sign.',
   },
   {
     number: '05',
     title: 'REST API',
-    heading: 'Build with code',
+    heading: 'Connect to your CLM and billing systems',
     description:
-      'Query your knowledge base programmatically. Simple REST endpoint, powerful vector search.',
+      'Integrate contract intelligence into your existing tools. Push deadline data to billing, sync terms to your CLM.',
   },
   {
     number: '06',
-    title: 'MCP',
-    heading: 'Works with AI tools',
-    description: 'Connect Grabdy to Claude, Cursor, and any MCP-compatible AI tool.',
+    title: 'Enterprise security',
+    heading: 'Built for sensitive legal documents',
+    description:
+      'SOC 2 compliant infrastructure. Your documents are encrypted at rest and in transit. Data is never used to train models.',
   },
 ] as const;
 

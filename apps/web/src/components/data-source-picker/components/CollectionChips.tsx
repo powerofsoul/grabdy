@@ -1,5 +1,5 @@
 import type { DbId } from '@grabdy/common';
-import type { BotSourceConfig } from '@grabdy/contracts';
+import type { DataSourceConfig } from '@grabdy/contracts';
 import { Box } from '@mui/material';
 
 import type { CollectionOption } from '../types';
@@ -8,8 +8,8 @@ import { CollectionSection } from './CollectionSection';
 
 interface CollectionChipsProps {
   collections: CollectionOption[];
-  value: BotSourceConfig;
-  onChange: (config: BotSourceConfig) => void;
+  value: DataSourceConfig;
+  onChange: (config: DataSourceConfig) => void;
   orgId: DbId<'Org'>;
 }
 

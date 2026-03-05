@@ -23,7 +23,6 @@ import {
   MIN_RERANK_SCORE,
 } from '../../config/constants';
 import { DbService } from '../../db/db.module';
-import type { ConnectionResource } from '../agent/agents/search-scope';
 import { AiService } from '../ai/ai.service';
 import { ProxyService } from '../proxy/proxy.service';
 
@@ -67,19 +66,6 @@ function extractSourceDate(meta: ChunkMeta | null): Date | null {
   if (!meta) return null;
 
   switch (meta.type) {
-    case 'SLACK': {
-      // slackMessageTs format: "1234567890.123456" (unix seconds with microseconds)
-      const seconds = parseFloat(meta.slackMessageTs);
-      if (Number.isFinite(seconds)) return new Date(seconds * 1000);
-      return null;
-    }
-    case 'LINEAR': {
-      if (meta.linearTimestamp) {
-        const d = new Date(meta.linearTimestamp);
-        if (!Number.isNaN(d.getTime())) return d;
-      }
-      return null;
-    }
     case 'EMAIL': {
       const d = new Date(meta.emailDate);
       if (!Number.isNaN(d.getTime())) return d;
@@ -93,8 +79,6 @@ function extractSourceDate(meta: ChunkMeta | null): Date | null {
 export interface SearchOptions {
   collectionIds?: DbId<'Collection'>[];
   dataSourceIds?: DbId<'DataSource'>[];
-  connectionIds?: DbId<'Connection'>[];
-  connectionResources?: ConnectionResource[];
   limit?: number;
   filters?: MetadataFilter[];
   callerType: AiCallerType;
@@ -115,40 +99,13 @@ function buildMetadataConditions(filters: MetadataFilter[]): Array<RawBuilder<bo
   const conditions: Array<RawBuilder<boolean>> = [];
 
   for (const filter of filters) {
-    switch (filter.field) {
-      case 'type': {
-        if (filter.operator === 'eq') {
-          conditions.push(sql<boolean>`data.chunks.metadata->>'type' = ${filter.value}`);
-        } else {
-          const values: string[] = Array.isArray(filter.value) ? filter.value : [filter.value];
-          conditions.push(
-            sql<boolean>`data.chunks.metadata->>'type' IN (${sql.join(values.map((v: string) => sql`${v}`))})`
-          );
-        }
-        break;
-      }
-      case 'slackChannelId':
-        conditions.push(sql<boolean>`data.chunks.metadata->>'slackChannelId' = ${filter.value}`);
-        break;
-      case 'slackAuthors':
-        // Handle both old format (slackAuthor string) and new format (slackAuthors array)
-        conditions.push(
-          sql<boolean>`(
-            data.chunks.metadata->'slackAuthors' @> ${sql`${JSON.stringify([filter.value])}::jsonb`}
-            OR data.chunks.metadata->>'slackAuthor' = ${filter.value}
-          )`
-        );
-        break;
-      case 'notionPageId':
-        conditions.push(sql<boolean>`data.chunks.metadata->>'notionPageId' = ${filter.value}`);
-        break;
-      case 'linearIssueId':
-        conditions.push(sql<boolean>`data.chunks.metadata->>'linearIssueId' = ${filter.value}`);
-        break;
-      default: {
-        const exhaustive: never = filter;
-        throw new Error(`Unhandled metadata filter field: ${JSON.stringify(exhaustive)}`);
-      }
+    if (filter.operator === 'eq') {
+      conditions.push(sql<boolean>`data.chunks.metadata->>'type' = ${filter.value}`);
+    } else {
+      const values: string[] = Array.isArray(filter.value) ? filter.value : [filter.value];
+      conditions.push(
+        sql<boolean>`data.chunks.metadata->>'type' IN (${sql.join(values.map((v: string) => sql`${v}`))})`
+      );
     }
   }
 
@@ -323,26 +280,13 @@ export class SearchService {
 
     const cIds = options.collectionIds ?? [];
     const dsIds = options.dataSourceIds ?? [];
-    const connIds = options.connectionIds ?? [];
-    const connResources = options.connectionResources ?? [];
 
-    const hasScope =
-      cIds.length > 0 || dsIds.length > 0 || connIds.length > 0 || connResources.length > 0;
+    const hasScope = cIds.length > 0 || dsIds.length > 0;
     if (hasScope) {
       query = query.where((eb) => {
         const parts = [];
         if (cIds.length > 0) parts.push(eb('data.chunks.collection_id', 'in', cIds));
         if (dsIds.length > 0) parts.push(eb('data.chunks.data_source_id', 'in', dsIds));
-        if (connIds.length > 0) parts.push(eb('data.data_sources.connection_id', 'in', connIds));
-        for (const cr of connResources) {
-          const escaped = cr.githubRepo.replace(/[%_\\]/g, '\\$&');
-          parts.push(
-            eb.and([
-              eb('data.data_sources.connection_id', '=', cr.connectionId),
-              eb('data.data_sources.external_id', 'like', `${escaped}#%`),
-            ])
-          );
-        }
         return parts.length === 1 ? parts[0] : eb.or(parts);
       });
     }

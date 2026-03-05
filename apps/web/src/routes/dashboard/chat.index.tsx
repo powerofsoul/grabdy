@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { z } from 'zod';
 
 import { ChatPanel } from '@/components/chat';
-import { ChatBotTabs } from '@/components/chat/components/ChatBotTabs';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 
 const chatSearchSchema = z.object({
@@ -22,7 +21,6 @@ function ChatPage() {
     <DashboardPage noPadding>
       <ChatPanel
         initialThreadId={thread}
-        tabsSlot={<ChatBotTabs />}
         onThreadChange={(threadId) => {
           navigate({
             to: '/dashboard/chat',

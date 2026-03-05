@@ -16,13 +16,11 @@ import { InlineSourceRef } from './InlineSourceRef';
 import { MessageAttachments } from './MessageAttachments';
 import { ThinkingBlock } from './ThinkingBlock';
 
-import { useIsEmbed } from '@/components/embed-chat/context';
 import { useAuth } from '@/context/AuthContext';
-import { getChatAttachmentUrl, getSdkChatAttachmentUrl } from '@/lib/api';
+import { getChatAttachmentUrl } from '@/lib/api';
 
 interface MessageRowProps {
   message: ChatMessage;
-  embedJwt?: string;
   accentColor?: string;
   shareToken?: string;
 }
@@ -68,11 +66,10 @@ function buildSourceMap(sources: ChatSource[] | undefined): Map<number, ChatSour
 const IMAGE_PROXY_RE = /\/orgs\/[^/]+\/img\/[0-9a-f-]+/;
 
 export const MessageRow = memo(
-  function MessageRow({ message, embedJwt, accentColor, shareToken }: MessageRowProps) {
+  function MessageRow({ message, accentColor, shareToken }: MessageRowProps) {
     const isUser = message.role === 'user';
     const [thinkingExpanded, setThinkingExpanded] = useState(false);
     const [expandedImage, setExpandedImage] = useState<string | null>(null);
-    const isEmbed = useIsEmbed();
     const { selectedOrgId } = useAuth();
 
     const displayContent = useMemo(
@@ -99,15 +96,12 @@ export const MessageRow = memo(
 
     const getUrl = useCallback(
       (storageKey: string) => {
-        if (isEmbed && embedJwt) {
-          return getSdkChatAttachmentUrl(embedJwt, storageKey);
-        }
         if (selectedOrgId) {
           return getChatAttachmentUrl(selectedOrgId, storageKey);
         }
         return Promise.reject(new Error('No org context'));
       },
-      [isEmbed, embedJwt, selectedOrgId]
+      [selectedOrgId]
     );
 
     const markdownComponents = useMemo(
@@ -366,7 +360,6 @@ export const MessageRow = memo(
     if (prev.message.isStreaming !== next.message.isStreaming) return false;
     if (prev.message.durationMs !== next.message.durationMs) return false;
     if (prev.message.attachments !== next.message.attachments) return false;
-    if (prev.embedJwt !== next.embedJwt) return false;
     if (prev.accentColor !== next.accentColor) return false;
     if (prev.shareToken !== next.shareToken) return false;
     return true;

@@ -6,7 +6,6 @@ import express from 'express';
 import { Logger } from 'nestjs-pino';
 
 import { env } from './config/env.config';
-import { buildOpenApiDocument } from './config/openapi';
 import { AppModule } from './app.module';
 
 export async function bootstrap() {
@@ -29,9 +28,6 @@ export async function bootstrap() {
 
   app.use(cookieParser());
 
-  // Build OpenAPI spec from Zod schemas
-  const openApiDocument = buildOpenApiDocument();
-
   // SDK endpoints use Bearer JWT from customer domains, so allow all origins.
   // Dashboard uses cookie auth with credentials: true (browser only sends
   // cookies when the response includes the matching origin, not '*').
@@ -50,11 +46,6 @@ export async function bootstrap() {
     exposedHeaders: ['Mcp-Session-Id'],
     preflightContinue: false,
     optionsSuccessStatus: 204,
-  });
-
-  // Register after CORS so headers are applied
-  server.get('/v1/openapi.json', (_req, res) => {
-    res.json(openApiDocument);
   });
 
   app.enableShutdownHooks();

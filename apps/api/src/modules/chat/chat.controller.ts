@@ -14,9 +14,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { type DbId, dbIdSchema } from '@grabdy/common';
 import {
-  type BotSourceConfig,
-  botSourceConfigSchema,
   chatContract,
+  type DataSourceConfig,
+  dataSourceConfigSchema,
   streamChatBodySchema,
 } from '@grabdy/contracts';
 import { TsRestHandler, tsRestHandler } from '@ts-rest/nest';
@@ -36,16 +36,13 @@ import { ChatAttachmentService } from './chat-attachment.service';
 
 type StreamChatBody = z.infer<typeof streamChatBodySchema>;
 
-function extractSourceConfigIds(config: BotSourceConfig): unknown[] {
+function extractSourceConfigIds(config: DataSourceConfig): unknown[] {
   return config.map((s) => {
     switch (s.type) {
       case 'COLLECTION':
         return s.collectionId;
       case 'DATA_SOURCE':
         return s.dataSourceId;
-      case 'CONNECTION':
-      case 'CONNECTION_RESOURCE':
-        return s.connectionId;
     }
   });
 }
@@ -59,14 +56,12 @@ export class ChatController {
 
   @OrgAccess(chatContract.createThread, {
     params: ['orgId'],
-    body: (b) => [b.botId],
   })
   @TsRestHandler(chatContract.createThread)
   async createThread(@CurrentMembership() membership: JwtMembership) {
     return tsRestHandler(chatContract.createThread, async ({ params, body }) => {
       const thread = await this.chatService.createThread(params.orgId, membership.id, {
         title: body.title,
-        botId: body.botId,
       });
 
       return {
@@ -76,13 +71,11 @@ export class ChatController {
     });
   }
 
-  @OrgAccess(chatContract.listThreads, { params: ['orgId'], query: ['botId'] })
+  @OrgAccess(chatContract.listThreads, { params: ['orgId'] })
   @TsRestHandler(chatContract.listThreads)
   async listThreads(@CurrentMembership() membership: JwtMembership) {
-    return tsRestHandler(chatContract.listThreads, async ({ params, query }) => {
-      const threads = await this.chatService.listThreads(params.orgId, membership.id, {
-        botId: query.botId,
-      });
+    return tsRestHandler(chatContract.listThreads, async ({ params }) => {
+      const threads = await this.chatService.listThreads(params.orgId, membership.id);
 
       return {
         status: 200 as const,
@@ -162,9 +155,9 @@ export class ChatController {
   @OrgAccess({
     params: ['orgId'],
     body: (b) => {
-      const parsed = botSourceConfigSchema.safeParse(b.dataSourceConfig);
+      const parsed = dataSourceConfigSchema.safeParse(b.dataSourceConfig);
       const configIds = parsed.success ? extractSourceConfigIds(parsed.data) : [];
-      return [b.threadId, b.botId, ...configIds];
+      return [b.threadId, ...configIds];
     },
   })
   @Post('/orgs/:orgId/chat/stream')
@@ -197,7 +190,6 @@ export class ChatController {
         {
           threadId: body.threadId,
           dataSourceConfig: body.dataSourceConfig,
-          botId: body.botId,
           attachments: body.attachments,
           attachmentContext,
         }
