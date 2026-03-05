@@ -9,7 +9,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 import { DemoRequestDrawer } from '../DemoRequestDrawer';
-import { BRAND_LOGOS } from '../IntegrationLogos';
 
 import { HeroBackground } from './HeroBackground';
 
@@ -68,7 +67,6 @@ export function HeroSection() {
 
       tl.from('.hero-subtitle', { y: 20, opacity: 0, duration: 0.5, ease: 'power2.out' }, '-=0.2');
       tl.from('.hero-ctas', { y: 15, opacity: 0, duration: 0.4, ease: 'power2.out' }, '-=0.2');
-      tl.from('.hero-logos', { y: 10, opacity: 0, duration: 0.4, ease: 'power2.out' }, '-=0.2');
     }, containerRef);
 
     return () => ctx.revert();
@@ -148,7 +146,7 @@ export function HeroSection() {
                 endIcon={<ArrowRightIcon size={18} weight="light" />}
                 sx={{ px: 4, py: 1.5, fontSize: '1rem' }}
               >
-                Start for free
+                Start free trial
               </Button>
             </Link>
             <Typography
@@ -167,45 +165,6 @@ export function HeroSection() {
             >
               Request a demo
             </Typography>
-          </Box>
-
-          {/* Integration logos */}
-          <Box
-            className="hero-logos"
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 1,
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: '0.7rem',
-                color: alpha(ct, 0.3),
-                fontWeight: 500,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-              }}
-            >
-              Works with
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, md: 3 } }}>
-              {BRAND_LOGOS.map((brand) => (
-                <Box
-                  key={brand.name}
-                  sx={{
-                    opacity: 0.4,
-                    transition: 'opacity 0.2s',
-                    '&:hover': { opacity: 0.7 },
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <brand.Logo size={20} />
-                </Box>
-              ))}
-            </Box>
           </Box>
         </Box>
       </Box>

@@ -13,6 +13,7 @@ import { Footer } from '@/components/landing/Footer';
 import { HeroSection } from '@/components/landing/hero';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { PricingSection } from '@/components/landing/PricingSection';
+import { SecuritySection } from '@/components/landing/security';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -61,6 +62,7 @@ function LandingPage() {
       <HeroSection />
       <FeaturesScrollSection />
       <PricingSection />
+      <SecuritySection />
       <FAQSection />
       <CTASection />
       <Footer />

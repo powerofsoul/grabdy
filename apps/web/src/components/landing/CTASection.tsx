@@ -173,7 +173,7 @@ export function CTASection() {
           className="cta-subtitle"
           sx={{ mb: 1.5, color: 'text.secondary', fontSize: '1.05rem', lineHeight: 1.6 }}
         >
-          Get started for free. No credit card required.
+          Start your free 30-day trial. No credit card required.
         </Typography>
         <Typography
           className="cta-subtitle"

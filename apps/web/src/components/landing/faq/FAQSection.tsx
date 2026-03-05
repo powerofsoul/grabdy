@@ -33,9 +33,9 @@ const FAQ_ITEMS = [
       'Yes. Grabdy integrates with Slack, Notion, GitHub, Google Drive, Gmail, and more. You can also use the REST API or MCP server to connect with any custom workflow.',
   },
   {
-    question: 'What happens when the beta ends?',
+    question: 'What happens after the free trial?',
     answer:
-      'All data and configurations you create during the beta will carry over. We will provide advance notice before any pricing changes take effect.',
+      'All data and configurations you create during the trial will carry over. We will provide advance notice before any pricing changes take effect.',
   },
   {
     question: 'How does the API work?',

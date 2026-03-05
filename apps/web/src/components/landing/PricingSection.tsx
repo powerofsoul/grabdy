@@ -23,7 +23,7 @@ interface Tier {
 const TIERS = [
   {
     name: 'Pro',
-    price: 'Beta',
+    price: 'Free',
     description: 'Everything you need to get started. No credit card required.',
     cta: 'Get started',
     ctaVariant: 'contained',
@@ -64,7 +64,6 @@ const FEATURES = [
   { label: 'Storage', values: ['5 GB', '25 GB', 'Custom'] },
   { label: 'API calls / mo', values: ['10,000', '50,000', 'Custom'] },
   { label: 'REST API + Chat', values: [true, true, true] },
-  { label: 'Canvas AI', values: [true, true, true] },
   { label: 'MCP server', values: [true, true, true] },
   { label: 'Slack bot', icon: 'slack', values: [true, true, true] },
   { label: 'Integrations', values: ['Up to 5', 'All', 'Custom'] },
@@ -151,7 +150,7 @@ export function PricingSection() {
           color="text.secondary"
           sx={{ textAlign: 'center', mb: { xs: 5, md: 7 }, fontSize: '1.05rem' }}
         >
-          Pro is free while we&apos;re in beta. No credit card needed.
+          Start with a free 30-day trial. No credit card needed.
         </Typography>
 
         {/* ── Mobile: stacked cards ── */}
@@ -183,7 +182,7 @@ export function PricingSection() {
                       mb: 1,
                     }}
                   >
-                    Free during beta
+                    Free 30-day trial
                   </Typography>
                 )}
                 {tier.comingSoon && (
@@ -326,7 +325,7 @@ export function PricingSection() {
                         color: 'primary.main',
                       }}
                     >
-                      Free during beta
+                      Free 30-day trial
                     </Typography>
                   )}
                   {tier.comingSoon && (
