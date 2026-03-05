@@ -21,7 +21,7 @@ interface ThemeContextValue {
   setPreference: (preference: ThemePreference) => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function getSystemMode(): PaletteMode {
   if (typeof window !== 'undefined' && window.matchMedia) {

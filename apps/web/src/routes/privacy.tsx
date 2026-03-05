@@ -5,6 +5,16 @@ import { Footer } from '@/components/landing/Footer';
 import { LandingNav } from '@/components/landing/LandingNav';
 
 export const Route = createFileRoute('/privacy')({
+  head: () => ({
+    meta: [
+      { title: 'Privacy Policy - Grabdy' },
+      {
+        name: 'description',
+        content:
+          'How Grabdy collects, uses, and protects your data. Your documents stay encrypted, isolated, and under your control.',
+      },
+    ],
+  }),
   component: PrivacyPage,
 });
 

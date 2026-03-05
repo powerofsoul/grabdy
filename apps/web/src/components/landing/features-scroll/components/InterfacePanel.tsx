@@ -301,7 +301,7 @@ function SlackView() {
             <Box
               component="img"
               src={botLogo}
-              alt=""
+              alt="Grabdy bot"
               sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </Box>

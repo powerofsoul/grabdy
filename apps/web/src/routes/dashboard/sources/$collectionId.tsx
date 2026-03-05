@@ -16,7 +16,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 
-import { useCollection } from './hooks/useCollections';
+import { canPreview, DocumentPreviewDrawer } from '@/components/chat/components/document-preview';
+import { getFileIcon } from '@/components/chat/components/source-chips/helpers';
 import {
   CreateFolderDrawer,
   FolderBreadcrumb,
@@ -25,12 +26,10 @@ import {
   RenameFolderDrawer,
   SourcesTreePanel,
   UploadProgressList,
-} from './components';
-import { useBulkUpload, useFolderContents } from './hooks';
-import { type RenameDataSource, RenameDrawer } from './RenameDrawer';
-
-import { canPreview, DocumentPreviewDrawer } from '@/components/chat/components/document-preview';
-import { getFileIcon } from '@/components/chat/components/source-chips/helpers';
+} from '@/components/sources/components';
+import { useBulkUpload, useFolderContents } from '@/components/sources/hooks';
+import { useCollection } from '@/components/sources/hooks/useCollections';
+import { type RenameDataSource, RenameDrawer } from '@/components/sources/RenameDrawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';

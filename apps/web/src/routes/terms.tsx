@@ -5,6 +5,16 @@ import { Footer } from '@/components/landing/Footer';
 import { LandingNav } from '@/components/landing/LandingNav';
 
 export const Route = createFileRoute('/terms')({
+  head: () => ({
+    meta: [
+      { title: 'Terms of Service - Grabdy' },
+      {
+        name: 'description',
+        content:
+          'Terms and conditions for using Grabdy. Learn about acceptable use, data ownership, and service limitations.',
+      },
+    ],
+  }),
   component: TermsPage,
 });
 

@@ -61,7 +61,7 @@ export function Footer() {
               <Typography component="a" href="#developers" sx={linkSx}>
                 Developers
               </Typography>
-              <Typography component={Link} to="/dashboard/api/docs" sx={linkSx}>
+              <Typography component={Link} to="/docs" sx={linkSx}>
                 API Docs
               </Typography>
               <Typography component={Link} to="/dashboard/api/mcp" sx={linkSx}>

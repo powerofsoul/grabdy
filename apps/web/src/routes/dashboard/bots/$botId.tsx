@@ -16,11 +16,10 @@ import { ArrowLeftIcon } from '@phosphor-icons/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 
-import { DeveloperDocs } from './DeveloperDocs';
-import { SettingsTab } from './SettingsTab';
-import { SigningKeysTab } from './SigningKeysTab';
-import type { BotAppearance } from './types';
-
+import { DeveloperDocs } from '@/components/bots/DeveloperDocs';
+import { SettingsTab } from '@/components/bots/SettingsTab';
+import { SigningKeysTab } from '@/components/bots/SigningKeysTab';
+import type { BotAppearance } from '@/components/bots/types';
 import { ChatPanel } from '@/components/chat';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { PageLoader } from '@/components/ui/PageLoader';

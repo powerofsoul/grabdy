@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "lint": "yarn eslint src",
     "lint:fix": "yarn eslint src --fix"
@@ -54,6 +54,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@emotion/server": "^11.11.0",
     "@tanstack/eslint-plugin-query": "^5.91.3",
     "@tanstack/eslint-plugin-router": "^1.141.0",
     "@tanstack/router-plugin": "^1.43.1",

@@ -28,8 +28,8 @@ const appSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/app')({
-  component: AppPage,
   validateSearch: appSearchSchema,
+  component: AppPage,
 });
 
 function AppPage() {

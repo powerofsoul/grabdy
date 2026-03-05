@@ -10,8 +10,8 @@ const chatSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/dashboard/chat/')({
-  component: ChatPage,
   validateSearch: chatSearchSchema,
+  component: ChatPage,
 });
 
 function ChatPage() {

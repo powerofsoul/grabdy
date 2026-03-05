@@ -5,8 +5,7 @@ import { ChatCircleDotsIcon } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
-import { DeveloperDocs } from './bots/DeveloperDocs';
-
+import { DeveloperDocs } from '@/components/bots/DeveloperDocs';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageLoader } from '@/components/ui/PageLoader';

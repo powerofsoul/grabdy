@@ -14,8 +14,8 @@ const botChatSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/dashboard/chat/bot/$botId')({
-  component: BotChatPage,
   validateSearch: botChatSearchSchema,
+  component: BotChatPage,
 });
 
 function BotChatPage() {

@@ -21,8 +21,8 @@ const integrationsSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/dashboard/integrations/')({
-  component: IntegrationsPage,
   validateSearch: integrationsSearchSchema,
+  component: IntegrationsPage,
 });
 
 const ALLOWED_PROVIDERS: readonly string[] = [

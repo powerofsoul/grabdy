@@ -23,6 +23,7 @@ export function HeroBackground() {
         component="img"
         src={heroClouds}
         alt=""
+        aria-hidden="true"
         sx={{
           position: 'absolute',
           top: 0,

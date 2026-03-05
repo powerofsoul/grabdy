@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0"
     />
 
     <meta
@@ -20,12 +20,14 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://grabdy.com" />
+    <meta property="og:image" content="https://grabdy.com/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Grabdy - Turn your documents into answers" />
     <meta
       name="twitter:description"
       content="Upload PDFs, spreadsheets, and docs. Connect Slack, Notion, and GitHub. Get AI-powered answers with cited sources. Embed a chatbot or use the REST API."
     />
+    <meta name="twitter:image" content="https://grabdy.com/og-image.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="grabdy.com" />
@@ -40,8 +42,79 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="canonical" href="https://grabdy.com/" />
 
     <title>Grabdy - Turn your documents into answers</title>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Grabdy",
+        "url": "https://grabdy.com",
+        "logo": "https://grabdy.com/icon-512.png",
+        "sameAs": [
+          "https://x.com/GrabdyAi",
+          "https://www.linkedin.com/company/111773181"
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What file types does Grabdy support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Grabdy supports PDF, CSV, DOCX, DOC, XLSX, XLS, TXT, JSON, images (PNG, JPEG, WebP, GIF), and email files (EML, MSG, PST). You can also connect integrations like Slack, Notion, GitHub, Google Drive, and Gmail."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is my data secure?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Your data is encrypted at rest and in transit. Each organization is fully isolated with its own data silo. We never use your data to train models, and you can delete your data at any time."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use Grabdy with my existing tools?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Grabdy integrates with Slack, Notion, GitHub, Google Drive, Gmail, and more. You can also use the REST API or MCP server to connect with any custom workflow."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens when the beta ends?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "All data and configurations you create during the beta will carry over. We will provide advance notice before any pricing changes take effect."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the API work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The REST API lets you search your knowledge base, manage collections, and upload documents programmatically. Authenticate with a simple API key and start querying in minutes."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I embed a chatbot on my website?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Grabdy provides an embeddable chat widget that you can add to any website with a single script tag. It connects to your knowledge base and answers visitor questions with cited sources."
+            }
+          }
+        ]
+      }
+    </script>
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-CQ6J7294YG"></script>
     <script>

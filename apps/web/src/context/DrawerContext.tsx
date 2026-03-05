@@ -39,7 +39,7 @@ interface DrawerContextValue {
   popDrawer: () => void;
 }
 
-const DrawerContext = createContext<DrawerContextValue | null>(null);
+export const DrawerContext = createContext<DrawerContextValue | null>(null);
 
 export function useDrawer() {
   const context = useContext(DrawerContext);

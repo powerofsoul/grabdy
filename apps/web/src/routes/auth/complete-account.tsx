@@ -20,16 +20,16 @@ import { z } from 'zod';
 import { AuthLayout } from '@/components/ui/AuthLayout';
 import { api } from '@/lib/api';
 
-interface SearchParams {
-  token?: string;
-}
-
 const formSchema = contract.auth.completeAccount.body.pick({
   password: true,
   firstName: true,
   lastName: true,
 });
 type FormData = z.infer<typeof formSchema>;
+
+interface SearchParams {
+  token?: string;
+}
 
 export const Route = createFileRoute('/auth/complete-account')({
   validateSearch: (search: Record<string, unknown>): SearchParams => ({

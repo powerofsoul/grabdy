@@ -2,9 +2,13 @@ import { Box, Button } from '@mui/material';
 import { FolderOpenIcon, PlusIcon } from '@phosphor-icons/react';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { CreateFolderDrawer, FolderCard, RenameFolderDrawer, SourcesTreePanel } from './components';
-import { useFolderContents } from './hooks';
-
+import {
+  CreateFolderDrawer,
+  FolderCard,
+  RenameFolderDrawer,
+  SourcesTreePanel,
+} from '@/components/sources/components';
+import { useFolderContents } from '@/components/sources/hooks';
 import { DashboardPage } from '@/components/ui/DashboardPage';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageLoader } from '@/components/ui/PageLoader';

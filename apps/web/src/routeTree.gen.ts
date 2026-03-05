@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as EmbedPreviewRouteImport } from './routes/embed-preview'
 import { Route as EmbedRouteImport } from './routes/embed'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
@@ -59,6 +60,11 @@ const EmbedPreviewRoute = EmbedPreviewRouteImport.update({
 const EmbedRoute = EmbedRouteImport.update({
   id: '/embed',
   path: '/embed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -205,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRouteWithChildren
+  '/docs': typeof DocsRoute
   '/embed': typeof EmbedRoute
   '/embed-preview': typeof EmbedPreviewRoute
   '/privacy': typeof PrivacyRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
+  '/docs': typeof DocsRoute
   '/embed': typeof EmbedRoute
   '/embed-preview': typeof EmbedPreviewRoute
   '/privacy': typeof PrivacyRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRouteWithChildren
+  '/docs': typeof DocsRoute
   '/embed': typeof EmbedRoute
   '/embed-preview': typeof EmbedPreviewRoute
   '/privacy': typeof PrivacyRoute
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/dashboard'
+    | '/docs'
     | '/embed'
     | '/embed-preview'
     | '/privacy'
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/docs'
     | '/embed'
     | '/embed-preview'
     | '/privacy'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/dashboard'
+    | '/docs'
     | '/embed'
     | '/embed-preview'
     | '/privacy'
@@ -403,6 +415,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRouteWithChildren
   DashboardRoute: typeof DashboardRouteWithChildren
+  DocsRoute: typeof DocsRoute
   EmbedRoute: typeof EmbedRoute
   EmbedPreviewRoute: typeof EmbedPreviewRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -438,6 +451,13 @@ declare module '@tanstack/react-router' {
       path: '/embed'
       fullPath: '/embed'
       preLoaderRoute: typeof EmbedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -709,6 +729,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   AuthRoute: AuthRouteWithChildren,
   DashboardRoute: DashboardRouteWithChildren,
+  DocsRoute: DocsRoute,
   EmbedRoute: EmbedRoute,
   EmbedPreviewRoute: EmbedPreviewRoute,
   PrivacyRoute: PrivacyRoute,

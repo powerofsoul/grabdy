@@ -204,10 +204,14 @@ export function PricingSection() {
                     Coming soon
                   </Box>
                 )}
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                <Typography variant="h6" component="p" sx={{ fontWeight: 600 }}>
                   {tier.name}
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 700, fontSize: '2rem', mt: 0.5, mb: 1 }}>
+                <Typography
+                  variant="h3"
+                  component="p"
+                  sx={{ fontWeight: 700, fontSize: '2rem', mt: 0.5, mb: 1 }}
+                >
                   {tier.price}
                 </Typography>
                 <Typography
@@ -286,7 +290,7 @@ export function PricingSection() {
                 pb: 3,
               }}
             >
-              <Typography variant="h5" sx={{ fontSize: 20, color: 'text.primary' }}>
+              <Typography variant="h5" component="p" sx={{ fontSize: 20, color: 'text.primary' }}>
                 grabdy.
               </Typography>
             </Box>
@@ -344,10 +348,14 @@ export function PricingSection() {
                   )}
                 </Box>
 
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.25 }}>
+                <Typography variant="h6" component="p" sx={{ fontWeight: 600, mb: 0.25 }}>
                   {tier.name}
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 700, fontSize: '2rem', mb: 1 }}>
+                <Typography
+                  variant="h3"
+                  component="p"
+                  sx={{ fontWeight: 700, fontSize: '2rem', mb: 1 }}
+                >
                   {tier.price}
                 </Typography>
                 <Typography

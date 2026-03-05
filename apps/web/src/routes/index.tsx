@@ -17,6 +17,16 @@ import { PricingSection } from '@/components/landing/PricingSection';
 gsap.registerPlugin(ScrollTrigger);
 
 export const Route = createFileRoute('/')({
+  head: () => ({
+    meta: [
+      { title: 'Grabdy - Turn your documents into answers' },
+      {
+        name: 'description',
+        content:
+          'Upload PDFs, spreadsheets, and docs. Connect Slack, Notion, and GitHub. Get AI-powered answers with cited sources. Embed a chatbot or use the REST API.',
+      },
+    ],
+  }),
   component: LandingPage,
 });
 
