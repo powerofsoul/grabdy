@@ -134,8 +134,6 @@ interface GrabdyChatConfig {
   position?: 'bottom-right' | 'bottom-left';
   bubble?: boolean; // Show floating button (default: true)
   zIndex?: number; // Widget z-index (default: 999999)
-  sdkUrl?: string; // Override Grabdy URL (for dev)
-  apiUrl?: string; // Override API URL (for dev)
   onSourceClick?: (source: GrabdyChatSource) => void; // Custom source handler
   style?: {
     primaryColor?: string; // Bubble background color

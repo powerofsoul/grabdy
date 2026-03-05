@@ -14,7 +14,6 @@ interface Window {
     position?: 'bottom-right' | 'bottom-left';
     bubble?: boolean;
     zIndex?: number;
-    sdkUrl?: string;
     style?: {
       primaryColor?: string;
       accentColor?: string;

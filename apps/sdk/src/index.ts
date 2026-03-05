@@ -55,9 +55,9 @@ class GrabdyChat {
 
     instance = this;
     this.config = config;
-    this.sdkUrl = config.sdkUrl ?? DEFAULT_SDK_URL;
+    this.sdkUrl = DEFAULT_SDK_URL;
     this.sdkOrigin = new URL(this.sdkUrl).origin;
-    this.apiUrl = config.apiUrl ?? DEFAULT_API_URL;
+    this.apiUrl = DEFAULT_API_URL;
     this.zIndex = config.zIndex ?? DEFAULT_Z_INDEX;
 
     this.messageHandler = this.handleMessage.bind(this);
