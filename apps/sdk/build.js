@@ -4,7 +4,12 @@ const isDev = process.argv.includes('--dev');
 
 const SDK_DEV_PORT = 3002;
 
-const define = isDev ? { __SDK_URL__: JSON.stringify('http://localhost:3000') } : {};
+const define = isDev
+  ? {
+      __SDK_URL__: JSON.stringify('http://localhost:3000'),
+      __API_URL__: JSON.stringify('http://localhost:4000'),
+    }
+  : { __API_URL__: JSON.stringify('https://api.grabdy.com') };
 
 const shared = {
   entryPoints: ['src/index.ts'],

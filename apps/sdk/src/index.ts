@@ -5,7 +5,9 @@ import type {
 } from './types';
 
 declare const __SDK_URL__: string | undefined;
+declare const __API_URL__: string | undefined;
 const DEFAULT_SDK_URL = typeof __SDK_URL__ !== 'undefined' ? __SDK_URL__ : 'https://grabdy.com';
+const DEFAULT_API_URL = typeof __API_URL__ !== 'undefined' ? __API_URL__ : 'https://api.grabdy.com';
 
 const DEFAULT_Z_INDEX = 999999;
 const BUTTON_SIZE = 56;
@@ -34,6 +36,7 @@ class GrabdyChat {
   private isOpen = false;
   private sdkUrl: string;
   private sdkOrigin: string;
+  private apiUrl: string;
   private zIndex: number;
   private messageHandler: ((e: MessageEvent) => void) | null = null;
   private iframeReady = false;
@@ -54,6 +57,7 @@ class GrabdyChat {
     this.config = config;
     this.sdkUrl = config.sdkUrl ?? DEFAULT_SDK_URL;
     this.sdkOrigin = new URL(this.sdkUrl).origin;
+    this.apiUrl = config.apiUrl ?? DEFAULT_API_URL;
     this.zIndex = config.zIndex ?? DEFAULT_Z_INDEX;
 
     this.messageHandler = this.handleMessage.bind(this);
@@ -72,7 +76,7 @@ class GrabdyChat {
   private async fetchAppearance(): Promise<void> {
     try {
       const res = await fetch(
-        `${this.sdkUrl}/api/sdk/chat/${encodeURIComponent(this.config.chatId)}/config`
+        `${this.apiUrl}/sdk/chat/${encodeURIComponent(this.config.chatId)}/config`
       );
       if (res.ok) {
         const json = await res.json();

@@ -9,7 +9,7 @@ yarn build      # Produces dist/sdk.js and dist/sdk.min.js
 yarn dev         # Watches + serves at http://localhost:3002
 ```
 
-Built with esbuild as IIFE (no module system). The build injects `__SDK_URL__` which defaults to `https://grabdy.com` in production and `http://localhost:3000` in dev.
+Built with esbuild as IIFE (no module system). The build injects `__SDK_URL__` (defaults to `https://grabdy.com` in production, `http://localhost:3000` in dev) and `__API_URL__` (defaults to `https://api.grabdy.com` in production, `http://localhost:4000` in dev). The SDK uses `__API_URL__` for direct API calls (e.g., fetching appearance config) to avoid CORS issues when embedded on customer domains.
 
 ## How it works
 
@@ -135,6 +135,7 @@ interface GrabdyChatConfig {
   bubble?: boolean; // Show floating button (default: true)
   zIndex?: number; // Widget z-index (default: 999999)
   sdkUrl?: string; // Override Grabdy URL (for dev)
+  apiUrl?: string; // Override API URL (for dev)
   onSourceClick?: (source: GrabdyChatSource) => void; // Custom source handler
   style?: {
     primaryColor?: string; // Bubble background color

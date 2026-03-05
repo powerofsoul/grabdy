@@ -15,6 +15,7 @@ export interface GrabdyChatConfig {
   bubble?: boolean;
   zIndex?: number;
   sdkUrl?: string;
+  apiUrl?: string;
 }
 
 export interface PostMessageJwt {
