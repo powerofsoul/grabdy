@@ -21,10 +21,13 @@ const { html, css } = await render();
 const indexPath = resolve(distDir, 'index.html');
 const template = readFileSync(indexPath, 'utf-8');
 
-// Inject critical CSS before </head> and HTML into #root
+// Inject critical CSS before </head> and HTML into #root.
+// Add an inline script that clears the pre-rendered landing page HTML
+// for non-landing routes (e.g. /embed) so users don't see a flash.
+const clearScript = `<script>if(location.pathname!=="/")document.getElementById("root").innerHTML=""</script>`;
 const result = template
   .replace('</head>', `${css}\n</head>`)
-  .replace('<div id="root"></div>', `<div id="root">${html}</div>`);
+  .replace('<div id="root"></div>', `<div id="root">${html}</div>${clearScript}`);
 
 writeFileSync(indexPath, result);
 
