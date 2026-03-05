@@ -1,9 +1,5 @@
 import JSZip from 'jszip';
 
-const isDev = import.meta.env.DEV;
-const SDK_SCRIPT_URL = isDev ? 'http://localhost:3002/sdk.js' : 'https://sdk.grabdy.com/sdk.js';
-const SDK_APP_URL = isDev ? 'http://localhost:3000' : 'https://grabdy.com';
-
 interface DemoFiles {
   [path: string]: string;
 }
@@ -42,10 +38,6 @@ GRABDY_KEY_FINGERPRINT="PASTE_YOUR_FINGERPRINT_HERE"
 
 # Your SDK Chat ID
 GRABDY_CHAT_ID="${chatId}"
-
-# Grabdy SDK URLs (change these for local development)
-VITE_SDK_SCRIPT_URL=${SDK_SCRIPT_URL}
-VITE_SDK_APP_URL=${SDK_APP_URL}
 
 # Port for the Express server
 PORT=3001`,
@@ -142,8 +134,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     'src/App.jsx': `import { useEffect, useRef, useState } from "react";
 
 const CHAT_ID = "${chatId}";
-const SDK_SCRIPT_URL = import.meta.env.VITE_SDK_SCRIPT_URL || "https://sdk.grabdy.com/sdk.js";
-const SDK_APP_URL = import.meta.env.VITE_SDK_APP_URL || "https://grabdy.com";
+const SDK_SCRIPT_URL = "https://sdk.grabdy.com/sdk.js";
 
 // Fetches a signed JWT from your Express backend.
 // In production, this endpoint should require authentication
@@ -166,7 +157,6 @@ function FloatingBubbleExample() {
     chatRef.current = new GrabdyChat({
       chatId: CHAT_ID,
       getToken,
-      sdkUrl: SDK_APP_URL,
       position: "bottom-right",
     });
 
@@ -191,7 +181,6 @@ function InlineContainerExample() {
     chatRef.current = new GrabdyChat({
       chatId: CHAT_ID,
       getToken,
-      sdkUrl: SDK_APP_URL,
       container: "#grabdy-inline",
     });
 
@@ -226,7 +215,6 @@ function ClickToOpenExample() {
     chatRef.current = new GrabdyChat({
       chatId: CHAT_ID,
       getToken,
-      sdkUrl: SDK_APP_URL,
       bubble: false,
     });
 
@@ -415,8 +403,6 @@ A minimal Express + React demo showing how to integrate the Grabdy Chat widget.
 | \`GRABDY_PRIVATE_KEY\` | Your RS256 private key PEM |
 | \`GRABDY_KEY_FINGERPRINT\` | Your signing key fingerprint (from Signing Keys tab) |
 | \`GRABDY_CHAT_ID\` | Your SDK Chat ID |
-| \`VITE_SDK_SCRIPT_URL\` | SDK script URL (default: \`https://sdk.grabdy.com/sdk.js\`) |
-| \`VITE_SDK_APP_URL\` | Grabdy app URL for the embed iframe (default: \`https://grabdy.com\`) |
 | \`PORT\` | Express server port (default: 3001) |
 
 ## Production notes
