@@ -1,5 +1,6 @@
 import type { Contract } from '@grabdy/contracts';
 import { alpha, Box, Typography, useTheme } from '@mui/material';
+import { ArrowDownIcon, ArrowUpIcon } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { formatCompactCurrency, formatDaysLeft } from '../helpers';
@@ -76,17 +77,40 @@ export function HighValueExpiring({ contracts }: HighValueExpiringProps) {
                 )}
               </Box>
 
-              <Typography
-                sx={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '0.82rem',
-                  fontWeight: 500,
-                  color: 'text.primary',
-                  flexShrink: 0,
-                }}
-              >
-                {formatCompactCurrency(c.totalValue ?? 0)}
-              </Typography>
+              {(c.payableValue != null || c.receivableValue != null) && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                  {c.payableValue != null && c.payableValue > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                      <ArrowUpIcon size={12} weight="bold" />
+                      <Typography
+                        sx={{
+                          fontFamily: FONT_MONO,
+                          fontSize: '0.82rem',
+                          fontWeight: 500,
+                          color: 'text.primary',
+                        }}
+                      >
+                        {formatCompactCurrency(c.payableValue)}
+                      </Typography>
+                    </Box>
+                  )}
+                  {c.receivableValue != null && c.receivableValue > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                      <ArrowDownIcon size={12} weight="bold" />
+                      <Typography
+                        sx={{
+                          fontFamily: FONT_MONO,
+                          fontSize: '0.82rem',
+                          fontWeight: 500,
+                          color: 'text.primary',
+                        }}
+                      >
+                        {formatCompactCurrency(c.receivableValue)}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              )}
 
               {c.daysLeft !== null && (
                 <Box

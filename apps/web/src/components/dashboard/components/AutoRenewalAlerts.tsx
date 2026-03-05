@@ -25,7 +25,8 @@ export function AutoRenewalAlerts({ deadlines }: AutoRenewalAlertsProps) {
       (d) =>
         d.renewalType === 'auto' &&
         d.noticeByDate !== null &&
-        computeNoticeDaysLeft(d.noticeByDate) >= -7
+        computeNoticeDaysLeft(d.noticeByDate) >= -7 &&
+        computeNoticeDaysLeft(d.noticeByDate) <= 90
     )
     .sort((a, b) => {
       if (a.noticeByDate === null || b.noticeByDate === null) return 0;
@@ -96,9 +97,9 @@ export function AutoRenewalAlerts({ deadlines }: AutoRenewalAlertsProps) {
                 </Typography>
               </Box>
 
-              {d.totalValue !== null && d.totalValue !== undefined && (
+              {(d.payableValue != null || d.receivableValue != null) && (
                 <Typography variant="caption" sx={{ color: 'text.secondary', flexShrink: 0 }}>
-                  {formatCompactCurrency(d.totalValue)}
+                  {formatCompactCurrency((d.payableValue ?? 0) + (d.receivableValue ?? 0))}
                 </Typography>
               )}
 

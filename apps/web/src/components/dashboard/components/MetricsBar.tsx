@@ -12,21 +12,23 @@ interface Metrics {
 interface MetricsBarProps {
   metrics: Metrics | undefined;
   isLoading: boolean;
-  portfolioValue: number;
+  monthlyPayable: number;
+  monthlyReceivable: number;
   formatCurrency: (n: number) => string;
 }
 
 export function MetricsBar({
   metrics,
   isLoading,
-  portfolioValue,
+  monthlyPayable,
+  monthlyReceivable,
   formatCurrency,
 }: MetricsBarProps) {
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' },
+        gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)', md: 'repeat(6, 1fr)' },
         gap: { xs: 1, sm: 2 },
         mb: 4,
       }}
@@ -52,8 +54,14 @@ export function MetricsBar({
         isLoading={isLoading}
       />
       <MetricCard
-        value={portfolioValue}
-        label="Portfolio value"
+        value={monthlyPayable}
+        label="Monthly payable"
+        isLoading={isLoading}
+        format={formatCurrency}
+      />
+      <MetricCard
+        value={monthlyReceivable}
+        label="Monthly receivable"
         isLoading={isLoading}
         format={formatCurrency}
       />

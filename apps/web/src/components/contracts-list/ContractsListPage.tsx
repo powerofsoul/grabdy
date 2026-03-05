@@ -10,6 +10,7 @@ import {
 } from '@grabdy/contracts';
 import { alpha, Box, Tab, Tabs, Typography } from '@mui/material';
 import { FileTextIcon } from '@phosphor-icons/react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { parseAsString, parseAsStringLiteral, useQueryState, useQueryStates } from 'nuqs';
 
@@ -39,6 +40,7 @@ const EXPIRING_OPTIONS = ['30', '60', '90', 'year'] as const;
 
 type ContractQueryKey =
   | 'search'
+  | 'counterparty'
   | 'contractType'
   | 'renewalType'
   | 'status'
@@ -53,6 +55,10 @@ export function ContractsListPage() {
     'search',
     parseAsString.withDefault('').withOptions({ throttleMs: 300 })
   );
+  const [counterparty, setCounterparty] = useQueryState(
+    'counterparty',
+    parseAsString.withDefault('')
+  );
   const [filters, setFilters] = useQueryStates({
     status: parseAsStringLiteral(STATUS_OPTIONS).withDefault('active'),
     contractType: parseAsStringLiteral(contractTypeEnum.options),
@@ -65,9 +71,18 @@ export function ContractsListPage() {
   const renewalType: RenewalType | '' = filters.renewalType ?? '';
   const expiringRange: ExpiringRange = filters.expiring ?? '';
 
+  const { data: counterpartiesData } = useQuery({
+    queryKey: ['counterparties', selectedOrgId],
+    queryFn: () => api.contracts.counterparties({ params: { orgId: selectedOrgId ?? '' } }),
+    enabled: !!selectedOrgId,
+  });
+  const counterpartyOptions =
+    counterpartiesData?.status === 200 ? counterpartiesData.body.data : [];
+
   const queryParams = useMemo(() => {
     const params: Partial<Record<ContractQueryKey, string>> = {};
     if (search) params.search = search;
+    if (counterparty) params.counterparty = counterparty;
     if (contractType) params.contractType = contractType;
     if (renewalType) params.renewalType = renewalType;
     params.status = status;
@@ -77,7 +92,7 @@ export function ContractsListPage() {
       if (expiringBefore) params.expiringBefore = expiringBefore;
     }
     return params;
-  }, [search, contractType, renewalType, status, expiringRange]);
+  }, [search, counterparty, contractType, renewalType, status, expiringRange]);
 
   const handleRowClick = useCallback(
     (row: ContractRow) => {
@@ -114,7 +129,14 @@ export function ContractsListPage() {
     [setFilters]
   );
 
-  const hasFilters = !!(search || contractType || renewalType || expiringRange);
+  const handleCounterpartyChange = useCallback(
+    (value: string) => {
+      setCounterparty(value || null);
+    },
+    [setCounterparty]
+  );
+
+  const hasFilters = !!(search || counterparty || contractType || renewalType || expiringRange);
 
   return (
     <DashboardPage title="Contracts" subtitle="All contracts in your portfolio.">
@@ -130,6 +152,9 @@ export function ContractsListPage() {
       <ContractsToolbar
         search={search}
         onSearchChange={setSearch}
+        counterparty={counterparty}
+        onCounterpartyChange={handleCounterpartyChange}
+        counterpartyOptions={counterpartyOptions}
         contractType={contractType}
         onContractTypeChange={handleContractTypeChange}
         renewalType={renewalType}

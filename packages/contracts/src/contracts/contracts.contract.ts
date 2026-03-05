@@ -78,6 +78,17 @@ export const contractsContract = c.router(
         }),
       },
     },
+    counterparties: {
+      method: 'GET',
+      path: '/orgs/:orgId/contracts/counterparties',
+      pathParams: z.object({ orgId: dbIdSchema('Org') }),
+      responses: {
+        200: z.object({
+          success: z.literal(true),
+          data: z.array(z.string()),
+        }),
+      },
+    },
     get: {
       method: 'GET',
       path: '/orgs/:orgId/contracts/:contractId',

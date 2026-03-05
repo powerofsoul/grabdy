@@ -8,7 +8,8 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
 const EMPTY_STATS: DashboardStats = {
-  portfolioValue: 0,
+  monthlyPayable: 0,
+  monthlyReceivable: 0,
   expiredCount: 0,
   urgentCount: 0,
   typeBreakdown: [],

@@ -652,7 +652,10 @@ export class FileIngestionProcessor extends WorkerHost implements OnModuleInit {
     mimeType: string
   ): Promise<void> {
     if (!CONTRACT_ELIGIBLE_MIMES.has(mimeType)) return;
-    await this.contractAnalysisQueue.add('analyze', data);
+    await this.contractAnalysisQueue.add('analyze', data, {
+      attempts: 4,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
   }
 
   @OnWorkerEvent('failed')

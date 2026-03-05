@@ -8,7 +8,8 @@ import { FONT_MONO } from '@/theme';
 interface CounterpartyRow {
   name: string;
   count: number;
-  value: number;
+  payable: number;
+  receivable: number;
 }
 
 interface CounterpartyConcentrationProps {
@@ -22,7 +23,7 @@ export function CounterpartyConcentration({ counterparties }: CounterpartyConcen
 
   if (counterparties.length === 0) return null;
 
-  const maxValue = Math.max(...counterparties.map((c) => c.value));
+  const maxValue = Math.max(...counterparties.map((c) => c.payable + c.receivable));
 
   return (
     <Box>
@@ -44,12 +45,15 @@ export function CounterpartyConcentration({ counterparties }: CounterpartyConcen
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {counterparties.map((cp) => {
-          const barPct = maxValue > 0 ? (cp.value / maxValue) * 100 : 0;
+          const totalValue = cp.payable + cp.receivable;
+          const barPct = maxValue > 0 ? (totalValue / maxValue) * 100 : 0;
 
           return (
             <Box
               key={cp.name}
-              onClick={() => navigate({ to: '/dashboard/contracts' })}
+              onClick={() =>
+                navigate({ to: '/dashboard/contracts', search: { counterparty: cp.name } })
+              }
               sx={{ cursor: 'pointer', '&:hover': { '& .bar': { opacity: 0.9 } } }}
             >
               <Box
@@ -67,7 +71,7 @@ export function CounterpartyConcentration({ counterparties }: CounterpartyConcen
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     {cp.count} {cp.count === 1 ? 'contract' : 'contracts'}
                   </Typography>
-                  {cp.value > 0 && (
+                  {totalValue > 0 && (
                     <Typography
                       sx={{
                         fontFamily: FONT_MONO,
@@ -75,7 +79,7 @@ export function CounterpartyConcentration({ counterparties }: CounterpartyConcen
                         color: 'text.secondary',
                       }}
                     >
-                      {formatCompactCurrency(cp.value)}
+                      {formatCompactCurrency(totalValue)}
                     </Typography>
                   )}
                 </Box>

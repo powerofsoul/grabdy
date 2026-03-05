@@ -223,8 +223,12 @@ export function MetadataSidebar({ contract }: MetadataSidebarProps) {
         defaultOpen={false}
       >
         <MetadataField
-          label="Total value"
-          value={formatCurrency(contract.totalValue, contract.currency)}
+          label="Payable value"
+          value={formatCurrency(contract.payableValue, contract.currency)}
+        />
+        <MetadataField
+          label="Receivable value"
+          value={formatCurrency(contract.receivableValue, contract.currency)}
         />
         <MetadataField label="Payment terms" value={contract.paymentTerms} />
         <MetadataField label="Payment frequency" value={contract.paymentFrequency} />

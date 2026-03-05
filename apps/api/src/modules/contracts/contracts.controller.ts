@@ -52,6 +52,18 @@ export class ContractsController {
     });
   }
 
+  @OrgAccess(contractsContract.counterparties, { params: ['orgId'] })
+  @TsRestHandler(contractsContract.counterparties)
+  async counterparties() {
+    return tsRestHandler(contractsContract.counterparties, async ({ params }) => {
+      const data = await this.contractsService.counterparties(params.orgId);
+      return {
+        status: 200 as const,
+        body: { success: true as const, data },
+      };
+    });
+  }
+
   @OrgAccess(contractsContract.get, { params: ['orgId', 'contractId'] })
   @TsRestHandler(contractsContract.get)
   async get() {

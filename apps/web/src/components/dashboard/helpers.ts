@@ -2,6 +2,7 @@ import {
   type Contract,
   CONTRACT_TYPE_LABELS,
   type ContractType,
+  type PaymentFrequency,
   type RenewalType,
 } from '@grabdy/contracts';
 
@@ -22,11 +23,13 @@ interface RenewalCount {
 interface CounterpartyRow {
   name: string;
   count: number;
-  value: number;
+  payable: number;
+  receivable: number;
 }
 
 export interface DashboardStats {
-  portfolioValue: number;
+  monthlyPayable: number;
+  monthlyReceivable: number;
   expiredCount: number;
   urgentCount: number;
   typeBreakdown: TypeCount[];
@@ -48,17 +51,41 @@ export function getGreeting(): string {
   return 'Good evening';
 }
 
+function normalizeToMonthly(value: number, frequency: PaymentFrequency | null): number {
+  switch (frequency) {
+    case 'monthly':
+      return value;
+    case 'quarterly':
+      return value / 3;
+    case 'one_time':
+      return value;
+    case 'annually':
+      return value / 12;
+    case 'other':
+    default:
+      return value / 12;
+  }
+}
+
+function contractTotalValue(d: DeadlineRow): number {
+  return (d.payableValue ?? 0) + (d.receivableValue ?? 0);
+}
+
 export function computeDashboardStats(deadlines: DeadlineRow[]): DashboardStats {
-  let portfolioValue = 0;
+  let monthlyPayable = 0;
+  let monthlyReceivable = 0;
   let expiredCount = 0;
   let urgentCount = 0;
   const typeCounts = new Map<ContractType, number>();
   const renewalCounts = new Map<RenewalType, number>();
-  const counterpartyMap = new Map<string, { count: number; value: number }>();
+  const counterpartyMap = new Map<string, { count: number; payable: number; receivable: number }>();
 
   for (const d of deadlines) {
-    if (d.totalValue !== null && d.totalValue !== undefined) {
-      portfolioValue += d.totalValue;
+    if (d.payableValue != null) {
+      monthlyPayable += normalizeToMonthly(d.payableValue, d.paymentFrequency);
+    }
+    if (d.receivableValue != null) {
+      monthlyReceivable += normalizeToMonthly(d.receivableValue, d.paymentFrequency);
     }
     if (d.daysLeft !== null && d.daysLeft < 0) {
       expiredCount++;
@@ -73,9 +100,14 @@ export function computeDashboardStats(deadlines: DeadlineRow[]): DashboardStats 
       renewalCounts.set(d.renewalType, (renewalCounts.get(d.renewalType) ?? 0) + 1);
     }
     if (d.counterparty) {
-      const existing = counterpartyMap.get(d.counterparty) ?? { count: 0, value: 0 };
+      const existing = counterpartyMap.get(d.counterparty) ?? {
+        count: 0,
+        payable: 0,
+        receivable: 0,
+      };
       existing.count += 1;
-      existing.value += d.totalValue ?? 0;
+      existing.payable += d.payableValue ?? 0;
+      existing.receivable += d.receivableValue ?? 0;
       counterpartyMap.set(d.counterparty, existing);
     }
   }
@@ -98,24 +130,24 @@ export function computeDashboardStats(deadlines: DeadlineRow[]): DashboardStats 
 
   const highValueExpiring = deadlines
     .filter(
-      (d) =>
-        d.daysLeft !== null &&
-        d.daysLeft >= 0 &&
-        d.daysLeft <= 90 &&
-        d.totalValue !== null &&
-        d.totalValue !== undefined &&
-        d.totalValue > 0
+      (d) => d.daysLeft !== null && d.daysLeft >= 0 && d.daysLeft <= 90 && contractTotalValue(d) > 0
     )
-    .sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0))
+    .sort((a, b) => contractTotalValue(b) - contractTotalValue(a))
     .slice(0, 5);
 
   const topCounterparties: CounterpartyRow[] = [...counterpartyMap.entries()]
-    .map(([name, data]) => ({ name, count: data.count, value: data.value }))
-    .sort((a, b) => b.value - a.value || b.count - a.count)
+    .map(([name, data]) => ({
+      name,
+      count: data.count,
+      payable: data.payable,
+      receivable: data.receivable,
+    }))
+    .sort((a, b) => b.payable + b.receivable - (a.payable + a.receivable) || b.count - a.count)
     .slice(0, 5);
 
   return {
-    portfolioValue,
+    monthlyPayable,
+    monthlyReceivable,
     expiredCount,
     urgentCount,
     typeBreakdown,

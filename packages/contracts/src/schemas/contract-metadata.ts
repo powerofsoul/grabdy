@@ -90,7 +90,8 @@ export const contractSchema = z.object({
   noticeByDate: z.string().nullable(),
 
   // Financial
-  totalValue: z.number().nullable(),
+  payableValue: z.number().nullable(),
+  receivableValue: z.number().nullable(),
   currency: z.string().nullable(),
   paymentTerms: z.string().nullable(),
   paymentFrequency: paymentFrequencyEnum.nullable(),
@@ -149,7 +150,8 @@ export const contractExtractionSchema = z.object({
   renewalTermMonths: z.number().nullable().optional(),
   noticePeriodDays: z.number().nullable().optional(),
   noticeByDate: z.string().nullable().optional(),
-  totalValue: z.number().nullable().optional(),
+  payableValue: z.number().nullable().optional(),
+  receivableValue: z.number().nullable().optional(),
   currency: z.string().nullable().optional(),
   paymentTerms: z.string().nullable().optional(),
   paymentFrequency: paymentFrequencyEnum.nullable().optional(),

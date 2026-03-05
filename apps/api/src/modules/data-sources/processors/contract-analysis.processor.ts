@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import { dbIdSchema, extractOrgNumericId, packId } from '@grabdy/common';
 import { AiRequestType, contractExtractionSchema, ENRICHMENT_MODEL } from '@grabdy/contracts';
 import type { Job } from 'bullmq';
+import { sql } from 'kysely';
 
 import { DbService } from '../../../db/db.module';
 import { AiService } from '../../ai/ai.service';
@@ -29,6 +30,9 @@ const SYSTEM_PROMPT = [
   'For ipOwnership: use "us" if we retain IP, "them" if they retain IP, "joint" for joint ownership, "not_applicable" if not relevant.',
   'For disputeMechanism: use "arbitration", "litigation", or "mediation" based on the dispute resolution clause.',
   'For paymentFrequency: use "monthly", "quarterly", "annually", "one_time", or "other".',
+  'For payableValue: the amount we pay the counterparty (annual or total contract value). Use for vendor agreements, SaaS subscriptions, leases, any contract where we are the buyer.',
+  'For receivableValue: the amount the counterparty pays us. Use for client contracts, SoWs where we are the provider, licensing deals where we are the licensor.',
+  'A contract can have both (e.g., mutual service agreements with different payment amounts). Extract as annual values when possible for consistency.',
   'Extract monetary values as numbers without currency symbols.',
   'For title: generate a concise descriptive title from the document content. Use the format "{Type} - {Counterparty}" when both are determinable (e.g., "NDA - Acme Corp", "SaaS Agreement - CloudTech"). Otherwise use a brief descriptive summary of the contract\'s purpose.',
 ].join('\n');
@@ -119,7 +123,21 @@ export class ContractAnalysisProcessor extends WorkerHost {
       const contractId = packId('Contract', orgNum);
 
       // Default undefined fields to null (AI model omits fields it can't determine)
-      const counterparty = extraction.counterparty ?? null;
+      // Normalize counterparty name: reuse existing casing from this org if present
+      let counterparty = extraction.counterparty ?? null;
+      if (counterparty) {
+        const existing = await this.db.kysely
+          .selectFrom('data.contracts')
+          .select('counterparty')
+          .where('org_id', '=', parsedOrgId)
+          .where('data_source_id', '!=', parsedDataSourceId)
+          .where(sql`lower(counterparty)`, '=', counterparty.toLowerCase())
+          .limit(1)
+          .executeTakeFirst();
+        if (existing?.counterparty) {
+          counterparty = existing.counterparty;
+        }
+      }
       const contractType = extraction.contractType ?? null;
       const governingLaw = extraction.governingLaw ?? null;
       const jurisdiction = extraction.jurisdiction ?? null;
@@ -131,7 +149,8 @@ export class ContractAnalysisProcessor extends WorkerHost {
       const renewalTermMonths = extraction.renewalTermMonths ?? null;
       const noticePeriodDays = extraction.noticePeriodDays ?? null;
       const noticeByDate = extraction.noticeByDate ?? null;
-      const totalValue = extraction.totalValue ?? null;
+      const payableValue = extraction.payableValue ?? null;
+      const receivableValue = extraction.receivableValue ?? null;
       const currency = extraction.currency ?? null;
       const paymentTerms = extraction.paymentTerms ?? null;
       const paymentFrequency = extraction.paymentFrequency ?? null;
@@ -162,7 +181,8 @@ export class ContractAnalysisProcessor extends WorkerHost {
         expirationDate,
         executionDate,
         renewalType,
-        totalValue,
+        payableValue,
+        receivableValue,
         paymentTerms,
       ];
       const filledCount = extractedFields.filter((f) => f != null).length;
@@ -182,7 +202,8 @@ export class ContractAnalysisProcessor extends WorkerHost {
         renewal_term_months: renewalTermMonths,
         notice_period_days: noticePeriodDays,
         notice_by_date: noticeByDate,
-        total_value: totalValue != null ? String(totalValue) : null,
+        payable_value: payableValue != null ? String(payableValue) : null,
+        receivable_value: receivableValue != null ? String(receivableValue) : null,
         currency,
         payment_terms: paymentTerms,
         payment_frequency: paymentFrequency,

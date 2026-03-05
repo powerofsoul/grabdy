@@ -17,7 +17,7 @@ import {
   type RenewalType,
   renewalTypeEnum,
 } from '@grabdy/contracts';
-import type { ExpressionOrFactory, SqlBool } from 'kysely';
+import { type ExpressionOrFactory, sql, type SqlBool } from 'kysely';
 
 import type { DB } from '../../db/db';
 import { DbService } from '../../db/db.module';
@@ -128,6 +128,19 @@ export class ContractsService {
       page,
       limit,
     };
+  }
+
+  async counterparties(orgId: DbId<'Org'>): Promise<string[]> {
+    const rows = await this.db.kysely
+      .selectFrom('data.contracts')
+      .select((eb) => eb.fn('min', ['counterparty']).as('counterparty'))
+      .where('org_id', '=', orgId)
+      .where('counterparty', 'is not', null)
+      .groupBy(sql`lower(counterparty)`)
+      .orderBy('counterparty', 'asc')
+      .execute();
+
+    return rows.map((r) => r.counterparty).filter((v): v is string => v !== null);
   }
 
   async findById(orgId: DbId<'Org'>, contractId: DbId<'Contract'>) {
@@ -282,7 +295,8 @@ export class ContractsService {
       renewal_term_months: number | null;
       notice_period_days: number | null;
       notice_by_date: string | null;
-      total_value: string | null;
+      payable_value: string | null;
+      receivable_value: string | null;
       currency: string | null;
       payment_terms: string | null;
       payment_frequency: string | null;
@@ -332,7 +346,8 @@ export class ContractsService {
       renewalTermMonths: c.renewal_term_months,
       noticePeriodDays: c.notice_period_days,
       noticeByDate: c.notice_by_date,
-      totalValue: c.total_value ? Number(c.total_value) : null,
+      payableValue: c.payable_value ? Number(c.payable_value) : null,
+      receivableValue: c.receivable_value ? Number(c.receivable_value) : null,
       currency: c.currency,
       paymentTerms: c.payment_terms,
       paymentFrequency: parseEnum<PaymentFrequency>(paymentFrequencyEnum, c.payment_frequency),

@@ -1,7 +1,6 @@
 import { Box } from '@mui/material';
 
 import { AttentionBanner } from './components/AttentionBanner';
-import { AutoRenewalAlerts } from './components/AutoRenewalAlerts';
 import { CounterpartyConcentration } from './components/CounterpartyConcentration';
 import { EmptyState } from './components/EmptyState';
 import { ExpiredBadge } from './components/ExpiredBadge';
@@ -40,6 +39,7 @@ export function DashboardHome() {
   };
 
   const hasData = !isEmpty || isUploading;
+  const hasContracts = (metrics?.totalActive ?? 0) > 0;
 
   const futureDeadlines = (deadlines ?? []).filter((d) => d.daysLeft === null || d.daysLeft >= 0);
 
@@ -51,7 +51,9 @@ export function DashboardHome() {
           ? ''
           : isEmpty && !isUploading
             ? 'Get started by uploading your first contracts.'
-            : 'Here is an overview of your contract portfolio.'
+            : isProcessing && !hasContracts
+              ? 'Your contracts are being analyzed. Results will appear here shortly.'
+              : 'Here is an overview of your contract portfolio.'
       }
     >
       <UploadProgressList uploads={uploads} onDismiss={dismissUploads} />
@@ -66,61 +68,64 @@ export function DashboardHome() {
             <ProcessingBanner processingCount={processingCount} totalCount={totalCount} />
           )}
 
-          <AttentionBanner urgentCount={stats.urgentCount} />
+          {hasContracts && (
+            <>
+              <AttentionBanner urgentCount={stats.urgentCount} />
 
-          <AutoRenewalAlerts deadlines={futureDeadlines} />
+              <MetricsBar
+                metrics={metrics}
+                isLoading={false}
+                monthlyPayable={stats.monthlyPayable}
+                monthlyReceivable={stats.monthlyReceivable}
+                formatCurrency={formatCompactCurrency}
+              />
 
-          <MetricsBar
-            metrics={metrics}
-            isLoading={false}
-            portfolioValue={stats.portfolioValue}
-            formatCurrency={formatCompactCurrency}
-          />
+              {/* Urgent deadlines + high value at risk */}
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  p: { xs: 2, md: 3 },
+                  mb: 4,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    gap: { xs: 3, md: 4 },
+                  }}
+                >
+                  <Box>
+                    <UrgentAlerts deadlines={futureDeadlines.slice(0, 5)} />
+                    <ExpiredBadge expiredCount={stats.expiredCount} />
+                  </Box>
 
-          {/* Urgent deadlines + high value at risk */}
-          <Box
-            sx={{
-              border: '1px solid',
-              borderColor: 'divider',
-              p: { xs: 2, md: 3 },
-              mb: 4,
-            }}
-          >
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                gap: { xs: 3, md: 4 },
-              }}
-            >
-              <Box>
-                <UrgentAlerts deadlines={futureDeadlines.slice(0, 5)} />
-                <ExpiredBadge expiredCount={stats.expiredCount} />
+                  <HighValueExpiring contracts={stats.highValueExpiring} />
+                </Box>
               </Box>
 
-              <HighValueExpiring contracts={stats.highValueExpiring} />
-            </Box>
-          </Box>
-
-          {/* Breakdowns row: renewal, counterparties */}
-          <Box
-            sx={{
-              border: '1px solid',
-              borderColor: 'divider',
-              p: { xs: 2, md: 3 },
-            }}
-          >
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                gap: { xs: 3, md: 4 },
-              }}
-            >
-              <RenewalBreakdown breakdown={stats.renewalBreakdown} />
-              <CounterpartyConcentration counterparties={stats.topCounterparties} />
-            </Box>
-          </Box>
+              {/* Breakdowns row: renewal, counterparties */}
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  p: { xs: 2, md: 3 },
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    gap: { xs: 3, md: 4 },
+                  }}
+                >
+                  <RenewalBreakdown breakdown={stats.renewalBreakdown} />
+                  <CounterpartyConcentration counterparties={stats.topCounterparties} />
+                </Box>
+              </Box>
+            </>
+          )}
         </Box>
       )}
     </DashboardPage>

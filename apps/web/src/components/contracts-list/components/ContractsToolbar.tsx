@@ -29,6 +29,9 @@ const EXPIRING_RANGE_OPTIONS: { value: ExpiringRange; label: string }[] = [
 interface ContractsToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;
+  counterparty: string;
+  onCounterpartyChange: (value: string) => void;
+  counterpartyOptions: string[];
   contractType: ContractType | '';
   onContractTypeChange: (value: ContractType | '') => void;
   renewalType: RenewalType | '';
@@ -40,6 +43,9 @@ interface ContractsToolbarProps {
 export function ContractsToolbar({
   search,
   onSearchChange,
+  counterparty,
+  onCounterpartyChange,
+  counterpartyOptions,
   contractType,
   onContractTypeChange,
   renewalType,
@@ -48,7 +54,7 @@ export function ContractsToolbar({
   onExpiringRangeChange,
 }: ContractsToolbarProps) {
   return (
-    <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+    <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
       <TextField
         size="small"
         placeholder="Search contracts..."
@@ -65,6 +71,20 @@ export function ContractsToolbar({
         }}
         sx={{ minWidth: 260 }}
       />
+      <FormControl size="small" sx={{ minWidth: 170 }}>
+        <Select<string>
+          value={counterparty}
+          onChange={(e) => onCounterpartyChange(e.target.value)}
+          displayEmpty
+        >
+          <MenuItem value="">All counterparties</MenuItem>
+          {counterpartyOptions.map((name) => (
+            <MenuItem key={name} value={name}>
+              {name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
       <FormControl size="small" sx={{ minWidth: 160 }}>
         <Select<ContractType | ''>
           value={contractType}

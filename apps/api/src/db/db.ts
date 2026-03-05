@@ -142,7 +142,8 @@ export interface DB {
     renewal_term_months: number | null;
     notice_period_days: number | null;
     notice_by_date: string | null;
-    total_value: string | null;
+    payable_value: string | null;
+    receivable_value: string | null;
     currency: string | null;
     payment_terms: string | null;
     payment_frequency: string | null;
