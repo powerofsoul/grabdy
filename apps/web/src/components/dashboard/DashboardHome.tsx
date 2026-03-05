@@ -53,14 +53,16 @@ export function DashboardHome() {
             ? 'Get started by uploading your first contracts.'
             : isProcessing && !hasContracts
               ? 'Your contracts are being analyzed. Results will appear here shortly.'
-              : 'Here is an overview of your contract portfolio.'
+              : hasContracts
+                ? 'Here is an overview of your contract portfolio.'
+                : 'Upload contracts to get started.'
       }
     >
       <UploadProgressList uploads={uploads} onDismiss={dismissUploads} />
 
       {isLoading ? (
         <PageLoader />
-      ) : !hasData ? (
+      ) : !hasData || (!hasContracts && !isProcessing) ? (
         <EmptyState onFilesSelect={handleFilesSelect} isUploading={isUploading} />
       ) : (
         <Box>
